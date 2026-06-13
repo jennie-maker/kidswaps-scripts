@@ -29,7 +29,7 @@
     { key:"item_name",      label:"Item name",      type:"text",     group:"both", required:true,  placeholder:"auto-fills from brand + category" },
     { key:"color",          label:"Color",          type:"text",     group:"both", required:false },
     { key:"season",         label:"Season",         type:"text",     group:"both", required:false, placeholder:"e.g. winter, all-season" },
-    { key:"bin_location",   label:"Bin location",   type:"text",     group:"both", required:false, placeholder:"where it's stored" },
+    { key:"bin_location",   label:"Bin location",   type:"text",     group:"both", required:true,  placeholder:"where it's stored" },
     { key:"condition_grade",label:"Condition grade",type:"text",     group:"both", required:false, placeholder:"e.g. EUC, like-new" },
     { key:"condition_notes",label:"Condition notes",type:"textarea", group:"both", required:false },
     { key:"description",    label:"Description",    type:"textarea", group:"both", required:false }
