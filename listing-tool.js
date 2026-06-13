@@ -151,7 +151,13 @@
   function getToken() {
     if (token) return Promise.resolve(token);
     if (!window.$memberstackDom) return Promise.reject(new Error("no memberstack"));
-    return window.$memberstackDom.getMemberCookie().then(function (t) { token = t; return t; });
+    // getMemberCookie() returns the token synchronously (a string), not a Promise.
+    // Promise.resolve() wraps either a value or a thenable, so this handles both.
+    return Promise.resolve(window.$memberstackDom.getMemberCookie()).then(function (t) {
+      if (!t) throw new Error("no token");
+      token = t;
+      return t;
+    });
   }
 
   /* ---- UPLOAD ---------------------------------------------------------- */
