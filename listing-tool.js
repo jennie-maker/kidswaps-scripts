@@ -15,24 +15,21 @@
      add a field later  ==  add one entry here. */
   var SCHEMA = [
     { key:"sku",            label:"SKU",            type:"text",   group:"both", required:true,  placeholder:"KS-00000", hint:"the KS label number on the item" },
+    { key:"color",          label:"Color",          type:"text",     group:"both", required:false },
     { key:"brand",          label:"Brand",          type:"text",   group:"both", required:true,  placeholder:"e.g. Patagonia" },
+    { key:"category",       label:"Category",       type:"text",   group:"clothing", required:true, placeholder:"e.g. Dresses, Pants" },
+    { key:"item_name",      label:"Item name",      type:"text",     group:"both", required:true,  placeholder:"auto-fills from brand + category" },
     { key:"tier",           label:"Tier",           type:"select", group:"both", required:true,  options:["essentials","elevated","special"] },
     { key:"retail_value",   label:"Retail value",   type:"number", group:"both", required:true,  placeholder:"e.g. 48", step:"0.01", min:"0" },
-
-    { key:"category",       label:"Category",       type:"text",   group:"clothing", required:true, placeholder:"e.g. Dresses, Pants" },
     { key:"clothing_size",  label:"Size",           type:"text",   group:"clothing", required:true, placeholder:"e.g. 4T, 6, 10" },
     { key:"gender_style",   label:"Gender",         type:"select", group:"clothing", required:false, options:["boy","girl"] },
-
-    { key:"toy_age_range",  label:"Age range",      type:"text",   group:"toy", required:true, placeholder:"e.g. 0-2, 3-5" },
-    { key:"toy_washability",label:"Washability",    type:"select", group:"toy", required:false, options:["wipeable","washable"] },
-
-    { key:"item_name",      label:"Item name",      type:"text",     group:"both", required:true,  placeholder:"auto-fills from brand + category" },
-    { key:"color",          label:"Color",          type:"text",     group:"both", required:false },
     { key:"season",         label:"Season",         type:"text",     group:"both", required:false, placeholder:"e.g. winter, all-season" },
     { key:"bin_location",   label:"Bin location",   type:"text",     group:"both", required:true,  placeholder:"where it's stored" },
     { key:"condition_grade",label:"Condition grade",type:"text",     group:"both", required:false, placeholder:"e.g. EUC, like-new" },
     { key:"condition_notes",label:"Condition notes",type:"textarea", group:"both", required:false },
-    { key:"description",    label:"Description",    type:"textarea", group:"both", required:false }
+    { key:"description",    label:"Description",    type:"textarea", group:"both", required:false },
+    { key:"toy_age_range",  label:"Age range",      type:"text",   group:"toy", required:true, placeholder:"e.g. 0-2, 3-5" },
+    { key:"toy_washability",label:"Washability",    type:"select", group:"toy", required:false, options:["wipeable","washable"] },
   ];
 
   /* upload validation mirrors inventory-upload */
