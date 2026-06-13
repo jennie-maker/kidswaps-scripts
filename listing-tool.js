@@ -2,13 +2,17 @@
   "use strict";
 
   /* ---- CONFIG ---------------------------------------------------------- */
-  var ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqc29iaXZxeGV4Y25pd2lmeHp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNzI4MjIsImV4cCI6MjA5MTk0ODgyMn0.IFtzADITLHrEhnc8oHfjzyulcxWySp0o3s6v8XTZ5VM";
+  var ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqc29iaXZxeGV4Y25pd2lmeHp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNzI4MjIsImV4cCI6MjA5MTk0ODgyMn0.IFtzADITLHrEhnc8oHfjzyulcxWySp0o3s6v8XTZ5VM";   // from /dashboard footer
   var BASE = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1";
   var FN_LIST   = BASE + "/inventory-list";
   var FN_UPLOAD = BASE + "/inventory-upload";
   var DRAFT_KEY = "ks_listing_draft_v1";
 
   /* ---- FIELD SCHEMA  (single source of truth) -------------------------- */
+  /* keys MUST match inventory-list body keys exactly.
+     group: 'both' | 'clothing' | 'toy'
+     type:  text | number | select | textarea | checkbox
+     add a field later  ==  add one entry here. */
   var SCHEMA = [
     { key:"sku",            label:"SKU",            type:"text",   group:"both", required:true,  placeholder:"KS-00000", hint:"the KS label number on the item" },
     { key:"brand",          label:"Brand",          type:"text",   group:"both", required:true,  placeholder:"e.g. Patagonia" },
@@ -25,20 +29,21 @@
     { key:"item_name",      label:"Item name",      type:"text",     group:"both", required:true,  placeholder:"auto-fills from brand + category" },
     { key:"color",          label:"Color",          type:"text",     group:"both", required:false },
     { key:"season",         label:"Season",         type:"text",     group:"both", required:false, placeholder:"e.g. winter, all-season" },
-    { key:"bin_location",   label:"Bin location",   type:"text",     group:"both", required:true,  placeholder:"where it's stored" },
+    { key:"bin_location",   label:"Bin location",   type:"text",     group:"both", required:false, placeholder:"where it's stored" },
     { key:"condition_grade",label:"Condition grade",type:"text",     group:"both", required:false, placeholder:"e.g. EUC, like-new" },
     { key:"condition_notes",label:"Condition notes",type:"textarea", group:"both", required:false },
     { key:"description",    label:"Description",    type:"textarea", group:"both", required:false }
   ];
 
+  /* upload validation mirrors inventory-upload */
   var PHOTO_TYPES = ["image/jpeg","image/png","image/webp","image/heic","image/heif"];
   var VIDEO_TYPES = ["video/mp4","video/quicktime","video/webm"];
   var MAX_BYTES = 25 * 1024 * 1024;
 
   /* ---- STATE ----------------------------------------------------------- */
   var itemType = "clothing";
-  var photos = [];
-  var video  = null;
+  var photos = [];   // {id, url, status:'uploading'|'done'|'error', name, objUrl}
+  var video  = null; // {id, url, status, name, objUrl}
   var token  = null;
 
   var root = document.getElementById("ks-list-app");
@@ -116,6 +121,7 @@
     '<button type="button" class="ksl-submit" id="ksl-submit">List item</button>' +
     '<div class="ksl-toast" id="ksl-toast"></div>';
 
+  /* element refs */
   var $ = function (id) { return document.getElementById(id); };
   var photoInput = $("ksl-photo-input"), videoInput = $("ksl-video-input");
   var photoThumbs = $("ksl-photo-thumbs"), videoThumbs = $("ksl-video-thumbs");
@@ -148,11 +154,7 @@
   function getToken() {
     if (token) return Promise.resolve(token);
     if (!window.$memberstackDom) return Promise.reject(new Error("no memberstack"));
-    return Promise.resolve(window.$memberstackDom.getMemberCookie()).then(function (t) {
-      if (!t) throw new Error("no token");
-      token = t;
-      return t;
-    });
+    return window.$memberstackDom.getMemberCookie().then(function (t) { token = t; return t; });
   }
 
   /* ---- UPLOAD ---------------------------------------------------------- */
@@ -252,6 +254,9 @@
   });
 
   /* ---- DRAFT PERSISTENCE (sessionStorage) ------------------------------ */
+  /* Note: text fields + type + set only. Photos are NOT redrawn from draft
+     (object URLs don't survive reload) but their uploaded URLs are kept so
+     a restored draft still submits with its already-uploaded media. */
   function collectFields() {
     var out = {};
     root.querySelectorAll("[data-key]").forEach(function (el) {
@@ -416,6 +421,8 @@
   if (skuEl && !skuEl.value) skuEl.value = "KS-";
 
   /* ---- ITEM-NAME AUTO-GENERATE ----------------------------------------- */
+  /* Builds "Brand Category (Color)" from those fields, but STOPS once the
+     operator manually edits the name (so we never clobber their wording). */
   var nameEl = root.querySelector('[data-key="item_name"]');
   var nameTouched = false;
   if (nameEl) {
@@ -429,10 +436,9 @@
     var brand = (root.querySelector('[data-key="brand"]') || {}).value || "";
     var cat   = (root.querySelector('[data-key="category"]') || {}).value || "";
     var color = (root.querySelector('[data-key="color"]') || {}).value || "";
-    var parts = [brand.trim(), cat.trim()].filter(Boolean).map(titleCase);
-    var base = parts.join(" ");
-    if (color.trim()) base += " (" + titleCase(color.trim()) + ")";
-    nameEl.value = base;
+    // Format: Color Brand Category (no parentheses)
+    var parts = [color.trim(), brand.trim(), cat.trim()].filter(Boolean).map(titleCase);
+    nameEl.value = parts.join(" ");
   }
   ["brand", "category", "color"].forEach(function (k) {
     var el = root.querySelector('[data-key="' + k + '"]');
@@ -453,5 +459,6 @@
       rb.classList.add("ksl-hidden");
     });
   }
+  // warm the token early so first upload is instant
   getToken().catch(function () {});
 })();
