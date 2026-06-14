@@ -151,7 +151,11 @@
   function getToken() {
     if (token) return Promise.resolve(token);
     if (!window.$memberstackDom) return Promise.reject(new Error("no memberstack"));
-    return window.$memberstackDom.getMemberCookie().then(function (t) { token = t; return t; });
+    return Promise.resolve(window.$memberstackDom.getMemberCookie()).then(function (t) {
+      if (!t) throw new Error("no token");
+      token = t;
+      return t;
+    });
   }
 
   /* ---- UPLOAD ---------------------------------------------------------- */
@@ -418,7 +422,7 @@
   if (skuEl && !skuEl.value) skuEl.value = "KS-";
 
   /* ---- ITEM-NAME AUTO-GENERATE ----------------------------------------- */
-  /* Builds "Brand Category (Color)" from those fields, but STOPS once the
+  /* Builds "Color Brand Category" from those fields, but STOPS once the
      operator manually edits the name (so we never clobber their wording). */
   var nameEl = root.querySelector('[data-key="item_name"]');
   var nameTouched = false;
