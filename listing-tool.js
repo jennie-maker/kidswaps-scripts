@@ -15,21 +15,21 @@
      add a field later  ==  add one entry here. */
   var SCHEMA = [
     { key:"sku",            label:"SKU",            type:"text",   group:"both", required:true,  placeholder:"KS-00000", hint:"the KS label number on the item" },
-    { key:"color",          label:"Color",          type:"text",     group:"both", required:false },
     { key:"brand",          label:"Brand",          type:"text",   group:"both", required:true,  placeholder:"e.g. Patagonia" },
-    { key:"category",       label:"Category",       type:"text",   group:"clothing", required:true, placeholder:"e.g. Dresses, Pants" },
-    { key:"item_name",      label:"Item name",      type:"text",     group:"both", required:true,  placeholder:"auto-fills from brand + category" },
-    { key:"tier",           label:"Tier",           type:"select", group:"both", required:true,  options:["essentials","elevated","special"] },
-    { key:"retail_value",   label:"Retail value",   type:"number", group:"both", required:true,  placeholder:"e.g. 48", step:"0.01", min:"0" },
-    { key:"clothing_size",  label:"Size",           type:"text",   group:"clothing", required:true, placeholder:"e.g. 4T, 6, 10" },
-    { key:"gender_style",   label:"Gender",         type:"select", group:"clothing", required:false, options:["boy","girl"] },
-    { key:"season",         label:"Season",         type:"text",     group:"both", required:false, placeholder:"e.g. winter, all-season" },
-    { key:"bin_location",   label:"Bin location",   type:"text",     group:"both", required:true,  placeholder:"where it's stored" },
-    { key:"condition_grade",label:"Condition grade",type:"text",     group:"both", required:false, placeholder:"e.g. EUC, like-new" },
-    { key:"condition_notes",label:"Condition notes",type:"textarea", group:"both", required:false },
-    { key:"description",    label:"Description",    type:"textarea", group:"both", required:false },
     { key:"toy_age_range",  label:"Age range",      type:"text",   group:"toy", required:true, placeholder:"e.g. 0-2, 3-5" },
     { key:"toy_washability",label:"Washability",    type:"select", group:"toy", required:false, options:["wipeable","washable"] },
+    { key:"color",          label:"Color",          type:"text",   group:"clothing", required:false },
+    { key:"category",       label:"Category",       type:"text",   group:"clothing", required:true, placeholder:"e.g. Dresses, Pants" },
+    { key:"clothing_size",  label:"Size",           type:"text",   group:"clothing", required:true, placeholder:"e.g. 4T, 6, 10" },
+    { key:"gender_style",   label:"Gender",         type:"select", group:"clothing", required:false, options:["boy","girl"] },
+    { key:"item_name",      label:"Item name",      type:"text",     group:"both", required:true,  placeholder:"auto-fills from brand + category" },
+    { key:"tier",           label:"Tier",           type:"select", group:"both", required:true,  options:["essentials","elevated","special"] },
+    { key:"condition_grade",label:"Condition grade",type:"text",     group:"both", required:false, placeholder:"e.g. EUC, like-new" },
+    { key:"retail_value",   label:"Retail value",   type:"number", group:"both", required:true,  placeholder:"e.g. 48", step:"0.01", min:"0" },
+    { key:"season",         label:"Season",         type:"text",     group:"both", required:false, placeholder:"e.g. winter, all-season" },
+    { key:"bin_location",   label:"Bin location",   type:"text",     group:"both", required:true,  placeholder:"where it's stored" },
+    { key:"condition_notes",label:"Condition notes",type:"textarea", group:"both", required:false },
+    { key:"description",    label:"Description",    type:"textarea", group:"both", required:false },
   ];
 
   /* upload validation mirrors inventory-upload */
@@ -73,7 +73,23 @@
            '</div>';
   }
 
-  var detailsHtml = SCHEMA.map(fieldHtml).join("");
+  var setHtml =
+    '<div class="ksl-field" data-field="__set" data-group="both">' +
+      '<label class="ksl-check"><input type="checkbox" id="ksl-set"> ' +
+      '<span class="ksl-label" style="margin:0">This is a matching set <span class="ksl-opt">(optional)</span></span></label>' +
+      '<div id="ksl-set-count-wrap" class="ksl-hidden" style="margin-top:10px">' +
+        '<label class="ksl-label">Number of pieces<span class="ksl-req">*</span></label>' +
+        '<input type="number" id="ksl-set-count" min="2" step="1" placeholder="e.g. 2">' +
+        '<div class="ksl-err">Enter 2 or more pieces</div>' +
+      '</div>' +
+    '</div>';
+
+  /* matching-set block renders right before item_name — i.e. just after the
+     Color/Category/Size/Gender group (clothing) or Age/Washability (toy),
+     instead of buried at the bottom of the form. */
+  var detailsHtml = SCHEMA.map(function (f) {
+    return (f.key === "item_name" ? setHtml : "") + fieldHtml(f);
+  }).join("");
 
   root.innerHTML =
     '<h1 class="ksl-title">List an item</h1>' +
@@ -104,15 +120,6 @@
     '</div>' +
 
     '<div class="ksl-card"><h3>Details</h3>' + detailsHtml +
-      '<div class="ksl-field" data-field="__set" data-group="both">' +
-        '<label class="ksl-check"><input type="checkbox" id="ksl-set"> ' +
-        '<span class="ksl-label" style="margin:0">This is a matching set <span class="ksl-opt">(optional)</span></span></label>' +
-        '<div id="ksl-set-count-wrap" class="ksl-hidden" style="margin-top:10px">' +
-          '<label class="ksl-label">Number of pieces<span class="ksl-req">*</span></label>' +
-          '<input type="number" id="ksl-set-count" min="2" step="1" placeholder="e.g. 2">' +
-          '<div class="ksl-err">Enter 2 or more pieces</div>' +
-        '</div>' +
-      '</div>' +
     '</div>' +
 
     '<button type="button" class="ksl-submit" id="ksl-submit">List item</button>' +
@@ -127,6 +134,8 @@
 
   /* ---- ITEM TYPE TOGGLE ------------------------------------------------ */
   function applyType() {
+    root.classList.toggle("ks-theme-toy", itemType === "toy");
+    root.classList.toggle("ks-theme-clothing", itemType === "clothing");
     root.querySelectorAll(".ksl-toggle button").forEach(function (b) {
       b.classList.toggle("is-active", b.getAttribute("data-type") === itemType);
     });
