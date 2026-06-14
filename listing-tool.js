@@ -21,14 +21,13 @@
     { key:"color",          label:"Color",          type:"text",   group:"clothing", required:false },
     { key:"category",       label:"Category",       type:"text",   group:"clothing", required:true, placeholder:"e.g. Dresses, Pants" },
     { key:"clothing_size",  label:"Size",           type:"text",   group:"clothing", required:true, placeholder:"e.g. 4T, 6, 10" },
-    { key:"gender_style",   label:"Gender",         type:"select", group:"clothing", required:false, options:["boy","girl"] },
+    { key:"gender_style",   label:"Gender",         type:"select", group:"clothing", required:false, options:[{value:"boy",label:"Male"},{value:"girl",label:"Female"}] },
     { key:"item_name",      label:"Item name",      type:"text",     group:"both", required:true,  placeholder:"auto-fills from brand + category" },
     { key:"tier",           label:"Tier",           type:"select", group:"both", required:true,  options:["essentials","elevated","special"] },
-    { key:"condition_grade",label:"Condition grade",type:"text",     group:"both", required:false, placeholder:"e.g. EUC, like-new" },
     { key:"retail_value",   label:"Retail value",   type:"number", group:"both", required:true,  placeholder:"e.g. 48", step:"0.01", min:"0" },
-    { key:"season",         label:"Season",         type:"text",     group:"both", required:false, placeholder:"e.g. winter, all-season" },
     { key:"bin_location",   label:"Bin location",   type:"text",     group:"both", required:true,  placeholder:"where it's stored" },
-    { key:"condition_notes",label:"Condition notes",type:"textarea", group:"both", required:false },
+    { key:"condition_grade",label:"Condition grade",type:"text",     group:"both", required:false, placeholder:"e.g. EUC, like-new" },
+    { key:"season",         label:"Season",         type:"text",     group:"both", required:false, placeholder:"e.g. winter, all-season" },
     { key:"description",    label:"Description",    type:"textarea", group:"both", required:false },
   ];
 
@@ -53,7 +52,11 @@
     var inner;
     if (f.type === "select") {
       var opts = '<option value="">Select…</option>' +
-        f.options.map(function (o) { return '<option value="' + o + '">' + o + '</option>'; }).join("");
+        f.options.map(function (o) {
+          var val = (o && typeof o === "object") ? o.value : o;
+          var lab = (o && typeof o === "object") ? o.label : o;
+          return '<option value="' + val + '">' + lab + '</option>';
+        }).join("");
       inner = '<select data-key="' + f.key + '">' + opts + '</select>';
     } else if (f.type === "textarea") {
       inner = '<textarea data-key="' + f.key + '" placeholder="' + (f.placeholder || "") + '"></textarea>';
@@ -146,9 +149,42 @@
   }
   root.querySelectorAll(".ksl-toggle button").forEach(function (b) {
     b.addEventListener("click", function () {
-      itemType = b.getAttribute("data-type"); applyType(); saveDraft();
+      var target = b.getAttribute("data-type");
+      if (target === itemType) return;                  // already on this side
+      if (hasContent() &&
+          !window.confirm("Switching to " + (target === "toy" ? "Toy" : "Clothing") +
+                          " will clear this item. Continue?")) {
+        return;                                         // operator cancelled — stay put
+      }
+      clearItem();
+      itemType = target; applyType(); saveDraft();
     });
   });
+
+  /* has the operator entered anything for the current item?
+     (SKU left at its "KS-" default does NOT count as content) */
+  function hasContent() {
+    var any = false;
+    root.querySelectorAll("[data-key]").forEach(function (el) {
+      var v = (el.value || "").trim();
+      if (!v) return;
+      if (el.getAttribute("data-key") === "sku" && v === "KS-") return;
+      any = true;
+    });
+    if (photos.length || video) any = true;
+    if (setChk.checked) any = true;
+    return any;
+  }
+
+  /* wipe the current item — shared by the toggle-clear and submit-reset paths */
+  function clearItem() {
+    root.querySelectorAll("[data-key]").forEach(function (el) { el.value = ""; });
+    if (skuEl) skuEl.value = "KS-";
+    nameTouched = false;
+    setChk.checked = false; setCountWrap.classList.add("ksl-hidden"); setCount.value = "";
+    photos = []; video = null; renderPhotos(); renderVideo();
+    clearErrors();
+  }
 
   /* ---- SET TOGGLE ------------------------------------------------------ */
   setChk.addEventListener("change", function () {
@@ -217,7 +253,7 @@
               : video.status === "error" ? '<div class="ksl-state">Failed — tap ✕</div>' : '';
     videoThumbs.innerHTML =
       '<div class="ksl-thumb' + (video.status === "error" ? ' is-error' : '') + '">' +
-        '<video src="' + video.objUrl + '" muted></video>' + state +
+        '<video src="' + video.objUrl + '#t=0.1" muted playsinline preload="metadata"></video>' + state +
         '<button class="ksl-rm" data-rmvideo="1" aria-label="remove">×</button>' +
       '</div>';
   }
