@@ -123,22 +123,24 @@
 
     '<div class="ksl-card"><h3>Photos &amp; video</h3>' +
       '<p class="ksl-media-help">Up to 3 photos + 1 short video. Tap a slot to add.</p>' +
-      PHOTO_SLOTS.map(function (s) {
-        return '<div class="ksl-slot" data-slot="' + s.key + '">' +
-                 '<div class="ksl-drop ksl-slot-drop" data-slotdrop="' + s.key + '">' +
-                   '<strong>' + s.label + '</strong>' +
-                   (s.hint ? ' <span class="ksl-opt">' + s.hint + '</span>' : '') +
-                 '</div>' +
-                 '<input type="file" accept="image/*" class="ksl-hidden" data-slotinput="' + s.key + '">' +
-                 '<div class="ksl-thumbs" data-slotthumb="' + s.key + '"></div>' +
-               '</div>';
-      }).join("") +
-      '<div class="ksl-slot" data-slot="video">' +
-        '<div class="ksl-drop ksl-slot-drop" data-slotdrop="video">' +
-          '<strong>Video</strong> <span class="ksl-opt">(optional, ~15s, one clip)</span>' +
+      '<div class="ksl-slot-grid">' +
+        PHOTO_SLOTS.map(function (s) {
+          return '<div class="ksl-slot" data-slot="' + s.key + '">' +
+                   '<div class="ksl-drop ksl-slot-drop" data-slotdrop="' + s.key + '">' +
+                     '<strong>' + s.label + '</strong>' +
+                     (s.hint ? ' <span class="ksl-opt">' + s.hint + '</span>' : '') +
+                   '</div>' +
+                   '<input type="file" accept="image/*" class="ksl-hidden" data-slotinput="' + s.key + '">' +
+                   '<div class="ksl-thumbs" data-slotthumb="' + s.key + '"></div>' +
+                 '</div>';
+        }).join("") +
+        '<div class="ksl-slot" data-slot="video">' +
+          '<div class="ksl-drop ksl-slot-drop" data-slotdrop="video">' +
+            '<strong>Video</strong> <span class="ksl-opt">(optional, ~15s)</span>' +
+          '</div>' +
+          '<input type="file" accept="video/*" class="ksl-hidden" data-slotinput="video">' +
+          '<div class="ksl-thumbs" data-slotthumb="video"></div>' +
         '</div>' +
-        '<input type="file" accept="video/*" class="ksl-hidden" data-slotinput="video">' +
-        '<div class="ksl-thumbs" data-slotthumb="video"></div>' +
       '</div>' +
     '</div>' +
 
@@ -164,6 +166,10 @@
       var g = el.getAttribute("data-group");
       el.classList.toggle("ksl-hidden", !(g === "both" || g === itemType));
     });
+    var nmPh = root.querySelector('[data-key="item_name"]');
+    if (nmPh) nmPh.placeholder = (itemType === "toy")
+      ? "e.g. Lovevery Play Gym"
+      : "auto-fills from brand + category";
   }
   root.querySelectorAll(".ksl-toggle button").forEach(function (b) {
     b.addEventListener("click", function () {
