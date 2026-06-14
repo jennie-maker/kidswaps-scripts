@@ -17,7 +17,7 @@
     { key:"sku",            label:"SKU",            type:"text",   group:"both", required:true,  placeholder:"KS-00000", hint:"the KS label number on the item" },
     { key:"brand",          label:"Brand",          type:"text",   group:"both", required:true,  placeholder:"e.g. Patagonia" },
     { key:"item_name",      label:"Item name",      type:"text",   group:"both", required:true,  placeholder:"auto-fills from brand + category" },
-    { key:"toy_age_range",  label:"Age range",      type:"select", group:"toy", required:true, options:["0-6 months","6-12 months","12-18 months","18-24 months","2-3 years","3-4 years","4-5 years","5+ years"] },
+    { key:"toy_age_range",  label:"Age range",      type:"select", group:"toy", required:true, options:["0-6 months","6-12 months","1-2 years","2-3 years","3-4 years","5+ years"] },
     { key:"toy_washability",label:"Washability",    type:"pills",  group:"toy", required:true,  options:["wipeable","washable"] },
     { key:"color",          label:"Color",          type:"text",   group:"clothing", required:false },
     { key:"category",       label:"Category",       type:"text",   group:"clothing", required:true, placeholder:"e.g. Dresses, Pants" },
@@ -130,7 +130,7 @@
                      '<strong>' + s.label + '</strong>' +
                      (s.hint ? ' <span class="ksl-opt">' + s.hint + '</span>' : '') +
                    '</div>' +
-                   '<input type="file" accept="image/*" class="ksl-hidden" data-slotinput="' + s.key + '">' +
+                   '<input type="file" accept="image/*" capture="environment" class="ksl-hidden" data-slotinput="' + s.key + '">' +
                    '<div class="ksl-thumbs" data-slotthumb="' + s.key + '"></div>' +
                  '</div>';
         }).join("") +
@@ -138,13 +138,13 @@
           '<div class="ksl-drop ksl-slot-drop" data-slotdrop="video">' +
             '<strong>Video</strong> <span class="ksl-opt">≤25 MB · ~15s</span>' +
           '</div>' +
-          '<input type="file" accept="video/*" class="ksl-hidden" data-slotinput="video">' +
+          '<input type="file" accept="video/*" capture="environment" class="ksl-hidden" data-slotinput="video">' +
           '<div class="ksl-thumbs" data-slotthumb="video"></div>' +
         '</div>' +
       '</div>' +
     '</div>' +
 
-    '<div class="ksl-card"><h3>Details</h3>' + detailsHtml +
+    '<div class="ksl-card ksl-details"><h3>Details</h3>' + detailsHtml +
     '</div>' +
 
     '<button type="button" class="ksl-submit" id="ksl-submit">List item</button>' +
