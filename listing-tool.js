@@ -17,7 +17,7 @@
     { key:"sku",            label:"SKU",            type:"text",   group:"both", required:true,  placeholder:"KS-00000", hint:"the KS label number on the item" },
     { key:"brand",          label:"Brand",          type:"text",   group:"both", required:true,  placeholder:"e.g. Patagonia" },
     { key:"toy_age_range",  label:"Age range",      type:"text",   group:"toy", required:true, placeholder:"e.g. 0-2, 3-5" },
-    { key:"toy_washability",label:"Washability",    type:"select", group:"toy", required:false, options:["wipeable","washable"] },
+    { key:"toy_washability",label:"Washability",    type:"pills",  group:"toy", required:true,  options:["wipeable","washable"] },
     { key:"color",          label:"Color",          type:"text",   group:"clothing", required:false },
     { key:"category",       label:"Category",       type:"text",   group:"clothing", required:true, placeholder:"e.g. Dresses, Pants" },
     { key:"clothing_size",  label:"Size",           type:"text",   group:"clothing", required:true, placeholder:"e.g. 4T, 6, 10" },
@@ -27,7 +27,7 @@
     { key:"retail_value",   label:"Retail value",   type:"number", group:"both", required:true,  placeholder:"e.g. 48", step:"0.01", min:"0" },
     { key:"bin_location",   label:"Bin location",   type:"text",     group:"both", required:true,  placeholder:"where it's stored" },
     { key:"condition_grade",label:"Condition grade",type:"text",     group:"both", required:false, placeholder:"e.g. EUC, like-new" },
-    { key:"season",         label:"Season",         type:"text",     group:"both", required:false, placeholder:"e.g. winter, all-season" },
+    { key:"season",         label:"Season",         type:"text",     group:"clothing", required:false, placeholder:"e.g. winter, all-season" },
     { key:"description",    label:"Description",    type:"textarea", group:"both", required:false },
   ];
 
@@ -38,9 +38,15 @@
 
   /* ---- STATE ----------------------------------------------------------- */
   var itemType = "clothing";
-  var photos = [];   // {id, url, status:'uploading'|'done'|'error', name, objUrl}
-  var video  = null; // {id, url, status, name, objUrl}
-  var token  = null;
+  /* up to 3 photos in fixed roles + 1 video. each rec: {id,url,status,name,objUrl} */
+  var PHOTO_SLOTS = [
+    { key:"front",  label:"Front",  hint:"primary photo" },
+    { key:"back",   label:"Back",   hint:"" },
+    { key:"detail", label:"Detail", hint:"tag, flaw, or close-up" }
+  ];
+  var slots = { front:null, back:null, detail:null };
+  var video = null;
+  var token = null;
 
   var root = document.getElementById("ks-list-app");
   if (!root) { console.error("[listing] #ks-list-app not found"); return; }
@@ -63,6 +69,13 @@
     } else if (f.type === "number") {
       inner = '<input type="number" data-key="' + f.key + '" placeholder="' + (f.placeholder || "") +
               '"' + (f.step ? ' step="' + f.step + '"' : "") + (f.min ? ' min="' + f.min + '"' : "") + '>';
+    } else if (f.type === "pills") {
+      var pbtns = f.options.map(function (o) {
+        var pv = (o && typeof o === "object") ? o.value : o;
+        var pl = (o && typeof o === "object") ? o.label : o;
+        return '<button type="button" class="ksl-pill" data-pill="' + f.key + '" data-val="' + pv + '">' + pl + '</button>';
+      }).join("");
+      inner = '<input type="hidden" data-key="' + f.key + '"><div class="ksl-pills">' + pbtns + '</div>';
     } else {
       var extra = (f.key === "sku")
         ? ' autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"'
@@ -77,7 +90,7 @@
   }
 
   var setHtml =
-    '<div class="ksl-field" data-field="__set" data-group="both">' +
+    '<div class="ksl-field" data-field="__set" data-group="clothing">' +
       '<label class="ksl-check"><input type="checkbox" id="ksl-set"> ' +
       '<span class="ksl-label" style="margin:0">This is a matching set <span class="ksl-opt">(optional)</span></span></label>' +
       '<div id="ksl-set-count-wrap" class="ksl-hidden" style="margin-top:10px">' +
@@ -109,17 +122,24 @@
     '</div>' +
 
     '<div class="ksl-card"><h3>Photos &amp; video</h3>' +
-      '<div class="ksl-drop" id="ksl-photo-drop">' +
-        '<strong>Add photos</strong> — tap to use camera or pick files<br>' +
-        '<span style="font-size:12px">first photo becomes the primary</span>' +
+      '<p class="ksl-media-help">Up to 3 photos + 1 short video. Tap a slot to add.</p>' +
+      PHOTO_SLOTS.map(function (s) {
+        return '<div class="ksl-slot" data-slot="' + s.key + '">' +
+                 '<div class="ksl-drop ksl-slot-drop" data-slotdrop="' + s.key + '">' +
+                   '<strong>' + s.label + '</strong>' +
+                   (s.hint ? ' <span class="ksl-opt">' + s.hint + '</span>' : '') +
+                 '</div>' +
+                 '<input type="file" accept="image/*" class="ksl-hidden" data-slotinput="' + s.key + '">' +
+                 '<div class="ksl-thumbs" data-slotthumb="' + s.key + '"></div>' +
+               '</div>';
+      }).join("") +
+      '<div class="ksl-slot" data-slot="video">' +
+        '<div class="ksl-drop ksl-slot-drop" data-slotdrop="video">' +
+          '<strong>Video</strong> <span class="ksl-opt">(optional, ~15s, one clip)</span>' +
+        '</div>' +
+        '<input type="file" accept="video/*" class="ksl-hidden" data-slotinput="video">' +
+        '<div class="ksl-thumbs" data-slotthumb="video"></div>' +
       '</div>' +
-      '<input type="file" id="ksl-photo-input" accept="image/*" capture="environment" multiple class="ksl-hidden">' +
-      '<div class="ksl-thumbs" id="ksl-photo-thumbs"></div>' +
-      '<div class="ksl-drop" id="ksl-video-drop" style="margin-top:14px">' +
-        '<strong>Add video</strong> <span class="ksl-opt">(optional, ~15s, one clip)</span>' +
-      '</div>' +
-      '<input type="file" id="ksl-video-input" accept="video/*" capture="environment" class="ksl-hidden">' +
-      '<div class="ksl-thumbs" id="ksl-video-thumbs"></div>' +
     '</div>' +
 
     '<div class="ksl-card"><h3>Details</h3>' + detailsHtml +
@@ -130,8 +150,6 @@
 
   /* element refs */
   var $ = function (id) { return document.getElementById(id); };
-  var photoInput = $("ksl-photo-input"), videoInput = $("ksl-video-input");
-  var photoThumbs = $("ksl-photo-thumbs"), videoThumbs = $("ksl-video-thumbs");
   var setChk = $("ksl-set"), setCountWrap = $("ksl-set-count-wrap"), setCount = $("ksl-set-count");
   var submitBtn = $("ksl-submit"), toast = $("ksl-toast");
 
@@ -171,7 +189,7 @@
       if (el.getAttribute("data-key") === "sku" && v === "KS-") return;
       any = true;
     });
-    if (photos.length || video) any = true;
+    if (slots.front || slots.back || slots.detail || video) any = true;
     if (setChk.checked) any = true;
     return any;
   }
@@ -181,8 +199,9 @@
     root.querySelectorAll("[data-key]").forEach(function (el) { el.value = ""; });
     if (skuEl) skuEl.value = "KS-";
     nameTouched = false;
+    root.querySelectorAll(".ksl-pill.is-active").forEach(function (b) { b.classList.remove("is-active"); });
     setChk.checked = false; setCountWrap.classList.add("ksl-hidden"); setCount.value = "";
-    photos = []; video = null; renderPhotos(); renderVideo();
+    slots = { front:null, back:null, detail:null }; video = null; renderAllSlots();
     clearErrors();
   }
 
@@ -191,6 +210,28 @@
     setCountWrap.classList.toggle("ksl-hidden", !setChk.checked);
     saveDraft();
   });
+
+  /* ---- PILL TOGGLE (washability, and any future pill field) ------------ */
+  root.addEventListener("click", function (e) {
+    var pill = (e.target && e.target.closest) ? e.target.closest(".ksl-pill") : null;
+    if (!pill || !root.contains(pill)) return;
+    var key = pill.getAttribute("data-pill");
+    var inp = root.querySelector('input[data-key="' + key + '"]');
+    if (inp) inp.value = pill.getAttribute("data-val");
+    root.querySelectorAll('.ksl-pill[data-pill="' + key + '"]').forEach(function (b) {
+      b.classList.toggle("is-active", b === pill);
+    });
+    var f = pill.closest(".ksl-field"); if (f) f.classList.remove("has-error");
+    saveDraft();
+  });
+  function reflectPills() {
+    root.querySelectorAll('.ksl-field input[type="hidden"][data-key]').forEach(function (inp) {
+      var key = inp.getAttribute("data-key"), val = inp.value;
+      root.querySelectorAll('.ksl-pill[data-pill="' + key + '"]').forEach(function (b) {
+        b.classList.toggle("is-active", !!val && b.getAttribute("data-val") === val);
+      });
+    });
+  }
 
   /* ---- TOKEN ----------------------------------------------------------- */
   function getToken() {
@@ -228,75 +269,74 @@
 
   function uid() { return Date.now() + "-" + Math.random().toString(36).slice(2, 7); }
 
-  function renderPhotos() {
-    photoThumbs.innerHTML = photos.map(function (p, i) {
-      var primary = (i === firstDonePhotoIndex());
-      var state = p.status === "uploading" ? '<div class="ksl-state">Uploading…</div>'
-                : p.status === "error" ? '<div class="ksl-state">Failed — tap ✕</div>' : '';
-      var badge = primary ? '<span class="ksl-badge">PRIMARY</span>' : '';
-      var mkBtn = (p.status === "done" && !primary)
-        ? '<button class="ksl-mk-primary" data-mkprimary="' + p.id + '">Make primary</button>' : '';
-      return '<div class="ksl-thumb' + (primary ? ' is-primary' : '') +
-             (p.status === "error" ? ' is-error' : '') + '">' +
-               '<img src="' + p.objUrl + '" alt="">' + badge + state + mkBtn +
-               '<button class="ksl-rm" data-rm="' + p.id + '" aria-label="remove">×</button>' +
-             '</div>';
-    }).join("");
-  }
-  function firstDonePhotoIndex() {
-    for (var i = 0; i < photos.length; i++) if (photos[i].status === "done") return i;
-    return -1;
-  }
-  function renderVideo() {
-    if (!video) { videoThumbs.innerHTML = ""; return; }
-    var state = video.status === "uploading" ? '<div class="ksl-state">Uploading…</div>'
-              : video.status === "error" ? '<div class="ksl-state">Failed — tap ✕</div>' : '';
-    videoThumbs.innerHTML =
-      '<div class="ksl-thumb' + (video.status === "error" ? ' is-error' : '') + '">' +
-        '<video src="' + video.objUrl + '#t=0.1" muted playsinline preload="metadata"></video>' + state +
-        '<button class="ksl-rm" data-rmvideo="1" aria-label="remove">×</button>' +
+  function slotRec(key) { return key === "video" ? video : slots[key]; }
+  function renderSlot(key) {
+    var thumb = root.querySelector('[data-slotthumb="' + key + '"]');
+    if (!thumb) return;
+    var rec = slotRec(key);
+    if (!rec) { thumb.innerHTML = ""; return; }
+    var state = rec.status === "uploading" ? '<div class="ksl-state">Uploading…</div>'
+              : rec.status === "error" ? '<div class="ksl-state">Failed — tap ✕</div>' : '';
+    var media = (key === "video")
+      ? '<video src="' + rec.objUrl + '#t=0.1" muted playsinline preload="metadata"></video>'
+      : '<img src="' + rec.objUrl + '" alt="">';
+    var isPrimary = (key === "front" && rec.status === "done");
+    var badge = isPrimary ? '<span class="ksl-badge">PRIMARY</span>' : '';
+    thumb.innerHTML =
+      '<div class="ksl-thumb' + (isPrimary ? ' is-primary' : '') +
+        (rec.status === "error" ? ' is-error' : '') + '">' +
+        media + badge + state +
+        '<button class="ksl-rm" data-rmslot="' + key + '" aria-label="remove">×</button>' +
       '</div>';
   }
+  function renderAllSlots() {
+    PHOTO_SLOTS.forEach(function (s) { renderSlot(s.key); });
+    renderSlot("video");
+  }
 
-  photoInput.addEventListener("change", function () {
-    Array.prototype.forEach.call(photoInput.files, function (file) {
-      if (PHOTO_TYPES.indexOf(file.type) === -1) { showToast("Unsupported image type: " + file.type, true); return; }
-      if (file.size > MAX_BYTES) { showToast(file.name + " is over 25MB", true); return; }
-      var rec = { id: uid(), url: null, status: "uploading", name: file.name, objUrl: URL.createObjectURL(file) };
-      photos.push(rec); renderPhotos();
-      uploadFile(file, "photo")
-        .then(function (url) { rec.url = url; rec.status = "done"; renderPhotos(); saveDraft(); })
-        .catch(function (e) { rec.status = "error"; renderPhotos(); console.error("[upload photo]", e); });
-    });
-    photoInput.value = "";
-  });
-
-  videoInput.addEventListener("change", function () {
-    var file = videoInput.files[0]; videoInput.value = "";
-    if (!file) return;
-    if (VIDEO_TYPES.indexOf(file.type) === -1) { showToast("Unsupported video type: " + file.type, true); return; }
-    if (file.size > MAX_BYTES) { showToast("Video is over 25MB", true); return; }
-    video = { id: uid(), url: null, status: "uploading", name: file.name, objUrl: URL.createObjectURL(file) };
-    renderVideo();
-    uploadFile(file, "video")
-      .then(function (url) { video.url = url; video.status = "done"; renderVideo(); saveDraft(); })
-      .catch(function (e) { if (video) { video.status = "error"; renderVideo(); } console.error("[upload video]", e); });
-  });
-
-  $("ksl-photo-drop").addEventListener("click", function () { photoInput.click(); });
-  $("ksl-video-drop").addEventListener("click", function () { videoInput.click(); });
-
-  photoThumbs.addEventListener("click", function (e) {
-    var rm = e.target.getAttribute("data-rm");
-    var mk = e.target.getAttribute("data-mkprimary");
-    if (rm) { photos = photos.filter(function (p) { return p.id !== rm; }); renderPhotos(); saveDraft(); }
-    else if (mk) {
-      var idx = photos.findIndex(function (p) { return p.id === mk; });
-      if (idx > 0) { var x = photos.splice(idx, 1)[0]; photos.unshift(x); renderPhotos(); saveDraft(); }
+  function handleSlotFile(key, file) {
+    if (key === "video") {
+      if (VIDEO_TYPES.indexOf(file.type) === -1) { showToast("Unsupported video type: " + file.type, true); return; }
+      if (file.size > MAX_BYTES) { showToast("Video is over 25MB", true); return; }
+      video = { id: uid(), url: null, status: "uploading", name: file.name, objUrl: URL.createObjectURL(file) };
+      renderSlot("video");
+      uploadFile(file, "video")
+        .then(function (url) { if (video) { video.url = url; video.status = "done"; renderSlot("video"); saveDraft(); } })
+        .catch(function (e) { if (video) { video.status = "error"; renderSlot("video"); } console.error("[upload video]", e); });
+      return;
     }
+    if (PHOTO_TYPES.indexOf(file.type) === -1) { showToast("Unsupported image type: " + file.type, true); return; }
+    if (file.size > MAX_BYTES) { showToast(file.name + " is over 25MB", true); return; }
+    var rec = { id: uid(), url: null, status: "uploading", name: file.name, objUrl: URL.createObjectURL(file) };
+    slots[key] = rec; renderSlot(key);
+    uploadFile(file, "photo")
+      .then(function (url) { if (slots[key] === rec) { rec.url = url; rec.status = "done"; renderSlot(key); saveDraft(); } })
+      .catch(function (e) { if (slots[key] === rec) { rec.status = "error"; renderSlot(key); } console.error("[upload photo]", e); });
+  }
+
+  /* wire each slot's hidden file input */
+  root.querySelectorAll("[data-slotinput]").forEach(function (inp) {
+    inp.addEventListener("change", function () {
+      var key = inp.getAttribute("data-slotinput");
+      var file = inp.files && inp.files[0];
+      inp.value = "";
+      if (file) handleSlotFile(key, file);
+    });
   });
-  videoThumbs.addEventListener("click", function (e) {
-    if (e.target.getAttribute("data-rmvideo")) { video = null; renderVideo(); saveDraft(); }
+
+  /* delegated: tap a slot to open its picker; tap × to clear it */
+  root.addEventListener("click", function (e) {
+    var drop = (e.target && e.target.closest) ? e.target.closest("[data-slotdrop]") : null;
+    if (drop) {
+      var inp = root.querySelector('[data-slotinput="' + drop.getAttribute("data-slotdrop") + '"]');
+      if (inp) inp.click();
+      return;
+    }
+    var rm = (e.target && e.target.getAttribute) ? e.target.getAttribute("data-rmslot") : null;
+    if (rm) {
+      if (rm === "video") video = null; else slots[rm] = null;
+      renderSlot(rm); saveDraft();
+    }
   });
 
   /* ---- DRAFT PERSISTENCE (sessionStorage) ------------------------------ */
@@ -319,7 +359,11 @@
         fields: collectFields(),
         set: setChk.checked,
         setCount: setCount.value,
-        photoUrls: photos.filter(function (p) { return p.status === "done"; }).map(function (p) { return p.url; }),
+        photoSlots: {
+          front:  (slots.front  && slots.front.status  === "done") ? slots.front.url  : null,
+          back:   (slots.back   && slots.back.status   === "done") ? slots.back.url   : null,
+          detail: (slots.detail && slots.detail.status === "done") ? slots.detail.url : null
+        },
         videoUrl: (video && video.status === "done") ? video.url : null
       };
       sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
@@ -330,7 +374,9 @@
       var d = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || "null");
       if (!d) return false;
       var anyText = Object.keys(d.fields || {}).some(function (k) { return d.fields[k]; });
-      return anyText || (d.photoUrls && d.photoUrls.length);
+      var ps = d.photoSlots || {};
+      var anyPhoto = ps.front || ps.back || ps.detail;
+      return anyText || !!anyPhoto || !!d.videoUrl;
     } catch (e) { return false; }
   }
   function restoreDraft() {
@@ -348,11 +394,12 @@
       });
       setChk.checked = !!d.set; setCountWrap.classList.toggle("ksl-hidden", !d.set);
       setCount.value = d.setCount || "";
-      (d.photoUrls || []).forEach(function (url) {
-        photos.push({ id: uid(), url: url, status: "done", name: "restored", objUrl: url });
+      var ps = d.photoSlots || {};
+      ["front", "back", "detail"].forEach(function (k) {
+        if (ps[k]) slots[k] = { id: uid(), url: ps[k], status: "done", name: "restored", objUrl: ps[k] };
       });
       if (d.videoUrl) video = { id: uid(), url: d.videoUrl, status: "done", name: "restored", objUrl: d.videoUrl };
-      renderPhotos(); renderVideo();
+      renderAllSlots(); reflectPills();
     } catch (e) {}
   }
   root.addEventListener("input", saveDraft);
@@ -377,7 +424,7 @@
       if (!v) { bad.push(f.key); markError(f.key); }
       if (f.type === "number" && v && isNaN(Number(v))) { bad.push(f.key); markError(f.key); }
     });
-    if (setChk.checked) {
+    if (itemType === "clothing" && setChk.checked) {
       var n = parseInt(setCount.value, 10);
       if (!(n >= 2)) { bad.push("__set"); root.querySelector('[data-field="__set"]').classList.add("has-error"); }
     }
@@ -394,21 +441,33 @@
       if (v === "") return;
       p[f.key] = (f.type === "number") ? Number(v) : v;
     });
-    var donePhotos = photos.filter(function (x) { return x.status === "done"; }).map(function (x) { return x.url; });
+    var donePhotos = ["front", "back", "detail"]
+      .map(function (k) { return slots[k]; })
+      .filter(function (r) { return r && r.status === "done"; })
+      .map(function (r) { return r.url; });
     if (donePhotos.length) p.photo_urls = donePhotos;
     if (video && video.status === "done") p.video_url = video.url;
-    if (setChk.checked) { p.is_matching_set = true; p.set_piece_count = parseInt(setCount.value, 10); }
+    if (itemType === "clothing" && setChk.checked) { p.is_matching_set = true; p.set_piece_count = parseInt(setCount.value, 10); }
     return p;
   }
 
   function anyUploading() {
-    return photos.some(function (p) { return p.status === "uploading"; }) ||
-           (video && video.status === "uploading");
+    var up = PHOTO_SLOTS.some(function (s) { return slots[s.key] && slots[s.key].status === "uploading"; });
+    return up || (video && video.status === "uploading");
   }
 
   submitBtn.addEventListener("click", function () {
     var bad = validate();
     if (bad.length) { showToast("Check the highlighted fields", true); return; }
+    var nmEl = root.querySelector('[data-key="item_name"]');
+    var brEl = root.querySelector('[data-key="brand"]');
+    var nm = nmEl ? nmEl.value : "", br = brEl ? brEl.value : "";
+    var normNB = function (s) { return (s || "").toLowerCase().replace(/\s+/g, ""); };
+    if (nm && br && normNB(nm) === normNB(br)) {
+      markError("item_name");
+      showToast("Item name needs to be more specific than the brand", true);
+      return;
+    }
     if (anyUploading()) { showToast("Wait for photos to finish uploading", true); return; }
 
     submitBtn.disabled = true; submitBtn.textContent = "Listing…";
@@ -442,12 +501,7 @@
   });
 
   function resetForm() {
-    root.querySelectorAll("[data-key]").forEach(function (el) { el.value = ""; });
-    if (skuEl) skuEl.value = "KS-";
-    nameTouched = false;
-    setChk.checked = false; setCountWrap.classList.add("ksl-hidden"); setCount.value = "";
-    photos = []; video = null; renderPhotos(); renderVideo();
-    clearErrors();
+    clearItem();
     try { sessionStorage.removeItem(DRAFT_KEY); } catch (e) {}
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -482,6 +536,9 @@
     var brand = (root.querySelector('[data-key="brand"]') || {}).value || "";
     var cat   = (root.querySelector('[data-key="category"]') || {}).value || "";
     var color = (root.querySelector('[data-key="color"]') || {}).value || "";
+    // Never auto-fill a name that's just the brand — require Color or Category
+    // (clothing-only), so toys are left blank for a real, specific name.
+    if (!color.trim() && !cat.trim()) return;
     // Format: Color Brand Category (no parentheses)
     var parts = [color.trim(), brand.trim(), cat.trim()].filter(Boolean).map(titleCase);
     nameEl.value = parts.join(" ");
