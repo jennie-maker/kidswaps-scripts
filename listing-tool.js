@@ -352,7 +352,7 @@
     });
   });
 
-  /* delegated: tap a slot to open its picker; tap × to clear it */
+  /* delegated: tap an empty slot to add; tap a filled slot to replace; × clears */
   root.addEventListener("click", function (e) {
     var drop = (e.target && e.target.closest) ? e.target.closest("[data-slotdrop]") : null;
     if (drop) {
@@ -364,6 +364,13 @@
     if (rm) {
       if (rm === "video") video = null; else slots[rm] = null;
       renderSlot(rm); saveDraft();
+      return;
+    }
+    /* tap a filled slot's image to retake/replace it */
+    var th = (e.target && e.target.closest) ? e.target.closest("[data-slotthumb]") : null;
+    if (th) {
+      var inp2 = root.querySelector('[data-slotinput="' + th.getAttribute("data-slotthumb") + '"]');
+      if (inp2) inp2.click();
     }
   });
 
