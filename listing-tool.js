@@ -16,13 +16,13 @@
   var SCHEMA = [
     { key:"sku",            label:"SKU",            type:"text",   group:"both", required:true,  placeholder:"KS-00000", hint:"the KS label number on the item" },
     { key:"brand",          label:"Brand",          type:"text",   group:"both", required:true,  placeholder:"e.g. Patagonia" },
-    { key:"toy_age_range",  label:"Age range",      type:"text",   group:"toy", required:true, placeholder:"e.g. 0-2, 3-5" },
+    { key:"item_name",      label:"Item name",      type:"text",   group:"both", required:true,  placeholder:"auto-fills from brand + category" },
+    { key:"toy_age_range",  label:"Age range",      type:"select", group:"toy", required:true, options:["0-6 months","6-12 months","12-18 months","18-24 months","2-3 years","3-4 years","4-5 years","5+ years"] },
     { key:"toy_washability",label:"Washability",    type:"pills",  group:"toy", required:true,  options:["wipeable","washable"] },
     { key:"color",          label:"Color",          type:"text",   group:"clothing", required:false },
     { key:"category",       label:"Category",       type:"text",   group:"clothing", required:true, placeholder:"e.g. Dresses, Pants" },
     { key:"clothing_size",  label:"Size",           type:"text",   group:"clothing", required:true, placeholder:"e.g. 4T, 6, 10" },
     { key:"gender_style",   label:"Gender",         type:"select", group:"clothing", required:false, options:[{value:"boy",label:"Male"},{value:"girl",label:"Female"}] },
-    { key:"item_name",      label:"Item name",      type:"text",     group:"both", required:true,  placeholder:"auto-fills from brand + category" },
     { key:"tier",           label:"Tier",           type:"select", group:"both", required:true,  options:["essentials","elevated","special"] },
     { key:"retail_value",   label:"Retail value",   type:"number", group:"both", required:true,  placeholder:"e.g. 48", step:"0.01", min:"0" },
     { key:"bin_location",   label:"Bin location",   type:"text",     group:"both", required:true,  placeholder:"where it's stored" },
@@ -104,7 +104,7 @@
      Color/Category/Size/Gender group (clothing) or Age/Washability (toy),
      instead of buried at the bottom of the form. */
   var detailsHtml = SCHEMA.map(function (f) {
-    return (f.key === "item_name" ? setHtml : "") + fieldHtml(f);
+    return (f.key === "tier" ? setHtml : "") + fieldHtml(f);
   }).join("");
 
   root.innerHTML =
@@ -136,7 +136,7 @@
         }).join("") +
         '<div class="ksl-slot" data-slot="video">' +
           '<div class="ksl-drop ksl-slot-drop" data-slotdrop="video">' +
-            '<strong>Video</strong> <span class="ksl-opt">(optional, ~15s)</span>' +
+            '<strong>Video</strong> <span class="ksl-opt">≤25 MB · ~15s</span>' +
           '</div>' +
           '<input type="file" accept="video/*" class="ksl-hidden" data-slotinput="video">' +
           '<div class="ksl-thumbs" data-slotthumb="video"></div>' +
@@ -148,12 +148,24 @@
     '</div>' +
 
     '<button type="button" class="ksl-submit" id="ksl-submit">List item</button>' +
-    '<div class="ksl-toast" id="ksl-toast"></div>';
+    '<div class="ksl-toast" id="ksl-toast"></div>' +
+    '<div class="ksl-review ksl-hidden" id="ksl-review">' +
+      '<div class="ksl-review-panel">' +
+        '<h3 class="ksl-review-title">Review listing</h3>' +
+        '<div class="ksl-review-body" id="ksl-review-body"></div>' +
+        '<div class="ksl-review-actions">' +
+          '<button type="button" class="ksl-review-back" id="ksl-review-back">Back</button>' +
+          '<button type="button" class="ksl-submit ksl-review-confirm" id="ksl-review-confirm">Confirm &amp; list</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
 
   /* element refs */
   var $ = function (id) { return document.getElementById(id); };
   var setChk = $("ksl-set"), setCountWrap = $("ksl-set-count-wrap"), setCount = $("ksl-set-count");
   var submitBtn = $("ksl-submit"), toast = $("ksl-toast");
+  var reviewEl = $("ksl-review"), reviewBody = $("ksl-review-body");
+  var reviewBack = $("ksl-review-back"), reviewConfirm = $("ksl-review-confirm");
 
   /* ---- ITEM TYPE TOGGLE ------------------------------------------------ */
   function applyType() {
@@ -170,6 +182,16 @@
     if (nmPh) nmPh.placeholder = (itemType === "toy")
       ? "e.g. Lovevery Play Gym"
       : "auto-fills from brand + category";
+    // toy: item name sits right under Brand; clothing: after the size/gender group
+    var nameField = root.querySelector('.ksl-field[data-field="item_name"]');
+    if (nameField) {
+      var anchor = (itemType === "toy")
+        ? root.querySelector('.ksl-field[data-field="brand"]')
+        : root.querySelector('.ksl-field[data-field="gender_style"]');
+      if (anchor && anchor.nextSibling !== nameField) {
+        anchor.parentNode.insertBefore(nameField, anchor.nextSibling);
+      }
+    }
   }
   root.querySelectorAll(".ksl-toggle button").forEach(function (b) {
     b.addEventListener("click", function () {
@@ -462,6 +484,28 @@
     return up || (video && video.status === "uploading");
   }
 
+  function reviewRow(label, value) {
+    return '<div class="ksl-review-row"><span class="ksl-review-k">' + label +
+           '</span><span class="ksl-review-v">' + value + '</span></div>';
+  }
+  function showReview() {
+    var rows = reviewRow("Type", itemType === "toy" ? "Toy" : "Clothing");
+    SCHEMA.forEach(function (f) {
+      if (!(f.group === "both" || f.group === itemType)) return;
+      var el = root.querySelector('[data-key="' + f.key + '"]');
+      if (!el) return;
+      var v = (el.value || "").trim();
+      if (!v) return;
+      if (f.key === "gender_style") v = (v === "boy") ? "Male" : (v === "girl") ? "Female" : v;
+      rows += reviewRow(f.label, v);
+    });
+    if (itemType === "clothing" && setChk.checked) rows += reviewRow("Matching set", setCount.value + " pieces");
+    var pc = ["front", "back", "detail"].filter(function (k) { return slots[k] && slots[k].status === "done"; }).length;
+    rows += reviewRow("Media", pc + (pc === 1 ? " photo" : " photos") + (video && video.status === "done" ? " + video" : ""));
+    reviewBody.innerHTML = rows;
+    reviewEl.classList.remove("ksl-hidden");
+  }
+
   submitBtn.addEventListener("click", function () {
     var bad = validate();
     if (bad.length) { showToast("Check the highlighted fields", true); return; }
@@ -475,8 +519,13 @@
       return;
     }
     if (anyUploading()) { showToast("Wait for photos to finish uploading", true); return; }
+    showReview();
+  });
 
-    submitBtn.disabled = true; submitBtn.textContent = "Listing…";
+  reviewBack.addEventListener("click", function () { reviewEl.classList.add("ksl-hidden"); });
+
+  reviewConfirm.addEventListener("click", function () {
+    reviewConfirm.disabled = true; reviewConfirm.textContent = "Listing…";
     getToken().then(function (t) {
       return fetch(FN_LIST, {
         method: "POST",
@@ -489,6 +538,7 @@
     }).then(function (r) {
       return r.json().then(function (j) { return { ok: r.ok, status: r.status, j: j }; });
     }).then(function (res) {
+      reviewEl.classList.add("ksl-hidden");
       if (res.ok && res.j.ok) {
         var sku = res.j.item && res.j.item.sku ? res.j.item.sku : "";
         showToast("Listed " + sku + " ✓");
@@ -500,9 +550,10 @@
         console.error("[list]", res);
       }
     }).catch(function (e) {
+      reviewEl.classList.add("ksl-hidden");
       showToast("Network error — see console", true); console.error("[list]", e);
     }).finally(function () {
-      submitBtn.disabled = false; submitBtn.textContent = "List item";
+      reviewConfirm.disabled = false; reviewConfirm.textContent = "Confirm & list";
     });
   });
 
