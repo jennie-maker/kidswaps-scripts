@@ -592,9 +592,34 @@
   if (nameEl) {
     nameEl.addEventListener("input", function () { nameTouched = true; });
   }
-  function titleCase(s) {
+function titleCase(s) {
     return s.replace(/\w\S*/g, function (w) { return w.charAt(0).toUpperCase() + w.slice(1); });
   }
+
+  var CATEGORY_DISPLAY = {
+    "Accessories": "Accessory",
+    "Coats and Jackets": "Jacket",
+    "Costumes": "Costume",
+    "Dresses": "Dress",
+    "Formal Event": "Formal outfit",
+    "Joggers & Sweats": "Sweats",
+    "One pieces": "One-piece",
+    "Outfits and sets": "Outfit",
+    "Polos": "Polo",
+    "Rompers & Jumpsuits": "Romper/jumpsuit",
+    "Shirts & Tops": "Shirt",
+    "Skirts & Skorts": "Skirt",
+    "Sleepers & Pajamas": "Pajamas",
+    "Sports Teams": "Sports team item",
+    "Sweaters and hoodies": "Sweater",
+    "Swimsuits": "Swimsuit",
+    "Vests": "Vest"
+  };
+  function friendlyCategory(c) {
+    var k = (c || "").trim();
+    return CATEGORY_DISPLAY[k] || k;
+  }
+
   function autoName() {
     if (!nameEl || nameTouched) return;
     var brand = (root.querySelector('[data-key="brand"]') || {}).value || "";
@@ -603,8 +628,7 @@
     // Never auto-fill a name that's just the brand — require Color or Category
     // (clothing-only), so toys are left blank for a real, specific name.
     if (!color.trim() && !cat.trim()) return;
-    // Format: Color Brand Category (no parentheses)
-    var parts = [color.trim(), brand.trim(), cat.trim()].filter(Boolean).map(titleCase);
+    var parts = [titleCase(color.trim()), titleCase(brand.trim()), friendlyCategory(cat)].filter(Boolean);
     nameEl.value = parts.join(" ");
   }
   ["brand", "category", "color"].forEach(function (k) {
