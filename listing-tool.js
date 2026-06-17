@@ -29,6 +29,7 @@
     { key:"condition_grade",label:"Condition grade",type:"text",     group:"both", required:false, placeholder:"e.g. EUC, like-new" },
     { key:"season",         label:"Season",         type:"text",     group:"clothing", required:false, placeholder:"e.g. winter, all-season" },
     { key:"description",    label:"Description",    type:"textarea", group:"both", required:false },
+    { key:"condition_notes",label:"Personal note",  type:"textarea", group:"both", required:false, placeholder:"e.g. really soft fabric, runs a little big" },
   ];
 
   /* upload validation mirrors inventory-upload */
