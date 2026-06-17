@@ -6,6 +6,7 @@
   var BASE = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1";
   var FN_LIST   = BASE + "/inventory-list";
   var FN_UPLOAD = BASE + "/inventory-upload";
+  var FN_LOOKUP = BASE + "/intake-lookup";
   var DRAFT_KEY = "ks_listing_draft_v1";
 
   /* ---- FIELD SCHEMA  (single source of truth) -------------------------- */
@@ -228,6 +229,8 @@
     root.querySelectorAll("[data-key]").forEach(function (el) { el.value = ""; });
     if (skuEl) skuEl.value = "KS-";
     nameTouched = false;
+    lastLookup = null;
+    setAgeHint("");
     root.querySelectorAll(".ksl-pill.is-active").forEach(function (b) { b.classList.remove("is-active"); });
     setChk.checked = false; setCountWrap.classList.add("ksl-hidden"); setCount.value = "";
     slots = { front:null, back:null, detail:null }; video = null; renderAllSlots();
@@ -584,6 +587,120 @@
   /* ---- SKU PREFILL ----------------------------------------------------- */
   var skuEl = root.querySelector('[data-key="sku"]');
   if (skuEl && !skuEl.value) skuEl.value = "KS-";
+
+  /* ---- SKU AUTO-POPULATE FROM GRADING ---------------------------------- */
+  /* On blur: normalize the typed label to KS-NNNNN, look up the accepted
+     grading record via the operator-gated intake-lookup edge function, and
+     pre-fill the carry-forward fields. Toy age is shown as a hint, never
+     auto-filled (grading stores a wide string the SELECT can't match). */
+  var lastLookup = null;            // guards against re-firing on unchanged label
+  var lookupInFlight = false;
+
+  // ageHint sits under the toy Age-range field; created lazily.
+  function ageHintEl() {
+    var fld = root.querySelector('.ksl-field[data-field="toy_age_range"]');
+    if (!fld) return null;
+    var el = fld.querySelector(".ksl-age-hint");
+    if (!el) {
+      el = document.createElement("div");
+      el.className = "ksl-age-hint";
+      el.style.cssText = "margin-top:6px;font-size:.85em;opacity:.75;";
+      fld.appendChild(el);
+    }
+    return el;
+  }
+  function setAgeHint(text) {
+    var el = ageHintEl();
+    if (!el) return;
+    el.textContent = text || "";
+    el.style.display = text ? "" : "none";
+  }
+
+  // Normalize "4", "ks-45", "KS-00045" -> "KS-00045". Returns null if no digits.
+  function normalizeLabel(raw) {
+    var digits = (raw || "").replace(/\D/g, "");
+    if (!digits) return null;
+    if (digits.length > 5) digits = digits.slice(-5);  // guard: never exceed 5
+    return "KS-" + digits.padStart(5, "0");
+  }
+
+  // write a field value and fire 'input' so autoName + saveDraft react
+  function setField(key, value) {
+    var el = root.querySelector('[data-key="' + key + '"]');
+    if (!el) return;
+    el.value = (value === null || value === undefined) ? "" : String(value);
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
+  function applyRecord(rec) {
+    // 1. item type FIRST, then applyType(), so the correct group is visible
+    //    before we write the size field (clothing_size vs toy_age_range).
+    var t = (rec.item_type === "toy") ? "toy" : "clothing";
+    if (t !== itemType) { itemType = t; applyType(); }
+
+    // 2. carry-forward fields (overwrite; the label is the source of truth)
+    setField("brand", rec.brand);
+    setField("tier", rec.tier);
+    if (rec.retail_value !== null && rec.retail_value !== undefined) {
+      setField("retail_value", rec.retail_value);
+    }
+
+    if (itemType === "clothing") {
+      setAgeHint("");
+      if (rec.category !== null && rec.category !== undefined) setField("category", rec.category);
+      if (rec.size !== null && rec.size !== undefined) setField("clothing_size", rec.size);
+    } else {
+      // toy: brand/tier/retail filled above; age is manual + hint only
+      if (rec.size) setAgeHint("Graded as: " + rec.size + " — pick the closest match");
+      else setAgeHint("");
+    }
+  }
+
+  function runLookup() {
+    if (!skuEl) return;
+    var norm = normalizeLabel(skuEl.value);
+    if (!norm) return;                       // empty / no digits -> no lookup
+    // reflect the normalized value back into the field
+    if (skuEl.value !== norm) {
+      skuEl.value = norm;
+      skuEl.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    if (norm === lastLookup || lookupInFlight) return;  // already looked this up
+    lastLookup = norm;
+    lookupInFlight = true;
+    getToken().then(function (t) {
+      return fetch(FN_LOOKUP, {
+        method: "POST",
+        headers: {
+          "x-ms-token": t, "content-type": "application/json",
+          "apikey": ANON, "authorization": "Bearer " + ANON
+        },
+        body: JSON.stringify({ label: norm })
+      });
+    }).then(function (r) {
+      return r.json().then(function (j) { return { ok: r.ok, j: j }; });
+    }).then(function (res) {
+      if (res.ok && res.j.ok && res.j.found && res.j.record) {
+        applyRecord(res.j.record);
+        showToast("Loaded graded record for " + norm + " ✓");
+      } else if (res.ok && res.j.ok && res.j.found === false) {
+        showToast("No graded record found — enter manually");
+      } else {
+        // auth / unexpected error: allow a retry of the same label
+        lastLookup = null;
+        showToast("Lookup failed — enter manually", true);
+        console.error("[lookup]", res);
+      }
+    }).catch(function (e) {
+      lastLookup = null;
+      showToast("Lookup error — enter manually", true);
+      console.error("[lookup]", e);
+    }).finally(function () {
+      lookupInFlight = false;
+    });
+  }
+
+  if (skuEl) skuEl.addEventListener("blur", runLookup);
 
   /* ---- ITEM-NAME AUTO-GENERATE ----------------------------------------- */
   /* Builds "Color Brand Category" from those fields, but STOPS once the
