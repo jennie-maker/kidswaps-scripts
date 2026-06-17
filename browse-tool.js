@@ -559,6 +559,17 @@
       });
   }
 
+  /* ---- filter rail (V3.2) ------------------------------------------------- */
+  // Show only the filter container that matches this page's type.
+  // Static Webflow markup, so this runs once at init (no fetch dependency).
+  // 'all' (/browse) → both hidden; shared Tier/Brand rail is built later.
+  function scopeRail() {
+    var cloth = document.querySelector('.filter-bar-container-clothing');
+    var toy   = document.querySelector('.filter-bar-container-toys');
+    if (cloth) cloth.style.display = (BROWSE_TYPE === 'clothing') ? '' : 'none';
+    if (toy)   toy.style.display   = (BROWSE_TYPE === 'toy')      ? '' : 'none';
+  }
+
   /* ---- init --------------------------------------------------------------- */
   function init() {
     var mount = document.getElementById(MOUNT_ID);
@@ -579,6 +590,9 @@
       console.warn(LOG, 'unrecognized data-type "' + t + '" \u2014 defaulting to all.');
       BROWSE_TYPE = 'all';
     }
+
+    // scope the filter rail to this page's type (static markup; no fetch needed)
+    scopeRail();
 
     // initial load; if the URL already has ?sku=, open the overlay once data lands
     var initialSku = new URLSearchParams(location.search).get('sku');
