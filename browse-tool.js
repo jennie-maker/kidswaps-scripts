@@ -245,6 +245,7 @@
     if (BROWSE_TYPE !== 'all') {
       view = view.filter(function (it) { return it.item_type === BROWSE_TYPE; });
     }
+    view = applyFacets(view);   // active Tier/Brand selections (V3.2 rail)
     view = sortItems(view);
     CURRENT = view;
 
@@ -559,15 +560,205 @@
       });
   }
 
-  /* ---- filter rail (V3.2) ------------------------------------------------- */
-  // Show only the filter container that matches this page's type.
-  // Static Webflow markup, so this runs once at init (no fetch dependency).
-  // 'all' (/browse) → both hidden; shared Tier/Brand rail is built later.
-  function scopeRail() {
-    var cloth = document.querySelector('.filter-bar-container-clothing');
-    var toy   = document.querySelector('.filter-bar-container-toys');
-    if (cloth) cloth.style.display = (BROWSE_TYPE === 'clothing') ? '' : 'none';
-    if (toy)   toy.style.display   = (BROWSE_TYPE === 'toy')      ? '' : 'none';
+  /* ---- filter rail (V3.2) ================================================= */
+  // JS owns the rail: render groups from distinct in-stock values, multi-select
+  // checkboxes, grid updates live (client-side on the fetched set), state synced
+  // to URL params. SHARED RAIL = Tier + Brand on all three pages (incremental;
+  // type-specific groups layer on per page later). Mount = #ks-filter-rail.
+  var RAIL_MOUNT_ID = 'ks-filter-rail';
+  var RAIL_BUILT    = false;
+  var FILTERS       = { tier: [], brand: [] };   // active selections (multi)
+  var CHEV_SVG = '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" ' +
+                 'stroke="currentColor" stroke-width="1.6"><path d="M4 6l4 4 4-4"/></svg>';
+
+  // the page's items after the type filter, before facet filters (rail options
+  // come from here so options don't vanish as you select)
+  function typeScoped() {
+    if (BROWSE_TYPE === 'all') return ALL.slice();
+    return ALL.filter(function (it) { return it.item_type === BROWSE_TYPE; });
+  }
+
+  // apply the active facet selections to a list (called inside render())
+  function applyFacets(list) {
+    return list.filter(function (it) {
+      if (FILTERS.tier.length &&
+          FILTERS.tier.indexOf(String(it.tier || '').toLowerCase()) === -1) return false;
+      if (FILTERS.brand.length &&
+          FILTERS.brand.indexOf(it.brand || '') === -1) return false;
+      return true;
+    });
+  }
+
+  function tierOptions() {
+    var present = {};
+    typeScoped().forEach(function (it) {
+      if (it.tier) present[String(it.tier).toLowerCase()] = true;
+    });
+    return ['essentials', 'elevated', 'special']      // canonical order
+      .filter(function (t) { return present[t]; })
+      .map(function (t) { return { value: t, label: tierLabel(t) }; });
+  }
+
+  function brandOptions() {
+    var seen = {};
+    typeScoped().forEach(function (it) { if (it.brand) seen[it.brand] = true; });
+    return Object.keys(seen)
+      .sort(function (a, b) { return a.toLowerCase() < b.toLowerCase() ? -1 : 1; })
+      .map(function (b) { return { value: b, label: b }; });
+  }
+
+  function buildGroup(rail, field, title, options, collapsible) {
+    if (!options.length) return;
+    var grp  = el('div', 'ks-flt-group');
+    var lbl  = el('div', 'ks-flt-grouplabel');
+    lbl.appendChild(el('span', null, title));
+    if (collapsible) {
+      var chev = el('span', 'ks-flt-chev');
+      chev.innerHTML = CHEV_SVG;
+      lbl.appendChild(chev);
+      lbl.addEventListener('click', function (e) {
+        if (e.target && e.target.tagName === 'INPUT') return;
+        grp.classList.toggle('ks-flt-collapsed');
+      });
+    }
+    grp.appendChild(lbl);
+
+    var body = el('div', 'ks-flt-groupbody');
+    options.forEach(function (opt, i) {
+      var row   = el('label', 'ks-flt-row');
+      var input = document.createElement('input');
+      input.type      = 'checkbox';
+      input.className  = 'ks-flt-cb';
+      input.value      = opt.value;
+      input.setAttribute('data-facet', field);
+      if (FILTERS[field].indexOf(opt.value) !== -1) input.checked = true;
+      input.addEventListener('change', onFacetChange);
+      row.appendChild(input);
+      row.appendChild(el('span', 'ks-flt-rowtext', opt.label));
+      if (collapsible && i >= 6) row.classList.add('ks-flt-extra');   // hidden until "show all"
+      body.appendChild(row);
+    });
+    if (collapsible && options.length > 6) {
+      var more = el('span', 'ks-flt-more', 'Show all (' + options.length + ')');
+      more.addEventListener('click', function () {
+        var open = grp.classList.toggle('ks-flt-expanded');
+        more.textContent = open ? 'Show less' : 'Show all (' + options.length + ')';
+      });
+      body.appendChild(more);
+    }
+    grp.appendChild(body);
+    rail.appendChild(grp);
+  }
+
+  function buildRail() {
+    if (RAIL_BUILT) return;
+    var rail = document.getElementById(RAIL_MOUNT_ID);
+    if (!rail) return;                       // page hasn't added the mount yet
+    rail.innerHTML = '';
+
+    var head  = el('div', 'ks-flt-head');
+    head.appendChild(el('span', 'ks-flt-title', 'Filters'));
+    var clear = el('span', 'ks-flt-clear', 'Clear all');
+    clear.addEventListener('click', clearAll);
+    head.appendChild(clear);
+    var close = el('span', 'ks-flt-close');   // mobile-only (CSS), closes the sheet
+    close.innerHTML = X_SVG;
+    close.addEventListener('click', closeRailSheet);
+    head.appendChild(close);
+    rail.appendChild(head);
+
+    buildGroup(rail, 'tier',  'Tier',  tierOptions(),  false);  // always open
+    buildGroup(rail, 'brand', 'Brand', brandOptions(), true);   // collapsible
+
+    var apply = el('button', 'ks-flt-apply', '');   // mobile-only (CSS)
+    apply.addEventListener('click', closeRailSheet);
+    rail.appendChild(apply);
+
+    RAIL_BUILT = true;
+    updateClearVisibility();
+    updateApplyLabel();
+  }
+
+  function onFacetChange(e) {
+    var cb    = e.target;
+    var facet = cb.getAttribute('data-facet');
+    var arr   = FILTERS[facet];
+    var idx   = arr.indexOf(cb.value);
+    if (cb.checked && idx === -1) arr.push(cb.value);
+    else if (!cb.checked && idx !== -1) arr.splice(idx, 1);
+    applyAndRender();
+  }
+
+  function applyAndRender() {
+    var mount = document.getElementById(MOUNT_ID);
+    if (mount) render(mount, ALL);          // render re-applies type + facets
+    writeUrl();
+    updateClearVisibility();
+    updateApplyLabel();
+  }
+
+  function clearAll() {
+    FILTERS.tier = [];
+    FILTERS.brand = [];
+    var rail = document.getElementById(RAIL_MOUNT_ID);
+    if (rail) Array.prototype.forEach.call(
+      rail.querySelectorAll('input.ks-flt-cb'),
+      function (cb) { cb.checked = false; }
+    );
+    applyAndRender();
+  }
+
+  function updateClearVisibility() {
+    var rail = document.getElementById(RAIL_MOUNT_ID);
+    if (!rail) return;
+    var clear = rail.querySelector('.ks-flt-clear');
+    if (clear) clear.style.display =
+      (FILTERS.tier.length || FILTERS.brand.length) ? '' : 'none';
+  }
+
+  function updateApplyLabel() {
+    var rail = document.getElementById(RAIL_MOUNT_ID);
+    if (!rail) return;
+    var apply = rail.querySelector('.ks-flt-apply');
+    if (!apply) return;
+    var n = applyFacets(typeScoped()).length;
+    apply.textContent = 'Show ' + n + (n === 1 ? ' item' : ' items');
+  }
+
+  // URL <-> FILTERS (e.g. ?tier=essentials,elevated&brand=Gap,Lovevery)
+  function readUrl() {
+    var p = new URLSearchParams(location.search);
+    var t = p.get('tier');
+    var b = p.get('brand');
+    FILTERS.tier  = t ? t.split(',').map(function (s) { return s.trim().toLowerCase(); }).filter(Boolean) : [];
+    FILTERS.brand = b ? b.split(',').map(function (s) { return s.trim(); }).filter(Boolean) : [];
+  }
+
+  function writeUrl() {
+    var p = new URLSearchParams(location.search);   // preserve other params (?sku=)
+    if (FILTERS.tier.length)  p.set('tier',  FILTERS.tier.join(','));  else p.delete('tier');
+    if (FILTERS.brand.length) p.set('brand', FILTERS.brand.join(',')); else p.delete('brand');
+    var qs  = p.toString();
+    history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
+  }
+
+  // mobile: the existing .mobile-filter-toggle opens the rail as a bottom sheet
+  function wireMobileToggle() {
+    var toggle = document.querySelector('.mobile-filter-toggle');
+    if (toggle) toggle.addEventListener('click', openRailSheet);
+  }
+  function openRailSheet() {
+    document.body.classList.add('ks-flt-sheet-open');
+    if (!document.querySelector('.ks-flt-backdrop')) {
+      var bd = el('div', 'ks-flt-backdrop');
+      bd.addEventListener('click', closeRailSheet);
+      document.body.appendChild(bd);
+    }
+  }
+  function closeRailSheet() {
+    document.body.classList.remove('ks-flt-sheet-open');
+    var bd = document.querySelector('.ks-flt-backdrop');
+    if (bd && bd.parentNode) bd.parentNode.removeChild(bd);
   }
 
   /* ---- init --------------------------------------------------------------- */
@@ -591,12 +782,16 @@
       BROWSE_TYPE = 'all';
     }
 
-    // scope the filter rail to this page's type (static markup; no fetch needed)
-    scopeRail();
+    // seed active filters from the URL BEFORE first load so the grid respects
+    // a deep-linked filter immediately (also the pre-seed hook for future
+    // member-aware defaults like kids' sizes)
+    readUrl();
 
-    // initial load; if the URL already has ?sku=, open the overlay once data lands
+    // initial load; once data lands, build the rail from in-stock values and
+    // wire the mobile sheet toggle. if the URL has ?sku=, open that overlay.
     var initialSku = new URLSearchParams(location.search).get('sku');
     load(mount, false, function () {
+      if (!RAIL_BUILT) { buildRail(); wireMobileToggle(); }
       if (initialSku) openDetailFromUrl(initialSku);
     });
 
