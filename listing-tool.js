@@ -15,7 +15,6 @@
      equals the grading label; option values are the stored canonical values
      (so an auto-populated category/size matches an <option value> exactly). */
   var OPTION_LISTS = {};   // field -> [{value, display_label, sort_order}, ...] (sorted)
-  var REMOTE_SELECTS = ["color", "category", "clothing_size"];
 
   function loadOptionLists() {
     var url = REST + "/option_lists?active=eq.true" +
@@ -34,27 +33,51 @@
       });
   }
 
-  // Replace each remote select's "Loading…" placeholder with real options.
+  // Build a select's options from option_lists rows.
   // display-fallback rule: show display_label if present, else value.
-  // Preserve any value already on the select (defense-in-depth for restore).
-  function injectOptions() {
-    REMOTE_SELECTS.forEach(function (key) {
-      var sel = root.querySelector('select[data-key="' + key + '"]');
-      if (!sel) return;
-      var rows = OPTION_LISTS[key] || [];
-      var saved = sel.value;
-      sel.innerHTML = "";
-      var ph = document.createElement("option");
-      ph.value = ""; ph.textContent = "Select…";
-      sel.appendChild(ph);
-      rows.forEach(function (row) {
-        var opt = document.createElement("option");
-        opt.value = row.value;                       // stored canonical value
-        opt.textContent = row.display_label || row.value;
-        sel.appendChild(opt);
-      });
-      if (saved) sel.value = saved;
+  // Preserve any value already on the select (stays "" if not in the new set).
+  function fillSelect(sel, rows) {
+    var saved = sel.value;
+    sel.innerHTML = "";
+    var ph = document.createElement("option");
+    ph.value = ""; ph.textContent = "Select…";
+    sel.appendChild(ph);
+    rows.forEach(function (row) {
+      var opt = document.createElement("option");
+      opt.value = row.value;                       // stored canonical value
+      opt.textContent = row.display_label || row.value;
+      sel.appendChild(opt);
     });
+    if (saved) sel.value = saved;
+  }
+
+  // The Size field is ONE control writing to clothing_size, but its vocabulary
+  // swaps by category: Shoes -> shoe_size (22), everything else -> clothing_size
+  // (10). Storage is unchanged — shoes co-exist in inventory.clothing_size,
+  // distinguished by category='Shoes' (mirrors intake_records.size).
+  function isShoeCategory() {
+    var catSel = root.querySelector('select[data-key="category"]');
+    return !!catSel && catSel.value === "Shoes";
+  }
+  function populateSizeOptions() {
+    var sel = root.querySelector('select[data-key="clothing_size"]');
+    if (!sel) return;
+    var shoe = isShoeCategory();
+    fillSelect(sel, OPTION_LISTS[shoe ? "shoe_size" : "clothing_size"] || []);
+    // relabel for clarity; preserve the required-asterisk span (first text node only)
+    var lbl = root.querySelector('.ksl-field[data-field="clothing_size"] .ksl-label');
+    if (lbl && lbl.firstChild && lbl.firstChild.nodeType === 3) {
+      lbl.firstChild.nodeValue = shoe ? "Shoe size" : "Size";
+    }
+  }
+
+  // Fill the remote selects after the fetch resolves. Size is category-aware.
+  function injectOptions() {
+    ["color", "category"].forEach(function (key) {
+      var sel = root.querySelector('select[data-key="' + key + '"]');
+      if (sel) fillSelect(sel, OPTION_LISTS[key] || []);
+    });
+    populateSizeOptions();
   }
 
   /* ---- FIELD SCHEMA  (single source of truth) -------------------------- */
@@ -483,6 +506,14 @@
           el.selectedIndex = 0;
         }
       });
+      // category is now restored -> set the Size vocabulary, then re-apply the
+      // saved size (a shoe size only matches once shoe options are present).
+      populateSizeOptions();
+      var rsize = (d.fields || {})["clothing_size"];
+      if (rsize) {
+        var szSel = root.querySelector('select[data-key="clothing_size"]');
+        if (szSel) szSel.value = rsize;
+      }
       setChk.checked = !!d.set; setCountWrap.classList.toggle("ksl-hidden", !d.set);
       setCount.value = d.setCount || "";
       var ps = d.photoSlots || {};
@@ -494,6 +525,16 @@
     } catch (e) {}
   }
   root.addEventListener("input", saveDraft);
+
+  // Category drives the Size vocabulary. Fires on user pick AND on auto-populate
+  // (setField dispatches a bubbling 'input'), so the size source is correct
+  // before a graded shoe size is written into the field.
+  root.addEventListener("input", function (e) {
+    var t = e.target;
+    if (t && t.getAttribute && t.getAttribute("data-key") === "category") {
+      populateSizeOptions();
+    }
+  });
 
   /* ---- VALIDATION + SUBMIT --------------------------------------------- */
   function clearErrors() {
