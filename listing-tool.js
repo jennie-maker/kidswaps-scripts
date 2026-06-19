@@ -732,6 +732,40 @@
   var skuEl = root.querySelector('[data-key="sku"]');
   if (skuEl && !skuEl.value) skuEl.value = "KS-";
 
+  /* ---- SKU CARET GUARD -------------------------------------------------- */
+  /* The field is always prefixed "KS-". Keep the caret after the prefix on
+     focus/click, and stop Backspace/Left from eating into "KS-". Typing the
+     digits is all the operator should ever do; normalizeLabel still 5-pads. */
+  var SKU_PREFIX = "KS-";
+  function skuCaretToEnd() {
+    if (!skuEl) return;
+    var p = skuEl.value.length;
+    try { skuEl.setSelectionRange(p, p); } catch (e) {}
+  }
+  function skuGuardCaret() {
+    if (!skuEl) return;
+    // if the prefix got lost somehow, restore it
+    if (skuEl.value.indexOf(SKU_PREFIX) !== 0) {
+      var digits = (skuEl.value || "").replace(/\D/g, "");
+      skuEl.value = SKU_PREFIX + digits;
+    }
+    var start = skuEl.selectionStart, end = skuEl.selectionEnd;
+    // don't let the caret sit inside/left of the prefix unless selecting
+    if (start === end && start < SKU_PREFIX.length) skuCaretToEnd();
+  }
+  if (skuEl) {
+    skuEl.addEventListener("focus", skuCaretToEnd);
+    skuEl.addEventListener("click", skuGuardCaret);
+    skuEl.addEventListener("keydown", function (e) {
+      var atPrefixEdge = skuEl.selectionStart <= SKU_PREFIX.length &&
+                         skuEl.selectionStart === skuEl.selectionEnd;
+      if ((e.key === "Backspace" || e.key === "ArrowLeft") && atPrefixEdge) {
+        e.preventDefault();
+        skuCaretToEnd();
+      }
+    });
+  }
+
   /* ---- SKU AUTO-POPULATE FROM GRADING ---------------------------------- */
   /* On blur: normalize the typed label to KS-NNNNN, look up the accepted
      grading record via the operator-gated intake-lookup edge function, and
@@ -768,6 +802,32 @@
     return "KS-" + digits.padStart(5, "0");
   }
 
+  // Translate a graded toy-age string into the canonical multipills value.
+  // Three eras handled by ONE function:
+  //  - already-canonical (backfilled rows + future native grading): "Toddler",
+  //    "Toddler, Preschool" -> passed straight through.
+  //  - old-form transition rows: "1 to 3 years" -> "Toddler" via the lookup
+  //    (same mapping Phase 2 used to backfill).
+  //  - anything unrecognized -> null (caller falls back to the age hint).
+  var TOY_AGE_STAGES = ["Baby", "Toddler", "Preschool", "Big Kid"];
+  var TOY_AGE_OLD_MAP = {
+    "6 to 12 months": "Baby",
+    "1 to 3 years": "Toddler",
+    "2 to 4 years": "Toddler, Preschool"
+  };
+  function translateToyAge(raw) {
+    var s = (raw || "").trim();
+    if (!s) return null;
+    // already canonical? (one or more valid stages, comma-delimited)
+    var parts = s.split(", ").filter(Boolean);
+    if (parts.length && parts.every(function (p) { return TOY_AGE_STAGES.indexOf(p) !== -1; })) {
+      return parts.join(", ");
+    }
+    // old-form string?
+    if (TOY_AGE_OLD_MAP.hasOwnProperty(s)) return TOY_AGE_OLD_MAP[s];
+    return null;  // unrecognized -> caller uses the hint
+  }
+
   // write a field value and fire 'input' so autoName + saveDraft react
   function setField(key, value) {
     var el = root.querySelector('[data-key="' + key + '"]');
@@ -794,9 +854,22 @@
       if (rec.category !== null && rec.category !== undefined) setField("category", rec.category);
       if (rec.size !== null && rec.size !== undefined) setField("clothing_size", rec.size);
     } else {
-      // toy: brand/tier/retail filled above; age is manual + hint only
-      if (rec.size) setAgeHint("Graded as: " + rec.size + " — pick the closest match");
-      else setAgeHint("");
+      // toy: brand/tier/retail filled above. Try to auto-fill the age pills
+      // from the graded string; if it doesn't translate, keep the hint.
+      var canon = translateToyAge(rec.size);
+      if (canon) {
+        var ageInp = root.querySelector('input[data-key="toy_age_range"]');
+        if (ageInp) {
+          ageInp.value = canon;
+          ageInp.dispatchEvent(new Event("input", { bubbles: true })); // autoName/saveDraft react
+          reflectPills();                                              // light the matching pills
+        }
+        setAgeHint("");
+      } else if (rec.size) {
+        setAgeHint("Graded as: " + rec.size + " — pick the closest match");
+      } else {
+        setAgeHint("");
+      }
     }
   }
 
