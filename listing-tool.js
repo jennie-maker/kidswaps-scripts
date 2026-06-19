@@ -71,6 +71,28 @@
     }
   }
 
+  // Build the toy-age multipills from option_lists.toy_age (4 stages).
+  // Pills render in fetched order (= sort_order), so the active-pill join in
+  // the click handler yields the canonical-order delimited value for free.
+  // Display the label ("Baby · under 1"); store the bare stage word ("Baby").
+  function injectMultipills() {
+    var box = root.querySelector('[data-pillbox="toy_age_range"]');
+    if (!box) return;
+    var rows = OPTION_LISTS["toy_age"] || [];
+    box.innerHTML = "";
+    rows.forEach(function (row) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "ksl-pill";
+      b.setAttribute("data-pill", "toy_age_range");
+      b.setAttribute("data-val", row.value);
+      b.setAttribute("data-multi", "1");
+      b.textContent = row.display_label || row.value;
+      box.appendChild(b);
+    });
+    reflectPills();   // re-activate from any current/restored hidden value
+  }
+
   // Fill the remote selects after the fetch resolves. Size is category-aware.
   function injectOptions() {
     ["color", "category"].forEach(function (key) {
@@ -78,6 +100,7 @@
       if (sel) fillSelect(sel, OPTION_LISTS[key] || []);
     });
     populateSizeOptions();
+    injectMultipills();
   }
 
   /* ---- FIELD SCHEMA  (single source of truth) -------------------------- */
@@ -89,7 +112,7 @@
     { key:"sku",            label:"SKU",            type:"text",   group:"both", required:true,  placeholder:"KS-00000", hint:"the KS label number on the item" },
     { key:"brand",          label:"Brand",          type:"text",   group:"both", required:true,  placeholder:"e.g. Patagonia" },
     { key:"item_name",      label:"Item name",      type:"text",   group:"both", required:true,  placeholder:"auto-fills from brand + category" },
-    { key:"toy_age_range",  label:"Age range",      type:"select", group:"toy", required:true, options:["0-6 months","6-12 months","1-2 years","2-3 years","3-4 years","5+ years"] },
+    { key:"toy_age_range",  label:"Age range",      type:"multipills", remote:true, group:"toy", required:true },
     { key:"toy_washability",label:"Washability",    type:"pills",  group:"toy", required:true,  options:["wipeable","washable"] },
     { key:"color",          label:"Color",          type:"select", remote:true, group:"clothing", required:true },
     { key:"category",       label:"Category",       type:"select", remote:true, group:"clothing", required:true },
@@ -153,6 +176,12 @@
         return '<button type="button" class="ksl-pill" data-pill="' + f.key + '" data-val="' + pv + '">' + pl + '</button>';
       }).join("");
       inner = '<input type="hidden" data-key="' + f.key + '"><div class="ksl-pills">' + pbtns + '</div>';
+    } else if (f.type === "multipills") {
+      // remote, multi-select: pills injected after the option_lists fetch.
+      // hidden value = active pills joined by ", " in canonical sort order.
+      inner = '<input type="hidden" data-key="' + f.key + '">' +
+              '<div class="ksl-pills" data-pillbox="' + f.key + '">' +
+              '<span class="ksl-opt">Loading…</span></div>';
     } else {
       var extra = (f.key === "sku")
         ? ' autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"'
@@ -324,19 +353,41 @@
     if (!pill || !root.contains(pill)) return;
     var key = pill.getAttribute("data-pill");
     var inp = root.querySelector('input[data-key="' + key + '"]');
-    if (inp) inp.value = pill.getAttribute("data-val");
-    root.querySelectorAll('.ksl-pill[data-pill="' + key + '"]').forEach(function (b) {
-      b.classList.toggle("is-active", b === pill);
-    });
+    if (pill.getAttribute("data-multi") === "1") {
+      // multi-select: toggle this pill, rebuild value from all active (DOM order = canonical)
+      pill.classList.toggle("is-active");
+      if (inp) {
+        var vals = [];
+        root.querySelectorAll('.ksl-pill[data-pill="' + key + '"]').forEach(function (b) {
+          if (b.classList.contains("is-active")) vals.push(b.getAttribute("data-val"));
+        });
+        inp.value = vals.join(", ");
+      }
+    } else {
+      // single-select (radio behavior)
+      if (inp) inp.value = pill.getAttribute("data-val");
+      root.querySelectorAll('.ksl-pill[data-pill="' + key + '"]').forEach(function (b) {
+        b.classList.toggle("is-active", b === pill);
+      });
+    }
     var f = pill.closest(".ksl-field"); if (f) f.classList.remove("has-error");
     saveDraft();
   });
   function reflectPills() {
     root.querySelectorAll('.ksl-field input[type="hidden"][data-key]').forEach(function (inp) {
       var key = inp.getAttribute("data-key"), val = inp.value;
-      root.querySelectorAll('.ksl-pill[data-pill="' + key + '"]').forEach(function (b) {
-        b.classList.toggle("is-active", !!val && b.getAttribute("data-val") === val);
-      });
+      var pills = root.querySelectorAll('.ksl-pill[data-pill="' + key + '"]');
+      if (!pills.length) return;
+      if (pills[0].getAttribute("data-multi") === "1") {
+        var set = (val || "").split(", ").filter(Boolean);
+        pills.forEach(function (b) {
+          b.classList.toggle("is-active", set.indexOf(b.getAttribute("data-val")) !== -1);
+        });
+      } else {
+        pills.forEach(function (b) {
+          b.classList.toggle("is-active", !!val && b.getAttribute("data-val") === val);
+        });
+      }
     });
   }
 
