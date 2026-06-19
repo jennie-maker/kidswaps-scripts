@@ -7,7 +7,55 @@
   var FN_LIST   = BASE + "/inventory-list";
   var FN_UPLOAD = BASE + "/inventory-upload";
   var FN_LOOKUP = BASE + "/intake-lookup";
+  var REST = "https://ajsobivqxexcniwifxzz.supabase.co/rest/v1";   // direct PostgREST (option_lists, nothing to hide)
   var DRAFT_KEY = "ks_listing_draft_v1";
+
+  /* ---- OPTION_LISTS (controlled vocabulary, live read — Path B) --------- */
+  /* Fetched once at load; the remote-select fields fill from this. The SKU
+     equals the grading label; option values are the stored canonical values
+     (so an auto-populated category/size matches an <option value> exactly). */
+  var OPTION_LISTS = {};   // field -> [{value, display_label, sort_order}, ...] (sorted)
+  var REMOTE_SELECTS = ["color", "category", "clothing_size"];
+
+  function loadOptionLists() {
+    var url = REST + "/option_lists?active=eq.true" +
+              "&select=field,value,display_label,sort_order&order=field,sort_order";
+    return fetch(url, { headers: { apikey: ANON, authorization: "Bearer " + ANON } })
+      .then(function (r) {
+        if (!r.ok) throw new Error("option_lists HTTP " + r.status);
+        return r.json();
+      })
+      .then(function (rows) {
+        OPTION_LISTS = {};
+        rows.forEach(function (row) {
+          (OPTION_LISTS[row.field] = OPTION_LISTS[row.field] || []).push(row);
+        });
+        return OPTION_LISTS;
+      });
+  }
+
+  // Replace each remote select's "Loading…" placeholder with real options.
+  // display-fallback rule: show display_label if present, else value.
+  // Preserve any value already on the select (defense-in-depth for restore).
+  function injectOptions() {
+    REMOTE_SELECTS.forEach(function (key) {
+      var sel = root.querySelector('select[data-key="' + key + '"]');
+      if (!sel) return;
+      var rows = OPTION_LISTS[key] || [];
+      var saved = sel.value;
+      sel.innerHTML = "";
+      var ph = document.createElement("option");
+      ph.value = ""; ph.textContent = "Select…";
+      sel.appendChild(ph);
+      rows.forEach(function (row) {
+        var opt = document.createElement("option");
+        opt.value = row.value;                       // stored canonical value
+        opt.textContent = row.display_label || row.value;
+        sel.appendChild(opt);
+      });
+      if (saved) sel.value = saved;
+    });
+  }
 
   /* ---- FIELD SCHEMA  (single source of truth) -------------------------- */
   /* keys MUST match inventory-list body keys exactly.
@@ -20,9 +68,9 @@
     { key:"item_name",      label:"Item name",      type:"text",   group:"both", required:true,  placeholder:"auto-fills from brand + category" },
     { key:"toy_age_range",  label:"Age range",      type:"select", group:"toy", required:true, options:["0-6 months","6-12 months","1-2 years","2-3 years","3-4 years","5+ years"] },
     { key:"toy_washability",label:"Washability",    type:"pills",  group:"toy", required:true,  options:["wipeable","washable"] },
-    { key:"color",          label:"Color",          type:"text",   group:"clothing", required:true },
-    { key:"category",       label:"Category",       type:"text",   group:"clothing", required:true, placeholder:"e.g. Dresses, Pants" },
-    { key:"clothing_size",  label:"Size",           type:"text",   group:"clothing", required:true, placeholder:"e.g. 4T, 6, 10" },
+    { key:"color",          label:"Color",          type:"select", remote:true, group:"clothing", required:true },
+    { key:"category",       label:"Category",       type:"select", remote:true, group:"clothing", required:true },
+    { key:"clothing_size",  label:"Size",           type:"select", remote:true, group:"clothing", required:true },
     { key:"gender_style",   label:"Gender",         type:"select", group:"clothing", required:false, options:[{value:"boy",label:"Male"},{value:"girl",label:"Female"}] },
     { key:"tier",           label:"Tier",           type:"select", group:"both", required:true,  options:["essentials","elevated","special"] },
     { key:"retail_value",   label:"Retail value",   type:"number", group:"both", required:true,  placeholder:"e.g. 48", step:"0.01", min:"0" },
@@ -59,13 +107,17 @@
                              : ' <span class="ksl-opt">(optional)</span>';
     var inner;
     if (f.type === "select") {
-      var opts = '<option value="">Select…</option>' +
-        f.options.map(function (o) {
-          var val = (o && typeof o === "object") ? o.value : o;
-          var lab = (o && typeof o === "object") ? o.label : o;
-          return '<option value="' + val + '">' + lab + '</option>';
-        }).join("");
-      inner = '<select data-key="' + f.key + '">' + opts + '</select>';
+      if (f.remote) {
+        inner = '<select data-key="' + f.key + '"><option value="">Loading…</option></select>';
+      } else {
+        var opts = '<option value="">Select…</option>' +
+          f.options.map(function (o) {
+            var val = (o && typeof o === "object") ? o.value : o;
+            var lab = (o && typeof o === "object") ? o.label : o;
+            return '<option value="' + val + '">' + lab + '</option>';
+          }).join("");
+        inner = '<select data-key="' + f.key + '">' + opts + '</select>';
+      }
     } else if (f.type === "textarea") {
       inner = '<textarea data-key="' + f.key + '" placeholder="' + (f.placeholder || "") + '"></textarea>';
     } else if (f.type === "number") {
@@ -758,7 +810,9 @@ function titleCase(s) {
   applyType();
   if (hasDraft()) {
     var rb = $("ksl-restore"); rb.classList.remove("ksl-hidden");
-    $("ksl-restore-yes").addEventListener("click", function () {
+    var ryBtn = $("ksl-restore-yes");
+    ryBtn.disabled = true;                 // gate restore until the selects have options
+    ryBtn.addEventListener("click", function () {
       restoreDraft();
       nameTouched = true;
       rb.classList.add("ksl-hidden");
@@ -768,6 +822,13 @@ function titleCase(s) {
       rb.classList.add("ksl-hidden");
     });
   }
+  // fetch controlled vocab, then fill the remote selects (Path B, live read).
+  // Restore stays gated until this settles, so a draft value is never written
+  // into a select before its <option> exists.
+  loadOptionLists()
+    .then(injectOptions)
+    .catch(function (e) { console.error("[option_lists] load failed", e); })
+    .then(function () { var ry = $("ksl-restore-yes"); if (ry) ry.disabled = false; });
   // warm the token early so first upload is instant
   getToken().catch(function () {});
 })();
