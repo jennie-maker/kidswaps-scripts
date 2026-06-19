@@ -18,7 +18,7 @@
 
   function loadOptionLists() {
     var url = REST + "/option_lists?active=eq.true" +
-              "&select=field,value,display_label,sort_order&order=field,sort_order";
+              "&select=field,value,email_singular,display_label,sort_order&order=field,sort_order";
     return fetch(url, { headers: { apikey: ANON, authorization: "Bearer " + ANON } })
       .then(function (r) {
         if (!r.ok) throw new Error("option_lists HTTP " + r.status);
@@ -858,28 +858,18 @@ function titleCase(s) {
     return s.replace(/\w\S*/g, function (w) { return w.charAt(0).toUpperCase() + w.slice(1); });
   }
 
-  var CATEGORY_DISPLAY = {
-    "Accessories": "Accessory",
-    "Coats and Jackets": "Jacket",
-    "Costumes": "Costume",
-    "Dresses": "Dress",
-    "Formal Event": "Formal outfit",
-    "Joggers & Sweats": "Sweats",
-    "One pieces": "One-piece",
-    "Outfits and sets": "Outfit",
-    "Polos": "Polo",
-    "Rompers & Jumpsuits": "Romper/jumpsuit",
-    "Shirts & Tops": "Shirt",
-    "Skirts & Skorts": "Skirt",
-    "Sleepers & Pajamas": "Pajamas",
-    "Sports Teams": "Sports team item",
-    "Sweaters and hoodies": "Sweater",
-    "Swimsuits": "Swimsuit",
-    "Vests": "Vest"
-  };
+  // Friendly singular for item_name, read live from option_lists.category
+  // (email_singular). Fallback to the raw stored value if not found / null /
+  // fetch not yet landed — always a real word, never errors. Retired the
+  // hardcoded CATEGORY_DISPLAY map (option_lists is the single source).
   function friendlyCategory(c) {
     var k = (c || "").trim();
-    return CATEGORY_DISPLAY[k] || k;
+    if (!k) return k;
+    var rows = OPTION_LISTS.category || [];
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].value === k) return rows[i].email_singular || k;
+    }
+    return k;
   }
 
   function autoName() {
