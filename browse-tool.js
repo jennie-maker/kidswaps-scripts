@@ -560,16 +560,59 @@
       });
   }
 
-  /* ---- filter rail (V3.2) ================================================= */
+  /* ---- filter rail (V3.4: config-driven facets) =========================== */
   // JS owns the rail: render groups from distinct in-stock values, multi-select
   // checkboxes, grid updates live (client-side on the fetched set), state synced
-  // to URL params. SHARED RAIL = Tier + Brand on all three pages (incremental;
-  // type-specific groups layer on per page later). Mount = #ks-filter-rail.
+  // to URL params. The rail render, URL sync, and filter logic ALL read from the
+  // FACETS config + RAIL_CONFIG (per-type facet list) below, so adding a facet is
+  // one FACETS entry + one key in RAIL_CONFIG. Mount = #ks-filter-rail.
   var RAIL_MOUNT_ID = 'ks-filter-rail';
   var RAIL_BUILT    = false;
-  var FILTERS       = { tier: [], brand: [] };   // active selections (multi)
   var CHEV_SVG = '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" ' +
                  'stroke="currentColor" stroke-width="1.6"><path d="M4 6l4 4 4-4"/></svg>';
+
+  /* ---- facet config -------------------------------------------------------
+   * One entry per facet. Adding a facet = one FACETS entry + one key in RAIL_CONFIG.
+   *   field       : inventory property this facet reads
+   *   title       : group header text
+   *   match       : 'lower' | 'exact' | 'tokens'  (how a row value is compared)
+   *   order       : canonical value array (present-only) OR null (alpha sort)
+   *   display     : value -> shown label
+   *   collapsible : chevron + "Show all (N)" when >6
+   *   rowFilter   : optional (it)->bool, narrows which rows contribute OPTIONS
+   *   urlLower    : optional, lowercase the URL param on read (tier back-compat)
+   * ----------------------------------------------------------------------- */
+  var SIZE_ORDER = ['6-9M', '9-12M', '12-18M', '18-24M', '2T', '3T', '4 / XXS', '5 / XS', '6 / XS', '7 / Small'];
+  var AGE_ORDER  = ['Baby', 'Toddler', 'Preschool', 'Big Kid'];
+
+  function capFirst(s) { s = String(s == null ? '' : s); return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+  function ident(v) { return v; }
+
+  var FACETS = {
+    tier:     { field: 'tier',            title: 'Tier',        match: 'lower',  order: ['essentials', 'elevated', 'special'], display: tierLabel,   collapsible: false, urlLower: true },
+    brand:    { field: 'brand',           title: 'Brand',       match: 'exact',  order: null,       display: ident,       collapsible: true  },
+    gender:   { field: 'gender_style',    title: 'Gender',      match: 'exact',  order: null,       display: genderLabel, collapsible: false },
+    color:    { field: 'color',           title: 'Color',       match: 'exact',  order: null,       display: ident,       collapsible: true  },
+    size:     { field: 'size',            title: 'Size',        match: 'exact',  order: SIZE_ORDER, display: ident,       collapsible: false, rowFilter: function (it) { return it.category !== 'Shoes'; } },
+    category: { field: 'category',        title: 'Category',    match: 'exact',  order: null,       display: ident,       collapsible: true  },
+    wash:     { field: 'toy_washability', title: 'Washability', match: 'exact',  order: null,       display: capFirst,    collapsible: false },
+    age:      { field: 'size',            title: 'Age',         match: 'tokens', order: AGE_ORDER,  display: ident,       collapsible: false }
+  };
+
+  var RAIL_CONFIG = {
+    all:      ['tier', 'brand'],
+    clothing: ['tier', 'brand', 'gender', 'color', 'size', 'category'],
+    toy:      ['tier', 'brand', 'wash', 'age']
+  };
+  function activeFacetKeys() { return RAIL_CONFIG[BROWSE_TYPE] || RAIL_CONFIG.all; }
+
+  // split a stored ", "-delimited value into clean tokens (toy age: "Toddler, Preschool")
+  function tokensOf(val) {
+    return String(val == null ? '' : val).split(', ').map(function (s) { return s.trim(); }).filter(Boolean);
+  }
+
+  var FILTERS = {};   // active selections per facet key (multi-select arrays)
+  Object.keys(FACETS).forEach(function (k) { FILTERS[k] = []; });
 
   // the page's items after the type filter, before facet filters (rail options
   // come from here so options don't vanish as you select)
@@ -578,36 +621,54 @@
     return ALL.filter(function (it) { return it.item_type === BROWSE_TYPE; });
   }
 
+  // does a single row satisfy the active selection for one facet?
+  function rowMatchesFacet(it, key) {
+    var def = FACETS[key], sel = FILTERS[key];
+    if (!sel.length) return true;
+    if (def.match === 'tokens') {
+      var toks = tokensOf(it[def.field]);
+      for (var i = 0; i < toks.length; i++) if (sel.indexOf(toks[i]) !== -1) return true;
+      return false;
+    }
+    var v = it[def.field];
+    v = (def.match === 'lower') ? String(v == null ? '' : v).toLowerCase() : (v == null ? '' : v);
+    return sel.indexOf(v) !== -1;
+  }
+
   // apply the active facet selections to a list (called inside render())
   function applyFacets(list) {
+    var keys = activeFacetKeys();
     return list.filter(function (it) {
-      if (FILTERS.tier.length &&
-          FILTERS.tier.indexOf(String(it.tier || '').toLowerCase()) === -1) return false;
-      if (FILTERS.brand.length &&
-          FILTERS.brand.indexOf(it.brand || '') === -1) return false;
+      for (var i = 0; i < keys.length; i++) if (!rowMatchesFacet(it, keys[i])) return false;
       return true;
     });
   }
 
-  function tierOptions() {
+  // build the option list for one facet from in-stock values (present-only)
+  function facetOptions(key) {
+    var def = FACETS[key];
+    var rows = typeScoped();
+    if (def.rowFilter) rows = rows.filter(def.rowFilter);
+
     var present = {};
-    typeScoped().forEach(function (it) {
-      if (it.tier) present[String(it.tier).toLowerCase()] = true;
+    rows.forEach(function (it) {
+      if (def.match === 'tokens') {
+        tokensOf(it[def.field]).forEach(function (t) { present[t] = true; });
+      } else {
+        var v = it[def.field];
+        if (v == null || v === '') return;
+        present[(def.match === 'lower') ? String(v).toLowerCase() : v] = true;
+      }
     });
-    return ['essentials', 'elevated', 'special']      // canonical order
-      .filter(function (t) { return present[t]; })
-      .map(function (t) { return { value: t, label: tierLabel(t) }; });
+
+    var values = def.order
+      ? def.order.filter(function (v) { return present[v]; })                 // canonical, present-only
+      : Object.keys(present).sort(function (a, b) { return a.toLowerCase() < b.toLowerCase() ? -1 : 1; });
+
+    return values.map(function (v) { return { value: v, label: def.display(v) }; });
   }
 
-  function brandOptions() {
-    var seen = {};
-    typeScoped().forEach(function (it) { if (it.brand) seen[it.brand] = true; });
-    return Object.keys(seen)
-      .sort(function (a, b) { return a.toLowerCase() < b.toLowerCase() ? -1 : 1; })
-      .map(function (b) { return { value: b, label: b }; });
-  }
-
-  function buildGroup(rail, field, title, options, collapsible) {
+  function buildGroup(rail, key, title, options, collapsible) {
     if (!options.length) return;
     var grp  = el('div', 'ks-flt-group');
     var lbl  = el('div', 'ks-flt-grouplabel');
@@ -630,8 +691,8 @@
       input.type      = 'checkbox';
       input.className  = 'ks-flt-cb';
       input.value      = opt.value;
-      input.setAttribute('data-facet', field);
-      if (FILTERS[field].indexOf(opt.value) !== -1) input.checked = true;
+      input.setAttribute('data-facet', key);
+      if (FILTERS[key].indexOf(opt.value) !== -1) input.checked = true;
       input.addEventListener('change', onFacetChange);
       row.appendChild(input);
       row.appendChild(el('span', 'ks-flt-rowtext', opt.label));
@@ -667,8 +728,12 @@
     head.appendChild(close);
     rail.appendChild(head);
 
-    buildGroup(rail, 'tier',  'Tier',  tierOptions(),  false);  // always open
-    buildGroup(rail, 'brand', 'Brand', brandOptions(), true);   // collapsible
+    buildGroup(rail, 'tier', 'Tier', facetOptions('tier'), false);  // always first
+    activeFacetKeys().forEach(function (key) {
+      if (key === 'tier') return;                                   // already rendered first
+      var def = FACETS[key];
+      buildGroup(rail, key, def.title, facetOptions(key), def.collapsible);
+    });
 
     var apply = el('button', 'ks-flt-apply', '');   // mobile-only (CSS)
     apply.addEventListener('click', closeRailSheet);
@@ -698,8 +763,7 @@
   }
 
   function clearAll() {
-    FILTERS.tier = [];
-    FILTERS.brand = [];
+    Object.keys(FILTERS).forEach(function (k) { FILTERS[k] = []; });
     var rail = document.getElementById(RAIL_MOUNT_ID);
     if (rail) Array.prototype.forEach.call(
       rail.querySelectorAll('input.ks-flt-cb'),
@@ -711,9 +775,9 @@
   function updateClearVisibility() {
     var rail = document.getElementById(RAIL_MOUNT_ID);
     if (!rail) return;
+    var any = activeFacetKeys().some(function (k) { return FILTERS[k].length > 0; });
     var clear = rail.querySelector('.ks-flt-clear');
-    if (clear) clear.style.display =
-      (FILTERS.tier.length || FILTERS.brand.length) ? '' : 'none';
+    if (clear) clear.style.display = any ? '' : 'none';
   }
 
   function updateApplyLabel() {
@@ -725,19 +789,23 @@
     apply.textContent = 'Show ' + n + (n === 1 ? ' item' : ' items');
   }
 
-  // URL <-> FILTERS (e.g. ?tier=essentials,elevated&brand=Gap,Lovevery)
+  // URL <-> FILTERS (e.g. ?tier=essentials,elevated&brand=Gap,Lovevery&size=2T)
   function readUrl() {
     var p = new URLSearchParams(location.search);
-    var t = p.get('tier');
-    var b = p.get('brand');
-    FILTERS.tier  = t ? t.split(',').map(function (s) { return s.trim().toLowerCase(); }).filter(Boolean) : [];
-    FILTERS.brand = b ? b.split(',').map(function (s) { return s.trim(); }).filter(Boolean) : [];
+    activeFacetKeys().forEach(function (key) {
+      var def = FACETS[key], raw = p.get(key);
+      FILTERS[key] = raw
+        ? raw.split(',').map(function (s) { s = s.trim(); return def.urlLower ? s.toLowerCase() : s; }).filter(Boolean)
+        : [];
+    });
   }
 
   function writeUrl() {
     var p = new URLSearchParams(location.search);   // preserve other params (?sku=)
-    if (FILTERS.tier.length)  p.set('tier',  FILTERS.tier.join(','));  else p.delete('tier');
-    if (FILTERS.brand.length) p.set('brand', FILTERS.brand.join(',')); else p.delete('brand');
+    activeFacetKeys().forEach(function (key) {
+      if (FILTERS[key].length) p.set(key, FILTERS[key].join(','));
+      else p.delete(key);
+    });
     var qs  = p.toString();
     history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
   }
