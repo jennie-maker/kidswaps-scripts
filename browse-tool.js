@@ -578,9 +578,11 @@
    *   match       : 'lower' | 'exact' | 'tokens'  (how a row value is compared)
    *   order       : canonical value array (present-only) OR null (alpha sort)
    *   display     : value -> shown label
-   *   collapsible : chevron + "Show all (N)" when >6
+   *   showAll     : truncate option list to 6 + "Show all (N)" (long lists only)
    *   rowFilter   : optional (it)->bool, narrows which rows contribute OPTIONS
    *   urlLower    : optional, lowercase the URL param on read (tier back-compat)
+   * NOTE: every group is a collapsible accordion section; on load only the FIRST
+   *       group (Tier) is open, the rest render collapsed (header visible).
    * ----------------------------------------------------------------------- */
   var SIZE_ORDER = ['6-9M', '9-12M', '12-18M', '18-24M', '2T', '3T', '4 / XXS', '5 / XS', '6 / XS', '7 / Small'];
   var AGE_ORDER  = ['Baby', 'Toddler', 'Preschool', 'Big Kid'];
@@ -589,14 +591,14 @@
   function ident(v) { return v; }
 
   var FACETS = {
-    tier:     { field: 'tier',            title: 'Tier',        match: 'lower',  order: ['essentials', 'elevated', 'special'], display: tierLabel,   collapsible: false, urlLower: true },
-    brand:    { field: 'brand',           title: 'Brand',       match: 'exact',  order: null,       display: ident,       collapsible: true  },
-    gender:   { field: 'gender_style',    title: 'Gender',      match: 'exact',  order: null,       display: genderLabel, collapsible: false },
-    color:    { field: 'color',           title: 'Color',       match: 'exact',  order: null,       display: ident,       collapsible: true  },
-    size:     { field: 'size',            title: 'Size',        match: 'exact',  order: SIZE_ORDER, display: ident,       collapsible: false, rowFilter: function (it) { return it.category !== 'Shoes'; } },
-    category: { field: 'category',        title: 'Category',    match: 'exact',  order: null,       display: ident,       collapsible: true  },
-    wash:     { field: 'toy_washability', title: 'Washability', match: 'exact',  order: null,       display: capFirst,    collapsible: false },
-    age:      { field: 'size',            title: 'Age',         match: 'tokens', order: AGE_ORDER,  display: ident,       collapsible: false }
+    tier:     { field: 'tier',            title: 'Tier',        match: 'lower',  order: ['essentials', 'elevated', 'special'], display: tierLabel,   urlLower: true },
+    brand:    { field: 'brand',           title: 'Brand',       match: 'exact',  order: null,       display: ident,       showAll: true },
+    gender:   { field: 'gender_style',    title: 'Gender',      match: 'exact',  order: null,       display: genderLabel },
+    color:    { field: 'color',           title: 'Color',       match: 'exact',  order: null,       display: ident,       showAll: true },
+    size:     { field: 'size',            title: 'Size',        match: 'exact',  order: SIZE_ORDER, display: ident,       rowFilter: function (it) { return it.category !== 'Shoes'; } },
+    category: { field: 'category',        title: 'Category',    match: 'exact',  order: null,       display: ident,       showAll: true },
+    wash:     { field: 'toy_washability', title: 'Washability', match: 'exact',  order: null,       display: capFirst },
+    age:      { field: 'size',            title: 'Age',         match: 'tokens', order: AGE_ORDER,  display: ident }
   };
 
   var RAIL_CONFIG = {
@@ -668,20 +670,19 @@
     return values.map(function (v) { return { value: v, label: def.display(v) }; });
   }
 
-  function buildGroup(rail, key, title, options, collapsible) {
+  function buildGroup(rail, key, title, options, showAll, startOpen) {
     if (!options.length) return;
     var grp  = el('div', 'ks-flt-group');
+    if (!startOpen) grp.classList.add('ks-flt-collapsed');   // every group is an accordion; only the first opens on load
     var lbl  = el('div', 'ks-flt-grouplabel');
     lbl.appendChild(el('span', null, title));
-    if (collapsible) {
-      var chev = el('span', 'ks-flt-chev');
-      chev.innerHTML = CHEV_SVG;
-      lbl.appendChild(chev);
-      lbl.addEventListener('click', function (e) {
-        if (e.target && e.target.tagName === 'INPUT') return;
-        grp.classList.toggle('ks-flt-collapsed');
-      });
-    }
+    var chev = el('span', 'ks-flt-chev');
+    chev.innerHTML = CHEV_SVG;
+    lbl.appendChild(chev);
+    lbl.addEventListener('click', function (e) {
+      if (e.target && e.target.tagName === 'INPUT') return;
+      grp.classList.toggle('ks-flt-collapsed');
+    });
     grp.appendChild(lbl);
 
     var body = el('div', 'ks-flt-groupbody');
@@ -696,10 +697,10 @@
       input.addEventListener('change', onFacetChange);
       row.appendChild(input);
       row.appendChild(el('span', 'ks-flt-rowtext', opt.label));
-      if (collapsible && i >= 6) row.classList.add('ks-flt-extra');   // hidden until "show all"
+      if (showAll && i >= 6) row.classList.add('ks-flt-extra');   // hidden until "show all"
       body.appendChild(row);
     });
-    if (collapsible && options.length > 6) {
+    if (showAll && options.length > 6) {
       var more = el('span', 'ks-flt-more', 'Show all (' + options.length + ')');
       more.addEventListener('click', function () {
         var open = grp.classList.toggle('ks-flt-expanded');
@@ -728,11 +729,9 @@
     head.appendChild(close);
     rail.appendChild(head);
 
-    buildGroup(rail, 'tier', 'Tier', facetOptions('tier'), false);  // always first
-    activeFacetKeys().forEach(function (key) {
-      if (key === 'tier') return;                                   // already rendered first
+    activeFacetKeys().forEach(function (key, idx) {
       var def = FACETS[key];
-      buildGroup(rail, key, def.title, facetOptions(key), def.collapsible);
+      buildGroup(rail, key, def.title, facetOptions(key), !!def.showAll, idx === 0);
     });
 
     var apply = el('button', 'ks-flt-apply', '');   // mobile-only (CSS)
