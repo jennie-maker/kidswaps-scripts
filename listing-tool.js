@@ -607,15 +607,14 @@
       if (!v) { bad.push(f.key); markError(f.key); }
       if (f.type === "number" && v && isNaN(Number(v))) { bad.push(f.key); markError(f.key); }
     });
+    // G save-guard: a >5-digit SKU must never reach the server (mis-list risk).
+    // Mirrors the runLookup guard, but at the save step where the bad row gets written.
+    var skuField = root.querySelector('[data-key="sku"]');
+    var skuDigits = skuField ? (skuField.value || "").replace(/\D/g, "").length : 0;
+    if (skuDigits > 5) { bad.push("sku"); markError("sku"); }
     if (itemType === "clothing" && setChk.checked) {
       var n = parseInt(setCount.value, 10);
       if (!(n >= 2)) { bad.push("__set"); root.querySelector('[data-field="__set"]').classList.add("has-error"); }
-    }
-    // G (save side): never list under a >5-digit (malformed) SKU — block the save.
-    var skuField = root.querySelector('[data-key="sku"]');
-    if (skuField) {
-      var skuDigits = (skuField.value || "").replace(/\D/g, "");
-      if (skuDigits.length > 5) { bad.push("sku"); markError("sku"); }
     }
     return bad;
   }
