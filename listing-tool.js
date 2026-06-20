@@ -794,11 +794,12 @@
     el.style.display = text ? "" : "none";
   }
 
-  // Normalize "4", "ks-45", "KS-00045" -> "KS-00045". Returns null if no digits.
+  // Normalize "4", "ks-45", "KS-00045" -> "KS-00045". Returns null if no digits
+  // OR if more than 5 digits (never silently trim -> never resolve a wrong label).
   function normalizeLabel(raw) {
     var digits = (raw || "").replace(/\D/g, "");
     if (!digits) return null;
-    if (digits.length > 5) digits = digits.slice(-5);  // guard: never exceed 5
+    if (digits.length > 5) return null;  // too many digits: invalid, do NOT fabricate
     return "KS-" + digits.padStart(5, "0");
   }
 
@@ -834,6 +835,20 @@
     if (!el) return;
     el.value = (value === null || value === undefined) ? "" : String(value);
     el.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
+  // Clear ONLY the fields applyRecord carries forward, so a no-match SKU
+  // doesn't leave the previous item's brand/tier/size/etc. on a new label.
+  // (Narrower than clearItem(): keeps the SKU, photos, video, set toggle.)
+  function clearCarried() {
+    setField("brand", "");
+    setField("tier", "");
+    setField("retail_value", "");
+    setField("category", "");
+    setField("clothing_size", "");
+    setField("toy_age_range", "");  // fires input; reflectPills then unlights the age pills
+    reflectPills();
+    setAgeHint("");
   }
 
   function applyRecord(rec) {
@@ -875,6 +890,11 @@
 
   function runLookup() {
     if (!skuEl) return;
+    var digitCount = (skuEl.value || "").replace(/\D/g, "").length;
+    if (digitCount > 5) {                     // G: fat-fingered 6th digit -> warn, never guess
+      showToast("Check the SKU — too many digits (5 max)", true);
+      return;
+    }
     var norm = normalizeLabel(skuEl.value);
     if (!norm) return;                       // empty / no digits -> no lookup
     // reflect the normalized value back into the field
@@ -901,6 +921,7 @@
         applyRecord(res.j.record);
         showToast("Loaded graded record for " + norm + " ✓");
       } else if (res.ok && res.j.ok && res.j.found === false) {
+        clearCarried();                      // no-match: drop the prior item's carried fields
         showToast("No graded record found — enter manually");
       } else {
         // auth / unexpected error: allow a retry of the same label
