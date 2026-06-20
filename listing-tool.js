@@ -611,6 +611,12 @@
       var n = parseInt(setCount.value, 10);
       if (!(n >= 2)) { bad.push("__set"); root.querySelector('[data-field="__set"]').classList.add("has-error"); }
     }
+    // G (save side): never list under a >5-digit (malformed) SKU — block the save.
+    var skuField = root.querySelector('[data-key="sku"]');
+    if (skuField) {
+      var skuDigits = (skuField.value || "").replace(/\D/g, "");
+      if (skuDigits.length > 5) { bad.push("sku"); markError("sku"); }
+    }
     return bad;
   }
 
