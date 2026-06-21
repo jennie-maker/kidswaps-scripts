@@ -914,6 +914,13 @@
 
     mount.appendChild(box);
 
+    // Pull the existing mobile "Filters" trigger up into the search row so search +
+    // filter sit together on mobile. Moving the node preserves its click listener
+    // (attached in wireMobileToggle); visibility stays governed by its own
+    // breakpoint CSS — hidden on desktop (search fills the row), shown on mobile.
+    var mft = document.querySelector('.mobile-filter-toggle');
+    if (mft) mount.appendChild(mft);
+
     input.addEventListener('input', function () {
       SEARCH = input.value;
       box.classList.toggle('has-text', !!SEARCH);
