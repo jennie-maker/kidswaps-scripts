@@ -53,6 +53,8 @@
   var ALL = [];               // last fetched (pre-type-filter) — overlay looks here
   var overlayOpen = false;
 
+  var SEARCH = '';            // current free-text query (raw; normalized at match time)
+
   /* ---- small helpers ------------------------------------------------------ */
   function el(tag, cls, text) {
     var n = document.createElement(tag);
@@ -134,6 +136,18 @@
     var w = el('div', 'ks-browse-state ks-browse-empty');
     w.appendChild(el('div', 'ks-browse-state-title', 'Nothing available right now'));
     w.appendChild(el('div', 'ks-browse-state-sub', 'Check back soon \u2014 new pieces are added every cycle.'));
+    mount.appendChild(w);
+  }
+  function showSearchEmpty(mount) {
+    mount.innerHTML = '';
+    var w = el('div', 'ks-browse-state ks-browse-empty');
+    // textContent (via el) keeps the user query XSS-safe
+    w.appendChild(el('div', 'ks-browse-state-title', 'No matches for \u201c' + SEARCH.trim() + '\u201d'));
+    w.appendChild(el('div', 'ks-browse-state-sub', 'Try a brand, item, or category \u2014 or clear your search.'));
+    var btn = el('button', 'ks-browse-retry', 'Clear search');
+    btn.type = 'button';
+    btn.addEventListener('click', clearSearch);
+    w.appendChild(btn);
     mount.appendChild(w);
   }
   function showError(mount, retry) {
@@ -238,6 +252,28 @@
     cs.__t = setTimeout(function () { cs.classList.remove('is-on'); }, 1500);
   }
 
+  /* ---- search (free-text predicate over the in-memory stash) -------------- */
+  // case-insensitive, whitespace-collapsed, token-AND across brand+item_name+category.
+  function normSearch(s) {
+    return String(s == null ? '' : s).toLowerCase().replace(/\s+/g, ' ').trim();
+  }
+  function searchBlob(it) {
+    return [it.brand, it.item_name, it.category].filter(Boolean).join(' ').toLowerCase();
+  }
+  function applySearch(list) {
+    var q = normSearch(SEARCH);
+    if (!q) return list;
+    var toks = q.split(' ').filter(Boolean);
+    if (!toks.length) return list;
+    return list.filter(function (it) {
+      var blob = searchBlob(it);
+      for (var i = 0; i < toks.length; i++) {
+        if (blob.indexOf(toks[i]) === -1) return false;   // every token must appear
+      }
+      return true;
+    });
+  }
+
   /* ---- render ------------------------------------------------------------- */
   function render(mount, items) {
     ALL = items.slice();      // keep the full set for overlay lookups
@@ -246,11 +282,16 @@
       view = view.filter(function (it) { return it.item_type === BROWSE_TYPE; });
     }
     view = applyFacets(view);   // active Tier/Brand selections (V3.2 rail)
+    view = applySearch(view);   // free-text query — AND-combines with facets, one pass
     view = sortItems(view);
     CURRENT = view;
 
     mount.innerHTML = '';
-    if (!view.length) { showEmpty(mount); return; }
+    if (!view.length) {
+      if (normSearch(SEARCH)) showSearchEmpty(mount);   // "No matches for ..." + clear
+      else showEmpty(mount);
+      return;
+    }
 
     mount.appendChild(
       el('div', 'ks-browse-count', view.length + (view.length === 1 ? ' item' : ' items'))
@@ -784,7 +825,7 @@
     if (!rail) return;
     var apply = rail.querySelector('.ks-flt-apply');
     if (!apply) return;
-    var n = applyFacets(typeScoped()).length;
+    var n = applySearch(applyFacets(typeScoped())).length;
     apply.textContent = 'Show ' + n + (n === 1 ? ' item' : ' items');
   }
 
@@ -797,6 +838,7 @@
         ? raw.split(',').map(function (s) { s = s.trim(); return def.urlLower ? s.toLowerCase() : s; }).filter(Boolean)
         : [];
     });
+    SEARCH = p.get('q') || '';   // free-text query is shareable/bookmarkable
   }
 
   function writeUrl() {
@@ -805,6 +847,8 @@
       if (FILTERS[key].length) p.set(key, FILTERS[key].join(','));
       else p.delete(key);
     });
+    if (normSearch(SEARCH)) p.set('q', SEARCH.trim());
+    else p.delete('q');
     var qs  = p.toString();
     history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
   }
@@ -826,6 +870,77 @@
     document.body.classList.remove('ks-flt-sheet-open');
     var bd = document.querySelector('.ks-flt-backdrop');
     if (bd && bd.parentNode) bd.parentNode.removeChild(bd);
+  }
+
+  /* ---- search widget (rendered ONCE into #ks-search, survives render()) ===
+   * Lives OUTSIDE #ks-browse-app so render()'s innerHTML wipe never touches it
+   * (same pattern as the rail in #ks-filter-rail). Typing updates SEARCH and
+   * re-runs applyAndRender (debounced); the predicate lives in render().
+   * ----------------------------------------------------------------------- */
+  var SEARCH_MOUNT_ID = 'ks-search';
+  var SEARCH_BUILT    = false;
+  var searchDebounce  = null;
+  var SEARCH_SVG =
+    '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"' +
+    ' stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>';
+
+  function buildSearch() {
+    if (SEARCH_BUILT) return;
+    var mount = document.getElementById(SEARCH_MOUNT_ID);
+    if (!mount) return;                       // page hasn't added the mount yet
+    mount.innerHTML = '';
+
+    var box  = el('div', 'ks-search-box');
+    var icon = el('span', 'ks-search-icon');
+    icon.innerHTML = SEARCH_SVG;
+    box.appendChild(icon);
+
+    var input = document.createElement('input');
+    input.type        = 'text';
+    input.className    = 'ks-search-input';
+    input.value        = SEARCH;             // reflect a ?q= deep-link on load
+    input.setAttribute('placeholder', 'Search by brand, item, or category');
+    input.setAttribute('aria-label', 'Search the collection');
+    input.setAttribute('autocomplete', 'off');
+    input.setAttribute('enterkeyhint', 'search');
+    box.appendChild(input);
+
+    var clear = el('button', 'ks-search-clear');
+    clear.type = 'button';
+    clear.setAttribute('aria-label', 'Clear search');
+    clear.innerHTML = X_SVG;
+    box.appendChild(clear);
+
+    mount.appendChild(box);
+
+    input.addEventListener('input', function () {
+      SEARCH = input.value;
+      box.classList.toggle('has-text', !!SEARCH);
+      clearTimeout(searchDebounce);
+      searchDebounce = setTimeout(applyAndRender, 200);   // debounce so render() isn't thrashed
+    });
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { e.preventDefault(); clearSearch(); }
+      else if (e.key === 'Enter') { e.preventDefault(); input.blur(); }  // dismiss mobile keyboard, reveal grid
+    });
+    clear.addEventListener('click', function () { clearSearch(); input.focus(); });
+
+    box.classList.toggle('has-text', !!SEARCH);
+    SEARCH_BUILT = true;
+  }
+
+  function clearSearch() {
+    SEARCH = '';
+    var mount = document.getElementById(SEARCH_MOUNT_ID);
+    if (mount) {
+      var input = mount.querySelector('.ks-search-input');
+      if (input) input.value = '';
+      var box = mount.querySelector('.ks-search-box');
+      if (box) box.classList.remove('has-text');
+    }
+    clearTimeout(searchDebounce);
+    applyAndRender();                         // immediate (no debounce) + drops ?q=
   }
 
   /* ---- init --------------------------------------------------------------- */
@@ -859,6 +974,7 @@
     var initialSku = new URLSearchParams(location.search).get('sku');
     load(mount, false, function () {
       if (!RAIL_BUILT) { buildRail(); wireMobileToggle(); }
+      if (!SEARCH_BUILT) buildSearch();
       if (initialSku) openDetailFromUrl(initialSku);
     });
 
