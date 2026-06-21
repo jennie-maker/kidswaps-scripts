@@ -714,9 +714,9 @@
   };
 
   var RAIL_CONFIG = {
-    all:      ['tier', 'brand'],
-    clothing: ['tier', 'brand', 'gender', 'color', 'size', 'category'],
-    toy:      ['tier', 'brand', 'wash', 'age']
+    all:      ['brand', 'tier'],
+    clothing: ['brand', 'category', 'color', 'gender', 'size', 'tier'],
+    toy:      ['brand', 'age', 'wash', 'tier']
   };
   function activeFacetKeys() { return RAIL_CONFIG[BROWSE_TYPE] || RAIL_CONFIG.all; }
 
