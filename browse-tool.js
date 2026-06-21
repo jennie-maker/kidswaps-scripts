@@ -55,6 +55,9 @@
 
   var SEARCH = '';            // current free-text query (raw; normalized at match time)
 
+  var PAGE = 1;               // current 1-based page (synced to ?page=)
+  var PAGE_SIZE = 24;         // cards per page; pager only appears when total exceeds this
+
   /* ---- small helpers ------------------------------------------------------ */
   function el(tag, cls, text) {
     var n = document.createElement(tag);
@@ -293,16 +296,84 @@
       return;
     }
 
-    mount.appendChild(
-      el('div', 'ks-browse-count', view.length + (view.length === 1 ? ' item' : ' items'))
-    );
+    // pagination — slice the filtered+searched+sorted set to the current page.
+    // Only the current page's cards (and their images) are built, which also
+    // keeps image load light until thumbnails exist.
+    var total     = view.length;
+    var pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    if (PAGE > pageCount) PAGE = pageCount;   // clamp (e.g. a filter shrank the set)
+    if (PAGE < 1) PAGE = 1;
+    var startIdx  = (PAGE - 1) * PAGE_SIZE;
+    var pageItems = view.slice(startIdx, startIdx + PAGE_SIZE);
+
+    var countText = (pageCount > 1)
+      ? 'Showing ' + (startIdx + 1) + '\u2013' + (startIdx + pageItems.length) + ' of ' + total + ' items'
+      : total + (total === 1 ? ' item' : ' items');
+    mount.appendChild(el('div', 'ks-browse-count', countText));
 
     var grid = el('div', 'ks-browse-grid');
     var frag = document.createDocumentFragment();
-    view.forEach(function (it) { frag.appendChild(buildCard(it)); });
+    pageItems.forEach(function (it) { frag.appendChild(buildCard(it)); });
     grid.appendChild(frag);
     wireGrid(grid);
     mount.appendChild(grid);
+
+    if (pageCount > 1) mount.appendChild(buildPagination(pageCount));
+  }
+
+  /* ---- pagination --------------------------------------------------------- */
+  // Which page numbers to show: always first + last + current's neighbors,
+  // collapsing the rest to ellipses (e.g. 1 … 4 5 6 … 12).
+  function pageWindow(cur, count) {
+    var set = {}, i;
+    set[1] = 1; set[count] = 1;
+    for (i = cur - 1; i <= cur + 1; i++) if (i >= 1 && i <= count) set[i] = 1;
+    var keys = Object.keys(set).map(Number).sort(function (a, b) { return a - b; });
+    var out = [], prev = 0;
+    keys.forEach(function (k) {
+      if (prev && k - prev > 1) out.push('gap');
+      out.push(k); prev = k;
+    });
+    return out;
+  }
+
+  function buildPagination(pageCount) {
+    var nav = el('div', 'ks-browse-pager');
+
+    var prev = el('button', 'ks-browse-page ks-browse-page-nav', '\u2039');
+    prev.type = 'button';
+    prev.setAttribute('aria-label', 'Previous page');
+    if (PAGE <= 1) prev.disabled = true;
+    prev.addEventListener('click', function () { if (PAGE > 1) goToPage(PAGE - 1); });
+    nav.appendChild(prev);
+
+    pageWindow(PAGE, pageCount).forEach(function (p) {
+      if (p === 'gap') { nav.appendChild(el('span', 'ks-browse-page-gap', '\u2026')); return; }
+      var b = el('button', 'ks-browse-page' + (p === PAGE ? ' is-current' : ''), String(p));
+      b.type = 'button';
+      if (p === PAGE) b.setAttribute('aria-current', 'page');
+      b.addEventListener('click', function () { if (p !== PAGE) goToPage(p); });
+      nav.appendChild(b);
+    });
+
+    var next = el('button', 'ks-browse-page ks-browse-page-nav', '\u203a');
+    next.type = 'button';
+    next.setAttribute('aria-label', 'Next page');
+    if (PAGE >= pageCount) next.disabled = true;
+    next.addEventListener('click', function () { if (PAGE < pageCount) goToPage(PAGE + 1); });
+    nav.appendChild(next);
+
+    return nav;
+  }
+
+  function goToPage(n) {
+    PAGE = n;
+    var mount = document.getElementById(MOUNT_ID);
+    if (mount) render(mount, ALL);   // re-applies filters/search, slices to PAGE
+    writeUrl();
+    // start the new page at the top of the grid
+    var app = document.getElementById(MOUNT_ID);
+    if (app && app.scrollIntoView) app.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   /* ---- DETAIL OVERLAY ----------------------------------------------------- */
@@ -795,6 +866,7 @@
   }
 
   function applyAndRender() {
+    PAGE = 1;                                // any filter/search change returns to page 1
     var mount = document.getElementById(MOUNT_ID);
     if (mount) render(mount, ALL);          // render re-applies type + facets
     writeUrl();
@@ -839,6 +911,8 @@
         : [];
     });
     SEARCH = p.get('q') || '';   // free-text query is shareable/bookmarkable
+    var pg = parseInt(p.get('page'), 10);
+    PAGE = (pg && pg > 0) ? pg : 1;
   }
 
   function writeUrl() {
@@ -849,6 +923,8 @@
     });
     if (normSearch(SEARCH)) p.set('q', SEARCH.trim());
     else p.delete('q');
+    if (PAGE > 1) p.set('page', String(PAGE));
+    else p.delete('page');
     var qs  = p.toString();
     history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
   }
