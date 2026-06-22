@@ -34,6 +34,25 @@
   if (window.__ksBrowseInit) return;          // idempotent if loaded twice
   window.__ksBrowseInit = true;
 
+  /* ---- VERSION STAMP (Improvement A) -------------------------------------
+   * Print the live jsDelivr pin on load, parsed from THIS script's own src —
+   * always reflects the actual @<sha> running, no manual bump, never stale.
+   * Wrapped so a stamp failure can never break the app. */
+  try {
+    var __ksScript = document.currentScript;
+    if (!__ksScript) {
+      var __ksScripts = document.getElementsByTagName('script');
+      for (var __ksJ = 0; __ksJ < __ksScripts.length; __ksJ++) {
+        if (__ksScripts[__ksJ].src && __ksScripts[__ksJ].src.indexOf('browse-tool.js') !== -1) {
+          __ksScript = __ksScripts[__ksJ]; break;
+        }
+      }
+    }
+    var __ksSrc = __ksScript && __ksScript.src ? __ksScript.src : '';
+    var __ksPin = (__ksSrc.match(/@([^/]+)\/browse-tool\.js/) || [])[1] || 'unknown';
+    console.log('%c[ks-browse] build ' + __ksPin, 'color:#d24f28;font-weight:600', __ksSrc || '(no src)');
+  } catch (__ksErr) {}
+
   /* ---- CONFIG -------------------------------------------------------------- */
   var SUPABASE_URL = 'https://ajsobivqxexcniwifxzz.supabase.co';
   var RPC          = '/rest/v1/rpc/get_available_inventory';
