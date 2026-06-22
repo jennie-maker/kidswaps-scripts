@@ -26,6 +26,7 @@
   var FN_LIST   = BASE + "/inventory-list";
   var FN_UPLOAD = BASE + "/inventory-upload";
   var FN_LOOKUP = BASE + "/intake-lookup";
+  var FN_EDIT   = BASE + "/inventory-edit";   // Manage-Item load/update
   var REST = "https://ajsobivqxexcniwifxzz.supabase.co/rest/v1";   // direct PostgREST (option_lists, nothing to hide)
   var DRAFT_KEY = "ks_listing_draft_v1";
 
@@ -163,6 +164,11 @@
   var video = null;
   var token = null;
 
+  /* ---- MANAGE-ITEM (edit existing) STATE ------------------------------- */
+  var EDIT_MODE   = false;   // true once an existing item is loaded for editing
+  var loadedRecord = null;   // the inventory row returned by inventory-edit "load"
+  var editLocked  = false;   // true when the loaded row is reserved/claimed
+
   var root = document.getElementById("ks-list-app");
   if (!root) { console.error("[listing] #ks-list-app not found"); return; }
 
@@ -235,6 +241,14 @@
   root.innerHTML =
     '<h1 class="ksl-title">List an item</h1>' +
     '<p class="ksl-sub">Add a graded item to the live inventory.</p>' +
+
+    '<div class="ksl-manage" id="ksl-manage">' +
+      '<input type="text" id="ksl-mng-sku" placeholder="KS-00000" ' +
+        'autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">' +
+      '<button type="button" class="ksl-manage-btn" id="ksl-mng-load">Load</button>' +
+      '<a href="#" class="ksl-manage-new ksl-hidden" id="ksl-mng-new">\u2190 New listing</a>' +
+      '<div class="ksl-manage-hint" id="ksl-manage-hint">Edit an existing item\u2019s photos, status, bin, or featured flag.</div>' +
+    '</div>' +
     '<div class="ksl-restore ksl-hidden" id="ksl-restore">' +
       '<span>You have an unsaved draft from before.</span>' +
       '<span><button id="ksl-restore-no">Discard</button> ' +
@@ -272,6 +286,28 @@
     '<div class="ksl-card ksl-details"><h3>Details</h3>' + detailsHtml +
     '</div>' +
 
+    '<div class="ksl-card ksl-edit-panel ksl-hidden" id="ksl-edit-panel">' +
+      '<div class="ksl-edit-ref" id="ksl-edit-ref"></div>' +
+      '<div class="ksl-edit-lock ksl-hidden" id="ksl-edit-lock"></div>' +
+      '<h3>Edit</h3>' +
+      '<div class="ksl-field">' +
+        '<label class="ksl-label">Status</label>' +
+        '<select id="ksl-edit-status">' +
+          '<option value="available">available</option>' +
+          '<option value="retired">retired</option>' +
+        '</select>' +
+      '</div>' +
+      '<div class="ksl-field">' +
+        '<label class="ksl-label">Bin location</label>' +
+        '<input type="text" id="ksl-edit-bin" placeholder="where it\u2019s stored">' +
+      '</div>' +
+      '<div class="ksl-field">' +
+        '<label class="ksl-check"><input type="checkbox" id="ksl-edit-featured"> ' +
+        '<span class="ksl-label" style="margin:0">Featured</span></label>' +
+      '</div>' +
+      '<button type="button" class="ksl-submit" id="ksl-edit-save">Save changes</button>' +
+    '</div>' +
+
     '<button type="button" class="ksl-submit" id="ksl-submit">List item</button>' +
     '<div class="ksl-toast" id="ksl-toast"></div>' +
     '<div class="ksl-review ksl-hidden" id="ksl-review">' +
@@ -284,6 +320,32 @@
         '</div>' +
       '</div>' +
     '</div>';
+
+  /* ---- INJECTED CSS for the Manage-Item UI ----------------------------- */
+  /* Self-contained (browse-tool pattern). Reuses existing .ksl-card /
+     .ksl-field / .ksl-submit styling from the page; only the bespoke
+     manage-bar + reference-block + make-primary bits need rules. */
+  (function injectEditCss() {
+    if (document.getElementById("ksl-edit-css")) return;
+    var s = document.createElement("style");
+    s.id = "ksl-edit-css";
+    s.textContent =
+      "#ks-list-app .ksl-manage{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 20px;padding:14px 16px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:rgba(255,255,255,.03)}" +
+      "#ks-list-app .ksl-manage input{flex:0 0 150px;padding:9px 11px;border-radius:8px;border:1px solid rgba(255,255,255,.22);background:transparent;color:inherit;font:inherit;text-transform:uppercase}" +
+      "#ks-list-app .ksl-manage-btn{padding:9px 18px;border:0;border-radius:8px;background:#d24f28;color:#fff;font:inherit;font-weight:600;cursor:pointer}" +
+      "#ks-list-app .ksl-manage-btn:disabled{opacity:.6;cursor:default}" +
+      "#ks-list-app .ksl-manage-new{font-size:.85rem;color:#d24f28;text-decoration:none;cursor:pointer}" +
+      "#ks-list-app .ksl-manage-hint{flex:1 1 100%;font-size:.82rem;opacity:.6}" +
+      "#ks-list-app .ksl-edit-ref{margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,.12)}" +
+      "#ks-list-app .ksl-ref-name{font-size:1.05rem;font-weight:600;margin-bottom:10px}" +
+      "#ks-list-app .ksl-ref-grid{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:.86rem}" +
+      "#ks-list-app .ksl-ref-k{opacity:.5;text-transform:uppercase;letter-spacing:.04em;font-size:.72rem;align-self:center}" +
+      "#ks-list-app .ksl-ref-v{opacity:.92}" +
+      "#ks-list-app .ksl-edit-lock{margin:0 0 14px;padding:10px 12px;border-radius:8px;background:rgba(210,79,40,.14);border:1px solid rgba(210,79,40,.55);font-size:.86rem}" +
+      "#ks-list-app .ksl-makeprimary{display:block;width:100%;margin-top:6px;padding:5px 8px;border:1px solid rgba(255,255,255,.25);border-radius:7px;background:transparent;color:inherit;font:inherit;font-size:.76rem;cursor:pointer}" +
+      "#ks-list-app .ksl-makeprimary:hover{border-color:#d24f28;color:#d24f28}";
+    document.head.appendChild(s);
+  })();
 
   /* element refs */
   var $ = function (id) { return document.getElementById(id); };
@@ -459,12 +521,15 @@
       : '<img src="' + rec.objUrl + '" alt="">';
     var isPrimary = (key === "front" && rec.status === "done");
     var badge = isPrimary ? '<span class="ksl-badge">PRIMARY</span>' : '';
+    var mkPrimary = (EDIT_MODE && (key === "back" || key === "detail") && rec.status === "done")
+      ? '<button type="button" class="ksl-makeprimary" data-makeprimary="' + key + '">Make primary</button>'
+      : '';
     thumb.innerHTML =
       '<div class="ksl-thumb' + (isPrimary ? ' is-primary' : '') +
         (rec.status === "error" ? ' is-error' : '') + '">' +
         media + badge + state +
         '<button class="ksl-rm" data-rmslot="' + key + '" aria-label="remove">×</button>' +
-      '</div>';
+      '</div>' + mkPrimary;
   }
   function renderAllSlots() {
     PHOTO_SLOTS.forEach(function (s) { renderSlot(s.key); });
@@ -503,6 +568,11 @@
 
   /* delegated: tap an empty slot to add; tap a filled slot to replace; × clears */
   root.addEventListener("click", function (e) {
+    /* edit mode: "Make primary" swaps this slot's photo into the Front (=primary)
+       slot. Must run BEFORE the thumb-tap logic, which would otherwise open the
+       file picker (the button lives inside [data-slotthumb]). */
+    var mp = (e.target && e.target.getAttribute) ? e.target.getAttribute("data-makeprimary") : null;
+    if (mp) { e.stopPropagation(); makePrimary(mp); return; }
     var drop = (e.target && e.target.closest) ? e.target.closest("[data-slotdrop]") : null;
     if (drop) {
       var inp = root.querySelector('[data-slotinput="' + drop.getAttribute("data-slotdrop") + '"]');
@@ -537,6 +607,7 @@
     return out;
   }
   function saveDraft() {
+    if (EDIT_MODE) return;   // editing an existing item must not touch the insert draft
     try {
       var draft = {
         itemType: itemType,
@@ -820,6 +891,7 @@
   }
 
   function runLookup() {
+    if (EDIT_MODE) return;   // edit mode uses the Manage bar, not grading auto-populate
     if (!skuEl) return;
     var norm = normalizeLabel(skuEl.value);
     if (!norm) return;                       // empty / no digits -> no lookup
@@ -906,6 +978,256 @@ function titleCase(s) {
     var el = root.querySelector('[data-key="' + k + '"]');
     if (el) el.addEventListener("input", autoName);
   });
+
+  /* ---- MANAGE-ITEM MODE (edit existing inventory) ---------------------- */
+  /* Server: inventory-edit edge fn ({action:"load"|"update"}) + the
+     get_inventory_by_sku RPC behind it. v1 edits PHOTOS + status +
+     bin_location + featured only; metadata is shown read-only for reference.
+     Front slot is always primary (= photo_urls[0]); the server re-derives
+     primary from photo_urls[0], so a client-sent primary is irrelevant. */
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+
+  function buildRefBlock(rec) {
+    var el = $("ksl-edit-ref");
+    if (!el) return;
+    var sizeLabel = rec.item_type === "toy" ? "Age" : "Size";
+    var rows = [
+      ["SKU", rec.sku],
+      ["Type", rec.item_type],
+      ["Brand", rec.brand],
+      ["Tier", rec.tier],
+      ["Category", rec.category],
+      [sizeLabel, rec.size],
+      ["Status", rec.status],
+      ["Added", rec.date_added ? String(rec.date_added).slice(0, 10) : ""]
+    ];
+    var html = '<div class="ksl-ref-name">' + esc(rec.item_name || rec.sku) + '</div>';
+    html += '<div class="ksl-ref-grid">';
+    rows.forEach(function (r) {
+      if (r[1] === null || r[1] === undefined || r[1] === "") return;
+      html += '<span class="ksl-ref-k">' + esc(r[0]) + '</span>' +
+              '<span class="ksl-ref-v">' + esc(r[1]) + '</span>';
+    });
+    html += '</div>';
+    el.innerHTML = html;
+  }
+
+  function showLockBanner(msg) {
+    var el = $("ksl-edit-lock");
+    if (el) { el.textContent = msg; el.classList.remove("ksl-hidden"); }
+    var save = $("ksl-edit-save");
+    if (save) save.disabled = true;
+  }
+  function hideLockBanner() {
+    var el = $("ksl-edit-lock");
+    if (el) el.classList.add("ksl-hidden");
+    var save = $("ksl-edit-save");
+    if (save) save.disabled = false;
+  }
+
+  /* swap insert chrome (toggle / details / List-item) <-> edit panel */
+  function setEditChrome(on) {
+    var tgl = root.querySelector(".ksl-toggle");
+    var det = root.querySelector(".ksl-details");
+    var pnl = $("ksl-edit-panel");
+    var nw  = $("ksl-mng-new");
+    var hint = $("ksl-manage-hint");
+    var rest = $("ksl-restore");
+    if (tgl) tgl.classList.toggle("ksl-hidden", on);
+    if (det) det.classList.toggle("ksl-hidden", on);
+    if (submitBtn) submitBtn.classList.toggle("ksl-hidden", on);
+    if (pnl) pnl.classList.toggle("ksl-hidden", !on);
+    if (nw)  nw.classList.toggle("ksl-hidden", !on);
+    if (hint) hint.classList.toggle("ksl-hidden", on);
+    if (on && rest) rest.classList.add("ksl-hidden");
+  }
+
+  /* hosted photo_urls -> the three fixed slots (front/back/detail) + video.
+     Each becomes a DONE rec whose objUrl is the hosted URL directly (no
+     re-upload) — exactly how restoreDraft rehydrates a saved draft. */
+  function rehydratePhotos(rec) {
+    slots = { front: null, back: null, detail: null };
+    video = null;
+    var urls = Array.isArray(rec.photo_urls) ? rec.photo_urls.slice() : [];
+    // defensive: guarantee the stored primary sits at index 0 (Front)
+    if (rec.primary_photo_url) {
+      var pi = urls.indexOf(rec.primary_photo_url);
+      if (pi > 0) { urls.splice(pi, 1); urls.unshift(rec.primary_photo_url); }
+      else if (pi === -1 && urls.length === 0) { urls = [rec.primary_photo_url]; }
+    }
+    var keys = ["front", "back", "detail"];
+    urls.slice(0, 3).forEach(function (u, i) {
+      if (!u) return;
+      slots[keys[i]] = { id: uid(), url: u, status: "done", name: "existing", objUrl: u };
+    });
+    if (rec.video_url) {
+      video = { id: uid(), url: rec.video_url, status: "done", name: "existing", objUrl: rec.video_url };
+    }
+    renderAllSlots();
+  }
+
+  /* edit-mode "Make primary": swap the chosen slot's photo into Front. */
+  function makePrimary(key) {
+    if (!EDIT_MODE || key === "front") return;
+    var tmp = slots.front;
+    slots.front = slots[key];
+    slots[key] = tmp;           // tmp may be null -> the source slot empties
+    renderAllSlots();
+  }
+
+  function enterEditMode(rec) {
+    loadedRecord = rec;
+    EDIT_MODE = true;
+    editLocked = (rec.status === "reserved" || rec.status === "claimed");
+
+    // item type from the record so the theme/reference read coherently
+    var t = (rec.item_type === "toy") ? "toy" : "clothing";
+    if (t !== itemType) { itemType = t; applyType(); }
+
+    rehydratePhotos(rec);
+    buildRefBlock(rec);
+
+    var st = $("ksl-edit-status");
+    if (st) st.value = (rec.status === "retired") ? "retired" : "available";
+    var bin = $("ksl-edit-bin");
+    if (bin) bin.value = rec.bin_location || "";
+    var feat = $("ksl-edit-featured");
+    if (feat) feat.checked = !!rec.featured;
+
+    setEditChrome(true);
+    if (editLocked) showLockBanner("This item is " + rec.status + " (member-pending) — editing is locked.");
+    else hideLockBanner();
+  }
+
+  function exitEditMode() {
+    EDIT_MODE = false; editLocked = false; loadedRecord = null;
+    hideLockBanner();
+    clearItem();                       // wipes photos + fields; renders slots without make-primary
+    var mng = $("ksl-mng-sku"); if (mng) mng.value = "";
+    setEditChrome(false);
+  }
+
+  function buildEditPatch() {
+    var photos = ["front", "back", "detail"]
+      .map(function (k) { return slots[k]; })
+      .filter(function (r) { return r && r.status === "done"; })
+      .map(function (r) { return r.url; });
+    return {
+      status: ($("ksl-edit-status") || {}).value || "available",
+      bin_location: (($("ksl-edit-bin") || {}).value || "").trim(),
+      featured: !!($("ksl-edit-featured") && $("ksl-edit-featured").checked),
+      photo_urls: photos,                                   // front-first; server derives primary
+      video_url: (video && video.status === "done") ? video.url : null
+    };
+  }
+
+  function runManageLoad() {
+    var inp = $("ksl-mng-sku");
+    var norm = normalizeLabel(inp ? inp.value : "");
+    if (!norm) { showToast("Enter a KS label, e.g. KS-00001", true); return; }
+    if (inp) inp.value = norm;
+    var btn = $("ksl-mng-load");
+    if (btn) { btn.disabled = true; btn.textContent = "Loading…"; }
+    getToken().then(function (t) {
+      return fetch(FN_EDIT, {
+        method: "POST",
+        headers: {
+          "x-ms-token": t, "content-type": "application/json",
+          "apikey": ANON, "authorization": "Bearer " + ANON
+        },
+        body: JSON.stringify({ action: "load", sku: norm })
+      });
+    }).then(function (r) {
+      return r.json().then(function (j) { return { ok: r.ok, status: r.status, j: j }; });
+    }).then(function (res) {
+      if (res.ok && res.j.ok && res.j.found && res.j.record) {
+        enterEditMode(res.j.record);
+        showToast("Loaded " + norm + " ✓");
+      } else if (res.ok && res.j.ok && res.j.found === false) {
+        showToast("No item found for " + norm, true);
+      } else {
+        showToast("Load failed — see console", true);
+        console.error("[manage-load]", res);
+      }
+    }).catch(function (e) {
+      showToast("Load error — see console", true);
+      console.error("[manage-load]", e);
+    }).finally(function () {
+      if (btn) { btn.disabled = false; btn.textContent = "Load"; }
+    });
+  }
+
+  function runEditSave() {
+    if (!EDIT_MODE || !loadedRecord) { showToast("No item loaded", true); return; }
+    if (editLocked) { showToast("This item is reserved/claimed — can't edit", true); return; }
+    if (!(slots.front && slots.front.status === "done")) {
+      showToast("A Front photo is required — it's the primary", true);
+      return;
+    }
+    if (!(($("ksl-edit-bin") || {}).value || "").trim()) {
+      showToast("Bin location can't be empty", true);
+      return;
+    }
+    if (anyUploading()) { showToast("Wait for photos to finish uploading", true); return; }
+    var sku = loadedRecord.sku;
+    var btn = $("ksl-edit-save");
+    if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
+    getToken().then(function (t) {
+      return fetch(FN_EDIT, {
+        method: "POST",
+        headers: {
+          "x-ms-token": t, "content-type": "application/json",
+          "apikey": ANON, "authorization": "Bearer " + ANON
+        },
+        body: JSON.stringify({ action: "update", sku: sku, patch: buildEditPatch() })
+      });
+    }).then(function (r) {
+      return r.json().then(function (j) { return { ok: r.ok, status: r.status, j: j }; });
+    }).then(function (res) {
+      if (res.ok && res.j.ok && res.j.item) {
+        ["status", "primary_photo_url", "photo_urls", "video_url", "bin_location", "featured"]
+          .forEach(function (k) { if (res.j.item[k] !== undefined) loadedRecord[k] = res.j.item[k]; });
+        buildRefBlock(loadedRecord);
+        var st = $("ksl-edit-status");
+        if (st) st.value = (loadedRecord.status === "retired") ? "retired" : "available";
+        showToast("Saved " + sku + " ✓ — verify in Supabase");
+      } else if (res.status === 409) {
+        editLocked = true;
+        showLockBanner("This item is now reserved/claimed — editing is locked.");
+        showToast("Reserved/claimed — can't edit", true);
+        console.error("[edit-save 409]", res);
+      } else {
+        var msg = res.j.error || ("status " + res.status);
+        showToast("Save failed — " + msg, true);
+        console.error("[edit-save]", res);
+      }
+    }).catch(function (e) {
+      showToast("Network error — see console", true);
+      console.error("[edit-save]", e);
+    }).finally(function () {
+      if (btn && !editLocked) { btn.disabled = false; btn.textContent = "Save changes"; }
+      else if (btn) { btn.textContent = "Save changes"; }
+    });
+  }
+
+  /* wire the manage bar + edit panel */
+  (function wireManage() {
+    var loadBtn = $("ksl-mng-load");
+    if (loadBtn) loadBtn.addEventListener("click", runManageLoad);
+    var mngSku = $("ksl-mng-sku");
+    if (mngSku) mngSku.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); runManageLoad(); }
+    });
+    var newLink = $("ksl-mng-new");
+    if (newLink) newLink.addEventListener("click", function (e) { e.preventDefault(); exitEditMode(); });
+    var saveBtn = $("ksl-edit-save");
+    if (saveBtn) saveBtn.addEventListener("click", runEditSave);
+  })();
 
   /* ---- INIT ------------------------------------------------------------ */
   applyType();
