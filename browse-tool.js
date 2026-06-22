@@ -12,7 +12,7 @@
  *   - CURRENT stash: render() keeps the fetched items so openDetail(sku) reads
  *     the full object from memory (no second round-trip — locked decision).
  *   - DETAIL OVERLAY: locked design (thumbnail rail incl. video, main image +
- *     tier badge + zoom stub, details panel = name/size/SKU/tier+retail/
+ *     tier badge + full-screen zoom, details panel = name/size/SKU/tier+retail/
  *     condition+gender|washability+set pills/description/personal note/Add-to-bag
  *     STUB). Close via X, backdrop, or Esc.
  *   - DEEP LINK: ?sku= opens the overlay on load; pushState on open; close
@@ -20,7 +20,7 @@
  *   - NO-LONGER-AVAILABLE: a ?sku= not in the available set shows a graceful
  *     message instead of a broken panel.
  *
- * Add-to-bag + zoom are STUBS here (claim = V4; zoom = focused follow-up).
+ * Add-to-bag is a STUB here (claim = V4). Zoom is live (full-res viewer).
  *
  * DEPLOY LOOP (same as listing-tool): edit + commit -> verify raw file at SHA
  *   -> bump jsDelivr @<sha> on the <script src> in each browse page footer
@@ -199,15 +199,8 @@
 
     var meta = el('div', 'ks-browse-meta');
     meta.appendChild(el('span', 'ks-browse-size', item.size || ''));
-
-    var cart = el('button', 'ks-browse-cart');
-    cart.type = 'button';
-    cart.setAttribute('aria-label', 'Add to bag (coming soon)');
-    cart.innerHTML = BAG_SVG;
-    meta.appendChild(cart);
     body.appendChild(meta);
 
-    body.appendChild(el('span', 'ks-browse-cs', 'Coming soon'));
     card.appendChild(body);
     return card;
   }
@@ -229,14 +222,6 @@
       var card = e.target.closest('.ks-browse-card');
       if (!card) return;
 
-      // cart stub — never opens detail, never navigates
-      if (e.target.closest('.ks-browse-cart')) {
-        e.preventDefault();
-        e.stopPropagation();
-        cartStub(card);
-        return;
-      }
-
       // let modified clicks (new tab / new window) use the native anchor href
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1) return;
 
@@ -244,15 +229,6 @@
       e.preventDefault();
       openDetail(card.getAttribute('data-sku'));
     });
-  }
-
-  // Cart redemption is V4 — quiet "coming soon" flash, no network.
-  function cartStub(card) {
-    var cs = card.querySelector('.ks-browse-cs');
-    if (!cs) return;
-    cs.classList.add('is-on');
-    clearTimeout(cs.__t);
-    cs.__t = setTimeout(function () { cs.classList.remove('is-on'); }, 1500);
   }
 
   /* ---- search (free-text predicate over the in-memory stash) -------------- */
@@ -490,7 +466,7 @@
             (item.size ? '<p class="ks-detail-size">' + escapeHtml(item.size) + '</p>' : '') +
             '<p class="ks-detail-sku">SKU ' + escapeHtml(item.sku || '') + '</p>' +
             '<div class="ks-detail-tier-row">' + tierPill +
-              (retail ? '<span class="ks-detail-retail">Retail value ' + retail + '</span>' : '') +
+              (retail ? '<span class="ks-detail-retail">Retail value new ' + retail + '</span>' : '') +
             '</div>' +
             (pills ? '<div class="ks-detail-pills">' + pills + '</div>' : '') +
             blocks +
@@ -527,10 +503,12 @@
       var v = e.target.closest('[data-video]');
       if (v) { swapMain(root, item, 0, true); }
 
-      // zoom stub — focused follow-up build
-      if (e.target.closest('.ks-detail-zoom')) {
+      // zoom — open full-screen full-res viewer (button OR tapping the main photo)
+      if (e.target.closest('.ks-detail-zoom') || e.target.closest('.ks-detail-main-img')) {
         e.preventDefault();
-        console.debug(LOG, 'zoom stub (V3.3 follow-up)');
+        var mi = root.querySelector('.ks-detail-main-img');
+        var src = mi && mi.getAttribute('src');
+        if (src) openZoom(src);
       }
     });
   }
@@ -568,6 +546,77 @@
     cs.classList.add('is-on');
     clearTimeout(cs.__t);
     cs.__t = setTimeout(function () { cs.classList.remove('is-on'); }, 1800);
+  }
+
+  /* ---- full-screen zoom (self-contained; ALL styles inlined here — zero page-head CSS) ---- */
+  function ensureZoomCss() {
+    if (document.getElementById('ks-zoom-css')) return;
+    var css =
+      '.ks-zoomlayer{position:fixed;inset:0;z-index:10000;background:rgba(20,10,8,.93);' +
+        'display:flex;align-items:center;justify-content:center;overscroll-behavior:contain;}' +
+      '.ks-zoomlayer-scroll{width:100%;height:100%;overflow:auto;-webkit-overflow-scrolling:touch;' +
+        'display:flex;align-items:center;justify-content:center;}' +
+      '.ks-zoomlayer img{display:block;max-width:100%;max-height:100%;object-fit:contain;' +
+        'cursor:zoom-in;user-select:none;-webkit-user-select:none;}' +
+      '.ks-zoomlayer.is-actual .ks-zoomlayer-scroll{align-items:flex-start;justify-content:flex-start;}' +
+      '.ks-zoomlayer.is-actual img{max-width:none;max-height:none;width:auto;height:auto;' +
+        'object-fit:none;cursor:zoom-out;}' +
+      '.ks-zoomlayer-x{position:fixed;top:16px;right:16px;width:40px;height:40px;border-radius:50%;' +
+        'border:none;background:rgba(255,255,255,.92);color:#270f0b;font-size:20px;line-height:1;' +
+        'display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:10001;' +
+        'box-shadow:0 2px 10px rgba(0,0,0,.3);}' +
+      '.ks-zoomlayer-x:hover{background:#fff;}';
+    var s = document.createElement('style');
+    s.id = 'ks-zoom-css';
+    s.textContent = css;
+    document.head.appendChild(s);
+  }
+
+  var zoomKeyHandler = null;
+
+  function openZoom(src) {
+    if (!src) return;
+    if (document.querySelector('.ks-zoomlayer')) return;   // already open
+    ensureZoomCss();
+
+    var layer  = el('div', 'ks-zoomlayer');
+    var scroll = el('div', 'ks-zoomlayer-scroll');
+    var img    = document.createElement('img');
+    img.src = src;
+    img.alt = '';
+    scroll.appendChild(img);
+    layer.appendChild(scroll);
+
+    var x = el('button', 'ks-zoomlayer-x');
+    x.type = 'button';
+    x.setAttribute('aria-label', 'Close zoom');
+    x.innerHTML = '&times;';
+    layer.appendChild(x);
+
+    // tap image -> toggle fit <-> actual size (then scroll/pan to inspect detail)
+    img.addEventListener('click', function (e) {
+      e.stopPropagation();
+      layer.classList.toggle('is-actual');
+    });
+    // tap the dark area outside the image -> close
+    scroll.addEventListener('click', function (e) {
+      if (e.target === scroll) closeZoom();
+    });
+    x.addEventListener('click', closeZoom);
+
+    // Esc closes the ZOOM only — capture phase + stopPropagation keeps the detail overlay open underneath
+    zoomKeyHandler = function (e) {
+      if (e.key === 'Escape') { e.stopPropagation(); closeZoom(); }
+    };
+    window.addEventListener('keydown', zoomKeyHandler, true);
+
+    document.body.appendChild(layer);
+  }
+
+  function closeZoom() {
+    var layer = document.querySelector('.ks-zoomlayer');
+    if (layer && layer.parentNode) layer.parentNode.removeChild(layer);
+    if (zoomKeyHandler) { window.removeEventListener('keydown', zoomKeyHandler, true); zoomKeyHandler = null; }
   }
 
   function openDetail(sku) {
@@ -704,7 +753,7 @@
 
   var FACETS = {
     tier:     { field: 'tier',            title: 'Tier',        match: 'lower',  order: ['essentials', 'elevated', 'special'], display: tierLabel,   urlLower: true },
-    brand:    { field: 'brand',           title: 'Brand',       match: 'exact',  order: null,       display: ident,       showAll: true },
+    brand:    { field: 'brand',           title: 'Brand',       match: 'exact',  order: null,       display: ident,       showAll: true, pin: ['Nike', 'Janie and Jack', 'Gap'] },
     gender:   { field: 'gender_style',    title: 'Gender',      match: 'exact',  order: null,       display: genderLabel },
     color:    { field: 'color',           title: 'Color',       match: 'exact',  order: null,       display: ident,       showAll: true },
     size:     { field: 'size',            title: 'Size',        match: 'exact',  order: SIZE_ORDER, display: ident,       rowFilter: function (it) { return it.category !== 'Shoes'; } },
@@ -798,27 +847,69 @@
     grp.appendChild(lbl);
 
     var body = el('div', 'ks-flt-groupbody');
-    options.forEach(function (opt, i) {
+
+    function makeRow(opt) {
       var row   = el('label', 'ks-flt-row');
       var input = document.createElement('input');
       input.type      = 'checkbox';
       input.className  = 'ks-flt-cb';
       input.value      = opt.value;
       input.setAttribute('data-facet', key);
-      if (FILTERS[key].indexOf(opt.value) !== -1) input.checked = true;
+      if (FILTERS[key].indexOf(opt.value) !== -1) input.checked = true;   // checked state from FILTERS = survives rebuild
       input.addEventListener('change', onFacetChange);
       row.appendChild(input);
       row.appendChild(el('span', 'ks-flt-rowtext', opt.label));
+      return row;
+    }
+
+    // ---- pin/cap mode: facet declares a pin list AND >=1 pinned value is in stock ----
+    var def     = FACETS[key];
+    var pinList = (def && def.pin) ? def.pin : null;
+    var pinned  = pinList
+      ? pinList.filter(function (v) { return options.some(function (o) { return o.value === v; }); })
+      : [];
+
+    if (pinned.length) {
+      var alpha    = options.slice();          // already alpha (brand order:null)
+      var expanded = false;
+      var more = el('span', 'ks-flt-more', 'Show all (' + options.length + ')');   // ALWAYS shown, even if count === pinned
+
+      function renderRows() {
+        var kids = body.querySelectorAll('.ks-flt-row');
+        for (var k = 0; k < kids.length; k++) body.removeChild(kids[k]);
+        var list = expanded
+          ? alpha                                                 // full alphabetical, pinned in normal spots
+          : pinned.map(function (v) {                             // collapsed = pinned only, in pin order
+              return alpha.filter(function (o) { return o.value === v; })[0];
+            });
+        list.forEach(function (opt) { body.insertBefore(makeRow(opt), more); });
+      }
+
+      more.addEventListener('click', function () {
+        expanded = !expanded;
+        more.textContent = expanded ? 'Show less' : 'Show all (' + options.length + ')';
+        renderRows();
+      });
+      body.appendChild(more);
+      renderRows();
+      grp.appendChild(body);
+      rail.appendChild(grp);
+      return;
+    }
+
+    // ---- default mode: all rows, optional 6 + "Show all" CSS cap (unchanged) ----
+    options.forEach(function (opt, i) {
+      var row = makeRow(opt);
       if (showAll && i >= 6) row.classList.add('ks-flt-extra');   // hidden until "show all"
       body.appendChild(row);
     });
     if (showAll && options.length > 6) {
-      var more = el('span', 'ks-flt-more', 'Show all (' + options.length + ')');
-      more.addEventListener('click', function () {
+      var more2 = el('span', 'ks-flt-more', 'Show all (' + options.length + ')');
+      more2.addEventListener('click', function () {
         var open = grp.classList.toggle('ks-flt-expanded');
-        more.textContent = open ? 'Show less' : 'Show all (' + options.length + ')';
+        more2.textContent = open ? 'Show less' : 'Show all (' + options.length + ')';
       });
-      body.appendChild(more);
+      body.appendChild(more2);
     }
     grp.appendChild(body);
     rail.appendChild(grp);
