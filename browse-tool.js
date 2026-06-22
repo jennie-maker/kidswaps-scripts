@@ -52,6 +52,7 @@
   var CURRENT = [];           // last rendered (post-type-filter) item set
   var ALL = [];               // last fetched (pre-type-filter) — overlay looks here
   var overlayOpen = false;
+  var lastFocusEl = null;     // element to restore focus to when the overlay closes
 
   var SEARCH = '';            // current free-text query (raw; normalized at match time)
 
@@ -110,6 +111,33 @@
     return out;
   }
 
+  // Supabase image transform: rewrite a public OBJECT url to the render/image
+  // endpoint at a target width/quality. Pass-through (non-breaking) for any url
+  // that isn't a standard public-object url, so unexpected url shapes never break.
+  // NOTE: pattern is the documented Supabase public path; confirm against a live
+  // card src once (see console check in the deploy notes) — if your urls differ
+  // it's a one-line change to MARKER below.
+  var THUMB_MARKER = '/storage/v1/object/public/';
+  function thumb(url, w, q) {
+    if (!url || typeof url !== 'string') return url;
+    var i = url.indexOf(THUMB_MARKER);
+    if (i === -1) return url;
+    var base = url.slice(0, i) + '/storage/v1/render/image/public/' +
+               url.slice(i + THUMB_MARKER.length);
+    return base + (base.indexOf('?') === -1 ? '?' : '&') +
+           'width=' + w + '&quality=' + (q || 75);
+  }
+
+  // "New" = added within the last NEW_DAYS days (default sort already surfaces
+  // these first; the tag is just a discovery cue).
+  var NEW_DAYS = 14;
+  function isNew(item) {
+    if (!item || !item.date_added) return false;
+    var t = Date.parse(item.date_added);
+    if (isNaN(t)) return false;
+    return (Date.now() - t) <= NEW_DAYS * 86400000;
+  }
+
   var BAG_SVG =
     '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"' +
     ' stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
@@ -130,9 +158,42 @@
     '<path d="M18 6L6 18M6 6l12 12"/></svg>';
 
   /* ---- state screens ------------------------------------------------------ */
+  // One-time injected styles for JS-only visuals (skeleton + "New" tag), kept out
+  // of the page <head> so they ride the script rather than the fragile head CSS.
+  function ensureUtilCss() {
+    if (document.getElementById('ks-util-css')) return;
+    var css =
+      '@keyframes ks-shimmer{0%{background-position:-450px 0}100%{background-position:450px 0}}' +
+      '#ks-browse-app .ks-skel{pointer-events:none}' +
+      '#ks-browse-app .ks-skel .ks-browse-media,#ks-browse-app .ks-skel-line{' +
+        'background:#ece9e3;background-image:linear-gradient(90deg,#ece9e3 0,#f5f3ef 40px,#ece9e3 80px);' +
+        'background-size:600px 100%;animation:ks-shimmer 1.2s linear infinite;border-radius:8px;}' +
+      '#ks-browse-app .ks-skel .ks-browse-media{aspect-ratio:3 / 4;}' +
+      '#ks-browse-app .ks-skel-line{height:12px;margin:10px 2px 0;}' +
+      '#ks-browse-app .ks-skel-line.short{width:55%;}' +
+      '#ks-browse-app .ks-browse-new{position:absolute;top:10px;right:10px;background:#d24f28;' +
+        'color:#fff;font-size:.62rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;' +
+        'padding:4px 8px;border-radius:999px;}';
+    var s = document.createElement('style');
+    s.id = 'ks-util-css';
+    s.textContent = css;
+    document.head.appendChild(s);
+  }
+
   function showLoading(mount) {
+    ensureUtilCss();
     mount.innerHTML = '';
-    mount.appendChild(el('div', 'ks-browse-state ks-browse-loading', 'Loading the collection\u2026'));
+    var grid = el('div', 'ks-browse-grid');
+    for (var i = 0; i < 8; i++) {
+      var card = el('div', 'ks-browse-card ks-skel');
+      card.appendChild(el('div', 'ks-browse-media'));
+      var body = el('div', 'ks-browse-body');
+      body.appendChild(el('div', 'ks-skel-line'));
+      body.appendChild(el('div', 'ks-skel-line short'));
+      card.appendChild(body);
+      grid.appendChild(card);
+    }
+    mount.appendChild(grid);
   }
   function showEmpty(mount) {
     mount.innerHTML = '';
@@ -182,7 +243,7 @@
       img.loading = 'lazy';
       img.decoding = 'async';
       img.alt = descriptor(item);
-      img.src = item.primary_photo_url;
+      img.src = thumb(item.primary_photo_url, 400, 75);
       img.addEventListener('error', function () {
         if (img.parentNode) img.parentNode.replaceChild(placeholderTile(), img);
       });
@@ -191,6 +252,7 @@
       media.appendChild(placeholderTile());
     }
     if (item.tier) media.appendChild(el('span', 'ks-browse-tier', tierLabel(item.tier)));
+    if (isNew(item)) media.appendChild(el('span', 'ks-browse-new', 'New'));
     card.appendChild(media);
 
     // body
@@ -255,6 +317,7 @@
 
   /* ---- render ------------------------------------------------------------- */
   function render(mount, items) {
+    ensureUtilCss();
     ALL = items.slice();      // keep the full set for overlay lookups
     var view = items.slice();
     if (BROWSE_TYPE !== 'all') {
@@ -398,7 +461,7 @@
     var thumbs = '';
     photos.forEach(function (u, i) {
       thumbs += '<button type="button" class="ks-detail-thumb' + (i === 0 ? ' is-active' : '') +
-        '" data-photo="' + i + '"><img src="' + escapeHtml(u) + '" alt="" loading="lazy"></button>';
+        '" data-photo="' + i + '"><img src="' + escapeHtml(thumb(u, 120, 70)) + '" alt="" loading="lazy"></button>';
     });
     if (hasVideo) {
       thumbs += '<button type="button" class="ks-detail-thumb ks-detail-thumb-video" data-video="1">' +
@@ -411,7 +474,8 @@
     // main media (first photo, or placeholder)
     var main;
     if (photos.length) {
-      main = '<img class="ks-detail-main-img" src="' + escapeHtml(photos[0]) + '" alt="' +
+      main = '<img class="ks-detail-main-img" src="' + escapeHtml(thumb(photos[0], 800, 80)) +
+        '" data-full="' + escapeHtml(photos[0]) + '" alt="' +
         escapeHtml(descriptor(item)) + '">';
     } else {
       main = '<div class="ks-detail-ph">Photo coming soon</div>';
@@ -493,6 +557,24 @@
   }
 
   function wireOverlay(root, item) {
+    // image fallback — 'error' doesn't bubble, so listen in capture phase.
+    // Main image -> placeholder; a failed rail thumb just hides itself.
+    root.addEventListener('error', function (e) {
+      var t = e.target;
+      if (!t || t.tagName !== 'IMG') return;
+      if (t.classList.contains('ks-detail-main-img')) {
+        var media = t.closest('.ks-detail-media');
+        if (media) {
+          var keep = media.querySelector('.ks-detail-tier-badge');
+          media.innerHTML = '<div class="ks-detail-ph">Photo coming soon</div>';
+          if (keep) media.appendChild(keep);
+        }
+      } else {
+        var btn = t.closest('.ks-detail-thumb');
+        if (btn) btn.style.display = 'none';
+      }
+    }, true);
+
     // close affordances
     root.addEventListener('click', function (e) {
       if (e.target.closest('[data-close]')) { e.preventDefault(); closeDetail(); }
@@ -507,7 +589,7 @@
       if (e.target.closest('.ks-detail-zoom') || e.target.closest('.ks-detail-main-img')) {
         e.preventDefault();
         var mi = root.querySelector('.ks-detail-main-img');
-        var src = mi && mi.getAttribute('src');
+        var src = mi && (mi.getAttribute('data-full') || mi.getAttribute('src'));
         if (src) openZoom(src);
       }
     });
@@ -523,11 +605,17 @@
     var inner;
     if (isVideo && item.video_url) {
       inner = '<video class="ks-detail-main-video" src="' + escapeHtml(item.video_url) +
-        '" controls muted playsinline preload="metadata"></video>';
+        '" autoplay loop muted playsinline preload="auto"></video>';
       media.innerHTML = inner + tierBadge;
+      // Option A: silent ambient loop, no controls. The muted *property* (not just
+      // the attribute) is what some browsers require for autoplay, and an explicit
+      // play() with a swallowed rejection covers the rest.
+      var vid = media.querySelector('.ks-detail-main-video');
+      if (vid) { vid.muted = true; var pp = vid.play(); if (pp && pp.catch) pp.catch(function () {}); }
     } else {
       var u = photos[idx] || photos[0];
-      inner = '<img class="ks-detail-main-img" src="' + escapeHtml(u) + '" alt="' +
+      inner = '<img class="ks-detail-main-img" src="' + escapeHtml(thumb(u, 800, 80)) +
+        '" data-full="' + escapeHtml(u) + '" alt="' +
         escapeHtml(descriptor(item)) + '">';
       var zoom = '<button type="button" class="ks-detail-zoom" aria-label="Zoom photo">' + ZOOM_SVG + ' zoom</button>';
       media.innerHTML = inner + tierBadge + zoom;
@@ -621,6 +709,7 @@
 
   function openDetail(sku) {
     if (!sku) return;
+    lastFocusEl = document.activeElement;   // restore focus here on close
     var item = findBySku(sku);
     var root = ensureOverlayRoot();
 
@@ -648,15 +737,31 @@
     if (root) { root.setAttribute('hidden', ''); root.innerHTML = ''; }
     overlayOpen = false;
     document.documentElement.classList.remove('ks-detail-lock');
+    // return focus to whatever opened the overlay, if it's still on the page
+    if (lastFocusEl && document.contains(lastFocusEl) && lastFocusEl.focus) {
+      lastFocusEl.focus();
+    }
+    lastFocusEl = null;
     // strip ?sku= from the URL without adding history
     if (location.search) {
       history.replaceState({}, '', location.pathname);
     }
   }
 
-  // Esc closes
+  // Keyboard: Esc closes; Tab is trapped inside the open dialog panel.
   document.addEventListener('keydown', function (e) {
-    if (overlayOpen && e.key === 'Escape') closeDetail();
+    if (!overlayOpen) return;
+    if (e.key === 'Escape') { closeDetail(); return; }
+    if (e.key !== 'Tab') return;
+    var panel = document.querySelector('#ks-detail-root .ks-detail-panel');
+    if (!panel) return;
+    var f = panel.querySelectorAll(
+      'a[href],button:not([disabled]),input,select,textarea,[tabindex]:not([tabindex="-1"])');
+    f = Array.prototype.filter.call(f, function (n) { return n.offsetParent !== null; });
+    if (!f.length) return;
+    var first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   });
 
   // Back/forward: open or close to match the URL
