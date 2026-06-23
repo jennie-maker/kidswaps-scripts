@@ -30,6 +30,19 @@
   var REST = "https://ajsobivqxexcniwifxzz.supabase.co/rest/v1";   // direct PostgREST (option_lists, nothing to hide)
   var DRAFT_KEY = "ks_listing_draft_v1";
 
+  /* ---- RESALE PRICING CONFIG (locked 2026-06-23b) ---------------------- */
+  /* resale_value = retail x tierPct x conditionFactor, auto-filled at listing
+     for elevated/special (editable). Essentials is EXEMPT (resale stays NULL).
+     These are the LISTING-side numbers only; the $5 upgrade-fee floor + $80
+     Luxury ceiling live in the checkout Edge Fn (spend-side), NOT here.
+     Tune ~quarterly vs real resale comps. NOTE: changing a number only affects
+     items listed AFTER the change — already-listed rows keep their stored value
+     until re-saved/backfilled (price stability for live items, by design). */
+  var RESALE_CONFIG = {
+    tierPct:   { essentials: 0.30, elevated: 0.50, special: 0.55 },
+    condition: { "new-with-tags": 1.20, "like-new": 1.00, "good": 0.85, "fair": 0.70 }
+  };
+
   /* ---- OPTION_LISTS (controlled vocabulary, live read — Path B) --------- */
   /* Fetched once at load; the remote-select fields fill from this. The SKU
      equals the grading label; option values are the stored canonical values
@@ -115,7 +128,7 @@
 
   // Fill the remote selects after the fetch resolves. Size is category-aware.
   function injectOptions() {
-    ["color", "category"].forEach(function (key) {
+    ["color", "category", "condition_grade"].forEach(function (key) {
       var sel = root.querySelector('select[data-key="' + key + '"]');
       if (sel) fillSelect(sel, OPTION_LISTS[key] || []);
     });
@@ -140,8 +153,9 @@
     { key:"gender_style",   label:"Gender",         type:"select", group:"clothing", required:false, options:[{value:"boy",label:"Male"},{value:"girl",label:"Female"}] },
     { key:"tier",           label:"Tier",           type:"select", group:"both", required:true,  options:["essentials","elevated","special"] },
     { key:"retail_value",   label:"Retail value",   type:"number", group:"both", required:true,  placeholder:"e.g. 48", step:"0.01", min:"0" },
+    { key:"resale_value",   label:"Resale value",   type:"number", group:"both", required:false, noOptTag:true, step:"0.01", min:"0", hint:"Auto-fills for Elevated/Special — editable; Essentials skips it" },
     { key:"bin_location",   label:"Bin location",   type:"text",     group:"both", required:true,  placeholder:"where it's stored" },
-    { key:"condition_grade",label:"Condition grade",type:"text",     group:"both", required:false, placeholder:"e.g. EUC, like-new" },
+    { key:"condition_grade",label:"Condition grade",type:"select", remote:true, group:"both", required:false },
     { key:"season",         label:"Season",         type:"text",     group:"clothing", required:false, placeholder:"e.g. winter, all-season" },
     { key:"description",    label:"Description",    type:"textarea", group:"both", required:false },
     { key:"condition_notes",label:"Personal note",  type:"textarea", group:"both", required:false, placeholder:"e.g. really soft fabric, runs a little big" },
@@ -163,6 +177,7 @@
   var slots = { front:null, back:null, detail:null };
   var video = null;
   var token = null;
+  var resaleTouched = false;   // resale auto-fill override latch; a tier change resets it
 
   /* ---- MANAGE-ITEM (edit existing) STATE ------------------------------- */
   var EDIT_MODE   = false;   // true once an existing item is loaded for editing
@@ -175,7 +190,7 @@
   /* ---- BUILD UI -------------------------------------------------------- */
   function fieldHtml(f) {
     var reqMark = f.required ? '<span class="ksl-req">*</span>'
-                             : ' <span class="ksl-opt">(optional)</span>';
+                             : (f.noOptTag ? '' : ' <span class="ksl-opt">(optional)</span>');
     var inner;
     if (f.type === "select") {
       if (f.remote) {
@@ -380,6 +395,9 @@
         anchor.parentNode.insertBefore(nameField, anchor.nextSibling);
       }
     }
+    // resale_value is group "both", so the data-group pass above just made it
+    // visible regardless of tier — re-assert the tier gate as the last word.
+    applyResaleVisibility();
   }
   root.querySelectorAll(".ksl-toggle button").forEach(function (b) {
     b.addEventListener("click", function () {
@@ -422,6 +440,9 @@
     slots = { front:null, back:null, detail:null }; video = null; renderAllSlots();
     clearErrors();
     clearAllCues();
+    // reset the resale latch + re-assert the tier gate (tier is now blank -> hidden)
+    resaleTouched = false;
+    applyResaleVisibility();
   }
 
   /* ---- SET TOGGLE ------------------------------------------------------ */
@@ -665,6 +686,8 @@
       });
       if (d.videoUrl) video = { id: uid(), url: d.videoUrl, status: "done", name: "restored", objUrl: d.videoUrl };
       renderAllSlots(); reflectPills();
+      // re-assert resale tier-gate after a restore (tier value is now in place)
+      applyResaleVisibility();
     } catch (e) {}
   }
   root.addEventListener("input", saveDraft);
@@ -710,6 +733,16 @@
     if (itemType === "clothing" && setChk.checked) {
       var n = parseInt(setCount.value, 10);
       if (!(n >= 2)) { bad.push("__set"); root.querySelector('[data-field="__set"]').classList.add("has-error"); }
+    }
+    // resale required for elevated/special (essentials exempt). Client mirror of
+    // the checkout NULL-block guard, so a missing resale fails loud at listing
+    // instead of silently blocking the claim later.
+    var tierElV = root.querySelector('[data-key="tier"]');
+    var tierV = tierElV ? tierElV.value : "";
+    if (tierV === "elevated" || tierV === "special") {
+      var rvEl = root.querySelector('[data-key="resale_value"]');
+      var rvVal = rvEl ? rvEl.value.trim() : "";
+      if (!rvVal || isNaN(Number(rvVal))) { bad.push("resale_value"); markError("resale_value"); }
     }
     return bad;
   }
@@ -895,6 +928,70 @@
     var e = root.querySelector('[data-key="' + key + '"]');
     return !!(e && String(e.value).trim());
   }
+
+  /* ---- RESALE VALUE AUTO-FILL ------------------------------------------ */
+  /* resale = retail x tierPct x conditionFactor, written into the (editable)
+     resale_value field. Fires on tier/retail/condition input — which includes
+     the SKU-lookup carry-forward, since setField dispatches a bubbling 'input'.
+     Essentials is exempt (field hidden + cleared -> sent as NULL). A blank/
+     unknown condition_grade falls back to like-new (1.00): the conservative
+     no-discount default, never above resale. Operator can hand-edit to override
+     (resaleTouched latch); a TIER change resets the latch and recomputes fresh,
+     since a tier switch means the pricing basis changed. */
+  function computeResale() {
+    if (resaleTouched) return;                 // operator override wins
+    var resaleEl = root.querySelector('[data-key="resale_value"]');
+    if (!resaleEl) return;
+    var tierEl = root.querySelector('[data-key="tier"]');
+    var tier = tierEl ? tierEl.value : "";
+    if (tier !== "elevated" && tier !== "special") return;   // essentials/unset: visibility handler clears
+    var pct = RESALE_CONFIG.tierPct[tier];
+    var retailEl = root.querySelector('[data-key="retail_value"]');
+    var retail = retailEl ? Number(retailEl.value) : NaN;
+    if (!pct || !(retail > 0)) { resaleEl.value = ""; return; }   // no valid retail yet -> leave blank
+    var condEl = root.querySelector('[data-key="condition_grade"]');
+    var grade = condEl ? condEl.value : "";
+    var factor = RESALE_CONFIG.condition[grade];
+    if (factor === undefined) factor = 1.00;   // blank/unknown grade -> like-new (no discount)
+    var resale = Math.round(retail * pct * factor * 100) / 100;
+    resaleEl.value = resale.toFixed(2);
+    saveDraft();
+  }
+
+  function applyResaleVisibility() {
+    var fld = root.querySelector('.ksl-field[data-field="resale_value"]');
+    if (!fld) return;
+    var tierEl = root.querySelector('[data-key="tier"]');
+    var tier = tierEl ? tierEl.value : "";
+    var resaleEl = root.querySelector('[data-key="resale_value"]');
+    if (tier === "elevated" || tier === "special") {
+      fld.classList.remove("ksl-hidden");
+      computeResale();
+    } else {
+      // essentials or unset -> hide, clear, reset latch (resale stays NULL)
+      fld.classList.add("ksl-hidden");
+      if (resaleEl) resaleEl.value = "";
+      resaleTouched = false;
+    }
+  }
+
+  function onTierInput() {
+    resaleTouched = false;       // tier change wins: recompute fresh at the new basis
+    applyResaleVisibility();     // show/hide + recompute
+  }
+
+  (function wireResale() {
+    var tierEl = root.querySelector('[data-key="tier"]');
+    if (tierEl) tierEl.addEventListener("input", onTierInput);
+    ["retail_value", "condition_grade"].forEach(function (k) {
+      var el = root.querySelector('[data-key="' + k + '"]');
+      if (el) el.addEventListener("input", computeResale);
+    });
+    var resaleEl = root.querySelector('[data-key="resale_value"]');
+    if (resaleEl) resaleEl.addEventListener("input", function (e) {
+      if (e.isTrusted) resaleTouched = true;   // operator hand-edit latches the override
+    });
+  })();
 
   function applyRecord(rec) {
     // 1. item type FIRST, then applyType(), so the correct group is visible
