@@ -343,7 +343,8 @@
       "#ks-list-app .ksl-ref-v{opacity:.92}" +
       "#ks-list-app .ksl-edit-lock{margin:0 0 14px;padding:10px 12px;border-radius:8px;background:rgba(210,79,40,.14);border:1px solid rgba(210,79,40,.55);font-size:.86rem}" +
       "#ks-list-app .ksl-makeprimary{display:block;width:100%;margin-top:6px;padding:5px 8px;border:1px solid rgba(255,255,255,.25);border-radius:7px;background:transparent;color:inherit;font:inherit;font-size:.76rem;cursor:pointer}" +
-      "#ks-list-app .ksl-makeprimary:hover{border-color:#d24f28;color:#d24f28}";
+      "#ks-list-app .ksl-makeprimary:hover{border-color:#d24f28;color:#d24f28}" +
+      "#ks-list-app .ksl-field.ksl-cued > .ksl-label::after{content:'from grading';margin-left:8px;padding:1px 7px;border-radius:999px;border:1px solid rgba(210,79,40,.4);background:rgba(210,79,40,.12);color:#e07a52;font-size:.64rem;font-weight:600;letter-spacing:.02em;text-transform:none;vertical-align:middle;white-space:nowrap}";
     document.head.appendChild(s);
   })();
 
@@ -420,6 +421,7 @@
     setChk.checked = false; setCountWrap.classList.add("ksl-hidden"); setCount.value = "";
     slots = { front:null, back:null, detail:null }; video = null; renderAllSlots();
     clearErrors();
+    clearAllCues();
   }
 
   /* ---- SET TOGGLE ------------------------------------------------------ */
@@ -677,6 +679,14 @@
     }
   });
 
+  // clear the "from grading" cue on a field the operator actually edits.
+  // programmatic setField fires isTrusted=false, so carry-forward won't self-clear.
+  root.addEventListener("input", function (e) { if (e.isTrusted) clearCueFor(e.target); });
+  root.addEventListener("change", function (e) { if (e.isTrusted) clearCueFor(e.target); });
+  root.addEventListener("click", function (e) {
+    if (e.isTrusted && e.target.closest && e.target.closest("[data-pill]")) clearCueFor(e.target);
+  });
+
   /* ---- VALIDATION + SUBMIT --------------------------------------------- */
   function clearErrors() {
     root.querySelectorAll(".ksl-field.has-error").forEach(function (f) { f.classList.remove("has-error"); });
@@ -825,8 +835,8 @@
   /* ---- SKU AUTO-POPULATE FROM GRADING ---------------------------------- */
   /* On blur: normalize the typed label to KS-NNNNN, look up the accepted
      grading record via the operator-gated intake-lookup edge function, and
-     pre-fill the carry-forward fields. Toy age is shown as a hint, never
-     auto-filled (grading stores a wide string the SELECT can't match). */
+     pre-fill the carry-forward fields. Toy age now populates the multipills
+     from the graded size (token-filtered vs option_lists.toy_age). */
   var lastLookup = null;            // guards against re-firing on unchanged label
   var lookupInFlight = false;
 
@@ -866,23 +876,54 @@
     el.dispatchEvent(new Event("input", { bubbles: true }));
   }
 
+  // ---- "from grading" cue: faint tag marking a carry-forward-filled field,
+  //      auto-cleared when the operator actually edits that field.
+  function cueField(key) {
+    var f = root.querySelector('.ksl-field[data-field="' + key + '"]');
+    if (f) f.classList.add("ksl-cued");
+  }
+  function clearAllCues() {
+    root.querySelectorAll(".ksl-field.ksl-cued").forEach(function (f) {
+      f.classList.remove("ksl-cued");
+    });
+  }
+  function clearCueFor(el) {
+    var f = el && el.closest ? el.closest(".ksl-field") : null;
+    if (f) f.classList.remove("ksl-cued");
+  }
+  function fieldHasValue(key) {
+    var e = root.querySelector('[data-key="' + key + '"]');
+    return !!(e && String(e.value).trim());
+  }
+
   function applyRecord(rec) {
     // 1. item type FIRST, then applyType(), so the correct group is visible
     //    before we write the size field (clothing_size vs toy_age_range).
     var t = (rec.item_type === "toy") ? "toy" : "clothing";
     if (t !== itemType) { itemType = t; applyType(); }
 
-    // 2. carry-forward fields (overwrite; the label is the source of truth)
+    // 2. carry-forward fields (overwrite; the label is the source of truth).
+    //    Re-cue from scratch so a fresh lookup never inherits a stale tag.
+    clearAllCues();
     setField("brand", rec.brand);
+    if (rec.brand) cueField("brand");
     setField("tier", rec.tier);
+    if (rec.tier) cueField("tier");
     if (rec.retail_value !== null && rec.retail_value !== undefined) {
       setField("retail_value", rec.retail_value);
+      cueField("retail_value");
     }
 
     if (itemType === "clothing") {
       setAgeHint("");
-      if (rec.category !== null && rec.category !== undefined) setField("category", rec.category);
-      if (rec.size !== null && rec.size !== undefined) setField("clothing_size", rec.size);
+      if (rec.category !== null && rec.category !== undefined) {
+        setField("category", rec.category);
+        if (fieldHasValue("category")) cueField("category");
+      }
+      if (rec.size !== null && rec.size !== undefined) {
+        setField("clothing_size", rec.size);
+        if (fieldHasValue("clothing_size")) cueField("clothing_size");
+      }
     } else {
       // toy: populate the age multipills from the graded size. Filter to valid
       // option_lists.toy_age tokens so a non-canonical graded string can never
@@ -893,6 +934,7 @@
                          .filter(function (v) { return validAges.indexOf(v) !== -1; });
       setField("toy_age_range", pickedAges.join(", "));
       reflectPills();
+      if (pickedAges.length) cueField("toy_age_range");
       setAgeHint(rec.size && !pickedAges.length
         ? "Graded as: " + rec.size + " — pick the closest match"
         : "");
