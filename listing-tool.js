@@ -884,9 +884,18 @@
       if (rec.category !== null && rec.category !== undefined) setField("category", rec.category);
       if (rec.size !== null && rec.size !== undefined) setField("clothing_size", rec.size);
     } else {
-      // toy: brand/tier/retail filled above; age is manual + hint only
-      if (rec.size) setAgeHint("Graded as: " + rec.size + " — pick the closest match");
-      else setAgeHint("");
+      // toy: populate the age multipills from the graded size. Filter to valid
+      // option_lists.toy_age tokens so a non-canonical graded string can never
+      // reach the submit value (safe-by-construction: a mismatch lights no pills
+      // and falls back to manual pick + hint).
+      var validAges = (OPTION_LISTS["toy_age"] || []).map(function (r) { return r.value; });
+      var pickedAges = String(rec.size || "").split(", ")
+                         .filter(function (v) { return validAges.indexOf(v) !== -1; });
+      setField("toy_age_range", pickedAges.join(", "));
+      reflectPills();
+      setAgeHint(rec.size && !pickedAges.length
+        ? "Graded as: " + rec.size + " — pick the closest match"
+        : "");
     }
   }
 
