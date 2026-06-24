@@ -21,6 +21,11 @@
  *   the fn returns image_url); block/failure = tight centered cluster.
  *   Header = Instrument Serif 400, scaled large (receipt 3.2rem / screens 2rem),
  *   sentence case; body stays Quicksand.
+ * rev 3 (2026-06-24): SOLID fills only (no opacity tints) — full-shade green
+ *   seal + green "Covered" badge (white text), quiet solid neutral charge badge,
+ *   solid gold coins. Empty thumbnails hidden (tile shows photo only once the fn
+ *   returns image_url). Coins wrapped in #ksc-bank = the stable mount for the
+ *   step-6 animated bank (top-right desktop, left on mobile).
  * ========================================================================== */
 (function () {
   "use strict";
@@ -123,47 +128,48 @@
     "  --ks-orange:#d24f28; --ks-orange-d:#b23f1f;",
     "  --ks-ink:#1f1a17; --ks-cream:#eeece1;",
     "  --ks-green:#54935f; --ks-gold:#e0a93f;",
-    "  --ks-muted:rgba(31,26,23,.56); --ks-line:rgba(31,26,23,.12);",
+    "  --ks-muted:#847b6f; --ks-line:#e0d9ca;",
     "  --ks-card:#f6f4ec;",
-    "  --ks-green-bg:rgba(84,147,95,.12); --ks-green-bd:rgba(84,147,95,.34);",
-    "  --ks-gold-bg:rgba(224,169,63,.16); --ks-gold-bd:rgba(224,169,63,.45);",
-    "  --ks-chg-bg:rgba(31,26,23,.06); --ks-chg-tx:rgba(31,26,23,.6);",
+    "  --ks-green-d:#467a50;",
+    "  --ks-chg-bg:#e7e1d5; --ks-chg-tx:#6b6258;",
     "  max-width:560px; margin:0 auto; padding:24px 18px 64px; text-align:left;",
     "  font-family:Quicksand,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;",
     "  color:var(--ks-ink); -webkit-font-smoothing:antialiased; box-sizing:border-box;",
     "}",
     ID + " *{box-sizing:border-box;}",
     // coins (top-right)
-    ID + " .ksc-coins{display:flex; gap:10px; justify-content:flex-end; margin:0 0 18px; flex-wrap:wrap;}",
-    ID + " .ksc-coin{display:flex; align-items:center; gap:8px; background:var(--ks-gold-bg);",
-    "  border:1px solid var(--ks-gold-bd); border-radius:999px; padding:6px 12px 6px 8px;}",
+    // bank (#ksc-bank = the future step-6 animation mount; coins are the static stand-in)
+    ID + " #ksc-bank{display:flex; justify-content:flex-end; margin:0 0 18px;}",
+    ID + " .ksc-coins{display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;}",
+    ID + " .ksc-coin{display:flex; align-items:center; gap:8px; background:#faf8f2;",
+    "  border:1px solid var(--ks-gold); border-radius:999px; padding:6px 12px 6px 8px;}",
     ID + " .ksc-coin .disc{width:26px; height:26px; border-radius:50%; background:var(--ks-gold);",
-    "  border:1px solid rgba(0,0,0,.12); display:flex; align-items:center; justify-content:center;",
+    "  border:1px solid var(--ks-green-d); border-color:#c79527; display:flex; align-items:center; justify-content:center;",
     "  font-weight:700; font-size:.82rem; color:#5c4708;}",
-    ID + " .ksc-coin .lab{font-size:.72rem; line-height:1.15; color:rgba(31,26,23,.55);}",
+    ID + " .ksc-coin .lab{font-size:.72rem; line-height:1.15; color:var(--ks-muted);}",
     ID + " .ksc-coin .lab b{display:block; font-size:.82rem; color:var(--ks-ink); text-transform:capitalize; font-weight:700;}",
     // header / savings (all-left)
     ID + " .ksc-head{text-align:left; font-family:'Instrument Serif',Georgia,serif; font-weight:400; font-size:3.2rem; line-height:1.05; letter-spacing:-.01em; margin:0 0 8px; color:var(--ks-ink);}",
     ID + " .ksc-value{text-align:left; font-size:1.02rem; color:var(--ks-ink); margin:0 0 2px; font-weight:700;}",
     ID + " .ksc-sub{text-align:left; font-size:.92rem; color:var(--ks-muted); margin:0 0 20px; font-weight:500;}",
     // seal (KidSwaps green)
-    ID + " .ksc-seal{display:flex; align-items:center; gap:10px; background:var(--ks-green-bg);",
-    "  border:1px solid var(--ks-green-bd); border-radius:12px; padding:11px 14px; margin:0 0 18px;}",
+    ID + " .ksc-seal{display:flex; align-items:center; gap:10px; background:var(--ks-green);",
+    "  border:1px solid var(--ks-green-d); border-radius:12px; padding:11px 14px; margin:0 0 18px;}",
     ID + " .ksc-seal svg{flex:0 0 auto;}",
-    ID + " .ksc-seal span{font-size:.9rem; color:var(--ks-green); font-weight:600;}",
+    ID + " .ksc-seal span{font-size:.9rem; color:#fff; font-weight:600;}",
     // item tiles (thumb + name + tag)
     ID + " .ksc-items{display:flex; flex-direction:column; gap:10px; margin:0 0 18px;}",
     ID + " .ksc-item{display:flex; align-items:center; gap:13px; background:var(--ks-card);",
     "  border:1px solid var(--ks-line); border-radius:12px; padding:12px 14px;}",
     ID + " .ksc-thumb{position:relative; flex:0 0 auto; width:54px; height:54px; border-radius:8px;",
-    "  overflow:hidden; background:rgba(31,26,23,.05); border:1px solid var(--ks-line);}",
+    "  overflow:hidden; background:#ece5d6; border:1px solid var(--ks-line);}",
     ID + " .ksc-thumb img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;}",
     ID + " .ksc-thumb .phsvg{position:absolute; inset:0; margin:auto; width:22px; height:22px; opacity:.35;}",
     ID + " .ksc-main{flex:1 1 auto; min-width:0;}",
     ID + " .ksc-main .nm{font-weight:700; font-size:.98rem; line-height:1.25; color:var(--ks-ink);}",
     ID + " .ksc-tag{flex:0 0 auto; text-align:right;}",
     ID + " .ksc-badge{display:inline-block; font-size:.78rem; font-weight:700; padding:3px 9px; border-radius:999px; white-space:nowrap;}",
-    ID + " .ksc-badge.covered{background:var(--ks-green-bg); color:var(--ks-green);}",
+    ID + " .ksc-badge.covered{background:var(--ks-green); color:#fff;}",
     ID + " .ksc-badge.charge{background:var(--ks-chg-bg); color:var(--ks-chg-tx);}",
     ID + " .ksc-fee{margin-top:4px; font-size:.86rem; font-weight:700; color:var(--ks-ink);}",
     ID + " .ksc-note{margin-top:3px; font-size:.76rem; color:var(--ks-muted);}",
@@ -197,6 +203,7 @@
     "  animation:ksc-sh 1.3s ease infinite;}",
     "@keyframes ksc-sh{0%{background-position:100% 0}100%{background-position:0 0}}",
     "@media (max-width:600px){",
+    ID + " #ksc-bank{justify-content:flex-start;}",
     ID + " .ksc-coins{justify-content:flex-start;}",
     ID + " .ksc-head{font-size:2.5rem;}",
     ID + " .ksc-screen h2{font-size:1.75rem;}",
@@ -213,9 +220,9 @@
   // ---- inline SVGs ----------------------------------------------------------
   function shieldCheck() {
     return '<svg width="22" height="22" viewBox="0 0 24 24" fill="none">' +
-      '<path d="M12 2l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V5l7-3z" fill="#54935f" opacity=".15"/>' +
-      '<path d="M12 2l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V5l7-3z" stroke="#54935f" stroke-width="1.4"/>' +
-      '<path d="M8.6 12.2l2.2 2.2 4.6-4.8" stroke="#54935f" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      '<path d="M12 2l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V5l7-3z" fill="#fff" opacity=".18"/>' +
+      '<path d="M12 2l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V5l7-3z" stroke="#fff" stroke-width="1.4"/>' +
+      '<path d="M8.6 12.2l2.2 2.2 4.6-4.8" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   }
   function lockIcon() {
     return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none">' +
@@ -235,13 +242,12 @@
       '<circle cx="28" cy="39.5" r="1.6" fill="#d24f28"/></svg>';
   }
 
-  // ---- thumbnail (placeholder until the fn returns image_url) ----------------
+  // ---- thumbnail (only renders when a real image exists; hidden until then) --
   function thumbHtml(line) {
     var url = line.image_url || line.primary_photo_url || null;
-    var img = url
-      ? '<img src="' + esc(url) + '" alt="" onerror="this.remove()">'
-      : "";
-    return '<div class="ksc-thumb">' + phSvg() + img + "</div>";
+    if (!url) return "";                       // no photo yet -> no empty box
+    return '<div class="ksc-thumb">' + phSvg() +
+      '<img src="' + esc(url) + '" alt="" onerror="this.remove()"></div>';
   }
 
   // ---- savings subline (locked bands + $0 celebration) ----------------------
@@ -278,7 +284,9 @@
       out.push(coin("clothes", (bc.clothing && bc.clothing.after != null) ? bc.clothing.after : 0));
     if (cap && cap.toy && Number(cap.toy.limit) > 0)
       out.push(coin("toys", (bc.toy && bc.toy.after != null) ? bc.toy.after : 0));
-    return out.length ? '<div class="ksc-coins">' + out.join("") + "</div>" : "";
+    if (!out.length) return "";
+    // #ksc-bank = stable mount for the step-6 animated bank; coins are today's stand-in
+    return '<div id="ksc-bank"><div class="ksc-coins">' + out.join("") + "</div></div>";
   }
 
   // ---- receipt --------------------------------------------------------------
