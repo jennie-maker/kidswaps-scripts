@@ -127,12 +127,22 @@
     reflectPills();   // re-activate from any current/restored hidden value
   }
 
+  // Most listed items are like-new, so default condition_grade to it whenever
+  // the select is fresh/empty (drops the blank "Select…" and a stray Fair
+  // sticking). Drafts (restore runs after this) and any operator pick still
+  // win. Math is unchanged — a blank grade already fell back to 1.00.
+  function defaultCondition() {
+    var sel = root.querySelector('select[data-key="condition_grade"]');
+    if (sel && !sel.value) sel.value = "like-new";
+  }
+
   // Fill the remote selects after the fetch resolves. Size is category-aware.
   function injectOptions() {
     ["color", "category", "condition_grade"].forEach(function (key) {
       var sel = root.querySelector('select[data-key="' + key + '"]');
       if (sel) fillSelect(sel, OPTION_LISTS[key] || []);
     });
+    defaultCondition();
     populateSizeOptions();
     injectMultipills();
   }
@@ -387,7 +397,9 @@
       "#ks-list-app .ksl-bm-actions{display:flex;gap:10px;justify-content:flex-end}" +
       "#ks-list-app .ksl-bm-cancel{padding:9px 16px;border:1px solid rgba(255,255,255,.22);border-radius:8px;background:transparent;color:inherit;font:inherit;cursor:pointer}" +
       "#ks-list-app .ksl-bm-confirm{padding:9px 18px;border:0;border-radius:8px;background:#d24f28;color:#fff;font:inherit;font-weight:600;cursor:pointer}" +
-      "#ks-list-app .ksl-bm-confirm:disabled{opacity:.6;cursor:default}";
+      "#ks-list-app .ksl-bm-confirm:disabled{opacity:.6;cursor:default}" +
+      "#ks-list-app .ksl-field[data-field='resale_value'] input{border-left:3px solid #d24f28;background:rgba(210,79,40,.06)}" +
+      "#ks-list-app .ksl-field[data-field='resale_value'] > .ksl-label::after{content:'computed';margin-left:8px;padding:1px 7px;border-radius:999px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.05);color:#c2bcb4;font-size:.62rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;vertical-align:middle;white-space:nowrap}";
     document.head.appendChild(s);
   })();
 
@@ -475,6 +487,7 @@
     resaleTouched = false;
     applyResaleVisibility();
     closeBrandSuggest();
+    defaultCondition();        // next item starts on the like-new default
   }
 
   /* ---- SET TOGGLE ------------------------------------------------------ */
