@@ -29,6 +29,11 @@
  * rev 4 (2026-06-24): trust bar de-boxed — no background, bold green text, gold
  *   shield (matches coins). Charge badge now ink-on-cream (palette neutrals, off
  *   the derived gray). Confirm button = 50px pill.
+ * rev 5 (2026-06-24): item tiles link out — thumb+name wrapped in
+ *   <a href="/browse?sku=…" target="_blank"> so a member can re-reference the
+ *   live detail overlay mid-checkout without losing their cart. Tag/fee stays
+ *   outside the link. (Cart edit/remove still belongs to the unbuilt browse→bag
+ *   workstream, not here.)
  * ========================================================================== */
 (function () {
   "use strict";
@@ -167,6 +172,9 @@
     "  overflow:hidden; background:#ece5d6; border:1px solid var(--ks-line);}",
     ID + " .ksc-thumb img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;}",
     ID + " .ksc-thumb .phsvg{position:absolute; inset:0; margin:auto; width:22px; height:22px; opacity:.35;}",
+    ID + " .ksc-itemlink{display:flex; align-items:center; gap:13px; flex:1 1 auto; min-width:0; text-decoration:none; color:inherit;}",
+    ID + " .ksc-itemlink:hover .nm{text-decoration:underline; text-underline-offset:2px; text-decoration-color:var(--ks-muted);}",
+    ID + " .ksc-itemlink:hover .ksc-thumb{opacity:.88;}",
     ID + " .ksc-main{flex:1 1 auto; min-width:0;}",
     ID + " .ksc-main .nm{font-weight:700; font-size:.98rem; line-height:1.25; color:var(--ks-ink);}",
     ID + " .ksc-tag{flex:0 0 auto; text-align:right;}",
@@ -304,8 +312,12 @@
       var tag = '<span class="ksc-badge ' + t.cls + '">' + esc(t.label) + "</span>";
       if (t.fee) tag += '<div class="ksc-fee">' + esc(t.fee) + "</div>";
       if (t.note) tag += '<div class="ksc-note">' + esc(t.note) + "</div>";
-      return '<div class="ksc-item">' + thumbHtml(ln) +
-        '<div class="ksc-main"><div class="nm">' + esc(ln.item_name || ln.sku) + "</div></div>" +
+      var href = "/browse?sku=" + encodeURIComponent(ln.sku);
+      return '<div class="ksc-item">' +
+        '<a class="ksc-itemlink" href="' + esc(href) + '" target="_blank" rel="noopener">' +
+          thumbHtml(ln) +
+          '<div class="ksc-main"><div class="nm">' + esc(ln.item_name || ln.sku) + "</div></div>" +
+        "</a>" +
         '<div class="ksc-tag">' + tag + "</div></div>";
     }).join("");
 
