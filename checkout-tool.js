@@ -19,6 +19,8 @@
  *   hues; charges use neutral ink-grays, no invented colors). Quicksand base;
  *   all-left receipt; value line no cents; item thumbnails (placeholder until
  *   the fn returns image_url); block/failure = tight centered cluster.
+ *   Header = Instrument Serif 400, scaled large (receipt 3.2rem / screens 2rem),
+ *   sentence case; body stays Quicksand.
  * ========================================================================== */
 (function () {
   "use strict";
@@ -141,7 +143,7 @@
     ID + " .ksc-coin .lab{font-size:.72rem; line-height:1.15; color:rgba(31,26,23,.55);}",
     ID + " .ksc-coin .lab b{display:block; font-size:.82rem; color:var(--ks-ink); text-transform:capitalize; font-weight:700;}",
     // header / savings (all-left)
-    ID + " .ksc-head{text-align:left; font-weight:700; font-size:1.7rem; line-height:1.2; margin:0 0 6px; color:var(--ks-ink);}",
+    ID + " .ksc-head{text-align:left; font-family:'Instrument Serif',Georgia,serif; font-weight:400; font-size:3.2rem; line-height:1.05; letter-spacing:-.01em; margin:0 0 8px; color:var(--ks-ink);}",
     ID + " .ksc-value{text-align:left; font-size:1.02rem; color:var(--ks-ink); margin:0 0 2px; font-weight:700;}",
     ID + " .ksc-sub{text-align:left; font-size:.92rem; color:var(--ks-muted); margin:0 0 20px; font-weight:500;}",
     // seal (KidSwaps green)
@@ -183,7 +185,7 @@
     ID + " .ksc-screen{display:flex; flex-direction:column; align-items:center; justify-content:center;",
     "  text-align:center; min-height:58vh; max-width:430px; margin:0 auto; padding:32px 16px;}",
     ID + " .ksc-screen .ic{width:54px; height:54px; margin:0 0 18px;}",
-    ID + " .ksc-screen h2{font-weight:700; font-size:1.35rem; margin:0 0 8px; color:var(--ks-ink); text-align:center;}",
+    ID + " .ksc-screen h2{font-family:'Instrument Serif',Georgia,serif; font-weight:400; font-size:2rem; line-height:1.1; margin:0 0 10px; color:var(--ks-ink); text-align:center;}",
     ID + " .ksc-screen p{font-size:.95rem; color:var(--ks-muted); line-height:1.5; margin:0 0 22px; text-align:center; font-weight:500;}",
     ID + " .ksc-screen .act{display:inline-block; background:var(--ks-orange); color:#fff; text-decoration:none;",
     "  font-weight:700; font-size:.95rem; border-radius:10px; padding:12px 22px; font-family:inherit;}",
@@ -196,7 +198,8 @@
     "@keyframes ksc-sh{0%{background-position:100% 0}100%{background-position:0 0}}",
     "@media (max-width:600px){",
     ID + " .ksc-coins{justify-content:flex-start;}",
-    ID + " .ksc-head{font-size:1.45rem;}",
+    ID + " .ksc-head{font-size:2.5rem;}",
+    ID + " .ksc-screen h2{font-size:1.75rem;}",
     "}",
   ].join("\n");
 
