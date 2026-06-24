@@ -26,6 +26,9 @@
  *   solid gold coins. Empty thumbnails hidden (tile shows photo only once the fn
  *   returns image_url). Coins wrapped in #ksc-bank = the stable mount for the
  *   step-6 animated bank (top-right desktop, left on mobile).
+ * rev 4 (2026-06-24): trust bar de-boxed — no background, bold green text, gold
+ *   shield (matches coins). Charge badge now ink-on-cream (palette neutrals, off
+ *   the derived gray). Confirm button = 50px pill.
  * ========================================================================== */
 (function () {
   "use strict";
@@ -131,7 +134,7 @@
     "  --ks-muted:#847b6f; --ks-line:#e0d9ca;",
     "  --ks-card:#f6f4ec;",
     "  --ks-green-d:#467a50;",
-    "  --ks-chg-bg:#e7e1d5; --ks-chg-tx:#6b6258;",
+    "  --ks-chg-bg:#eeece1; --ks-chg-tx:#1f1a17;",
     "  max-width:560px; margin:0 auto; padding:24px 18px 64px; text-align:left;",
     "  font-family:Quicksand,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;",
     "  color:var(--ks-ink); -webkit-font-smoothing:antialiased; box-sizing:border-box;",
@@ -153,10 +156,9 @@
     ID + " .ksc-value{text-align:left; font-size:1.02rem; color:var(--ks-ink); margin:0 0 2px; font-weight:700;}",
     ID + " .ksc-sub{text-align:left; font-size:.92rem; color:var(--ks-muted); margin:0 0 20px; font-weight:500;}",
     // seal (KidSwaps green)
-    ID + " .ksc-seal{display:flex; align-items:center; gap:10px; background:var(--ks-green);",
-    "  border:1px solid var(--ks-green-d); border-radius:12px; padding:11px 14px; margin:0 0 18px;}",
+    ID + " .ksc-seal{display:flex; align-items:center; gap:9px; padding:2px 2px; margin:0 0 18px;}",
     ID + " .ksc-seal svg{flex:0 0 auto;}",
-    ID + " .ksc-seal span{font-size:.9rem; color:#fff; font-weight:600;}",
+    ID + " .ksc-seal span{font-size:.95rem; color:var(--ks-green); font-weight:700;}",
     // item tiles (thumb + name + tag)
     ID + " .ksc-items{display:flex; flex-direction:column; gap:10px; margin:0 0 18px;}",
     ID + " .ksc-item{display:flex; align-items:center; gap:13px; background:var(--ks-card);",
@@ -182,7 +184,7 @@
     ID + " .ksc-row.total span{color:var(--ks-ink);}",
     // button + secure
     ID + " .ksc-btn{display:block; width:100%; border:0; cursor:pointer; background:var(--ks-orange);",
-    "  color:#fff; font-weight:700; font-size:1.02rem; font-family:inherit; border-radius:12px;",
+    "  color:#fff; font-weight:700; font-size:1.02rem; font-family:inherit; border-radius:50px;",
     "  padding:15px 18px; transition:background .15s;}",
     ID + " .ksc-btn:hover{background:var(--ks-orange-d);}",
     ID + " .ksc-secure{display:flex; align-items:center; justify-content:center; gap:7px; margin-top:11px; font-size:.8rem; color:var(--ks-muted);}",
@@ -220,9 +222,9 @@
   // ---- inline SVGs ----------------------------------------------------------
   function shieldCheck() {
     return '<svg width="22" height="22" viewBox="0 0 24 24" fill="none">' +
-      '<path d="M12 2l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V5l7-3z" fill="#fff" opacity=".18"/>' +
-      '<path d="M12 2l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V5l7-3z" stroke="#fff" stroke-width="1.4"/>' +
-      '<path d="M8.6 12.2l2.2 2.2 4.6-4.8" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      '<path d="M12 2l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V5l7-3z" fill="#e0a93f" opacity=".22"/>' +
+      '<path d="M12 2l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V5l7-3z" stroke="#e0a93f" stroke-width="1.5"/>' +
+      '<path d="M8.6 12.2l2.2 2.2 4.6-4.8" stroke="#e0a93f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   }
   function lockIcon() {
     return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none">' +
