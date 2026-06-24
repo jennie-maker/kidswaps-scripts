@@ -1,46 +1,42 @@
 /* ==========================================================================
- * KidSwaps V4 — checkout-tool.js  (§9.3 step 5: the plain page)
+ * KidSwaps V4 — checkout-tool.js  (§9.3 step 5: the plain page)  rev 2
  * --------------------------------------------------------------------------
  * Renders the member-facing checkout from the checkout Edge Fn's commit=false
  * PREVIEW payload (proven 2026-06-24e). This pass:
  *   - parseCart()  reads ?items=SKU:credit_id,SKU:credit_id  (the ONE throwaway
- *     piece — the browse "Add to bag" + credit-selection that will populate this
- *     contract are separate later builds; everything below parseCart is real).
- *   - ?state=<x>   client-side override to paint block/failure screens with NO
- *     fetch (mirrors the dashboard greeting ?state= QA pattern).
- *   - ONE fetch with commit:false → renders header / savings / coverage tiles /
- *     summary / coins / Closet-Standard seal / secure line, OR a block screen,
- *     OR a failure screen. Charges/writes NOTHING.
- *   - The Confirm button is a LOGGED NO-OP this pass. commit:true is flipped on
- *     LAST, after every render path is proven charging/writing nothing.
+ *     piece — browse "Add to bag" + credit-selection populate this contract in
+ *     later builds; everything below parseCart is real).
+ *   - ?state=<x>   client-side override to paint block/failure screens, NO fetch.
+ *   - ONE fetch commit:false → header / savings / coverage tiles / summary /
+ *     coins / Closet-Standard seal / secure line, OR a block/failure screen.
+ *     Charges/writes NOTHING. Confirm button is a LOGGED NO-OP this pass.
  *
- * Design locked 2026-06-24e (§9 DISPLAY DIRECTION). Coins are static readouts
- * here; jingle/tap-for-balance = step 6.
- *
- * Deploy seam (same as browse/listing): GitHub edit → raw-verify at SHA →
- * footer pin bump → publish → Empty-Cache-and-Hard-Reload → confirm build stamp.
+ * rev 2 (2026-06-24): all CSS scoped under #ks-checkout-app so Webflow global
+ *   heading/link styles can't bleed in (root cause of the centered header +
+ *   missing block title). Palette = KidSwaps swatches only (orange #d24f28
+ *   documented; green #54935f, gold #e0a93f, cream #eeece1, ink #1f1a17 from
+ *   the brand swatches; backgrounds are transparency variants of those exact
+ *   hues; charges use neutral ink-grays, no invented colors). Quicksand base;
+ *   all-left receipt; value line no cents; item thumbnails (placeholder until
+ *   the fn returns image_url); block/failure = tight centered cluster.
  * ========================================================================== */
 (function () {
   "use strict";
 
   var thisScript = document.currentScript;
 
-  // ---- build stamp (parse @sha from own <script src>; never hardcode) -------
   (function stamp() {
     try {
       var src = (thisScript && thisScript.src) || "";
       var m = src.match(/@([0-9a-f]{7,40})\//);
-      var sha = m ? m[1] : "unknown";
-      console.log("[ks-checkout] build " + sha + " " + src);
-    } catch (e) { /* never break the app over a log line */ }
+      console.log("[ks-checkout] build " + (m ? m[1] : "unknown") + " " + src);
+    } catch (e) {}
   })();
 
   // ---- config ---------------------------------------------------------------
   var FN_URL = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1/checkout";
   var MOUNT_ID = "ks-checkout-app";
 
-  // Member-facing copy mirrored from the Edge Fn, used ONLY for ?state= fakes.
-  // Real responses render the payload's own `note` string (single source).
   var BLOCK_COPY = {
     paused: "Your membership is paused. Resume it to claim items.",
     cancelled_ended: "Reactivate your membership to claim items.",
@@ -57,7 +53,6 @@
     pending_first_bag: { label: "Go to dashboard", href: "/dashboard" },
   };
 
-  // Failure copy mirrored from the Edge Fn, used ONLY for ?state= fakes.
   var FAILURE_TITLE = {
     card_declined: "Your card needs a quick update",
     item_taken: "One item just got claimed",
@@ -82,13 +77,9 @@
   };
 
   // ---- helpers --------------------------------------------------------------
-  function money(d) {            // dollars (number) -> "$8.00"
-    var n = Number(d) || 0;
-    return "$" + n.toFixed(2);
-  }
-  function moneyc(c) {           // cents (int) -> "$8.00"
-    return money((Number(c) || 0) / 100);
-  }
+  function money(d) { return "$" + (Number(d) || 0).toFixed(2); }       // "$8.00"
+  function moneyc(c) { return money((Number(c) || 0) / 100); }          // cents
+  function moneyRound(d) { return "$" + Math.round(Number(d) || 0); }   // "$60" (value line)
   function esc(s) {
     return String(s == null ? "" : s)
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -96,8 +87,7 @@
   }
   function getToken() {
     try {
-      return (window.$memberstackDom &&
-        window.$memberstackDom.getMemberCookie &&
+      return (window.$memberstackDom && window.$memberstackDom.getMemberCookie &&
         window.$memberstackDom.getMemberCookie()) || null;
     } catch (e) { return null; }
   }
@@ -106,147 +96,152 @@
     try { return new URLSearchParams(window.location.search).get(name); }
     catch (e) { return null; }
   }
-  function setHtml(html) {
-    var m = getMount();
-    if (m) m.innerHTML = html;
-  }
+  function setHtml(html) { var m = getMount(); if (m) m.innerHTML = html; }
 
-  // ---- cart from URL  (the throwaway piece) ---------------------------------
-  // ?items=KS-00002:2ef94b92-...,KS-00003:7a1c...   ->  [{sku, credit_id}, ...]
+  // ---- cart from URL (the throwaway piece) ----------------------------------
   function parseCart() {
     var raw = qp("items");
     if (!raw) return null;
-    var out = [];
-    var parts = raw.split(",");
+    var out = [], parts = raw.split(",");
     for (var i = 0; i < parts.length; i++) {
-      var p = parts[i].trim();
-      if (!p) continue;
-      var ci = p.indexOf(":");           // split on FIRST colon (UUIDs have none)
-      if (ci < 0) return null;           // malformed pair
-      var sku = p.slice(0, ci).trim();
-      var credit = p.slice(ci + 1).trim();
+      var p = parts[i].trim(); if (!p) continue;
+      var ci = p.indexOf(":"); if (ci < 0) return null;
+      var sku = p.slice(0, ci).trim(), credit = p.slice(ci + 1).trim();
       if (!sku || !credit) return null;
       out.push({ sku: sku, credit_id: credit });
     }
     return out.length ? out : null;
   }
 
-  // ---- CSS (self-injected; greenfield page = one file, pure pin-bump) -------
+  // ---- CSS (ALL scoped under the mount id; KidSwaps palette only) -----------
+  var ID = "#" + MOUNT_ID;
   var CSS = [
-    "#" + MOUNT_ID + "{",
+    // palette + container
+    ID + "{",
     "  --ks-orange:#d24f28; --ks-orange-d:#b23f1f;",
-    "  --ks-ink:#2b2b2b; --ks-muted:#8a8278; --ks-line:#ece6dc;",
-    "  --ks-card:#fdfbf7; --ks-green:#2e7d52; --ks-green-bg:#e8f3ec;",
-    "  --ks-amber:#9a7b1f; --ks-amber-bg:#f7f0db;",
-    "  --ks-gray:#5a5550; --ks-gray-bg:#f1ece5;",
-    "  max-width:560px; margin:0 auto; padding:24px 18px 64px;",
-    "  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;",
+    "  --ks-ink:#1f1a17; --ks-cream:#eeece1;",
+    "  --ks-green:#54935f; --ks-gold:#e0a93f;",
+    "  --ks-muted:rgba(31,26,23,.56); --ks-line:rgba(31,26,23,.12);",
+    "  --ks-card:#f6f4ec;",
+    "  --ks-green-bg:rgba(84,147,95,.12); --ks-green-bd:rgba(84,147,95,.34);",
+    "  --ks-gold-bg:rgba(224,169,63,.16); --ks-gold-bd:rgba(224,169,63,.45);",
+    "  --ks-chg-bg:rgba(31,26,23,.06); --ks-chg-tx:rgba(31,26,23,.6);",
+    "  max-width:560px; margin:0 auto; padding:24px 18px 64px; text-align:left;",
+    "  font-family:Quicksand,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;",
     "  color:var(--ks-ink); -webkit-font-smoothing:antialiased; box-sizing:border-box;",
     "}",
-    "#" + MOUNT_ID + " *{box-sizing:border-box;}",
-    ".ksc-coins{display:flex; gap:10px; justify-content:flex-end; margin-bottom:18px; flex-wrap:wrap;}",
-    ".ksc-coin{display:flex; align-items:center; gap:8px; background:var(--ks-amber-bg);",
-    "  border:1px solid #ecdfb6; border-radius:999px; padding:6px 12px 6px 8px;}",
-    ".ksc-coin .disc{width:26px; height:26px; border-radius:50%; background:#e8c75a;",
-    "  border:1px solid #d8b13e; display:flex; align-items:center; justify-content:center;",
+    ID + " *{box-sizing:border-box;}",
+    // coins (top-right)
+    ID + " .ksc-coins{display:flex; gap:10px; justify-content:flex-end; margin:0 0 18px; flex-wrap:wrap;}",
+    ID + " .ksc-coin{display:flex; align-items:center; gap:8px; background:var(--ks-gold-bg);",
+    "  border:1px solid var(--ks-gold-bd); border-radius:999px; padding:6px 12px 6px 8px;}",
+    ID + " .ksc-coin .disc{width:26px; height:26px; border-radius:50%; background:var(--ks-gold);",
+    "  border:1px solid rgba(0,0,0,.12); display:flex; align-items:center; justify-content:center;",
     "  font-weight:700; font-size:.82rem; color:#5c4708;}",
-    ".ksc-coin .lab{font-size:.72rem; line-height:1.15; color:var(--ks-amber);}",
-    ".ksc-coin .lab b{display:block; font-size:.82rem; color:#6b531a; text-transform:capitalize;}",
-    ".ksc-head{font-family:Quicksand,-apple-system,sans-serif; font-weight:600;",
-    "  font-size:1.7rem; line-height:1.2; margin:0 0 6px;}",
-    ".ksc-value{font-size:1.02rem; color:var(--ks-ink); margin:0 0 2px;}",
-    ".ksc-value b{font-weight:600;}",
-    ".ksc-sub{font-size:.92rem; color:var(--ks-muted); margin:0 0 20px;}",
-    ".ksc-sub.flat{color:var(--ks-muted);}",
-    ".ksc-seal{display:flex; align-items:center; gap:10px; background:var(--ks-green-bg);",
-    "  border:1px solid #cfe6d8; border-radius:12px; padding:11px 14px; margin:0 0 18px;}",
-    ".ksc-seal svg{flex:0 0 auto;}",
-    ".ksc-seal span{font-size:.9rem; color:#1f5e3c; font-weight:500;}",
-    ".ksc-items{display:flex; flex-direction:column; gap:10px; margin:0 0 18px;}",
-    ".ksc-item{display:flex; align-items:flex-start; justify-content:space-between;",
-    "  gap:12px; background:var(--ks-card); border:1px solid var(--ks-line);",
-    "  border-radius:12px; padding:13px 15px;}",
-    ".ksc-item .nm{font-weight:600; font-size:.98rem; line-height:1.25;}",
-    ".ksc-item .meta{margin-top:3px; font-size:.82rem; color:var(--ks-muted);}",
-    ".ksc-tag{flex:0 0 auto; text-align:right;}",
-    ".ksc-badge{display:inline-block; font-size:.78rem; font-weight:600;",
-    "  padding:3px 9px; border-radius:999px; white-space:nowrap;}",
-    ".ksc-badge.covered{background:var(--ks-green-bg); color:var(--ks-green);}",
-    ".ksc-badge.charge{background:var(--ks-gray-bg); color:var(--ks-gray);}",
-    ".ksc-fee{margin-top:4px; font-size:.86rem; font-weight:600; color:var(--ks-ink);}",
-    ".ksc-note{margin-top:3px; font-size:.76rem; color:var(--ks-muted);}",
-    ".ksc-sum{border-top:1px solid var(--ks-line); padding-top:14px; margin:0 0 20px;}",
-    ".ksc-row{display:flex; justify-content:space-between; align-items:center;",
-    "  font-size:.95rem; padding:4px 0;}",
-    ".ksc-row .k{color:var(--ks-muted);}",
-    ".ksc-row.total{font-size:1.12rem; font-weight:700; padding-top:10px;}",
-    ".ksc-row.total .k{color:var(--ks-ink);}",
-    ".ksc-btn{display:block; width:100%; border:0; cursor:pointer;",
-    "  background:var(--ks-orange); color:#fff; font-weight:700; font-size:1.02rem;",
-    "  font-family:Quicksand,-apple-system,sans-serif; border-radius:12px;",
+    ID + " .ksc-coin .lab{font-size:.72rem; line-height:1.15; color:rgba(31,26,23,.55);}",
+    ID + " .ksc-coin .lab b{display:block; font-size:.82rem; color:var(--ks-ink); text-transform:capitalize; font-weight:700;}",
+    // header / savings (all-left)
+    ID + " .ksc-head{text-align:left; font-weight:700; font-size:1.7rem; line-height:1.2; margin:0 0 6px; color:var(--ks-ink);}",
+    ID + " .ksc-value{text-align:left; font-size:1.02rem; color:var(--ks-ink); margin:0 0 2px; font-weight:700;}",
+    ID + " .ksc-sub{text-align:left; font-size:.92rem; color:var(--ks-muted); margin:0 0 20px; font-weight:500;}",
+    // seal (KidSwaps green)
+    ID + " .ksc-seal{display:flex; align-items:center; gap:10px; background:var(--ks-green-bg);",
+    "  border:1px solid var(--ks-green-bd); border-radius:12px; padding:11px 14px; margin:0 0 18px;}",
+    ID + " .ksc-seal svg{flex:0 0 auto;}",
+    ID + " .ksc-seal span{font-size:.9rem; color:var(--ks-green); font-weight:600;}",
+    // item tiles (thumb + name + tag)
+    ID + " .ksc-items{display:flex; flex-direction:column; gap:10px; margin:0 0 18px;}",
+    ID + " .ksc-item{display:flex; align-items:center; gap:13px; background:var(--ks-card);",
+    "  border:1px solid var(--ks-line); border-radius:12px; padding:12px 14px;}",
+    ID + " .ksc-thumb{position:relative; flex:0 0 auto; width:54px; height:54px; border-radius:8px;",
+    "  overflow:hidden; background:rgba(31,26,23,.05); border:1px solid var(--ks-line);}",
+    ID + " .ksc-thumb img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;}",
+    ID + " .ksc-thumb .phsvg{position:absolute; inset:0; margin:auto; width:22px; height:22px; opacity:.35;}",
+    ID + " .ksc-main{flex:1 1 auto; min-width:0;}",
+    ID + " .ksc-main .nm{font-weight:700; font-size:.98rem; line-height:1.25; color:var(--ks-ink);}",
+    ID + " .ksc-tag{flex:0 0 auto; text-align:right;}",
+    ID + " .ksc-badge{display:inline-block; font-size:.78rem; font-weight:700; padding:3px 9px; border-radius:999px; white-space:nowrap;}",
+    ID + " .ksc-badge.covered{background:var(--ks-green-bg); color:var(--ks-green);}",
+    ID + " .ksc-badge.charge{background:var(--ks-chg-bg); color:var(--ks-chg-tx);}",
+    ID + " .ksc-fee{margin-top:4px; font-size:.86rem; font-weight:700; color:var(--ks-ink);}",
+    ID + " .ksc-note{margin-top:3px; font-size:.76rem; color:var(--ks-muted);}",
+    // summary
+    ID + " .ksc-sum{border-top:1px solid var(--ks-line); padding-top:14px; margin:0 0 20px;}",
+    ID + " .ksc-row{display:flex; justify-content:space-between; align-items:center; font-size:.95rem; padding:4px 0;}",
+    ID + " .ksc-row .k{color:var(--ks-muted);}",
+    ID + " .ksc-row.total{font-size:1.12rem; font-weight:700; padding-top:10px;}",
+    ID + " .ksc-row.total .k{color:var(--ks-ink);}",
+    ID + " .ksc-row.total span{color:var(--ks-ink);}",
+    // button + secure
+    ID + " .ksc-btn{display:block; width:100%; border:0; cursor:pointer; background:var(--ks-orange);",
+    "  color:#fff; font-weight:700; font-size:1.02rem; font-family:inherit; border-radius:12px;",
     "  padding:15px 18px; transition:background .15s;}",
-    ".ksc-btn:hover{background:var(--ks-orange-d);}",
-    ".ksc-secure{display:flex; align-items:center; justify-content:center; gap:7px;",
-    "  margin-top:11px; font-size:.8rem; color:var(--ks-muted);}",
-    ".ksc-stub{margin-top:12px; text-align:center; font-size:.78rem; color:var(--ks-orange);}",
-    /* block / failure / error / loading */
-    ".ksc-screen{text-align:center; padding:34px 8px 12px; max-width:420px; margin:0 auto;}",
-    ".ksc-screen .ic{width:54px; height:54px; margin:0 auto 16px;}",
-    ".ksc-screen h2{font-family:Quicksand,-apple-system,sans-serif; font-weight:600;",
-    "  font-size:1.35rem; margin:0 0 8px;}",
-    ".ksc-screen p{font-size:.95rem; color:var(--ks-muted); line-height:1.5; margin:0 0 20px;}",
-    ".ksc-screen .act{display:inline-block; background:var(--ks-orange); color:#fff;",
-    "  text-decoration:none; font-weight:700; font-size:.95rem; border-radius:10px;",
-    "  padding:12px 22px; font-family:Quicksand,-apple-system,sans-serif;}",
-    ".ksc-screen .act.ghost{background:transparent; color:var(--ks-orange);",
-    "  border:1px solid var(--ks-line);}",
-    ".ksc-load{display:flex; flex-direction:column; gap:12px; padding:8px 0;}",
-    ".ksc-skel{height:64px; border-radius:12px; background:linear-gradient(90deg,",
-    "  #f2ede6 25%,#f8f4ee 37%,#f2ede6 63%); background-size:400% 100%;",
+    ID + " .ksc-btn:hover{background:var(--ks-orange-d);}",
+    ID + " .ksc-secure{display:flex; align-items:center; justify-content:center; gap:7px; margin-top:11px; font-size:.8rem; color:var(--ks-muted);}",
+    ID + " .ksc-stub{margin-top:12px; text-align:center; font-size:.78rem; color:var(--ks-orange);}",
+    // block / failure / error screens — tight centered cluster
+    ID + " .ksc-screen{display:flex; flex-direction:column; align-items:center; justify-content:center;",
+    "  text-align:center; min-height:58vh; max-width:430px; margin:0 auto; padding:32px 16px;}",
+    ID + " .ksc-screen .ic{width:54px; height:54px; margin:0 0 18px;}",
+    ID + " .ksc-screen h2{font-weight:700; font-size:1.35rem; margin:0 0 8px; color:var(--ks-ink); text-align:center;}",
+    ID + " .ksc-screen p{font-size:.95rem; color:var(--ks-muted); line-height:1.5; margin:0 0 22px; text-align:center; font-weight:500;}",
+    ID + " .ksc-screen .act{display:inline-block; background:var(--ks-orange); color:#fff; text-decoration:none;",
+    "  font-weight:700; font-size:.95rem; border-radius:10px; padding:12px 22px; font-family:inherit;}",
+    ID + " .ksc-screen .act.ghost{background:transparent; color:var(--ks-orange); border:1px solid var(--ks-line);}",
+    // loading
+    ID + " .ksc-load{display:flex; flex-direction:column; gap:12px; padding:8px 0;}",
+    ID + " .ksc-skel{height:64px; border-radius:12px; background:linear-gradient(90deg,",
+    "  rgba(31,26,23,.05) 25%,rgba(31,26,23,.025) 37%,rgba(31,26,23,.05) 63%); background-size:400% 100%;",
     "  animation:ksc-sh 1.3s ease infinite;}",
     "@keyframes ksc-sh{0%{background-position:100% 0}100%{background-position:0 0}}",
     "@media (max-width:600px){",
-    "  .ksc-coins{justify-content:flex-start;}",
-    "  .ksc-head{font-size:1.45rem;}",
+    ID + " .ksc-coins{justify-content:flex-start;}",
+    ID + " .ksc-head{font-size:1.45rem;}",
     "}",
   ].join("\n");
 
   function injectCss() {
     if (document.getElementById("ks-checkout-css")) return;
     var s = document.createElement("style");
-    s.id = "ks-checkout-css";
-    s.textContent = CSS;
+    s.id = "ks-checkout-css"; s.textContent = CSS;
     document.head.appendChild(s);
   }
 
-  // ---- small inline SVGs ----------------------------------------------------
+  // ---- inline SVGs ----------------------------------------------------------
   function shieldCheck() {
     return '<svg width="22" height="22" viewBox="0 0 24 24" fill="none">' +
-      '<path d="M12 2l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V5l7-3z" fill="#2e7d52" opacity=".15"/>' +
-      '<path d="M12 2l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V5l7-3z" stroke="#2e7d52" stroke-width="1.4"/>' +
-      '<path d="M8.6 12.2l2.2 2.2 4.6-4.8" stroke="#2e7d52" stroke-width="1.7" ' +
-      'stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      '<path d="M12 2l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V5l7-3z" fill="#54935f" opacity=".15"/>' +
+      '<path d="M12 2l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V5l7-3z" stroke="#54935f" stroke-width="1.4"/>' +
+      '<path d="M8.6 12.2l2.2 2.2 4.6-4.8" stroke="#54935f" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   }
   function lockIcon() {
     return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none">' +
       '<rect x="5" y="11" width="14" height="9" rx="2" stroke="#8a8278" stroke-width="1.6"/>' +
       '<path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="#8a8278" stroke-width="1.6"/></svg>';
   }
-  function bigIcon(kind) {
-    var c = kind === "ok" ? "#2e7d52" : "#d24f28";
-    if (kind === "ok") {
-      return '<svg class="ic" viewBox="0 0 56 56" fill="none">' +
-        '<circle cx="28" cy="28" r="26" stroke="' + c + '" stroke-width="2"/>' +
-        '<path d="M18 28.5l7 7 13-14" stroke="' + c + '" stroke-width="2.4" ' +
-        'stroke-linecap="round" stroke-linejoin="round"/></svg>';
-    }
+  function phSvg() {
+    return '<svg class="phsvg" viewBox="0 0 24 24" fill="none">' +
+      '<rect x="3" y="4" width="18" height="16" rx="2" stroke="#1f1a17" stroke-width="1.5"/>' +
+      '<circle cx="8.5" cy="9.5" r="1.6" fill="#1f1a17"/>' +
+      '<path d="M5 18l4.5-5 3 3 3-3.5L20 18" stroke="#1f1a17" stroke-width="1.5" stroke-linejoin="round"/></svg>';
+  }
+  function bigIcon() {
     return '<svg class="ic" viewBox="0 0 56 56" fill="none">' +
-      '<circle cx="28" cy="28" r="26" stroke="' + c + '" stroke-width="2"/>' +
-      '<path d="M28 17v16" stroke="' + c + '" stroke-width="2.6" stroke-linecap="round"/>' +
-      '<circle cx="28" cy="39.5" r="1.6" fill="' + c + '"/></svg>';
+      '<circle cx="28" cy="28" r="26" stroke="#d24f28" stroke-width="2"/>' +
+      '<path d="M28 17v16" stroke="#d24f28" stroke-width="2.6" stroke-linecap="round"/>' +
+      '<circle cx="28" cy="39.5" r="1.6" fill="#d24f28"/></svg>';
   }
 
-  // ---- savings subline (locked three bands + the $0 celebration) ------------
+  // ---- thumbnail (placeholder until the fn returns image_url) ----------------
+  function thumbHtml(line) {
+    var url = line.image_url || line.primary_photo_url || null;
+    var img = url
+      ? '<img src="' + esc(url) + '" alt="" onerror="this.remove()">'
+      : "";
+    return '<div class="ksc-thumb">' + phSvg() + img + "</div>";
+  }
+
+  // ---- savings subline (locked bands + $0 celebration) ----------------------
   function savingsSubline(totalCents, valueDollars) {
     if ((Number(totalCents) || 0) === 0) return { text: "Your credits covered it all", flat: false };
     var valueCents = Math.round((Number(valueDollars) || 0) * 100);
@@ -254,101 +249,81 @@
     var ratio = totalCents / valueCents;
     if (ratio <= 0.34) return { text: "Your credits covered most of it", flat: false };
     if (ratio <= 0.67) return { text: "Your credits covered the bulk of it", flat: false };
-    return { text: "Here's your swap", flat: true };  // fee-heavy: no coverage claim
+    return { text: "Here's your swap", flat: true };
   }
 
-  // ---- coverage tile (the honesty hinge; classified server-side) ------------
+  // ---- coverage tile --------------------------------------------------------
   function tileFor(line) {
-    var up = Number(line.upgrade_fee) || 0;
-    var ex = Number(line.extra_swap_fee) || 0;
+    var up = Number(line.upgrade_fee) || 0, ex = Number(line.extra_swap_fee) || 0;
     switch (line.coverage) {
-      case "covered":
-        return { cls: "covered", label: "Covered", fee: null, note: null };
-      case "covered_extra":
-        return { cls: "covered", label: "Covered", fee: ex ? "+" + money(ex) : null,
-                 note: "one extra this month" };
-      case "upgrade":
-        return { cls: "charge", label: "Credit applied", fee: money(up), note: null };
-      case "special_upgrade":
-        return { cls: "charge", label: "Special credit applied", fee: money(up),
-                 note: up <= 40 ? "designer find" : null };  // flourish recedes as $ climbs
-      default:
-        return { cls: "charge", label: "Credit applied",
-                 fee: (up || ex) ? money(up || ex) : null, note: null };
+      case "covered": return { cls: "covered", label: "Covered", fee: null, note: null };
+      case "covered_extra": return { cls: "covered", label: "Covered", fee: ex ? "+" + money(ex) : null, note: "one extra this month" };
+      case "upgrade": return { cls: "charge", label: "Credit applied", fee: money(up), note: null };
+      case "special_upgrade": return { cls: "charge", label: "Special credit applied", fee: money(up), note: up <= 40 ? "designer find" : null };
+      default: return { cls: "charge", label: "Credit applied", fee: (up || ex) ? money(up || ex) : null, note: null };
     }
   }
 
-  // ---- coins (static readouts this pass; bank balance LEFT after this swap) --
+  // ---- coins (static; bank balance LEFT after this swap) --------------------
   function coinsHtml(bank, cap) {
-    var bc = (bank && bank.by_class) || {};
-    var out = [];
+    var bc = (bank && bank.by_class) || {}, out = [];
     function coin(label, after) {
       return '<div class="ksc-coin"><span class="disc">' + esc(after) + '</span>' +
         '<span class="lab">left after this<b>' + esc(label) + '</b></span></div>';
     }
-    if (cap && cap.clothing && Number(cap.clothing.limit) > 0) {
+    if (cap && cap.clothing && Number(cap.clothing.limit) > 0)
       out.push(coin("clothes", (bc.clothing && bc.clothing.after != null) ? bc.clothing.after : 0));
-    }
-    if (cap && cap.toy && Number(cap.toy.limit) > 0) {
+    if (cap && cap.toy && Number(cap.toy.limit) > 0)
       out.push(coin("toys", (bc.toy && bc.toy.after != null) ? bc.toy.after : 0));
-    }
-    if (!out.length) return "";
-    return '<div class="ksc-coins">' + out.join("") + "</div>";
+    return out.length ? '<div class="ksc-coins">' + out.join("") + "</div>" : "";
   }
 
-  // ---- main receipt render --------------------------------------------------
+  // ---- receipt --------------------------------------------------------------
   function renderReceipt(p) {
     var lines = Array.isArray(p.lines) ? p.lines : [];
-    var count = lines.length;
-    var head = count === 1 ? "Your swap is ready" : "Your swaps are ready";
-
+    var head = lines.length === 1 ? "Your swap is ready" : "Your swaps are ready";
     var value = Number(p.value_of_items) || 0;
     var totalCents = (p.fees && Number(p.fees.total_cents)) || 0;
     var sub = savingsSubline(totalCents, value);
 
     var itemsHtml = lines.map(function (ln) {
       var t = tileFor(ln);
-      var right = '<span class="ksc-badge ' + t.cls + '">' + esc(t.label) + "</span>";
-      if (t.fee) right += '<div class="ksc-fee">' + esc(t.fee) + "</div>";
-      if (t.note) right += '<div class="ksc-note">' + esc(t.note) + "</div>";
-      return '<div class="ksc-item"><div class="nm">' + esc(ln.item_name || ln.sku) +
-        "</div><div class=\"ksc-tag\">" + right + "</div></div>";
+      var tag = '<span class="ksc-badge ' + t.cls + '">' + esc(t.label) + "</span>";
+      if (t.fee) tag += '<div class="ksc-fee">' + esc(t.fee) + "</div>";
+      if (t.note) tag += '<div class="ksc-note">' + esc(t.note) + "</div>";
+      return '<div class="ksc-item">' + thumbHtml(ln) +
+        '<div class="ksc-main"><div class="nm">' + esc(ln.item_name || ln.sku) + "</div></div>" +
+        '<div class="ksc-tag">' + tag + "</div></div>";
     }).join("");
 
-    // summary: shipping + total ONLY (per-item fees never re-listed)
     var ship = (p.fees && p.fees.shipping) || { state: "included", amount_cents: 0 };
     var shipVal = ship.state === "charged" ? moneyc(ship.amount_cents) : "Included";
     var summary =
       '<div class="ksc-sum">' +
         '<div class="ksc-row"><span class="k">Shipping</span><span>' + esc(shipVal) + "</span></div>" +
-        '<div class="ksc-row total"><span class="k">Total today</span><span>' +
-          moneyc(totalCents) + "</span></div>" +
+        '<div class="ksc-row total"><span class="k">Total today</span><span>' + moneyc(totalCents) + "</span></div>" +
       "</div>";
 
     var btnLabel = totalCents > 0 ? "Confirm swap · " + moneyc(totalCents) : "Confirm swap";
 
-    var html =
+    setHtml(
       coinsHtml(p.bank, p.cap) +
       '<h1 class="ksc-head">' + esc(head) + "</h1>" +
-      '<p class="ksc-value"><b>Worth about ' + money(value) + " new</b></p>" +
-      '<p class="ksc-sub' + (sub.flat ? " flat" : "") + '">' + esc(sub.text) + "</p>" +
-      '<div class="ksc-seal">' + shieldCheck() +
-        "<span>Every piece meets The Closet Standard</span></div>" +
+      '<p class="ksc-value">Worth about ' + moneyRound(value) + " new</p>" +
+      '<p class="ksc-sub">' + esc(sub.text) + "</p>" +
+      '<div class="ksc-seal">' + shieldCheck() + "<span>Every piece meets The Closet Standard</span></div>" +
       '<div class="ksc-items">' + itemsHtml + "</div>" +
       summary +
       '<button class="ksc-btn" id="ksc-confirm" type="button">' + esc(btnLabel) + "</button>" +
       '<div class="ksc-secure">' + lockIcon() + "<span>Secured by Stripe</span></div>" +
-      '<div class="ksc-stub">Preview only — claim wiring comes next (this pass charges nothing)</div>';
-
-    setHtml(html);
+      '<div class="ksc-stub">Preview only — claim wiring comes next (this pass charges nothing)</div>'
+    );
 
     var btn = document.getElementById("ksc-confirm");
     if (btn) btn.addEventListener("click", function () {
-      // LOGGED NO-OP this pass. commit:true is flipped on LAST.
       console.log("[ks-checkout] confirm clicked — commit path not wired yet (preview build)");
       btn.textContent = "Claim wiring comes next ✓";
-      btn.disabled = true;
-      btn.style.background = "#9a948c";
+      btn.disabled = true; btn.style.background = "#9a948c";
     });
   }
 
@@ -357,44 +332,27 @@
     var title = BLOCK_TITLE[reason] || "Just a moment";
     var copy = note || BLOCK_COPY[reason] || "This isn't available right now.";
     var cta = BLOCK_CTA[reason] || { label: "Go to dashboard", href: "/dashboard" };
-    setHtml(
-      '<div class="ksc-screen">' + bigIcon("info") +
-        "<h2>" + esc(title) + "</h2><p>" + esc(copy) + "</p>" +
-        '<a class="act" href="' + esc(cta.href) + '">' + esc(cta.label) + "</a></div>"
-    );
+    setHtml('<div class="ksc-screen">' + bigIcon() + "<h2>" + esc(title) + "</h2><p>" + esc(copy) + "</p>" +
+      '<a class="act" href="' + esc(cta.href) + '">' + esc(cta.label) + "</a></div>");
   }
-
-  function renderFailure(failure, note, abortSku) {
+  function renderFailure(failure, note) {
     var title = FAILURE_TITLE[failure] || "Something needs a look";
-    var copy = note || FAILURE_COPY[failure] ||
-      "Something went wrong — nothing was charged. Your bag is saved.";
-    if (abortSku && /coming back to the rest|saved/i.test(copy) === false) {
-      // keep copy as-is; abort_sku is for logs, not member-facing noise
-    }
-    setHtml(
-      '<div class="ksc-screen">' + bigIcon("info") +
-        "<h2>" + esc(title) + "</h2><p>" + esc(copy) + "</p>" +
-        '<a class="act ghost" href="/browse">Back to browsing</a></div>'
-    );
+    var copy = note || FAILURE_COPY[failure] || "Something went wrong — nothing was charged. Your bag is saved.";
+    setHtml('<div class="ksc-screen">' + bigIcon() + "<h2>" + esc(title) + "</h2><p>" + esc(copy) + "</p>" +
+      '<a class="act ghost" href="/browse">Back to browsing</a></div>');
   }
-
   function renderError(msg) {
-    setHtml(
-      '<div class="ksc-screen">' + bigIcon("info") +
-        "<h2>We hit a snag</h2><p>" + esc(msg || "Please try again in a moment.") + "</p>" +
-        '<a class="act ghost" href="/browse">Back to browsing</a></div>'
-    );
+    setHtml('<div class="ksc-screen">' + bigIcon() + "<h2>We hit a snag</h2><p>" +
+      esc(msg || "Please try again in a moment.") + "</p>" +
+      '<a class="act ghost" href="/browse">Back to browsing</a></div>');
   }
-
   function renderLoading() {
-    setHtml('<div class="ksc-load"><div class="ksc-skel"></div>' +
-      '<div class="ksc-skel"></div><div class="ksc-skel"></div></div>');
+    setHtml('<div class="ksc-load"><div class="ksc-skel"></div><div class="ksc-skel"></div><div class="ksc-skel"></div></div>');
   }
 
   function friendlyError(code) {
     switch (code) {
-      case "no_token":
-      case "invalid_token": return "Please log in to check out.";
+      case "no_token": case "invalid_token": return "Please log in to check out.";
       case "not_authorized": return "This checkout isn't open to your account yet.";
       case "empty_cart": return "Your bag is empty.";
       case "member_not_found": return "We couldn't find your membership. Please log in again.";
@@ -402,42 +360,35 @@
     }
   }
 
-  // ---- response router ------------------------------------------------------
   function route(data, status) {
     if (data && data.ok === true && data.mode === "preview") { renderReceipt(data); return; }
-    if (data && data.can_claim === false && data.block_reason) {
-      renderBlock(data.block_reason, data.note); return;
-    }
-    if (data && data.failure) { renderFailure(data.failure, data.note, data.abort_sku); return; }
+    if (data && data.can_claim === false && data.block_reason) { renderBlock(data.block_reason, data.note); return; }
+    if (data && data.failure) { renderFailure(data.failure, data.note); return; }
     if (status === 401 || status === 403) { renderError(friendlyError(data && data.error)); return; }
     renderError(data && data.error ? friendlyError(data.error) : null);
   }
 
-  // ---- ?state= override (no fetch) ------------------------------------------
   function handleStateOverride() {
     var st = qp("state");
     if (!st) return false;
     if (BLOCK_COPY.hasOwnProperty(st)) { renderBlock(st, null); return true; }
     if (st === "cancelled") { renderBlock("cancelled_ended", null); return true; }
     if (st === "pending") { renderBlock("pending_first_bag", null); return true; }
-    if (FAILURE_COPY.hasOwnProperty(st)) { renderFailure(st, null, null); return true; }
+    if (FAILURE_COPY.hasOwnProperty(st)) { renderFailure(st, null); return true; }
     if (st === "error") { renderError(null); return true; }
     if (st === "loading") { renderLoading(); return true; }
-    return false; // unknown state -> fall through to the real flow
+    return false;
   }
 
-  // ---- boot -----------------------------------------------------------------
   async function run() {
     injectCss();
     if (!getMount()) return;
-
     if (handleStateOverride()) return;
 
     var items = parseCart();
     if (!items) { renderError("Your bag link looks off. Head back and add items again."); return; }
 
     renderLoading();
-
     var token = getToken();
     if (!token) { renderError("Please log in to check out."); return; }
 
@@ -455,9 +406,6 @@
     }
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", run);
-  } else {
-    run();
-  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run);
+  else run();
 })();
