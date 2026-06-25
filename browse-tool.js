@@ -208,7 +208,7 @@
         'font-size:.82rem;line-height:1.5;color:#5b4a36;}' +
       '.ks-detail-luxnote svg{flex:0 0 auto;margin-top:2px;color:#c8922f;}' +
       '.ks-detail-luxnote p{margin:0;}' +
-      '#ks-browse-app .ks-browse-media img{object-fit:contain;}' +
+      '#ks-browse-app .ks-browse-media img{object-fit:cover;}' +
       '#ks-browse-app .ks-browse-media:has(img){background:#fff;}' +
      '#ks-detail-root .ks-detail-main-img{object-fit:contain;}' +
          '#ks-detail-root .ks-detail-media{background:#fff;}';
