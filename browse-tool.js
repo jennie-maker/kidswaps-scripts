@@ -176,6 +176,16 @@
     ' stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<path d="M18 6L6 18M6 6l12 12"/></svg>';
 
+  var LUX_NOTE =
+    '<div class="ks-detail-luxnote">' +
+      '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" ' +
+      'stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      '<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-7.2-7.2A2 2 0 0 1 2.8 12V4a1.2 1.2 0 0 1 1.2-1.2H12a2 2 0 0 1 1.4.6l7.2 7.2a2 2 0 0 1 0 2.8Z"/>' +
+      '<circle cx="7.5" cy="7.5" r="1.1"/></svg>' +
+      '<p>Designer piece \u2014 priced like resale, not retail. Your credit goes toward the cost, and ' +
+      'you pay the difference at checkout. You\u2019ll see the exact amount before you confirm.</p>' +
+    '</div>';
+
   /* ---- state screens ------------------------------------------------------ */
   // One-time injected styles for JS-only visuals (skeleton + "New" tag), kept out
   // of the page <head> so they ride the script rather than the fragile head CSS.
@@ -192,7 +202,12 @@
       '#ks-browse-app .ks-skel-line.short{width:55%;}' +
       '#ks-browse-app .ks-browse-new{position:absolute;top:10px;right:10px;background:#d24f28;' +
         'color:#fff;font-size:.62rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;' +
-        'padding:4px 8px;border-radius:999px;}';
+        'padding:4px 8px;border-radius:999px;}' +
+      '.ks-detail-luxnote{display:flex;gap:9px;align-items:flex-start;margin:14px 0 2px;padding:11px 13px;' +
+        'background:#faf7f0;border:1px solid #ecd9ad;border-left:3px solid #e0a93f;border-radius:9px;' +
+        'font-size:.82rem;line-height:1.5;color:#5b4a36;}' +
+      '.ks-detail-luxnote svg{flex:0 0 auto;margin-top:2px;color:#c8922f;}' +
+      '.ks-detail-luxnote p{margin:0;}';
     var s = document.createElement('style');
     s.id = 'ks-util-css';
     s.textContent = css;
@@ -551,6 +566,7 @@
             '<div class="ks-detail-tier-row">' + tierPill +
               (retail ? '<span class="ks-detail-retail">Retail value new ' + retail + '</span>' : '') +
             '</div>' +
+            (item.is_luxury ? LUX_NOTE : '') +
             (pills ? '<div class="ks-detail-pills">' + pills + '</div>' : '') +
             blocks +
             '<button type="button" class="ks-detail-cta" data-bag="1">' + BAG_SVG +
