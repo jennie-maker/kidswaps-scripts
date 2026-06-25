@@ -137,14 +137,15 @@
   // card src once (see console check in the deploy notes) — if your urls differ
   // it's a one-line change to MARKER below.
   var THUMB_MARKER = '/storage/v1/object/public/';
-  function thumb(url, w, q) {
+  function thumb(url, w, q, h) {
     if (!url || typeof url !== 'string') return url;
     var i = url.indexOf(THUMB_MARKER);
     if (i === -1) return url;
     var base = url.slice(0, i) + '/storage/v1/render/image/public/' +
                url.slice(i + THUMB_MARKER.length);
-    return base + (base.indexOf('?') === -1 ? '?' : '&') +
-           'width=' + w + '&quality=' + (q || 75);
+    var params = 'width=' + w + '&quality=' + (q || 75);
+    if (h) params += '&height=' + h + '&resize=cover';
+    return base + (base.indexOf('?') === -1 ? '?' : '&') + params;
   }
 
   // "New" = added within the last NEW_DAYS days (default sort already surfaces
@@ -210,8 +211,8 @@
       '.ks-detail-luxnote p{margin:0;}' +
       '#ks-browse-app .ks-browse-media img{object-fit:cover;}' +
       '#ks-browse-app .ks-browse-media:has(img){background:#fff;}' +
-     '#ks-detail-root .ks-detail-main-img{object-fit:contain;}' +
-         '#ks-detail-root .ks-detail-media{background:#fff;}';
+      '#ks-detail-root .ks-detail-main-img{object-fit:contain;}' +
+      '#ks-detail-root .ks-detail-media{background:#fff;}';
     var s = document.createElement('style');
     s.id = 'ks-util-css';
     s.textContent = css;
@@ -281,7 +282,7 @@
       img.loading = 'lazy';
       img.decoding = 'async';
       img.alt = descriptor(item);
-      img.src = thumb(item.primary_photo_url, 400, 75);
+      img.src = thumb(item.primary_photo_url, 400, 75, 533);
       img.addEventListener('error', function () {
         if (img.parentNode) img.parentNode.replaceChild(placeholderTile(), img);
       });
@@ -499,7 +500,7 @@
     var thumbs = '';
     photos.forEach(function (u, i) {
       thumbs += '<button type="button" class="ks-detail-thumb' + (i === 0 ? ' is-active' : '') +
-        '" data-photo="' + i + '"><img src="' + escapeHtml(thumb(u, 120, 70)) + '" alt="" loading="lazy"></button>';
+        '" data-photo="' + i + '"><img src="' + escapeHtml(thumb(u, 120, 70, 120)) + '" alt="" loading="lazy"></button>';
     });
     if (hasVideo) {
       thumbs += '<button type="button" class="ks-detail-thumb ks-detail-thumb-video" data-video="1">' +
