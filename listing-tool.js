@@ -41,7 +41,7 @@
      until re-saved/backfilled (price stability for live items, by design). */
   var RESALE_CONFIG = {
     tierPct:   { essentials: 0.30, elevated: 0.50, special: 0.55 },
-    condition: { "new-with-tags": 1.20, "like-new": 1.00, "good": 0.85, "fair": 0.70 }
+    condition: { "new-with-tags": 1.20, "like-new": 1.00, "great": 0.90, "good": 0.85, "fair": 0.70 }
   };
 
   /* ---- OPTION_LISTS (controlled vocabulary, live read — Path B) --------- */
