@@ -207,7 +207,9 @@
         'background:#faf7f0;border:1px solid #ecd9ad;border-left:3px solid #e0a93f;border-radius:9px;' +
         'font-size:.82rem;line-height:1.5;color:#5b4a36;}' +
       '.ks-detail-luxnote svg{flex:0 0 auto;margin-top:2px;color:#c8922f;}' +
-      '.ks-detail-luxnote p{margin:0;}';
+      '.ks-detail-luxnote p{margin:0;}' +
+      '#ks-browse-app .ks-browse-media img{object-fit:contain;}' +
+      '#ks-detail-root .ks-detail-main-img{object-fit:contain;}';
     var s = document.createElement('style');
     s.id = 'ks-util-css';
     s.textContent = css;
