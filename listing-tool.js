@@ -41,7 +41,7 @@
      until re-saved/backfilled (price stability for live items, by design). */
   var RESALE_CONFIG = {
     tierPct:   { essentials: 0.30, elevated: 0.50, special: 0.55 },
-    condition: { "new-with-tags": 1.20, "like-new": 1.00, "good": 0.85, "fair": 0.70 }
+    condition: { "new-with-tags": 1.20, "like-new": 1.00, "great": 0.90, "good": 0.85, "fair": 0.70 }
   };
 
   /* ---- OPTION_LISTS (controlled vocabulary, live read — Path B) --------- */
@@ -127,13 +127,13 @@
     reflectPills();   // re-activate from any current/restored hidden value
   }
 
-  // Most listed items are like-new, so default condition_grade to it whenever
+  // Most listed items are great, so default condition_grade to it whenever
   // the select is fresh/empty (drops the blank "Select…" and a stray Fair
   // sticking). Drafts (restore runs after this) and any operator pick still
   // win. Math is unchanged — a blank grade already fell back to 1.00.
   function defaultCondition() {
     var sel = root.querySelector('select[data-key="condition_grade"]');
-    if (sel && !sel.value) sel.value = "like-new";
+    if (sel && !sel.value) sel.value = "great";
   }
 
   // Fill the remote selects after the fetch resolves. Size is category-aware.
@@ -373,8 +373,9 @@
       "#ks-list-app .ksl-ref-k{opacity:.5;text-transform:uppercase;letter-spacing:.04em;font-size:.72rem;align-self:center}" +
       "#ks-list-app .ksl-ref-v{opacity:.92}" +
       "#ks-list-app .ksl-edit-lock{margin:0 0 14px;padding:10px 12px;border-radius:8px;background:rgba(210,79,40,.14);border:1px solid rgba(210,79,40,.55);font-size:.86rem}" +
-      "#ks-list-app .ksl-makeprimary{display:block;width:100%;margin-top:6px;padding:5px 8px;border:1px solid rgba(255,255,255,.25);border-radius:7px;background:transparent;color:inherit;font:inherit;font-size:.76rem;cursor:pointer}" +
-      "#ks-list-app .ksl-makeprimary:hover{border-color:#d24f28;color:#d24f28}" +
+      "#ks-list-app .ksl-slot{position:relative}" +
+      "#ks-list-app .ksl-makeprimary{position:absolute;left:6px;right:6px;bottom:6px;z-index:6;margin:0;padding:5px 8px;border:1px solid rgba(255,255,255,.35);border-radius:7px;background:rgba(20,18,16,.82);color:#fff;font:inherit;font-size:.72rem;font-weight:600;cursor:pointer}" +
+      "#ks-list-app .ksl-makeprimary:hover{border-color:#d24f28;background:rgba(210,79,40,.9)}" +
       "#ks-list-app .ksl-field.ksl-cued > .ksl-label::after{content:'from grading';margin-left:8px;padding:1px 7px;border-radius:999px;border:1px solid rgba(210,79,40,.4);background:rgba(210,79,40,.12);color:#e07a52;font-size:.64rem;font-weight:600;letter-spacing:.02em;text-transform:none;vertical-align:middle;white-space:nowrap}" +
       "#ks-list-app .ksl-brand-wrap{position:relative}" +
       "#ks-list-app .ksl-brand-results{display:none;position:absolute;left:0;right:0;top:100%;margin-top:3px;z-index:60;max-height:240px;overflow-y:auto;background:#1f1f1f;border:1px solid rgba(255,255,255,.18);border-radius:9px;box-shadow:0 10px 28px rgba(0,0,0,.45)}" +
