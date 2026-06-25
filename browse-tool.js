@@ -137,14 +137,14 @@
   // card src once (see console check in the deploy notes) — if your urls differ
   // it's a one-line change to MARKER below.
   var THUMB_MARKER = '/storage/v1/object/public/';
-  function thumb(url, w, q, h) {
+  function thumb(url, w, q, h, mode) {
     if (!url || typeof url !== 'string') return url;
     var i = url.indexOf(THUMB_MARKER);
     if (i === -1) return url;
     var base = url.slice(0, i) + '/storage/v1/render/image/public/' +
                url.slice(i + THUMB_MARKER.length);
     var params = 'width=' + w + '&quality=' + (q || 75);
-    if (h) params += '&height=' + h + '&resize=cover';
+    if (h) params += '&height=' + h + '&resize=' + (mode || 'cover');
     return base + (base.indexOf('?') === -1 ? '?' : '&') + params;
   }
 
@@ -513,7 +513,7 @@
     // main media (first photo, or placeholder)
     var main;
     if (photos.length) {
-      main = '<img class="ks-detail-main-img" src="' + escapeHtml(thumb(photos[0], 800, 80)) +
+      main = '<img class="ks-detail-main-img" src="' + escapeHtml(thumb(photos[0], 800, 80, 1067, 'contain')) +
         '" data-full="' + escapeHtml(photos[0]) + '" alt="' +
         escapeHtml(descriptor(item)) + '">';
     } else {
@@ -654,7 +654,7 @@
       if (vid) { vid.muted = true; var pp = vid.play(); if (pp && pp.catch) pp.catch(function () {}); }
     } else {
       var u = photos[idx] || photos[0];
-      inner = '<img class="ks-detail-main-img" src="' + escapeHtml(thumb(u, 800, 80)) +
+      inner = '<img class="ks-detail-main-img" src="' + escapeHtml(thumb(u, 800, 80, 1067, 'contain')) +
         '" data-full="' + escapeHtml(u) + '" alt="' +
         escapeHtml(descriptor(item)) + '">';
       var zoom = '<button type="button" class="ks-detail-zoom" aria-label="Zoom photo">' + ZOOM_SVG + ' zoom</button>';
