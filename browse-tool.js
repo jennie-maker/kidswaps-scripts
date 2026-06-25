@@ -209,6 +209,7 @@
       '.ks-detail-luxnote svg{flex:0 0 auto;margin-top:2px;color:#c8922f;}' +
       '.ks-detail-luxnote p{margin:0;}' +
       '#ks-browse-app .ks-browse-media img{object-fit:contain;}' +
+      '#ks-browse-app .ks-browse-media:has(img){background:#fff;}' +
       '#ks-detail-root .ks-detail-main-img{object-fit:contain;}';
     var s = document.createElement('style');
     s.id = 'ks-util-css';
