@@ -41,7 +41,7 @@
      until re-saved/backfilled (price stability for live items, by design). */
   var RESALE_CONFIG = {
     tierPct:   { essentials: 0.30, elevated: 0.50, special: 0.55 },
-    condition: { "new-with-tags": 1.20, "like-new": 1.00, "great": 0.90, "good": 0.85, "fair": 0.70 }
+    condition: { "new-with-tags": 1.20, "like-new": 1.00, "good": 0.85, "fair": 0.70 }
   };
 
   /* ---- OPTION_LISTS (controlled vocabulary, live read — Path B) --------- */
@@ -218,7 +218,7 @@
     } else if (f.type === "textarea") {
       inner = '<textarea data-key="' + f.key + '" placeholder="' + (f.placeholder || "") + '"></textarea>';
     } else if (f.type === "number") {
-      inner = '<input type="number" data-key="' + f.key + '" placeholder="' + (f.placeholder || "") +
+      inner = '<input type="number" inputmode="decimal" data-key="' + f.key + '" placeholder="' + (f.placeholder || "") +
               '"' + (f.step ? ' step="' + f.step + '"' : "") + (f.min ? ' min="' + f.min + '"' : "") + '>';
     } else if (f.type === "pills") {
       var pbtns = f.options.map(function (o) {
@@ -255,7 +255,7 @@
       '<span class="ksl-label" style="margin:0">This is a matching set <span class="ksl-opt">(optional)</span></span></label>' +
       '<div id="ksl-set-count-wrap" class="ksl-hidden" style="margin-top:10px">' +
         '<label class="ksl-label">Number of pieces<span class="ksl-req">*</span></label>' +
-        '<input type="number" id="ksl-set-count" min="2" step="1" placeholder="e.g. 2">' +
+        '<input type="number" inputmode="numeric" id="ksl-set-count" min="2" step="1" placeholder="e.g. 2">' +
         '<div class="ksl-err">Enter 2 or more pieces</div>' +
       '</div>' +
     '</div>';
@@ -290,7 +290,9 @@
     '</div>' +
 
     '<div class="ksl-card"><h3>Photos &amp; video</h3>' +
-      '<p class="ksl-media-help">Up to 3 photos + 1 short video. Tap a slot to add.</p>' +
+      '<p class="ksl-media-help">Up to 3 photos + 1 short video. Tap a slot, or add them all at once.</p>' +
+      '<button type="button" class="ksl-batch-btn" data-batch-add>Add all at once</button>' +
+      '<input type="file" accept="image/*,video/*" multiple class="ksl-hidden" data-batchinput>' +
       '<div class="ksl-slot-grid">' +
       PHOTO_SLOTS.map(function (s) {
           return '<div class="ksl-slot" data-slot="' + s.key + '">' +
@@ -399,7 +401,9 @@
       "#ks-list-app .ksl-bm-confirm{padding:9px 18px;border:0;border-radius:8px;background:#d24f28;color:#fff;font:inherit;font-weight:600;cursor:pointer}" +
       "#ks-list-app .ksl-bm-confirm:disabled{opacity:.6;cursor:default}" +
       "#ks-list-app .ksl-field[data-field='resale_value'] input{border-left:3px solid #d24f28;background:rgba(210,79,40,.06)}" +
-      "#ks-list-app .ksl-field[data-field='resale_value'] > .ksl-label::after{content:'computed';margin-left:8px;padding:1px 7px;border-radius:999px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.05);color:#c2bcb4;font-size:.62rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;vertical-align:middle;white-space:nowrap}";
+      "#ks-list-app .ksl-field[data-field='resale_value'] > .ksl-label::after{content:'computed';margin-left:8px;padding:1px 7px;border-radius:999px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.05);color:#c2bcb4;font-size:.62rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;vertical-align:middle;white-space:nowrap}" +
+      "#ks-list-app .ksl-batch-btn{display:block;width:100%;margin:0 0 12px;padding:11px 14px;border:1px dashed rgba(210,79,40,.55);border-radius:10px;background:rgba(210,79,40,.06);color:#e07a52;font:inherit;font-weight:600;font-size:.9rem;cursor:pointer}" +
+      "#ks-list-app .ksl-batch-btn:hover{border-color:#d24f28;background:rgba(210,79,40,.12);color:#fff}";
     document.head.appendChild(s);
   })();
 
@@ -633,6 +637,36 @@
       if (file) handleSlotFile(key, file);
     });
   });
+
+  /* batch add: one picker fills front/back/detail + video at once. Routes by
+     MIME and reuses the per-slot handleSlotFile untouched, so uploads fire in
+     parallel and the front=slot0=primary invariant is unchanged. Photos assign
+     in selection order starting at Front; the named slots remain the fix-up
+     path (tap-to-replace / × / make-primary). */
+  (function wireBatchAdd() {
+    var btn = root.querySelector("[data-batch-add]");
+    var inp = root.querySelector("[data-batchinput]");
+    if (!btn || !inp) return;
+    btn.addEventListener("click", function () { inp.click(); });
+    inp.addEventListener("change", function () {
+      var files = inp.files ? Array.prototype.slice.call(inp.files) : [];
+      inp.value = "";
+      if (!files.length) return;
+      var vids = [], pics = [], skipped = 0;
+      files.forEach(function (f) {
+        if (VIDEO_TYPES.indexOf(f.type) !== -1) vids.push(f);
+        else if (PHOTO_TYPES.indexOf(f.type) !== -1) pics.push(f);
+        else skipped++;
+      });
+      if (vids[0]) handleSlotFile("video", vids[0]);
+      ["front", "back", "detail"].forEach(function (key, i) {
+        if (pics[i]) handleSlotFile(key, pics[i]);
+      });
+      if (vids.length > 1) showToast("Only the first video was added", true);
+      if (pics.length > 3) showToast("Front/Back/Detail filled — extra photos skipped", true);
+      if (skipped) showToast(skipped + " file(s) skipped — unsupported type", true);
+    });
+  })();
 
   /* delegated: tap an empty slot to add; tap a filled slot to replace; × clears */
   root.addEventListener("click", function (e) {
