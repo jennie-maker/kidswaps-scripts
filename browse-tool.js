@@ -203,7 +203,7 @@
       '#ks-browse-app .ks-browse-new{position:absolute;top:10px;right:10px;background:#d24f28;' +
         'color:#fff;font-size:.62rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;' +
         'padding:4px 8px;border-radius:999px;}' +
-      '.ks-detail-luxnote{display:flex;gap:9px;align-items:flex-start;margin:14px 0 2px;padding:11px 13px;' +
+      '.ks-detail-luxnote{display:flex;gap:9px;align-items:flex-start;margin:14px 0 16px;padding:11px 13px;' +
         'background:#faf7f0;border:1px solid #ecd9ad;border-left:3px solid #e0a93f;border-radius:9px;' +
         'font-size:.82rem;line-height:1.5;color:#5b4a36;}' +
       '.ks-detail-luxnote svg{flex:0 0 auto;margin-top:2px;color:#c8922f;}' +
