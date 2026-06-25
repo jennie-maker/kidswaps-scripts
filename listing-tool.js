@@ -350,6 +350,17 @@
           '<button type="button" class="ksl-submit ksl-review-confirm" id="ksl-review-confirm">Confirm &amp; list</button>' +
         '</div>' +
       '</div>' +
+    '</div>' +
+
+    '<div class="ksl-review ksl-hidden" id="ksl-success">' +
+      '<div class="ksl-review-panel">' +
+        '<h3 class="ksl-review-title ksl-success-title">\u2713 Listed</h3>' +
+        '<div class="ksl-success-body" id="ksl-success-body"></div>' +
+        '<div class="ksl-review-actions">' +
+          '<button type="button" class="ksl-review-back" id="ksl-success-view">View live on browse</button>' +
+          '<button type="button" class="ksl-submit ksl-review-confirm" id="ksl-success-again">List another</button>' +
+        '</div>' +
+      '</div>' +
     '</div>';
 
   /* ---- INJECTED CSS for the Manage-Item UI ----------------------------- */
@@ -404,7 +415,13 @@
       "#ks-list-app .ksl-field[data-field='resale_value'] input{border-left:3px solid #d24f28;background:rgba(210,79,40,.06)}" +
       "#ks-list-app .ksl-field[data-field='resale_value'] > .ksl-label::after{content:'computed';margin-left:8px;padding:1px 7px;border-radius:999px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.05);color:#c2bcb4;font-size:.62rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;vertical-align:middle;white-space:nowrap}" +
       "#ks-list-app .ksl-batch-btn{display:block;width:100%;margin:0 0 12px;padding:11px 14px;border:1px dashed rgba(210,79,40,.55);border-radius:10px;background:rgba(210,79,40,.06);color:#e07a52;font:inherit;font-weight:600;font-size:.9rem;cursor:pointer}" +
-      "#ks-list-app .ksl-batch-btn:hover{border-color:#d24f28;background:rgba(210,79,40,.12);color:#fff}";
+      "#ks-list-app .ksl-batch-btn:hover{border-color:#d24f28;background:rgba(210,79,40,.12);color:#fff}" +
+      "#ks-list-app .ksl-success-title{color:#54935f}" +
+      "#ks-list-app .ksl-success-body{display:flex;align-items:center;gap:14px;margin:0 0 18px}" +
+      "#ks-list-app .ksl-success-thumb{flex:0 0 64px;width:64px;height:85px;object-fit:cover;border-radius:8px;background:rgba(255,255,255,.05)}" +
+      "#ks-list-app .ksl-success-meta{min-width:0}" +
+      "#ks-list-app .ksl-success-sku{font-weight:600;font-size:1rem}" +
+      "#ks-list-app .ksl-success-name{font-size:.86rem;opacity:.7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}";
     document.head.appendChild(s);
   })();
 
@@ -414,6 +431,9 @@
   var submitBtn = $("ksl-submit"), toast = $("ksl-toast");
   var reviewEl = $("ksl-review"), reviewBody = $("ksl-review-body");
   var reviewBack = $("ksl-review-back"), reviewConfirm = $("ksl-review-confirm");
+  var successEl = $("ksl-success"), successBody = $("ksl-success-body");
+  var successView = $("ksl-success-view"), successAgain = $("ksl-success-again");
+  var lastListedSku = "";
 
   /* ---- ITEM TYPE TOGGLE ------------------------------------------------ */
   function applyType() {
@@ -910,7 +930,7 @@
       if (res.ok && res.j.ok) {
         var sku = res.j.item && res.j.item.sku ? res.j.item.sku : "";
         showToast("Listed " + sku + " ✓");
-        resetForm();
+        showSuccess(res.j.item || { sku: sku });
       } else {
         var msg = res.j.error || ("status " + res.status);
         if (res.j.fields) msg += ": " + res.j.fields.join(", ");
@@ -930,6 +950,35 @@
     try { sessionStorage.removeItem(DRAFT_KEY); } catch (e) {}
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
+
+  /* ---- POST-LIST SUCCESS PANEL ----------------------------------------- */
+  /* On a successful list, show a confirm panel with a live deep-link to the
+     just-listed item on /browse (?sku= opens the overlay) + "List another"
+     (the existing resetForm path). Always links to /browse (the All page) so
+     any item type resolves in the available set. Client-only; reuses the
+     review-modal shell + the proven ?sku= deep-link. */
+  function showSuccess(item) {
+    lastListedSku = (item && item.sku) ? item.sku : "";
+    var img = (item && item.primary_photo_url) ? item.primary_photo_url : "";
+    var name = (item && item.item_name) ? item.item_name : "";
+    var html = "";
+    if (img) html += '<img class="ksl-success-thumb" src="' + esc(img) + '" alt="">';
+    html += '<div class="ksl-success-meta">' +
+              '<div class="ksl-success-sku">' + esc(lastListedSku) + '</div>' +
+              (name ? '<div class="ksl-success-name">' + esc(name) + '</div>' : '') +
+            '</div>';
+    if (successBody) successBody.innerHTML = html;
+    var title = root.querySelector(".ksl-success-title");
+    if (title) title.textContent = "\u2713 Listed " + lastListedSku;
+    if (successEl) successEl.classList.remove("ksl-hidden");
+  }
+  if (successView) successView.addEventListener("click", function () {
+    if (lastListedSku) window.open("/browse?sku=" + encodeURIComponent(lastListedSku), "_blank");
+  });
+  if (successAgain) successAgain.addEventListener("click", function () {
+    if (successEl) successEl.classList.add("ksl-hidden");
+    resetForm();
+  });
 
   /* ---- TOAST ----------------------------------------------------------- */
   var toastTimer;
