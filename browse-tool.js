@@ -210,7 +210,8 @@
       '.ks-detail-luxnote p{margin:0;}' +
       '#ks-browse-app .ks-browse-media img{object-fit:contain;}' +
       '#ks-browse-app .ks-browse-media:has(img){background:#fff;}' +
-      '#ks-detail-root .ks-detail-main-img{object-fit:contain;}';
+     '#ks-detail-root .ks-detail-main-img{object-fit:contain;}' +
+         '#ks-detail-root .ks-detail-media{background:#fff;}';
     var s = document.createElement('style');
     s.id = 'ks-util-css';
     s.textContent = css;
