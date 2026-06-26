@@ -212,7 +212,10 @@
       '#ks-browse-app .ks-browse-media img{object-fit:cover;}' +
       '#ks-browse-app .ks-browse-media:has(img){background:#fff;}' +
       '#ks-detail-root .ks-detail-main-img{object-fit:contain;}' +
-      '#ks-detail-root .ks-detail-media{background:#fff;}';
+      '#ks-detail-root .ks-detail-media{background:#fff;}' +
+      /* BROWSE-FIX: overlay size text smaller / bolder / more letter-spacing.
+         #ks-detail-root prefix (0,1,1) wins over the per-page .ks-detail-size. */
+      '#ks-detail-root .ks-detail-size{font-size:.78rem;font-weight:700;letter-spacing:.09em;}';
     var s = document.createElement('style');
     s.id = 'ks-util-css';
     s.textContent = css;
