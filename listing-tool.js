@@ -542,7 +542,7 @@
     resaleTouched = false;
     applyResaleVisibility();
     closeBrandSuggest();
-    defaultCondition();        // next item starts on the like-new default
+    defaultCondition();        // next item starts on the "great" default
   }
 
   /* ---- SET TOGGLE ------------------------------------------------------ */
@@ -944,9 +944,9 @@
     // caught at the one glance before Confirm, the autopilot failure point.
     // Inline-styled so it needs no page CSS (pure JS deploy).
     var isToy = (itemType === "toy");
-    var bannerBg = isToy ? "rgba(245,145,169,.14)" : "rgba(120,150,210,.14)";
-    var bannerBd = isToy ? "rgba(245,145,169,.55)" : "rgba(120,150,210,.55)";
-    var bannerInk = isToy ? "#f591a9" : "#7d9bd6";
+    var bannerBg = isToy ? "rgba(210,79,40,.14)" : "rgba(84,147,95,.14)";
+    var bannerBd = isToy ? "rgba(210,79,40,.55)" : "rgba(84,147,95,.55)";
+    var bannerInk = isToy ? "#d24f28" : "#54935f";
     var rows = '<div style="margin:0 0 14px;padding:10px 14px;border-radius:10px;' +
                  'background:' + bannerBg + ';border:1px solid ' + bannerBd + ';' +
                  'color:' + bannerInk + ';font-size:1rem;font-weight:700;letter-spacing:.02em;text-align:center">' +
