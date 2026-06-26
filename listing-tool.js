@@ -156,6 +156,7 @@
     { key:"sku",            label:"SKU",            type:"text",   group:"both", required:true,  placeholder:"KS-00000", hint:"the KS label number on the item" },
     { key:"brand",          label:"Brand",          type:"text",   group:"both", required:true,  placeholder:"e.g. Patagonia" },
     { key:"item_name",      label:"Item name",      type:"text",   group:"both", required:true,  placeholder:"auto-fills from brand + category" },
+    { key:"description",    label:"Description",    type:"textarea", group:"both", required:false },
     { key:"toy_age_range",  label:"Age range",      type:"multipills", remote:true, group:"toy", required:true },
     { key:"toy_washability",label:"Washability",    type:"pills",  group:"toy", required:true,  options:["wipeable","washable"] },
     { key:"color",          label:"Color",          type:"select", remote:true, group:"clothing", required:true },
@@ -165,11 +166,10 @@
     { key:"tier",           label:"Tier",           type:"select", group:"both", required:true,  options:["essentials","elevated","special"] },
     { key:"retail_value",   label:"Retail value",   type:"number", group:"both", required:true,  placeholder:"e.g. 48", step:"0.01", min:"0" },
     { key:"resale_value",   label:"Resale value",   type:"number", group:"both", required:false, noOptTag:true, step:"0.01", min:"0", hint:"Auto-fills for Elevated/Special — editable; Essentials skips it" },
-    { key:"bin_location",   label:"Bin location",   type:"text",     group:"both", required:true,  placeholder:"where it's stored" },
     { key:"condition_grade",label:"Condition grade",type:"select", remote:true, group:"both", required:false },
     { key:"season",         label:"Season",         type:"text",     group:"clothing", required:false, placeholder:"e.g. winter, all-season" },
-    { key:"description",    label:"Description",    type:"textarea", group:"both", required:false },
     { key:"condition_notes",label:"Personal note",  type:"textarea", group:"both", required:false, placeholder:"e.g. really soft fabric, runs a little big" },
+    { key:"bin_location",   label:"Bin location",   type:"text",     group:"both", required:true,  placeholder:"where it's stored" },
   ];
 
   /* upload validation mirrors inventory-upload */
@@ -401,6 +401,7 @@
       "#ks-list-app .ksl-makeprimary{position:absolute;left:6px;right:6px;bottom:6px;z-index:6;margin:0;padding:5px 8px;border:1px solid rgba(255,255,255,.35);border-radius:7px;background:rgba(20,18,16,.82);color:#fff;font:inherit;font-size:.72rem;font-weight:600;cursor:pointer}" +
       "#ks-list-app .ksl-makeprimary:hover{border-color:#d24f28;background:rgba(210,79,40,.9)}" +
       "#ks-list-app .ksl-field.ksl-cued > .ksl-label::after{content:'from grading';margin-left:8px;padding:1px 7px;border-radius:999px;border:1px solid rgba(210,79,40,.4);background:rgba(210,79,40,.12);color:#e07a52;font-size:.64rem;font-weight:600;letter-spacing:.02em;text-transform:none;vertical-align:middle;white-space:nowrap}" +
+      "#ks-list-app .ksl-field.ksl-cued > .ksl-label{display:flex;align-items:center;flex-wrap:wrap;gap:2px 0}" +
       "#ks-list-app .ksl-brand-wrap{position:relative}" +
       "#ks-list-app .ksl-brand-results{display:none;position:absolute;left:0;right:0;top:100%;margin-top:3px;z-index:60;max-height:240px;overflow-y:auto;background:#1f1f1f;border:1px solid rgba(255,255,255,.18);border-radius:9px;box-shadow:0 10px 28px rgba(0,0,0,.45)}" +
       "#ks-list-app .ksl-brand-results.is-open{display:block}" +
@@ -1065,6 +1066,13 @@
           skuEl.value = res.j.label;
           lastLookup = null;                    // clear the guard so runLookup fires
           runLookup();                          // pulls graded data (option A)
+          // focus the first field the operator actually types (Color carries
+          // forward from nothing); skip on toys / if absent. Deferred a tick so
+          // it lands after runLookup's setField writes settle.
+          setTimeout(function () {
+            var c = root.querySelector('[data-key="color"]');
+            if (c && c.offsetParent !== null) { try { c.focus(); } catch (e) {} }
+          }, 50);
         }
         setSkuNote(remaining + (remaining === 1 ? " item waiting to list" : " items waiting to list"));
       } else {
