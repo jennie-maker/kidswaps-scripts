@@ -190,6 +190,8 @@
   var token = null;
   var resaleTouched = false;   // resale auto-fill override latch; a tier change resets it
   var gradedForSku = "";       // SKU the current carry-forward data belongs to (drift guard)
+  var awaitingPhotoFocus = false;  // photos-first guided entry: when armed, the first
+                                   // completed photo drops the cursor into Color (one-shot)
 
   /* ---- MANAGE-ITEM (edit existing) STATE ------------------------------- */
   var EDIT_MODE   = false;   // true once an existing item is loaded for editing
@@ -290,8 +292,8 @@
       '<button type="button" data-type="toy">Toy</button>' +
     '</div>' +
 
-    '<div class="ksl-card"><h3>Photos &amp; video</h3>' +
-      '<p class="ksl-media-help">Up to 3 photos + 1 short video. Tap a slot, or add them all at once.</p>' +
+    '<div class="ksl-card" data-photos-card><h3>Photos &amp; video</h3>' +
+      '<p class="ksl-media-help"><strong>Start here \u2014 upload all photos.</strong> Up to 3 photos + 1 short video. Tap a slot, or add them all at once.</p>' +
       '<button type="button" class="ksl-batch-btn" data-batch-add>Add all at once</button>' +
       '<input type="file" accept="image/*,video/*" multiple class="ksl-hidden" data-batchinput>' +
       '<div class="ksl-slot-grid">' +
@@ -673,8 +675,40 @@
     var rec = { id: uid(), url: null, status: "uploading", name: file.name, objUrl: URL.createObjectURL(file) };
     slots[key] = rec; renderSlot(key);
     uploadFile(file, "photo")
-      .then(function (url) { if (slots[key] === rec) { rec.url = url; rec.status = "done"; renderSlot(key); saveDraft(); } })
+      .then(function (url) { if (slots[key] === rec) { rec.url = url; rec.status = "done"; renderSlot(key); saveDraft(); if (key === "front") focusColorAfterPhotos(); } })
       .catch(function (e) { if (slots[key] === rec) { rec.status = "error"; renderSlot(key); } console.error("[upload photo]", e); });
+  }
+
+  /* ---- PHOTOS-FIRST GUIDED ENTRY --------------------------------------- */
+  /* On a fresh form (open or "List another"), nudge the operator to upload
+     photos first (scroll + a transient gold ring on the Photos card) and arm a
+     one-shot so the cursor drops into Color the moment the first (front) photo
+     finishes uploading. Replaces the old focus-on-SKU-prefill behavior. Pure JS
+     / inline style (no Webflow CSS edit); ring = approved palette gold #e0a93f.
+     Toys have no Color field -> the focus is a quiet no-op. */
+  function nudgePhotos() {
+    var card = root.querySelector("[data-photos-card]");
+    if (!card) return;
+    try { card.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {}
+    var prev = card.style.boxShadow;
+    card.style.transition = "box-shadow .25s ease";
+    card.style.boxShadow = "0 0 0 3px #e0a93f";
+    setTimeout(function () { card.style.boxShadow = prev || ""; }, 2600);
+  }
+  function focusColorAfterPhotos() {
+    if (EDIT_MODE || !awaitingPhotoFocus) return;
+    awaitingPhotoFocus = false;                 // one-shot per item
+    var ae = document.activeElement;            // never steal focus mid-typing
+    if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) && ae.type !== "file") return;
+    setTimeout(function () {
+      var c = root.querySelector('[data-key="color"]');
+      if (c && c.offsetParent !== null) { try { c.focus(); } catch (e) {} }
+    }, 50);
+  }
+  function armPhotoFirst() {
+    if (EDIT_MODE) return;                       // edit mode uses the Manage bar
+    awaitingPhotoFocus = true;
+    nudgePhotos();
   }
 
   /* wire each slot's hidden file input */
@@ -1006,6 +1040,7 @@
     try { sessionStorage.removeItem(DRAFT_KEY); } catch (e) {}
     window.scrollTo({ top: 0, behavior: "smooth" });
     prefillNextSku();        // next label + graded data ready for the next item
+    armPhotoFirst();         // photos-first nudge + re-arm Color-after-photos
   }
 
   /* ---- DUPLICATE-SKU COLLISION PANEL ----------------------------------- */
@@ -1158,13 +1193,9 @@
             // mark it "looked up" so a later blur doesn't fire a doomed lookup.
             lastLookup = skuEl.value;
           }
-          // focus the first field the operator actually types (Color carries
-          // forward from nothing); skip on toys / if absent. Deferred a tick so
-          // it lands after any setField writes settle.
-          setTimeout(function () {
-            var c = root.querySelector('[data-key="color"]');
-            if (c && c.offsetParent !== null) { try { c.focus(); } catch (e) {} }
-          }, 50);
+          // (Color focus moved to the photos-first flow: the cursor now drops
+          // into Color after the first photo lands via focusColorAfterPhotos,
+          // not on SKU prefill.)
         }
         if (mode === "fresh") {
           // counter path: no queue, just the next number to use
@@ -2009,7 +2040,7 @@ function titleCase(s) {
       // Auto-advance the SKU only when there's no draft waiting to restore
       // (a draft owns the SKU; the restore banner handles it). Runs after
       // option_lists settles so the graded-data pull writes into ready selects.
-      if (!hasDraft()) prefillNextSku();
+      if (!hasDraft()) { prefillNextSku(); armPhotoFirst(); }
     });
   // warm the token early so first upload is instant
   getToken().catch(function () {});
