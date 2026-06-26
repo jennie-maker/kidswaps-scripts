@@ -194,7 +194,7 @@
 
   // Fill the remote selects after the fetch resolves. Size is category-aware.
   function injectOptions() {
-    ["color", "category", "condition_grade"].forEach(function (key) {
+    ["color", "category", "condition_grade", "occasion"].forEach(function (key) {
       var sel = root.querySelector('select[data-key="' + key + '"]');
       if (sel) fillSelect(sel, OPTION_LISTS[key] || []);
     });
@@ -224,6 +224,7 @@
     { key:"resale_value",   label:"Resale value",   type:"number", group:"both", required:false, noOptTag:true, step:"0.01", min:"0", hint:"Auto-fills for Elevated/Special — editable; Essentials skips it" },
     { key:"condition_grade",label:"Condition grade",type:"select", remote:true, group:"both", required:false },
     { key:"season",         label:"Season",         type:"text",     group:"clothing", required:false, placeholder:"e.g. winter, all-season" },
+    { key:"occasion",       label:"Occasion",       type:"select", remote:true, group:"both", required:false },
     { key:"condition_notes",label:"Personal note",  type:"textarea", group:"both", required:false, placeholder:"e.g. really soft fabric, runs a little big" },
     { key:"bin_location",   label:"Bin location",   type:"text",     group:"both", required:true,  placeholder:"where it's stored" },
   ];
