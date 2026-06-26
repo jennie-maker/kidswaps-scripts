@@ -322,10 +322,18 @@
       '<div class="ksl-edit-lock ksl-hidden" id="ksl-edit-lock"></div>' +
       '<h3>Edit</h3>' +
       '<div class="ksl-field">' +
+        '<label class="ksl-label">Item name</label>' +
+        '<input type="text" id="ksl-edit-name" placeholder="item name">' +
+      '</div>' +
+      '<div class="ksl-field">' +
+        '<label class="ksl-label">Description</label>' +
+        '<textarea id="ksl-edit-desc" rows="4" placeholder="member-facing description"></textarea>' +
+      '</div>' +
+      '<div class="ksl-field">' +
         '<label class="ksl-label">Status</label>' +
         '<select id="ksl-edit-status">' +
-          '<option value="available">available</option>' +
-          '<option value="retired">retired</option>' +
+          '<option value="available">Available</option>' +
+          '<option value="retired">Un-list</option>' +
         '</select>' +
       '</div>' +
       '<div class="ksl-field">' +
@@ -337,6 +345,7 @@
         '<span class="ksl-label" style="margin:0">Featured</span></label>' +
       '</div>' +
       '<button type="button" class="ksl-submit" id="ksl-edit-save">Save changes</button>' +
+      '<button type="button" class="ksl-danger" id="ksl-edit-delete">Delete item</button>' +
     '</div>' +
 
     '<button type="button" class="ksl-submit" id="ksl-submit">List item</button>' +
@@ -384,6 +393,10 @@
       "#ks-list-app .ksl-ref-k{opacity:.5;text-transform:uppercase;letter-spacing:.04em;font-size:.72rem;align-self:center}" +
       "#ks-list-app .ksl-ref-v{opacity:.92}" +
       "#ks-list-app .ksl-edit-lock{margin:0 0 14px;padding:10px 12px;border-radius:8px;background:rgba(210,79,40,.14);border:1px solid rgba(210,79,40,.55);font-size:.86rem}" +
+      "#ks-list-app .ksl-danger{display:block;width:100%;margin-top:10px;padding:11px 18px;border:1px solid rgba(192,57,43,.6);border-radius:9px;background:transparent;color:#e06a5a;font:inherit;font-weight:600;cursor:pointer}" +
+      "#ks-list-app .ksl-danger:hover{background:#c0392b;border-color:#c0392b;color:#fff}" +
+      "#ks-list-app .ksl-danger:disabled{opacity:.5;cursor:default}" +
+      "#ks-list-app #ksl-edit-desc{min-height:92px;resize:vertical}" +
       "#ks-list-app .ksl-slot{position:relative}" +
       "#ks-list-app .ksl-makeprimary{position:absolute;left:6px;right:6px;bottom:6px;z-index:6;margin:0;padding:5px 8px;border:1px solid rgba(255,255,255,.35);border-radius:7px;background:rgba(20,18,16,.82);color:#fff;font:inherit;font-size:.72rem;font-weight:600;cursor:pointer}" +
       "#ks-list-app .ksl-makeprimary:hover{border-color:#d24f28;background:rgba(210,79,40,.9)}" +
@@ -1511,12 +1524,16 @@ function titleCase(s) {
     if (el) { el.textContent = msg; el.classList.remove("ksl-hidden"); }
     var save = $("ksl-edit-save");
     if (save) save.disabled = true;
+    var del = $("ksl-edit-delete");
+    if (del) del.disabled = true;
   }
   function hideLockBanner() {
     var el = $("ksl-edit-lock");
     if (el) el.classList.add("ksl-hidden");
     var save = $("ksl-edit-save");
     if (save) save.disabled = false;
+    var del = $("ksl-edit-delete");
+    if (del) del.disabled = false;
   }
 
   /* swap insert chrome (toggle / details / List-item) <-> edit panel */
@@ -1587,6 +1604,11 @@ function titleCase(s) {
     if (bin) bin.value = rec.bin_location || "";
     var feat = $("ksl-edit-featured");
     if (feat) feat.checked = !!rec.featured;
+    var nm = $("ksl-edit-name");
+    if (nm) nm.value = rec.item_name || "";
+    var ds = $("ksl-edit-desc");
+    if (ds) ds.value = rec.description || "";
+    nameTouched = true;   // edit mode must never auto-recompose the loaded name
 
     setEditChrome(true);
     if (editLocked) showLockBanner("This item is " + rec.status + " (member-pending) — editing is locked.");
@@ -1608,6 +1630,8 @@ function titleCase(s) {
       .map(function (r) { return r.url; });
     return {
       status: ($("ksl-edit-status") || {}).value || "available",
+      item_name: (($("ksl-edit-name") || {}).value || "").trim(),
+      description: (($("ksl-edit-desc") || {}).value || "").trim(),
       bin_location: (($("ksl-edit-bin") || {}).value || "").trim(),
       featured: !!($("ksl-edit-featured") && $("ksl-edit-featured").checked),
       photo_urls: photos,                                   // front-first; server derives primary
@@ -1662,6 +1686,10 @@ function titleCase(s) {
       showToast("Bin location can't be empty", true);
       return;
     }
+    if (!(($("ksl-edit-name") || {}).value || "").trim()) {
+      showToast("Item name can't be empty", true);
+      return;
+    }
     if (anyUploading()) { showToast("Wait for photos to finish uploading", true); return; }
     var sku = loadedRecord.sku;
     var btn = $("ksl-edit-save");
@@ -1681,6 +1709,10 @@ function titleCase(s) {
       if (res.ok && res.j.ok && res.j.item) {
         ["status", "primary_photo_url", "photo_urls", "video_url", "bin_location", "featured"]
           .forEach(function (k) { if (res.j.item[k] !== undefined) loadedRecord[k] = res.j.item[k]; });
+        // name + description aren't in the update .select() response — the save
+        // succeeded, so the field values we sent are now DB truth.
+        loadedRecord.item_name = (($("ksl-edit-name") || {}).value || "").trim();
+        loadedRecord.description = (($("ksl-edit-desc") || {}).value || "").trim() || null;
         buildRefBlock(loadedRecord);
         var st = $("ksl-edit-status");
         if (st) st.value = (loadedRecord.status === "retired") ? "retired" : "available";
@@ -1704,6 +1736,56 @@ function titleCase(s) {
     });
   }
 
+  function runEditDelete() {
+    if (!EDIT_MODE || !loadedRecord) { showToast("No item loaded", true); return; }
+    if (editLocked) { showToast("This item is reserved/claimed — can't delete", true); return; }
+    var sku = loadedRecord.sku;
+    var ok = window.confirm(
+      "Delete " + sku + "?\n\n" +
+      "You'll permanently lose ALL data for this item — photos, details, " +
+      "everything. This can't be undone.\n\n" +
+      "(Items that have ever been claimed can't be deleted — Un-list those instead.)"
+    );
+    if (!ok) return;
+    var btn = $("ksl-edit-delete");
+    if (btn) { btn.disabled = true; btn.textContent = "Deleting…"; }
+    getToken().then(function (t) {
+      return fetch(FN_EDIT, {
+        method: "POST",
+        headers: {
+          "x-ms-token": t, "content-type": "application/json",
+          "apikey": ANON, "authorization": "Bearer " + ANON
+        },
+        body: JSON.stringify({ action: "delete", sku: sku })
+      });
+    }).then(function (r) {
+      return r.json().then(function (j) { return { ok: r.ok, status: r.status, j: j }; });
+    }).then(function (res) {
+      if (res.ok && res.j.ok && res.j.deleted) {
+        showToast("Deleted " + sku + " ✓");
+        exitEditMode();                       // item is gone — leave edit mode
+      } else if (res.status === 409 && res.j.error === "has_claims") {
+        showToast("Has order history — Un-list it instead of deleting", true);
+      } else if (res.status === 409) {
+        editLocked = true;
+        showLockBanner("This item is now reserved/claimed — can't delete.");
+        showToast("Reserved/claimed — can't delete", true);
+        console.error("[edit-delete 409]", res);
+      } else {
+        var msg = res.j.error || ("status " + res.status);
+        showToast("Delete failed — " + msg, true);
+        console.error("[edit-delete]", res);
+      }
+    }).catch(function (e) {
+      showToast("Network error — see console", true);
+      console.error("[edit-delete]", e);
+    }).finally(function () {
+      var b = $("ksl-edit-delete");
+      if (b && !editLocked) { b.disabled = false; b.textContent = "Delete item"; }
+      else if (b) { b.textContent = "Delete item"; }
+    });
+  }
+
   /* wire the manage bar + edit panel */
   (function wireManage() {
     var loadBtn = $("ksl-mng-load");
@@ -1716,6 +1798,8 @@ function titleCase(s) {
     if (newLink) newLink.addEventListener("click", function (e) { e.preventDefault(); exitEditMode(); });
     var saveBtn = $("ksl-edit-save");
     if (saveBtn) saveBtn.addEventListener("click", runEditSave);
+    var delBtn = $("ksl-edit-delete");
+    if (delBtn) delBtn.addEventListener("click", runEditDelete);
   })();
 
   /* ---- INIT ------------------------------------------------------------ */
