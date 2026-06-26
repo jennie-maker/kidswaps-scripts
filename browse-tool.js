@@ -215,7 +215,11 @@
       '#ks-detail-root .ks-detail-media{background:#fff;}' +
       /* BROWSE-FIX: overlay size text smaller / bolder / more letter-spacing.
          #ks-detail-root prefix (0,1,1) wins over the per-page .ks-detail-size. */
-      '#ks-detail-root .ks-detail-size{font-size:.78rem;font-weight:700;letter-spacing:.09em;}';
+      '#ks-detail-root .ks-detail-size{font-size:.78rem;font-weight:700;letter-spacing:.09em;}' +
+      /* D: video rail thumb shows the first frame (#t=0.1) under a play overlay */
+      '#ks-detail-root .ks-detail-thumb-video{position:relative;overflow:hidden;}' +
+      '#ks-detail-root .ks-detail-thumb-vid{width:100%;height:100%;object-fit:cover;display:block;}' +
+      '#ks-detail-root .ks-detail-thumb-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.28);color:#fff;}';
     var s = document.createElement('style');
     s.id = 'ks-util-css';
     s.textContent = css;
@@ -507,7 +511,9 @@
     });
     if (hasVideo) {
       thumbs += '<button type="button" class="ks-detail-thumb ks-detail-thumb-video" data-video="1">' +
-        PLAY_SVG + '</button>';
+        '<video class="ks-detail-thumb-vid" src="' + escapeHtml(item.video_url) + '#t=0.1" muted playsinline preload="metadata"></video>' +
+        '<span class="ks-detail-thumb-play">' + PLAY_SVG + '</span>' +
+        '</button>';
     }
     if (!photos.length && !hasVideo) {
       thumbs = '';  // rail hidden via CSS when empty wrapper has no children
