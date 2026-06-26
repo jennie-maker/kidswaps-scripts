@@ -105,6 +105,24 @@
     }
   }
 
+  /* ---- RESPONSIVE: toy age tiles wrap on phones (E) -------------------- */
+  /* The 4 toy age pills overflow the right edge on narrow screens. Inject a
+     mobile-only rule (<=600px) so the pillbox wraps onto multiple rows instead
+     of clipping. Pure JS / injected <style> (no Webflow CSS-box edit); desktop
+     (>600px) is byte-untouched. !important defeats any current nowrap/grid on
+     the container. */
+  (function injectAgeTileWrap() {
+    if (document.getElementById("ksl-agewrap-css")) return;
+    var st = document.createElement("style");
+    st.id = "ksl-agewrap-css";
+    st.textContent =
+      "@media (max-width:600px){" +
+        "[data-pillbox=\"toy_age_range\"]{display:flex!important;flex-wrap:wrap!important;gap:8px!important;}" +
+        "[data-pillbox=\"toy_age_range\"] .ksl-pill{flex:0 1 auto;}" +
+      "}";
+    document.head.appendChild(st);
+  })();
+
   // Build the toy-age multipills from option_lists.toy_age (4 stages).
   // Pills render in fetched order (= sort_order), so the active-pill join in
   // the click handler yields the canonical-order delimited value for free.
