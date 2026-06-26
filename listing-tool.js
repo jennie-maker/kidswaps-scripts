@@ -525,6 +525,13 @@
       }
       clearItem();
       itemType = target; applyType(); saveDraft();
+      // Re-fill the SKU after a manual type switch (clearItem reset it to "KS-").
+      // With the grading queue empty this returns the next fresh sequential label
+      // and pulls no graded data, so it never flips the type back. When grading
+      // is live and a graded item is WAITING, this would pull that item and flip
+      // back -> the force-fresh upgrade is banked for grading-go-live.
+      prefillNextSku();
+      armPhotoFirst();
     });
   });
 
@@ -658,7 +665,7 @@
     var state = rec.status === "uploading" ? '<div class="ksl-state">Uploading…</div>'
               : rec.status === "error" ? '<div class="ksl-state">Failed — tap ✕</div>' : '';
     var media = (key === "video")
-      ? '<video src="' + rec.objUrl + '#t=0.1" muted playsinline preload="metadata"></video>'
+      ? '<video src="' + (rec.url || rec.objUrl) + '#t=0.1" muted playsinline preload="metadata"></video>'
       : '<img src="' + rec.objUrl + '" alt="">';
     var isPrimary = (key === "front" && rec.status === "done");
     var badge = isPrimary ? '<span class="ksl-badge">PRIMARY</span>' : '';
