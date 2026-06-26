@@ -189,6 +189,7 @@
   var video = null;
   var token = null;
   var resaleTouched = false;   // resale auto-fill override latch; a tier change resets it
+  var gradedForSku = "";       // SKU the current carry-forward data belongs to (drift guard)
 
   /* ---- MANAGE-ITEM (edit existing) STATE ------------------------------- */
   var EDIT_MODE   = false;   // true once an existing item is loaded for editing
@@ -370,6 +371,18 @@
           '<button type="button" class="ksl-submit ksl-review-confirm" id="ksl-success-again">List another</button>' +
         '</div>' +
       '</div>' +
+    '</div>' +
+
+    '<div class="ksl-review ksl-hidden" id="ksl-dupe">' +
+      '<div class="ksl-review-panel">' +
+        '<h3 class="ksl-review-title">SKU already in use</h3>' +
+        '<div class="ksl-success-body" id="ksl-dupe-body"></div>' +
+        '<div class="ksl-review-actions" style="flex-wrap:wrap;gap:8px">' +
+          '<button type="button" class="ksl-review-back" id="ksl-dupe-cancel">Cancel</button>' +
+          '<button type="button" class="ksl-review-back" id="ksl-dupe-edit">Edit that item</button>' +
+          '<button type="button" class="ksl-submit ksl-review-confirm" id="ksl-dupe-newnum">Use a different number</button>' +
+        '</div>' +
+      '</div>' +
     '</div>';
 
   /* ---- INJECTED CSS for the Manage-Item UI ----------------------------- */
@@ -516,6 +529,7 @@
     if (skuEl) skuEl.value = "KS-";
     nameTouched = false;
     lastLookup = null;
+    gradedForSku = "";
     setAgeHint("");
     root.querySelectorAll(".ksl-pill.is-active").forEach(function (b) { b.classList.remove("is-active"); });
     setChk.checked = false; setCountWrap.classList.add("ksl-hidden"); setCount.value = "";
@@ -891,7 +905,19 @@
            '</span><span class="ksl-review-v">' + value + '</span></div>';
   }
   function showReview() {
-    var rows = reviewRow("Type", itemType === "toy" ? "Toy" : "Clothing");
+    // TYPE BANNER: prominent, color-coded, first thing in the review — so a
+    // wrong-type listing (clothing form left on for a toy, or vice versa) is
+    // caught at the one glance before Confirm, the autopilot failure point.
+    // Inline-styled so it needs no page CSS (pure JS deploy).
+    var isToy = (itemType === "toy");
+    var bannerBg = isToy ? "rgba(245,145,169,.14)" : "rgba(120,150,210,.14)";
+    var bannerBd = isToy ? "rgba(245,145,169,.55)" : "rgba(120,150,210,.55)";
+    var bannerInk = isToy ? "#f591a9" : "#7d9bd6";
+    var rows = '<div style="margin:0 0 14px;padding:10px 14px;border-radius:10px;' +
+                 'background:' + bannerBg + ';border:1px solid ' + bannerBd + ';' +
+                 'color:' + bannerInk + ';font-size:1rem;font-weight:700;letter-spacing:.02em;text-align:center">' +
+                 'Listing a ' + (isToy ? "TOY" : "CLOTHING") + ' item' +
+               '</div>';
     SCHEMA.forEach(function (f) {
       if (!(f.group === "both" || f.group === itemType)) return;
       var el = root.querySelector('[data-key="' + f.key + '"]');
@@ -911,6 +937,17 @@
   submitBtn.addEventListener("click", function () {
     var bad = validate();
     if (bad.length) { showToast("Check the highlighted fields", true); return; }
+    // SKU-DRIFT GUARD: graded data was pulled for one SKU, but the SKU field
+    // now shows a different label -> the carry-forward data is stale. Block,
+    // don't silently list mismatched data (an autopilot-class mistake).
+    if (gradedForSku) {
+      var curSku = normalizeLabel(skuEl ? skuEl.value : "") || "";
+      if (curSku && curSku !== gradedForSku) {
+        markError("sku");
+        showToast("This data was loaded for " + gradedForSku + " but the SKU is now " + curSku + " — re-check the SKU, or clear and start over.", true);
+        return;
+      }
+    }
     var nmEl = root.querySelector('[data-key="item_name"]');
     var brEl = root.querySelector('[data-key="brand"]');
     var nm = nmEl ? nmEl.value : "", br = brEl ? brEl.value : "";
@@ -945,6 +982,11 @@
         var sku = res.j.item && res.j.item.sku ? res.j.item.sku : "";
         showToast("Listed " + sku + " ✓");
         showSuccess(res.j.item || { sku: sku });
+      } else if (res.j && res.j.code === "duplicate_sku") {
+        // SKU collision: the DB UNIQUE constraint refused it. Show the blocking
+        // three-out panel (Edit that item / different number / Cancel) instead
+        // of a dismissable toast — the autopilot-safe halt.
+        showDupePanel(skuEl ? skuEl.value : "");
       } else {
         var msg = res.j.error || ("status " + res.status);
         if (res.j.fields) msg += ": " + res.j.fields.join(", ");
@@ -965,6 +1007,48 @@
     window.scrollTo({ top: 0, behavior: "smooth" });
     prefillNextSku();        // next label + graded data ready for the next item
   }
+
+  /* ---- DUPLICATE-SKU COLLISION PANEL ----------------------------------- */
+  /* Shown when inventory-list refuses a duplicate SKU (the DB UNIQUE constraint
+     is the hard floor; this turns the refusal into an actionable, blocking halt
+     so an autopilot collision can't be blown past with a toast). Two safe outs +
+     cancel; deliberate deletion stays in Manage-Item, not on this fast path. */
+  var dupeEl = $("ksl-dupe");
+  function showDupePanel(rawSku) {
+    var norm = normalizeLabel(rawSku) || rawSku || "this SKU";
+    var body = $("ksl-dupe-body");
+    if (body) {
+      body.innerHTML =
+        '<p style="margin:0 0 6px"><strong>' + norm + '</strong> is already listed in inventory.</p>' +
+        '<p style="margin:0;opacity:.8;font-size:.9em">Edit the existing item, or get the next free number for this one.</p>';
+    }
+    if (dupeEl) dupeEl.classList.remove("ksl-hidden");
+  }
+  (function wireDupe() {
+    var cancelBtn = $("ksl-dupe-cancel");
+    var editBtn   = $("ksl-dupe-edit");
+    var newBtn    = $("ksl-dupe-newnum");
+    if (cancelBtn) cancelBtn.addEventListener("click", function () {
+      if (dupeEl) dupeEl.classList.add("ksl-hidden");
+    });
+    if (editBtn) editBtn.addEventListener("click", function () {
+      if (dupeEl) dupeEl.classList.add("ksl-hidden");
+      // route the colliding SKU into the Manage bar + load it for editing
+      var norm = normalizeLabel(skuEl ? skuEl.value : "");
+      var mng = $("ksl-mng-sku");
+      if (mng && norm) mng.value = norm;
+      runManageLoad();
+    });
+    if (newBtn) newBtn.addEventListener("click", function () {
+      if (dupeEl) dupeEl.classList.add("ksl-hidden");
+      // clear the colliding SKU + fetch the next free label (won't collide)
+      if (skuEl) skuEl.value = "KS-";
+      lastLookup = null;
+      gradedForSku = "";
+      prefillNextSku();
+      if (skuEl) { try { skuEl.focus(); } catch (e) {} }
+    });
+  })();
 
   /* ---- POST-LIST SUCCESS PANEL ----------------------------------------- */
   /* On a successful list, show a confirm panel with a live deep-link to the
@@ -1060,24 +1144,37 @@
         return;
       }
       var remaining = (typeof res.j.remaining === "number") ? res.j.remaining : 0;
+      var mode = (res.j.mode === "graded" || res.j.mode === "fresh") ? res.j.mode : null;
       if (res.j.label) {
         // only auto-fill if the operator hasn't started typing a SKU themselves
         if (!skuEl.value || skuEl.value === "KS-") {
           skuEl.value = res.j.label;
-          lastLookup = null;                    // clear the guard so runLookup fires
-          runLookup();                          // pulls graded data (option A)
+          if (mode === "graded") {
+            // a real graded item is waiting -> pull its carry-forward data
+            lastLookup = null;                  // clear the guard so runLookup fires
+            runLookup();                        // pulls graded data (option A)
+          } else {
+            // fresh sequential counter label -> no graded record to pull.
+            // mark it "looked up" so a later blur doesn't fire a doomed lookup.
+            lastLookup = skuEl.value;
+          }
           // focus the first field the operator actually types (Color carries
           // forward from nothing); skip on toys / if absent. Deferred a tick so
-          // it lands after runLookup's setField writes settle.
+          // it lands after any setField writes settle.
           setTimeout(function () {
             var c = root.querySelector('[data-key="color"]');
             if (c && c.offsetParent !== null) { try { c.focus(); } catch (e) {} }
           }, 50);
         }
-        setSkuNote(remaining + (remaining === 1 ? " item waiting to list" : " items waiting to list"));
+        if (mode === "fresh") {
+          // counter path: no queue, just the next number to use
+          setSkuNote("Next available label");
+        } else {
+          setSkuNote(remaining + (remaining === 1 ? " item waiting to list" : " items waiting to list"));
+        }
       } else {
-        // nothing accepted is un-listed -> finish line
-        setSkuNote("All caught up — nothing waiting to list");
+        // no label at all (both RPCs empty -> brand new system) -> leave "KS-"
+        setSkuNote("");
       }
     }).catch(function (e) {
       setSkuNote("");
@@ -1430,6 +1527,11 @@
     //    before we write the size field (clothing_size vs toy_age_range).
     var t = (rec.item_type === "toy") ? "toy" : "clothing";
     if (t !== itemType) { itemType = t; applyType(); }
+
+    // SKU-DRIFT GUARD: remember which SKU this carry-forward data belongs to.
+    // If the operator later changes the SKU without re-looking-up, submit blocks
+    // (stale graded data under a different label = an autopilot mismatch).
+    gradedForSku = normalizeLabel(skuEl ? skuEl.value : "") || "";
 
     // 2. carry-forward fields (overwrite; the label is the source of truth).
     //    Re-cue from scratch so a fresh lookup never inherits a stale tag.
