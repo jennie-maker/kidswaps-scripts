@@ -123,6 +123,44 @@
     document.head.appendChild(st);
   })();
 
+  /* ---- VISIBILITY: draft-restore banner stands out ------------------- */
+  /* The Restore/Discard buttons inherited near-invisible defaults from the page
+     CSS. Inject a clear alert-card look (reusing the browse luxury-note gold
+     treatment, not a new color) + real button styling so the prompt can't be
+     missed. Pure JS / injected <style>; IDs win specificity over the page. */
+  (function injectRestoreCss() {
+    if (document.getElementById("ksl-restore-css")) return;
+    var st = document.createElement("style");
+    st.id = "ksl-restore-css";
+    st.textContent =
+      "#ksl-restore{display:flex;align-items:center;justify-content:space-between;gap:14px;" +
+        "flex-wrap:wrap;background:#faf7f0;border:1px solid #ecd9ad;border-left:3px solid #e0a93f;" +
+        "border-radius:9px;padding:11px 14px;margin:0 0 14px;color:#1f1a17;font-size:.9rem;}" +
+      "#ksl-restore button{font:inherit;font-weight:700;cursor:pointer;border-radius:8px;padding:7px 16px;}" +
+      "#ksl-restore #ksl-restore-yes{background:#d24f28;color:#fff;border:1px solid #d24f28;}" +
+      "#ksl-restore #ksl-restore-no{background:#fff;color:#1f1a17;border:1px solid rgba(31,26,23,.2);}";
+    document.head.appendChild(st);
+  })();
+
+  /* ---- RESTYLE: Clothing/Toy toggle = segmented control --------------- */
+  /* The two type tabs read as standalone buttons. Restyle as one connected
+     segmented control (active filled in brand orange, inactive muted) so it
+     reads as a single toggle. Pure JS inject; #ks-list-app prefix wins over the
+     page CSS; approved palette + ink-derived neutrals. */
+  (function injectToggleCss() {
+    if (document.getElementById("ksl-toggle-css")) return;
+    var st = document.createElement("style");
+    st.id = "ksl-toggle-css";
+    st.textContent =
+      "#ks-list-app .ksl-toggle{display:inline-flex;gap:0;padding:3px;border-radius:10px;" +
+        "background:rgba(31,26,23,.06);border:1px solid rgba(31,26,23,.12);}" +
+      "#ks-list-app .ksl-toggle button{appearance:none;-webkit-appearance:none;border:0;background:transparent;" +
+        "color:#1f1a17;font:inherit;font-weight:600;padding:8px 22px;border-radius:8px;cursor:pointer;" +
+        "opacity:.6;transition:background .15s,opacity .15s;}" +
+      "#ks-list-app .ksl-toggle button.is-active{background:#d24f28;color:#fff;opacity:1;}";
+    document.head.appendChild(st);
+  })();
+
   // Build the toy-age multipills from option_lists.toy_age (4 stages).
   // Pills render in fetched order (= sort_order), so the active-pill join in
   // the click handler yields the canonical-order delimited value for free.
