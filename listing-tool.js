@@ -962,6 +962,7 @@
     clearItem();
     try { sessionStorage.removeItem(DRAFT_KEY); } catch (e) {}
     window.scrollTo({ top: 0, behavior: "smooth" });
+    prefillNextSku();        // next label + graded data ready for the next item
   }
 
   /* ---- POST-LIST SUCCESS PANEL ----------------------------------------- */
@@ -1006,6 +1007,75 @@
   /* ---- SKU PREFILL ----------------------------------------------------- */
   var skuEl = root.querySelector('[data-key="sku"]');
   if (skuEl && !skuEl.value) skuEl.value = "KS-";
+
+  /* ---- SKU AUTO-ADVANCE (Build F) -------------------------------------- */
+  /* On form open (no draft) and after each successful list, fetch the next
+     un-listed accepted grading label + the count of labels still waiting from
+     the operator-gated intake-lookup edge fn ({action:"next_label"} -> the
+     get_next_unlisted RPC). Fill the SKU, then run the existing carry-forward
+     lookup so the graded data (brand/tier/retail/size) auto-fills in one motion
+     (option A). null label -> SKU stays "KS-" + an "all caught up" note. The
+     count + label come from one derived query so they can't drift. */
+
+  // The "N waiting" note lives just under the SKU field; created lazily.
+  function skuNoteEl() {
+    if (!skuEl) return null;
+    var fld = skuEl.closest ? skuEl.closest(".ksl-field") : null;
+    if (!fld) return null;
+    var el = fld.querySelector(".ksl-sku-note");
+    if (!el) {
+      el = document.createElement("div");
+      el.className = "ksl-sku-note";
+      el.style.cssText = "margin-top:6px;font-size:.85em;opacity:.8;";
+      fld.appendChild(el);
+    }
+    return el;
+  }
+  function setSkuNote(text) {
+    var el = skuNoteEl();
+    if (!el) return;
+    el.textContent = text || "";
+    el.style.display = text ? "" : "none";
+  }
+
+  function prefillNextSku() {
+    if (EDIT_MODE || !skuEl) return;
+    getToken().then(function (t) {
+      return fetch(FN_LOOKUP, {
+        method: "POST",
+        headers: {
+          "x-ms-token": t, "content-type": "application/json",
+          "apikey": ANON, "authorization": "Bearer " + ANON
+        },
+        body: JSON.stringify({ action: "next_label" })
+      });
+    }).then(function (r) {
+      return r.json().then(function (j) { return { ok: r.ok, j: j }; });
+    }).then(function (res) {
+      if (!(res.ok && res.j && res.j.ok)) {
+        // auth / unexpected: leave "KS-" as-is, no note, allow manual entry
+        setSkuNote("");
+        console.error("[next_sku]", res);
+        return;
+      }
+      var remaining = (typeof res.j.remaining === "number") ? res.j.remaining : 0;
+      if (res.j.label) {
+        // only auto-fill if the operator hasn't started typing a SKU themselves
+        if (!skuEl.value || skuEl.value === "KS-") {
+          skuEl.value = res.j.label;
+          lastLookup = null;                    // clear the guard so runLookup fires
+          runLookup();                          // pulls graded data (option A)
+        }
+        setSkuNote(remaining + (remaining === 1 ? " item waiting to list" : " items waiting to list"));
+      } else {
+        // nothing accepted is un-listed -> finish line
+        setSkuNote("All caught up — nothing waiting to list");
+      }
+    }).catch(function (e) {
+      setSkuNote("");
+      console.error("[next_sku]", e);
+    });
+  }
 
   /* ---- SKU AUTO-POPULATE FROM GRADING ---------------------------------- */
   /* On blur: normalize the typed label to KS-NNNNN, look up the accepted
@@ -1824,7 +1894,13 @@ function titleCase(s) {
   loadOptionLists()
     .then(injectOptions)
     .catch(function (e) { console.error("[option_lists] load failed", e); })
-    .then(function () { var ry = $("ksl-restore-yes"); if (ry) ry.disabled = false; });
+    .then(function () { var ry = $("ksl-restore-yes"); if (ry) ry.disabled = false; })
+    .then(function () {
+      // Auto-advance the SKU only when there's no draft waiting to restore
+      // (a draft owns the SKU; the restore banner handles it). Runs after
+      // option_lists settles so the graded-data pull writes into ready selects.
+      if (!hasDraft()) prefillNextSku();
+    });
   // warm the token early so first upload is instant
   getToken().catch(function () {});
 })();
