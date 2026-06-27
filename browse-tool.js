@@ -303,7 +303,11 @@
       img.loading = 'lazy';
       img.decoding = 'async';
       img.alt = descriptor(item);
-      img.src = thumb(item.primary_photo_url, 400, 75, 533);
+      // Option B: serve the pre-generated small thumbnail when present; fall back
+      // to the full-res primary (thumb() returns it as-is under the cost guard)
+      // for any item without a thumb yet — null everywhere until the client
+      // write path ships, so this is behavior-identical until then.
+      img.src = item.thumbnail_url || thumb(item.primary_photo_url, 400, 75, 533);
       img.addEventListener('error', function () {
         if (img.parentNode) img.parentNode.replaceChild(placeholderTile(), img);
       });
