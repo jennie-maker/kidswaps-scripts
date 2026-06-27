@@ -608,8 +608,10 @@
   }
 
   function wireOverlay(root, item) {
-    currentDetailItem = item;     // keep the swipe gestures pointed at the live item
-    wireGestures(root);           // attach-once (guarded); root persists across opens
+    currentDetailItem = item;     // live item for the once-wired handlers + gestures
+    if (root.__ksWired) return;   // attach-once: handlers live on the persistent root
+    root.__ksWired = true;
+    wireGestures(root);
     // image fallback — 'error' doesn't bubble, so listen in capture phase.
     // Main image -> placeholder; a failed rail thumb just hides itself.
     root.addEventListener('error', function (e) {
@@ -634,9 +636,9 @@
       if (e.target.closest('[data-bag]')) { e.preventDefault(); bagStub(root); }
 
       var t = e.target.closest('[data-photo]');
-      if (t) { swapMain(root, item, parseInt(t.getAttribute('data-photo'), 10), false); }
+      if (t) { swapMain(root, currentDetailItem, parseInt(t.getAttribute('data-photo'), 10), false); }
       var v = e.target.closest('[data-video]');
-      if (v) { swapMain(root, item, 0, true); }
+      if (v) { swapMain(root, currentDetailItem, 0, true); }
 
       // zoom — open full-screen full-res viewer (button OR tapping the main photo)
       if (e.target.closest('.ks-detail-zoom') || e.target.closest('.ks-detail-main-img')) {
