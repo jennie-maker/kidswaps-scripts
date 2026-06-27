@@ -138,8 +138,18 @@
   // card src once (see console check in the deploy notes) — if your urls differ
   // it's a one-line change to MARKER below.
   var THUMB_MARKER = '/storage/v1/object/public/';
+  /* COST GUARD (2026-06-27): serve the ORIGINAL image — no Supabase image
+     transform. Each transform counts an "origin image" against the 100/cycle
+     Pro quota ($5/1000 over), and we were calling thumb() at 3 sizes per photo
+     (grid 400 / rail 120 / main 800), multiplying the count per product. This
+     early return drops browse to ZERO transform requests. Tradeoff: grid cards
+     download the full-res original (object-fit:cover still crops to 3:4 in CSS;
+     rail squared via the .ks-detail-thumb img rule added below). To RE-ENABLE
+     transforms later (e.g. after pre-generated thumbnails land — Option B),
+     delete this one return line; the original rewrite logic below is intact. */
   function thumb(url, w, q, h, mode) {
     if (!url || typeof url !== 'string') return url;
+    return url;                                   // <-- COST GUARD: serve original, skip transform
     var i = url.indexOf(THUMB_MARKER);
     if (i === -1) return url;
     var base = url.slice(0, i) + '/storage/v1/render/image/public/' +
@@ -220,6 +230,9 @@
       /* D: video rail thumb shows the first frame (#t=0.1) under a play overlay */
       '#ks-detail-root .ks-detail-thumb-video{position:relative;overflow:hidden;}' +
       '#ks-detail-root .ks-detail-thumb-vid{width:100%;height:100%;object-fit:cover;display:block;}' +
+      /* COST GUARD: rail thumbs used to be squared by the 120x120 transform;
+         serving originals now, so crop them to fill the button via object-fit. */
+      '#ks-detail-root .ks-detail-thumb img{width:100%;height:100%;object-fit:cover;display:block;}' +
       '#ks-detail-root .ks-detail-thumb-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.28);color:#fff;}';
     var s = document.createElement('style');
     s.id = 'ks-util-css';
