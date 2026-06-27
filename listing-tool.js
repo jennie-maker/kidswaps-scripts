@@ -253,6 +253,8 @@
   /* ---- MANAGE-ITEM (edit existing) STATE ------------------------------- */
   var EDIT_MODE   = false;   // true once an existing item is loaded for editing
   var loadedRecord = null;   // the inventory row returned by inventory-edit "load"
+  var loadedGrade  = "";     // condition_grade at load — drives the snag-1 photo-coupling cue
+  var editResaleVal = null;  // last client-recomputed resale; rides the patch (operator never types it)
   var editLocked  = false;   // true when the loaded row is reserved/claimed
 
   var root = document.getElementById("ks-list-app");
@@ -336,7 +338,7 @@
         'autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">' +
       '<button type="button" class="ksl-manage-btn" id="ksl-mng-load">Load</button>' +
       '<a href="#" class="ksl-manage-new ksl-hidden" id="ksl-mng-new">\u2190 New listing</a>' +
-      '<div class="ksl-manage-hint" id="ksl-manage-hint">Edit an existing item\u2019s photos, status, bin, or featured flag.</div>' +
+      '<div class="ksl-manage-hint" id="ksl-manage-hint">Edit an existing item\u2019s photos, condition, status, bin, or featured flag.</div>' +
     '</div>' +
     '<div class="ksl-restore ksl-hidden" id="ksl-restore">' +
       '<span>You have an unsaved draft from before.</span>' +
@@ -381,6 +383,15 @@
       '<div class="ksl-edit-ref" id="ksl-edit-ref"></div>' +
       '<div class="ksl-edit-lock ksl-hidden" id="ksl-edit-lock"></div>' +
       '<h3>Edit</h3>' +
+      '<div class="ksl-field ksl-edit-cond">' +
+        '<label class="ksl-label" for="ksl-edit-condition">Condition grade</label>' +
+        '<select id="ksl-edit-condition"></select>' +
+        '<div class="ksl-edit-photonote ksl-hidden" id="ksl-edit-photonote">Re-graded? Confirm the photo above shows this condition before saving.</div>' +
+      '</div>' +
+      '<div class="ksl-field ksl-edit-resale">' +
+        '<label class="ksl-label">Resale value</label>' +
+        '<div class="ksl-edit-resale-box" id="ksl-edit-resale-display">\u2014</div>' +
+      '</div>' +
       '<div class="ksl-field">' +
         '<label class="ksl-label">Item name</label>' +
         '<input type="text" id="ksl-edit-name" placeholder="item name">' +
@@ -473,6 +484,9 @@
       "#ks-list-app .ksl-danger:hover{background:#c0392b;border-color:#c0392b;color:#fff}" +
       "#ks-list-app .ksl-danger:disabled{opacity:.5;cursor:default}" +
       "#ks-list-app #ksl-edit-desc{min-height:92px;resize:vertical}" +
+      "#ks-list-app .ksl-edit-resale-box{padding:9px 12px;border-radius:8px;border:1px dashed rgba(255,255,255,.24);background:rgba(255,255,255,.04);color:inherit;font:inherit;font-weight:700;letter-spacing:.01em}" +
+      "#ks-list-app .ksl-edit-resale-box.is-essentials{font-weight:500;font-style:italic;opacity:.72}" +
+      "#ks-list-app .ksl-edit-photonote{margin-top:8px;padding:8px 11px;border-radius:8px;background:rgba(210,79,40,.13);border:1px solid rgba(210,79,40,.5);color:inherit;font-size:.8rem;line-height:1.35}" +
       "#ks-list-app .ksl-slot{position:relative}" +
       "#ks-list-app .ksl-makeprimary{position:absolute;left:6px;right:6px;bottom:6px;z-index:6;margin:0;padding:5px 8px;border:1px solid rgba(255,255,255,.35);border-radius:7px;background:rgba(20,18,16,.82);color:#fff;font:inherit;font-size:.72rem;font-weight:600;cursor:pointer}" +
       "#ks-list-app .ksl-makeprimary:hover{border-color:#d24f28;background:rgba(210,79,40,.9)}" +
@@ -1782,6 +1796,7 @@ function titleCase(s) {
       ["Type", rec.item_type],
       ["Brand", rec.brand],
       ["Tier", rec.tier],
+      ["Retail", (rec.retail_value != null && rec.retail_value !== "") ? ("$" + Number(rec.retail_value).toFixed(2)) : ""],
       ["Category", rec.category],
       [sizeLabel, rec.size],
       ["Status", rec.status],
@@ -1805,6 +1820,8 @@ function titleCase(s) {
     if (save) save.disabled = true;
     var del = $("ksl-edit-delete");
     if (del) del.disabled = true;
+    var cond = $("ksl-edit-condition");   // (1c) re-grading is locked too
+    if (cond) cond.disabled = true;
   }
   function hideLockBanner() {
     var el = $("ksl-edit-lock");
@@ -1813,6 +1830,8 @@ function titleCase(s) {
     if (save) save.disabled = false;
     var del = $("ksl-edit-delete");
     if (del) del.disabled = false;
+    var cond = $("ksl-edit-condition");
+    if (cond) cond.disabled = false;
   }
 
   /* swap insert chrome (toggle / details / List-item) <-> edit panel */
@@ -1889,6 +1908,12 @@ function titleCase(s) {
     if (ds) ds.value = rec.description || "";
     var occ = $("ksl-edit-occasion");
     if (occ) { fillSelect(occ, OPTION_LISTS.occasion || []); occ.value = rec.occasion || ""; }
+    var cond = $("ksl-edit-condition");
+    if (cond) { fillSelect(cond, OPTION_LISTS.condition_grade || []); cond.value = rec.condition_grade || ""; }
+    loadedGrade = rec.condition_grade || "";              // (1c) baseline for the photo-coupling cue
+    var pnote = $("ksl-edit-photonote");
+    if (pnote) pnote.classList.add("ksl-hidden");
+    renderEditResale();                                  // paint stored/computed resale (or essentials label)
     nameTouched = true;   // edit mode must never auto-recompose the loaded name
 
     setEditChrome(true);
@@ -1904,12 +1929,64 @@ function titleCase(s) {
     setEditChrome(false);
   }
 
+  /* (1c) edit-mode condition + resale. Recompute reuses RESALE_CONFIG (the same
+     single source of truth as the insert form) against the item's STORED tier +
+     retail (both read-only here) and the operator's new grade. Resale is a
+     read-only computed display — the operator never types it, so a re-graded
+     return can't ship at a stale hand-typed price. Essentials = no resale
+     (explicit label, patch sends null). The edge-fn pricing guard validates the
+     number we send; we never duplicate the config server-side. */
+  function paintResaleBox(tier, val) {
+    var box = $("ksl-edit-resale-display");
+    if (!box) return;
+    if (tier === "essentials") {
+      box.textContent = "Essentials \u2014 no resale price";
+      box.classList.add("is-essentials");
+      return;
+    }
+    box.classList.remove("is-essentials");
+    if (val == null || isNaN(Number(val))) {
+      box.textContent = (tier === "elevated" || tier === "special")
+        ? "\u2014 (no retail on record)" : "\u2014";
+      return;
+    }
+    box.textContent = "$" + Number(val).toFixed(2);
+  }
+
+  function renderEditResale() {
+    if (!loadedRecord) return;
+    var tier = loadedRecord.tier;
+    if (tier === "essentials") { editResaleVal = null; paintResaleBox(tier, null); return; }
+    if (tier !== "elevated" && tier !== "special") {
+      // legacy/unknown tier: don't invent a price, show whatever is stored
+      editResaleVal = (loadedRecord.resale_value != null) ? Number(loadedRecord.resale_value) : null;
+      paintResaleBox(tier, editResaleVal);
+      return;
+    }
+    var pct = RESALE_CONFIG.tierPct[tier];
+    var retail = Number(loadedRecord.retail_value);
+    var gradeSel = $("ksl-edit-condition");
+    var grade = gradeSel ? gradeSel.value : "";
+    var factor = RESALE_CONFIG.condition[grade];
+    if (factor === undefined) factor = 1.00;          // blank/unknown -> like-new (conservative)
+    if (!pct || !(retail > 0)) { editResaleVal = null; paintResaleBox(tier, null); return; }
+    editResaleVal = Math.round(retail * pct * factor * 100) / 100;
+    paintResaleBox(tier, editResaleVal);
+  }
+
+  function onEditGradeChange() {
+    renderEditResale();
+    var note = $("ksl-edit-photonote");
+    var sel = $("ksl-edit-condition");
+    if (note && sel) note.classList.toggle("ksl-hidden", sel.value === loadedGrade);
+  }
+
   function buildEditPatch() {
     var photos = ["front", "back", "detail"]
       .map(function (k) { return slots[k]; })
       .filter(function (r) { return r && r.status === "done"; })
       .map(function (r) { return r.url; });
-    return {
+    var patch = {
       status: ($("ksl-edit-status") || {}).value || "available",
       item_name: (($("ksl-edit-name") || {}).value || "").trim(),
       description: (($("ksl-edit-desc") || {}).value || "").trim(),
@@ -1919,6 +1996,19 @@ function titleCase(s) {
       video_url: (video && video.status === "done") ? video.url : null,
       occasion: (($("ksl-edit-occasion") || {}).value || "")
     };
+    // (1c) condition + resale ride ONLY when a grade is actually selected, so a
+    // legacy null-grade row can still take a plain bin/photo edit without the
+    // pricing guard engaging. resale is the CLIENT recompute (renderEditResale
+    // set editResaleVal); essentials sends null, elevated/special send the
+    // computed number — the edge fn validates it.
+    renderEditResale();                                     // guarantee editResaleVal is fresh
+    var cond = $("ksl-edit-condition");
+    var grade = cond ? cond.value : "";
+    if (grade) {
+      patch.condition_grade = grade;
+      patch.resale_value = (loadedRecord && loadedRecord.tier === "essentials") ? null : editResaleVal;
+    }
+    return patch;
   }
 
   function runManageLoad() {
@@ -1989,7 +2079,8 @@ function titleCase(s) {
       return r.json().then(function (j) { return { ok: r.ok, status: r.status, j: j }; });
     }).then(function (res) {
       if (res.ok && res.j.ok && res.j.item) {
-        ["status", "primary_photo_url", "photo_urls", "video_url", "bin_location", "featured"]
+        ["status", "primary_photo_url", "photo_urls", "video_url", "bin_location", "featured",
+         "condition_grade", "retail_value", "resale_value"]
           .forEach(function (k) { if (res.j.item[k] !== undefined) loadedRecord[k] = res.j.item[k]; });
         // name + description aren't in the update .select() response — the save
         // succeeded, so the field values we sent are now DB truth.
@@ -1998,7 +2089,15 @@ function titleCase(s) {
         buildRefBlock(loadedRecord);
         var st = $("ksl-edit-status");
         if (st) st.value = (loadedRecord.status === "retired") ? "retired" : "available";
-        showToast("Saved " + sku + " ✓ — verify in Supabase");
+        // (1c) read-back: reflect DB truth, not the sent value. Sync the grade
+        // select + resale box to the echoed row and clear the photo-coupling cue.
+        var condEl = $("ksl-edit-condition");
+        if (condEl && loadedRecord.condition_grade != null) condEl.value = loadedRecord.condition_grade;
+        loadedGrade = loadedRecord.condition_grade || "";
+        editResaleVal = (loadedRecord.resale_value != null) ? Number(loadedRecord.resale_value) : null;
+        paintResaleBox(loadedRecord.tier, loadedRecord.resale_value);
+        var pn = $("ksl-edit-photonote"); if (pn) pn.classList.add("ksl-hidden");
+        showToast("Saved " + sku + " \u2713 — verify in Supabase");
       } else if (res.status === 409) {
         editLocked = true;
         showLockBanner("This item is now reserved/claimed — editing is locked.");
@@ -2082,6 +2181,8 @@ function titleCase(s) {
     if (saveBtn) saveBtn.addEventListener("click", runEditSave);
     var delBtn = $("ksl-edit-delete");
     if (delBtn) delBtn.addEventListener("click", runEditDelete);
+    var condSel = $("ksl-edit-condition");   // (1c) recompute resale + photo cue on re-grade
+    if (condSel) condSel.addEventListener("input", onEditGradeChange);
   })();
 
   /* ---- INIT ------------------------------------------------------------ */
