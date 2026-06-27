@@ -901,6 +901,7 @@
    * ----------------------------------------------------------------------- */
   var SIZE_ORDER = ['6-9M', '9-12M', '12-18M', '18-24M', '2T', '3T', '4 / XXS', '5 / XS', '6 / XS', '7 / Small'];
   var AGE_ORDER  = ['Baby', 'Toddler', 'Preschool', 'Big Kid'];
+  var OCCASION_ORDER = ["Valentine's Day", 'Easter', 'Fourth of July', 'Halloween', 'Christmas', 'Special occasion'];
 
   function capFirst(s) { s = String(s == null ? '' : s); return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
   function ident(v) { return v; }
@@ -913,13 +914,14 @@
     size:     { field: 'size',            title: 'Size',        match: 'exact',  order: SIZE_ORDER, display: ident,       rowFilter: function (it) { return it.category !== 'Shoes'; } },
     category: { field: 'category',        title: 'Category',    match: 'exact',  order: null,       display: ident,       showAll: true },
     wash:     { field: 'toy_washability', title: 'Washability', match: 'exact',  order: null,       display: capFirst },
-    age:      { field: 'size',            title: 'Age',         match: 'tokens', order: AGE_ORDER,  display: ident }
+    age:      { field: 'size',            title: 'Age',         match: 'tokens', order: AGE_ORDER,  display: ident },
+    occasion: { field: 'occasion',        title: 'Occasion',    match: 'exact',  order: OCCASION_ORDER, display: ident }
   };
 
   var RAIL_CONFIG = {
-    all:      ['brand', 'tier'],
-    clothing: ['brand', 'category', 'color', 'gender', 'size', 'tier'],
-    toy:      ['brand', 'age', 'wash', 'tier']
+    all:      ['brand', 'occasion', 'tier'],
+    clothing: ['brand', 'category', 'color', 'gender', 'size', 'occasion', 'tier'],
+    toy:      ['brand', 'age', 'wash', 'occasion', 'tier']
   };
   function activeFacetKeys() { return RAIL_CONFIG[BROWSE_TYPE] || RAIL_CONFIG.all; }
 
