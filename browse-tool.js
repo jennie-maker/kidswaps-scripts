@@ -72,6 +72,7 @@
   var ALL = [];               // last fetched (pre-type-filter) — overlay looks here
   var overlayOpen = false;
   var lastFocusEl = null;     // element to restore focus to when the overlay closes
+  var currentDetailItem = null; // live overlay item — read by the mobile swipe gestures
 
   var SEARCH = '';            // current free-text query (raw; normalized at match time)
 
@@ -607,6 +608,8 @@
   }
 
   function wireOverlay(root, item) {
+    currentDetailItem = item;     // keep the swipe gestures pointed at the live item
+    wireGestures(root);           // attach-once (guarded); root persists across opens
     // image fallback — 'error' doesn't bubble, so listen in capture phase.
     // Main image -> placeholder; a failed rail thumb just hides itself.
     root.addEventListener('error', function (e) {
@@ -643,6 +646,155 @@
         if (src) openZoom(src);
       }
     });
+  }
+
+  /* ---- mobile swipe gestures (<=720px) ------------------------------------
+     Attached ONCE to the persistent root and delegated, because root.innerHTML
+     is rebuilt every open (panel/media are fresh nodes) and wireOverlay re-runs
+     each open — re-attaching here would stack handlers. The live item is read
+     from currentDetailItem (set in wireOverlay). swapMain is reused unchanged.
+     Left/right pages the [...photos, video?] set (wrap); down-from-top closes. */
+  function mediaCount() {
+    var item = currentDetailItem;
+    if (!item) return 0;
+    return photoList(item).length + (item.video_url ? 1 : 0);
+  }
+
+  function pageMedia(dir) {
+    var item = currentDetailItem;
+    if (!item) return;
+    var photos = photoList(item);
+    var hasVid = !!item.video_url;
+    var n = photos.length + (hasVid ? 1 : 0);
+    if (n < 2) return;
+    var root = document.getElementById('ks-detail-root');
+    if (!root) return;
+    var active = root.querySelector('.ks-detail-thumb.is-active');
+    var pos;
+    if (active && active.hasAttribute('data-video')) {
+      pos = photos.length;                          // video occupies the last slot
+    } else if (active) {
+      pos = parseInt(active.getAttribute('data-photo'), 10) || 0;
+    } else {
+      pos = root.querySelector('.ks-detail-main-video') ? photos.length : 0;
+    }
+    var next = (pos + dir + n) % n;                 // wrap at both ends
+    if (hasVid && next === photos.length) swapMain(root, item, 0, true);
+    else swapMain(root, item, next, false);
+  }
+
+  // After a horizontal page-drag, swallow the synthetic click so it can't open zoom.
+  function suppressNextClick(root) {
+    var swallow = function (ev) {
+      ev.stopPropagation();
+      ev.preventDefault();
+      root.removeEventListener('click', swallow, true);
+      clearTimeout(swallow.__t);
+    };
+    root.addEventListener('click', swallow, true);
+    swallow.__t = setTimeout(function () {
+      root.removeEventListener('click', swallow, true);
+    }, 400);
+  }
+
+  function wireGestures(root) {
+    if (root.__ksGesturesWired) return;
+    root.__ksGesturesWired = true;
+
+    var MQ = window.matchMedia('(max-width: 720px)');
+    var startX = 0, startY = 0, startScroll = 0;
+    var dragging = false, closing = false, mode = null, panel = null, media = null;
+    var lastY = 0, lastT = 0, vy = 0;
+    var rafId = 0, pendOff = 0;
+
+    function applyOff() {
+      rafId = 0;
+      if (!panel) return;
+      panel.style.transition = 'none';
+      panel.style.transform = 'translateY(' + pendOff + 'px)';
+      panel.style.opacity = String(Math.max(0.4, 1 - pendOff / 600));
+    }
+    function scheduleOff(off) {
+      pendOff = off;
+      if (!rafId) rafId = requestAnimationFrame(applyOff);
+    }
+    function clearInline(p) {
+      if (!p) return;
+      p.style.transition = ''; p.style.transform = ''; p.style.opacity = '';
+    }
+    function snapBack(p) {
+      if (!p) return;
+      p.style.transition = 'transform .22s ease, opacity .22s ease';
+      p.style.transform = 'translateY(0)';
+      p.style.opacity = '1';
+      setTimeout(function () { clearInline(p); }, 240);
+    }
+    function animateClose(p) {
+      closing = true;
+      if (!p) { closing = false; closeDetail(); return; }
+      p.style.transition = 'transform .2s ease, opacity .2s ease';
+      p.style.transform = 'translateY(100%)';
+      p.style.opacity = '0';
+      setTimeout(function () { clearInline(p); closeDetail(); closing = false; }, 200);
+    }
+
+    root.addEventListener('touchstart', function (e) {
+      if (!MQ.matches || closing) return;
+      if (!e.touches || e.touches.length !== 1) { dragging = false; return; }
+      panel = root.querySelector('.ks-detail-panel');
+      if (!panel) return;
+      var tch = e.touches[0];
+      startX = tch.clientX; startY = tch.clientY;
+      startScroll = panel.scrollTop;
+      media = e.target.closest ? e.target.closest('.ks-detail-media') : null;
+      dragging = true; mode = null;
+      lastY = startY; lastT = Date.now(); vy = 0;
+    }, { passive: true });
+
+    root.addEventListener('touchmove', function (e) {
+      if (!dragging) return;
+      var tch = e.touches[0];
+      var dx = tch.clientX - startX, dy = tch.clientY - startY;
+      if (!mode) {
+        if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;   // deadzone
+        if (Math.abs(dx) > Math.abs(dy)) {
+          if (media && mediaCount() > 1) { mode = 'page'; }
+          else { dragging = false; return; }                  // not a media page-swipe -> native
+        } else {
+          if (dy > 0 && startScroll <= 0) { mode = 'close'; }
+          else { dragging = false; return; }                  // upward / mid-scroll -> native scroll
+        }
+      }
+      if (mode === 'page') {
+        e.preventDefault();
+      } else if (mode === 'close') {
+        e.preventDefault();
+        var now = Date.now();
+        vy = (tch.clientY - lastY) / Math.max(1, now - lastT);
+        lastY = tch.clientY; lastT = now;
+        scheduleOff(Math.max(0, dy));
+      }
+    }, { passive: false });
+
+    root.addEventListener('touchend', function (e) {
+      if (!dragging) return;
+      dragging = false;
+      var tch = (e.changedTouches && e.changedTouches[0]) || e;
+      var dx = tch.clientX - startX, dy = tch.clientY - startY;
+      if (mode === 'page') {
+        if (Math.abs(dx) > 55) { pageMedia(dx < 0 ? 1 : -1); }
+        suppressNextClick(root);
+      } else if (mode === 'close') {
+        if (dy > 90 || (vy > 0.5 && dy > 40)) animateClose(panel);
+        else snapBack(panel);
+      }
+      mode = null;
+    }, { passive: true });
+
+    root.addEventListener('touchcancel', function () {
+      if (mode === 'close') snapBack(panel);
+      dragging = false; mode = null;
+    }, { passive: true });
   }
 
   function swapMain(root, item, idx, isVideo) {
