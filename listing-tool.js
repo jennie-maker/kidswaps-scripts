@@ -26,7 +26,8 @@
   var FN_LIST   = BASE + "/inventory-list";
   var FN_UPLOAD = BASE + "/inventory-upload";
   var FN_LOOKUP = BASE + "/intake-lookup";
-  var FN_EDIT   = BASE + "/inventory-edit";   // Manage-Item load/update
+  var FN_EDIT   = BASE + "/inventory-edit";   // Manage-Item load/update/delete/resolve
+  var FN_MEMBER_LOOKUP = BASE + "/member-lookup";  // G(3) returns/relist by member (operator-gated, flat {ok,mode,...})
   var FN_BRAND  = BASE + "/brand-manage";     // brand dropdown list + add-new (operator-gated)
   var REST = "https://ajsobivqxexcniwifxzz.supabase.co/rest/v1";   // direct PostgREST (option_lists, nothing to hide)
   var DRAFT_KEY = "ks_listing_draft_v1";
@@ -337,6 +338,7 @@
       '<input type="text" id="ksl-mng-sku" placeholder="KS-00000" ' +
         'autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">' +
       '<button type="button" class="ksl-manage-btn" id="ksl-mng-load">Load</button>' +
+      '<button type="button" class="ksl-manage-ghost" id="ksl-mng-returns">Returns / relist</button>' +
       '<a href="#" class="ksl-manage-new ksl-hidden" id="ksl-mng-new">\u2190 New listing</a>' +
       '<div class="ksl-manage-hint" id="ksl-manage-hint">Edit an existing item\u2019s photos, condition, status, bin, or featured flag.</div>' +
     '</div>' +
@@ -421,6 +423,23 @@
       '</div>' +
       '<button type="button" class="ksl-submit" id="ksl-edit-save">Save changes</button>' +
       '<button type="button" class="ksl-danger" id="ksl-edit-delete">Delete item</button>' +
+    '</div>' +
+
+    '<div class="ksl-card ksl-lookup-panel ksl-hidden" id="ksl-lookup-panel">' +
+      '<a href="#" class="ksl-lookup-back" id="ksl-lookup-back">\u2190 Back to listing</a>' +
+      '<h3>Returns / relist</h3>' +
+      '<p class="ksl-lookup-help">Look up a member to see what they currently have out, then resolve each piece you have in hand. Match the photo + SKU before you tap.</p>' +
+      '<div class="ksl-lookup-search">' +
+        '<input type="text" id="ksl-lookup-input" placeholder="Member name or email" ' +
+          'autocomplete="off" autocorrect="off" spellcheck="false">' +
+        '<button type="button" class="ksl-manage-btn" id="ksl-lookup-go">Search</button>' +
+      '</div>' +
+      // snag-2 seam (DEFERRED): staged-count chip. Stays hidden until a server
+      // count read (status='retired' AND awaiting_relist) feeds it — one line
+      // when that endpoint exists. Do NOT populate from the client (inventory
+      // is RLS-sealed; no count path today).
+      '<div class="ksl-lookup-staged ksl-hidden" id="ksl-lookup-staged"></div>' +
+      '<div class="ksl-lookup-results" id="ksl-lookup-results"></div>' +
     '</div>' +
 
     '<button type="button" class="ksl-submit" id="ksl-submit">List item</button>' +
@@ -525,7 +544,38 @@
       "#ks-list-app .ksl-success-thumb{flex:0 0 64px;width:64px;height:85px;object-fit:cover;border-radius:8px;background:rgba(255,255,255,.05)}" +
       "#ks-list-app .ksl-success-meta{min-width:0}" +
       "#ks-list-app .ksl-success-sku{font-weight:600;font-size:1rem}" +
-      "#ks-list-app .ksl-success-name{font-size:.86rem;opacity:.7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}";
+      "#ks-list-app .ksl-success-name{font-size:.86rem;opacity:.7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
+      /* --- Returns / relist lookup (G build 3) --- */
+      "#ks-list-app .ksl-manage-ghost{padding:9px 16px;border:1px solid rgba(255,255,255,.22);border-radius:8px;background:transparent;color:inherit;font:inherit;font-weight:600;cursor:pointer}" +
+      "#ks-list-app .ksl-manage-ghost:hover{border-color:#d24f28;color:#fff}" +
+      "#ks-list-app .ksl-lookup-back{display:inline-block;margin:0 0 12px;font-size:.85rem;color:#d24f28;text-decoration:none;cursor:pointer}" +
+      "#ks-list-app .ksl-lookup-help{margin:0 0 16px;font-size:.85rem;opacity:.65;line-height:1.4}" +
+      "#ks-list-app .ksl-lookup-search{display:flex;gap:10px;margin:0 0 16px}" +
+      "#ks-list-app .ksl-lookup-search input{flex:1 1 auto;min-width:0;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.22);background:transparent;color:inherit;font:inherit}" +
+      "#ks-list-app .ksl-lookup-staged{margin:0 0 14px;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);font-size:.82rem;opacity:.85}" +
+      "#ks-list-app .ksl-lookup-empty{padding:18px 4px;font-size:.9rem;opacity:.6;text-align:center}" +
+      "#ks-list-app .ksl-lookup-trunc{margin:0 0 10px;font-size:.78rem;opacity:.6}" +
+      "#ks-list-app .ksl-lookup-memberhead{margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.12)}" +
+      "#ks-list-app .ksl-lookup-mh-name{font-weight:600;font-size:1rem}" +
+      "#ks-list-app .ksl-lookup-mh-email{font-size:.82rem;opacity:.6}" +
+      "#ks-list-app .ksl-disrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;margin:0 0 8px;border:1px solid rgba(255,255,255,.16);border-radius:10px;background:rgba(255,255,255,.03);cursor:pointer}" +
+      "#ks-list-app .ksl-disrow:hover{border-color:#d24f28;background:rgba(210,79,40,.1)}" +
+      "#ks-list-app .ksl-disrow-name{font-weight:600;font-size:.92rem}" +
+      "#ks-list-app .ksl-disrow-email{font-size:.78rem;opacity:.6}" +
+      "#ks-list-app .ksl-disrow-count{flex:0 0 auto;font-size:.78rem;opacity:.7;white-space:nowrap}" +
+      "#ks-list-app .ksl-outcard{display:flex;gap:14px;padding:14px;margin:0 0 12px;border:1px solid rgba(255,255,255,.16);border-radius:12px;background:rgba(255,255,255,.03)}" +
+      "#ks-list-app .ksl-outcard-thumb{flex:0 0 64px;width:64px;height:85px;object-fit:cover;border-radius:8px;background:rgba(255,255,255,.06)}" +
+      "#ks-list-app .ksl-outcard-thumb.is-empty{display:flex;align-items:center;justify-content:center;font-size:.62rem;opacity:.5;text-align:center;line-height:1.2}" +
+      "#ks-list-app .ksl-outcard-body{flex:1 1 auto;min-width:0}" +
+      "#ks-list-app .ksl-outcard-sku{font-weight:700;font-size:.95rem}" +
+      "#ks-list-app .ksl-outcard-name{font-size:.85rem;opacity:.75;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
+      "#ks-list-app .ksl-outcard-meta{margin-top:3px;font-size:.74rem;opacity:.5}" +
+      "#ks-list-app .ksl-outcard-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}" +
+      "#ks-list-app .ksl-outcard-primary{padding:8px 14px;border:0;border-radius:8px;background:#d24f28;color:#fff;font:inherit;font-size:.84rem;font-weight:600;cursor:pointer}" +
+      "#ks-list-app .ksl-outcard-primary:hover{background:#bf4522}" +
+      "#ks-list-app .ksl-outcard-keep{padding:8px 12px;border:1px solid rgba(255,255,255,.22);border-radius:8px;background:transparent;color:inherit;font:inherit;font-size:.84rem;cursor:pointer;opacity:.8}" +
+      "#ks-list-app .ksl-outcard-keep:hover{border-color:rgba(255,255,255,.45);opacity:1}" +
+      "#ks-list-app .ksl-outcard.is-busy{opacity:.5;pointer-events:none}";
     document.head.appendChild(s);
   })();
 
@@ -2166,6 +2216,283 @@ function titleCase(s) {
       else if (b) { b.textContent = "Delete item"; }
     });
   }
+
+  /* ---- RETURNS / RELIST LOOKUP (G build 3, client half) ----------------
+   * Operator types a member name/email -> member-lookup edge fn (flat
+   * {ok,mode,...}) -> render that member's currently-out items as cards with a
+   * photo thumbnail (null-safe) + visible SKU (the safety rail: match the
+   * picture/tag in hand before tapping) -> tap routes to the PROVEN
+   * inventory-edit "resolve":
+   *   clothing -> publish (one tap, straight back to available/live)
+   *   toy      -> stage   (-> retired workshop; edit condition via Manage-Item,
+   *                        then publish)
+   *   any      -> keep    (never-returned terminal; confirm-gated)
+   * The list is self-cleaning server-side (resolve flips inventory off
+   * status='claimed'); the client drops the card optimistically on success and
+   * re-fetches on a 409 (the row changed under us). Member disambiguation +
+   * snag-7 empty split are mode-driven off the single RPC. */
+  var LOOKUP_MODE = false;
+  var lookupMember = null;   // {member_id, display_name, email} once an items view is shown (drives re-fetch)
+
+  /* swap insert/manage chrome <-> the lookup panel (mirrors setEditChrome) */
+  function setLookupChrome(on) {
+    var tgl = root.querySelector(".ksl-toggle");
+    var det = root.querySelector(".ksl-details");
+    var photos = root.querySelector("[data-photos-card]");
+    var mng = $("ksl-manage");
+    var pnl = $("ksl-lookup-panel");
+    var rest = $("ksl-restore");
+    if (tgl) tgl.classList.toggle("ksl-hidden", on);
+    if (det) det.classList.toggle("ksl-hidden", on);
+    if (photos) photos.classList.toggle("ksl-hidden", on);
+    if (submitBtn) submitBtn.classList.toggle("ksl-hidden", on);
+    if (mng) mng.classList.toggle("ksl-hidden", on);
+    if (pnl) pnl.classList.toggle("ksl-hidden", !on);
+    if (on && rest) rest.classList.add("ksl-hidden");
+  }
+
+  function enterLookupMode() {
+    if (EDIT_MODE) exitEditMode();          // the two operator surfaces are mutually exclusive
+    LOOKUP_MODE = true;
+    lookupMember = null;
+    var res = $("ksl-lookup-results"); if (res) res.innerHTML = "";
+    var inp = $("ksl-lookup-input"); if (inp) inp.value = "";
+    setLookupChrome(true);
+    if (inp) inp.focus();
+  }
+
+  function exitLookupMode() {
+    LOOKUP_MODE = false;
+    lookupMember = null;
+    setLookupChrome(false);
+  }
+
+  function lookupEmpty(msg) {
+    var res = $("ksl-lookup-results");
+    if (res) res.innerHTML = '<div class="ksl-lookup-empty">' + esc(msg) + "</div>";
+  }
+
+  /* one call covers both the name/email search ({search}) and the post-picker
+     resolve to a single member ({member_id}); fromPicker suppresses the
+     "Searching…" wipe so a re-fetch doesn't flash. */
+  function runMemberSearch(payload, fromPicker) {
+    var res = $("ksl-lookup-results");
+    var go = $("ksl-lookup-go");
+    if (res && !fromPicker) res.innerHTML = '<div class="ksl-lookup-empty">Searching\u2026</div>';
+    if (go && !fromPicker) { go.disabled = true; go.textContent = "Searching\u2026"; }
+    getToken().then(function (t) {
+      return fetch(FN_MEMBER_LOOKUP, {
+        method: "POST",
+        headers: {
+          "x-ms-token": t, "content-type": "application/json",
+          "apikey": ANON, "authorization": "Bearer " + ANON
+        },
+        body: JSON.stringify(payload)
+      });
+    }).then(function (r) {
+      return r.json().then(function (j) { return { ok: r.ok, status: r.status, j: j }; });
+    }).then(function (res2) {
+      if (!(res2.ok && res2.j && res2.j.ok)) {
+        lookupEmpty("Lookup failed — see console");
+        console.error("[member-lookup]", res2);
+        return;
+      }
+      renderLookup(res2.j);
+    }).catch(function (e) {
+      lookupEmpty("Network error — see console");
+      console.error("[member-lookup]", e);
+    }).finally(function () {
+      if (go) { go.disabled = false; go.textContent = "Search"; }
+    });
+  }
+
+  function renderLookup(d) {
+    if (d.mode === "no_match") {
+      lookupMember = null;
+      lookupEmpty("No member matched that name or email.");   // snag-7: nobody matched
+      return;
+    }
+    if (d.mode === "disambiguate") { lookupMember = null; renderDisambiguate(d); return; }
+    if (d.mode === "items") { lookupMember = d.member || null; renderItems(d); return; }
+    lookupEmpty("Unexpected response — see console");
+    console.error("[member-lookup] unknown mode", d);
+  }
+
+  function renderDisambiguate(d) {
+    var res = $("ksl-lookup-results");
+    if (!res) return;
+    var members = Array.isArray(d.members) ? d.members : [];
+    var html = "";
+    if (typeof d.match_count === "number" && d.match_count > members.length) {
+      html += '<div class="ksl-lookup-trunc">Showing ' + members.length + " of " + d.match_count +
+              " matches — narrow the search to see the rest.</div>";
+    }
+    members.forEach(function (m) {
+      var n = (m.out_count === 1) ? "1 item out" : ((m.out_count || 0) + " items out");
+      html += '<div class="ksl-disrow" data-member="' + esc(m.member_id) + '">' +
+                "<div><div class=\"ksl-disrow-name\">" + esc(m.display_name || "(no name)") + "</div>" +
+                '<div class="ksl-disrow-email">' + esc(m.email || "") + "</div></div>" +
+                '<div class="ksl-disrow-count">' + esc(n) + "</div>" +
+              "</div>";
+    });
+    res.innerHTML = html || '<div class="ksl-lookup-empty">No members to show.</div>';
+  }
+
+  function renderItems(d) {
+    var res = $("ksl-lookup-results");
+    if (!res) return;
+    var m = d.member || {};
+    var items = Array.isArray(d.items) ? d.items : [];
+    var head = '<div class="ksl-lookup-memberhead">' +
+                 '<div class="ksl-lookup-mh-name">' + esc(m.display_name || "(no name)") + "</div>" +
+                 '<div class="ksl-lookup-mh-email">' + esc(m.email || "") + "</div>" +
+               "</div>";
+    if (!items.length) {
+      // snag-7: member matched, but nothing currently out — opposite of no_match
+      res.innerHTML = head + '<div class="ksl-lookup-empty">This member has nothing currently out.</div>';
+      return;
+    }
+    res.innerHTML = head + items.map(outCardHtml).join("");
+    // null-fallback thumbnails (primary_photo_url can be NULL — proven on
+    // KS-00002): swap a failed/empty image for the SKU+name fallback tile.
+    res.querySelectorAll("img.ksl-outcard-thumb").forEach(function (img) {
+      img.addEventListener("error", function () {
+        var ph = document.createElement("div");
+        ph.className = "ksl-outcard-thumb is-empty";
+        ph.textContent = "no photo";
+        if (img.parentNode) img.parentNode.replaceChild(ph, img);
+      });
+    });
+  }
+
+  function outCardHtml(it) {
+    var isToy = (it.item_type === "toy");
+    var sizeVal = isToy ? (it.toy_age_range || "") : (it.clothing_size || "");
+    var meta = [it.tier, it.category, sizeVal].filter(Boolean).join(" \u00b7 ");
+    var claimed = it.date_claimed ? ("out since " + String(it.date_claimed).slice(0, 10)) : "";
+    var metaLine = [meta, claimed].filter(Boolean).join(" \u00b7 ");
+    var thumb = it.primary_photo_url
+      ? '<img class="ksl-outcard-thumb" src="' + esc(it.primary_photo_url) + '" alt="">'
+      : '<div class="ksl-outcard-thumb is-empty">no photo</div>';
+    var primaryLabel = isToy ? "Stage for workshop" : "Relist now";
+    var primaryMode  = isToy ? "stage" : "publish";
+    return '<div class="ksl-outcard" data-sku="' + esc(it.sku) + '">' +
+             thumb +
+             '<div class="ksl-outcard-body">' +
+               '<div class="ksl-outcard-sku">' + esc(it.sku) + "</div>" +
+               '<div class="ksl-outcard-name">' + esc(it.item_name || "(unnamed)") + "</div>" +
+               (metaLine ? '<div class="ksl-outcard-meta">' + esc(metaLine) + "</div>" : "") +
+               '<div class="ksl-outcard-actions">' +
+                 '<button type="button" class="ksl-outcard-primary" data-resolve="' + primaryMode + '">' + primaryLabel + "</button>" +
+                 '<button type="button" class="ksl-outcard-keep" data-resolve="keep">Mark kept</button>' +
+               "</div>" +
+             "</div>" +
+           "</div>";
+  }
+
+  /* tap -> the proven inventory-edit resolve (action:"resolve"); keep is
+     terminal so it's confirm-gated. On success drop the card (self-cleaning);
+     on a 409 the row already moved -> re-fetch this member to resync. */
+  function runResolve(sku, mode, cardEl) {
+    if (!sku || !mode) return;
+    if (mode === "keep") {
+      var ok = window.confirm(
+        "Mark " + sku + " as kept?\n\n" +
+        "Use this only when the item will NOT come back to inventory (member is " +
+        "keeping it, or it's lost / lost in the mail). This is final — it won't be relisted."
+      );
+      if (!ok) return;
+    }
+    if (cardEl) cardEl.classList.add("is-busy");
+    getToken().then(function (t) {
+      return fetch(FN_EDIT, {
+        method: "POST",
+        headers: {
+          "x-ms-token": t, "content-type": "application/json",
+          "apikey": ANON, "authorization": "Bearer " + ANON
+        },
+        body: JSON.stringify({ action: "resolve", sku: sku, mode: mode })
+      });
+    }).then(function (r) {
+      return r.json().then(function (j) { return { ok: r.ok, status: r.status, j: j }; });
+    }).then(function (res) {
+      if (res.ok && res.j && res.j.ok) {
+        var msg = (mode === "publish") ? ("Relisted " + sku + " — live on browse")
+                : (mode === "stage")   ? ("Staged " + sku + " — edit + publish from Manage-Item")
+                : ("Marked " + sku + " kept");
+        showToast(msg + " \u2713");
+        dropCard(cardEl);
+      } else if (res.status === 409 && res.j && res.j.error === "not_claimed") {
+        showToast(sku + " isn't out anymore — refreshing", true);
+        if (cardEl) cardEl.classList.remove("is-busy");
+        refreshLookup();
+      } else if (res.status === 409 && res.j && res.j.error === "concurrent_change") {
+        showToast(sku + " changed under you — refreshing", true);
+        if (cardEl) cardEl.classList.remove("is-busy");
+        refreshLookup();
+      } else {
+        var em = (res.j && res.j.error) || ("status " + res.status);
+        showToast("Couldn't resolve " + sku + " — " + em, true);
+        if (cardEl) cardEl.classList.remove("is-busy");
+        console.error("[resolve]", res);
+      }
+    }).catch(function (e) {
+      showToast("Network error — see console", true);
+      if (cardEl) cardEl.classList.remove("is-busy");
+      console.error("[resolve]", e);
+    });
+  }
+
+  function dropCard(cardEl) {
+    if (!cardEl || !cardEl.parentNode) return;
+    var container = cardEl.parentNode;
+    container.removeChild(cardEl);
+    if (!container.querySelector(".ksl-outcard")) {
+      var note = document.createElement("div");
+      note.className = "ksl-lookup-empty";
+      note.textContent = "All caught up — this member has nothing else out.";
+      container.appendChild(note);
+    }
+  }
+
+  function refreshLookup() {
+    if (lookupMember && lookupMember.member_id) {
+      runMemberSearch({ member_id: lookupMember.member_id }, true);
+    }
+  }
+
+  (function wireLookup() {
+    var entry = $("ksl-mng-returns");
+    if (entry) entry.addEventListener("click", enterLookupMode);
+    var back = $("ksl-lookup-back");
+    if (back) back.addEventListener("click", function (e) { e.preventDefault(); exitLookupMode(); });
+    var go = $("ksl-lookup-go");
+    function fire() {
+      var inp = $("ksl-lookup-input");
+      var q = (inp ? inp.value : "").trim();
+      if (q.length < 2) { showToast("Type at least 2 characters", true); return; }   // mirrors the server floor
+      runMemberSearch({ search: q }, false);
+    }
+    if (go) go.addEventListener("click", fire);
+    var inp = $("ksl-lookup-input");
+    if (inp) inp.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); fire(); }
+    });
+    var res = $("ksl-lookup-results");
+    if (res) res.addEventListener("click", function (e) {
+      var disrow = e.target.closest ? e.target.closest(".ksl-disrow") : null;
+      if (disrow && res.contains(disrow)) {
+        var mid = disrow.getAttribute("data-member");
+        if (mid) runMemberSearch({ member_id: mid }, true);
+        return;
+      }
+      var btn = e.target.closest ? e.target.closest("[data-resolve]") : null;
+      if (btn && res.contains(btn)) {
+        var card = btn.closest(".ksl-outcard");
+        runResolve(card ? card.getAttribute("data-sku") : null, btn.getAttribute("data-resolve"), card);
+      }
+    });
+  })();
 
   /* wire the manage bar + edit panel */
   (function wireManage() {
