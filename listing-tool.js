@@ -397,6 +397,10 @@
         '</select>' +
       '</div>' +
       '<div class="ksl-field">' +
+        '<label class="ksl-label">Occasion</label>' +
+        '<select id="ksl-edit-occasion"></select>' +
+      '</div>' +
+      '<div class="ksl-field">' +
         '<label class="ksl-label">Bin location</label>' +
         '<input type="text" id="ksl-edit-bin" placeholder="where it\u2019s stored">' +
       '</div>' +
@@ -1883,6 +1887,8 @@ function titleCase(s) {
     if (nm) nm.value = rec.item_name || "";
     var ds = $("ksl-edit-desc");
     if (ds) ds.value = rec.description || "";
+    var occ = $("ksl-edit-occasion");
+    if (occ) { fillSelect(occ, OPTION_LISTS.occasion || []); occ.value = rec.occasion || ""; }
     nameTouched = true;   // edit mode must never auto-recompose the loaded name
 
     setEditChrome(true);
@@ -1910,7 +1916,8 @@ function titleCase(s) {
       bin_location: (($("ksl-edit-bin") || {}).value || "").trim(),
       featured: !!($("ksl-edit-featured") && $("ksl-edit-featured").checked),
       photo_urls: photos,                                   // front-first; server derives primary
-      video_url: (video && video.status === "done") ? video.url : null
+      video_url: (video && video.status === "done") ? video.url : null,
+      occasion: (($("ksl-edit-occasion") || {}).value || "")
     };
   }
 
