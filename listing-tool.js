@@ -428,7 +428,7 @@
     '<div class="ksl-card ksl-lookup-panel ksl-hidden" id="ksl-lookup-panel">' +
       '<a href="#" class="ksl-lookup-back" id="ksl-lookup-back">\u2190 Back to listing</a>' +
       '<h3>Returns / relist</h3>' +
-      '<p class="ksl-lookup-help">Look up a member to see what they currently have out, then resolve each piece you have in hand. Match the photo + SKU before you tap.</p>' +
+      '<p class="ksl-lookup-help">Search a member by <strong>name or email</strong> (not SKU) to see what they currently have out. Match each item in hand to its photo + SKU, then relist clothing, stage toys for the workshop, or mark an item kept if it isn\u2019t coming back.</p>' +
       '<div class="ksl-lookup-search">' +
         '<input type="text" id="ksl-lookup-input" placeholder="Member name or email" ' +
           'autocomplete="off" autocorrect="off" spellcheck="false">' +
