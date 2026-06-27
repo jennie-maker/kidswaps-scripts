@@ -536,6 +536,7 @@
     // pills — condition always; then type-specific
     var pills = '';
     if (item.condition_grade) pills += pillCheck(item.condition_grade);
+    if (item.occasion) pills += pill(item.occasion);   // occasion tag (present-only)
     if (isToy) {
       if (item.toy_washability) {
         pills += pill(item.toy_washability.charAt(0).toUpperCase() + item.toy_washability.slice(1));
