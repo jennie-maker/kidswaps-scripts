@@ -1217,6 +1217,33 @@
       showToast("Item name needs to be more specific than the brand", true);
       return;
     }
+    // BRAND GUARD (Option B, banked 2026-06-24i — carry-forward-exempt + fail-open).
+    // The dropdown only SUGGESTS; without this an operator can ignore it and
+    // free-type any unvalidated string into inventory.brand. Predicate is the
+    // exact negation of renderBrandSuggest's hasExact (trim+lowercase) so this
+    // blocks IFF the dropdown would have shown the "+ Add" row. ESCAPE HATCH:
+    // "+ Add" lands the brand in BRANDS_BY_TYPE -> next submit passes. EXEMPT
+    // carry-forward (gradedForSku): a graded item's intake brand is free-text
+    // (no FK) and may legitimately not be in the brands list -> never fight the
+    // pipeline. FAILS OPEN when the list isn't loaded (brand-manage outage /
+    // in-flight [] marker / empty table) so infra can never block listing.
+    if (!gradedForSku) {
+      var brandList = BRANDS_BY_TYPE[itemType];
+      if (Array.isArray(brandList) && brandList.length && br.trim()) {
+        var brKey = br.trim().toLowerCase();
+        var brandKnown = brandList.some(function (b) {
+          return (b.brand_name || "").toLowerCase() === brKey;
+        });
+        if (!brandKnown) {
+          markError("brand");
+          showToast("\u201c" + br.trim() + "\u201d isn\u2019t in your brand list \u2014 pick a match or use \u201c+ Add\u201d.", true);
+          var bi = brandInputEl();
+          if (bi) { try { bi.focus(); } catch (_e) {} }
+          renderBrandSuggest();
+          return;
+        }
+      }
+    }
     if (anyUploading()) { showToast("Wait for photos to finish uploading", true); return; }
     showReview();
   });
