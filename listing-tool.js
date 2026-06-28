@@ -91,8 +91,8 @@
   // (10). Storage is unchanged — shoes co-exist in inventory.clothing_size,
   // distinguished by category='Shoes' (mirrors intake_records.size).
   function isShoeCategory() {
-    var catSel = root.querySelector('select[data-key="category"]');
-    return !!catSel && catSel.value === "Shoes";
+    var catEl = root.querySelector('[data-key="category"]');
+    return !!catEl && catEl.value === "Shoes";
   }
   function populateSizeOptions() {
     var sel = root.querySelector('select[data-key="clothing_size"]');
@@ -195,7 +195,7 @@
 
   // Fill the remote selects after the fetch resolves. Size is category-aware.
   function injectOptions() {
-    ["color", "category", "condition_grade", "occasion"].forEach(function (key) {
+    ["color", "condition_grade", "occasion"].forEach(function (key) {
       var sel = root.querySelector('select[data-key="' + key + '"]');
       if (sel) fillSelect(sel, OPTION_LISTS[key] || []);
     });
@@ -217,7 +217,7 @@
     { key:"toy_age_range",  label:"Age range",      type:"multipills", remote:true, group:"toy", required:true },
     { key:"toy_washability",label:"Washability",    type:"pills",  group:"toy", required:true,  options:["wipeable","washable"] },
     { key:"color",          label:"Color",          type:"select", remote:true, group:"clothing", required:true },
-    { key:"category",       label:"Category",       type:"select", remote:true, group:"clothing", required:true },
+    { key:"category",       label:"Category",       type:"select", remote:true, combo:true, group:"clothing", required:true, placeholder:"Type to filter\u2026" },
     { key:"clothing_size",  label:"Size",           type:"select", remote:true, group:"clothing", required:true },
     { key:"gender_style",   label:"Gender",         type:"select", group:"clothing", required:false, options:[{value:"boy",label:"Male"},{value:"girl",label:"Female"}] },
     { key:"tier",           label:"Tier",           type:"select", group:"both", required:true,  options:["essentials","elevated","special"] },
@@ -269,7 +269,17 @@
     var reqMark = f.required ? '<span class="ksl-req">*</span>'
                              : (f.noOptTag ? '' : ' <span class="ksl-opt">(optional)</span>');
     var inner;
-    if (f.type === "select") {
+    if (f.combo) {
+      // searchable closed-vocab field: HIDDEN canonical [data-key] (written only
+      // by pickCombo) + a visible filter input (no data-key) + results dropdown.
+      // Typed junk can't reach inventory.<key> because the value channel and the
+      // typing channel are physically separate.
+      inner = '<div class="ksl-combo-wrap" data-combo-wrap="' + f.key + '">' +
+                '<input type="hidden" data-key="' + f.key + '">' +
+                '<input type="text" class="ksl-combo-input" data-combo="' + f.key + '" autocomplete="off" placeholder="' + (f.placeholder || "Type to filter\u2026") + '">' +
+                '<div class="ksl-combo-results" data-combo-results="' + f.key + '"></div>' +
+              '</div>';
+    } else if (f.type === "select") {
       if (f.remote) {
         inner = '<select data-key="' + f.key + '"><option value="">Loading…</option></select>';
       } else {
@@ -521,6 +531,12 @@
       "#ks-list-app .ksl-brand-opt:hover{background:rgba(210,79,40,.18)}" +
       "#ks-list-app .ksl-brand-tier{font-size:.66rem;opacity:.5;text-transform:uppercase;letter-spacing:.05em}" +
       "#ks-list-app .ksl-brand-empty{padding:9px 12px;font-size:.82rem;opacity:.5}" +
+      "#ks-list-app .ksl-combo-wrap{position:relative}" +
+      "#ks-list-app .ksl-combo-results{display:none;position:absolute;left:0;right:0;top:100%;margin-top:3px;z-index:60;max-height:260px;overflow-y:auto;background:#1f1f1f;border:1px solid rgba(255,255,255,.18);border-radius:9px;box-shadow:0 10px 28px rgba(0,0,0,.45)}" +
+      "#ks-list-app .ksl-combo-results.is-open{display:block}" +
+      "#ks-list-app .ksl-combo-opt{padding:9px 12px;cursor:pointer;font-size:.9rem}" +
+      "#ks-list-app .ksl-combo-opt:hover{background:rgba(210,79,40,.18)}" +
+      "#ks-list-app .ksl-combo-empty{padding:9px 12px;font-size:.82rem;opacity:.5}" +
       "#ks-list-app .ksl-brand-add{padding:10px 12px;cursor:pointer;font-size:.88rem;font-weight:600;color:#d24f28;border-top:1px solid rgba(255,255,255,.12)}" +
       "#ks-list-app .ksl-brand-add:hover{background:rgba(210,79,40,.12)}" +
       "#ks-list-app .ksl-brand-modal{display:none;position:fixed;inset:0;z-index:200;align-items:center;justify-content:center;background:rgba(0,0,0,.62);padding:20px}" +
@@ -677,6 +693,8 @@
     resaleTouched = false;
     applyResaleVisibility();
     closeBrandSuggest();
+    root.querySelectorAll(".ksl-combo-input").forEach(function (ci) { ci.value = ""; });
+    closeAllCombos();
     defaultCondition();        // next item starts on the "great" default
   }
 
@@ -1060,6 +1078,10 @@
       // category is now restored -> set the Size vocabulary, then re-apply the
       // saved size (a shoe size only matches once shoe options are present).
       populateSizeOptions();
+      // combo fields: the hidden canonical value was restored in the loop above;
+      // reflect it into the visible filter input (option_lists is loaded — Restore
+      // stays disabled until it settles).
+      root.querySelectorAll("[data-combo]").forEach(function (ci) { syncComboDisplay(ci.getAttribute("data-combo")); });
       var rsize = (d.fields || {})["clothing_size"];
       if (rsize) {
         var szSel = root.querySelector('select[data-key="clothing_size"]');
@@ -1508,6 +1530,8 @@
     if (!el) return;
     el.value = (value === null || value === undefined) ? "" : String(value);
     el.dispatchEvent(new Event("input", { bubbles: true }));
+    // combo field: reflect the just-set canonical value into the visible filter
+    if (root.querySelector('[data-combo="' + key + '"]')) syncComboDisplay(key);
   }
 
   // ---- "from grading" cue: faint tag marking a carry-forward-filled field,
@@ -1740,6 +1764,115 @@
     if (!box || !box.classList.contains("is-open")) return;
     var inWrap = e.target.closest ? e.target.closest(".ksl-brand-wrap") : null;
     if (!inWrap) closeBrandSuggest();
+  });
+
+  /* ---- GENERIC COMBO (searchable closed-vocab select) ------------------ */
+  /* Type-to-filter over an option_lists field, modeled on the brand autocomplete
+     but for a CLOSED vocab (no add-new). Activate via combo:true in SCHEMA.
+     Canonical value = the HIDDEN [data-key] input, written ONLY by pickCombo, so
+     a typed non-match never lands in inventory.<field>. Reads OPTION_LISTS[field]
+     live (same shape as brand's BRANDS_BY_TYPE). */
+  var comboMatches = {};   // field -> rows currently rendered
+  function escCombo(s) {
+    return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+  function comboInputEl(field)   { return root.querySelector('input[data-combo="' + field + '"]'); }
+  function comboHiddenEl(field)  { return root.querySelector('input[type="hidden"][data-key="' + field + '"]'); }
+  function comboResultsEl(field) { return root.querySelector('[data-combo-results="' + field + '"]'); }
+  function comboRowLabel(row)    { return row.display_label || row.value || ""; }
+  function renderComboSuggest(field) {
+    var inp = comboInputEl(field), box = comboResultsEl(field);
+    if (!inp || !box) return;
+    var q = (inp.value || "").trim().toLowerCase();
+    var list = OPTION_LISTS[field] || [];
+    var matches = q
+      ? list.filter(function (r) { return comboRowLabel(r).toLowerCase().indexOf(q) !== -1; })
+      : list.slice();
+    comboMatches[field] = matches;
+    var html = matches.map(function (r, i) {
+      return '<div class="ksl-combo-opt" data-combo-idx="' + i + '">' + escCombo(comboRowLabel(r)) + '</div>';
+    }).join("");
+    if (!matches.length) html = '<div class="ksl-combo-empty">No match</div>';
+    box.innerHTML = html;
+    box.classList.add("is-open");
+  }
+  function closeComboSuggest(field) {
+    var box = comboResultsEl(field);
+    if (box) { box.classList.remove("is-open"); box.innerHTML = ""; }
+    comboMatches[field] = [];
+  }
+  function closeAllCombos() {
+    root.querySelectorAll("[data-combo]").forEach(function (i) { closeComboSuggest(i.getAttribute("data-combo")); });
+  }
+  function pickCombo(field, row) {
+    setField(field, row.value);                 // HIDDEN canonical value + bubbling input -> autoName/saveDraft
+    var inp = comboInputEl(field);
+    if (inp) inp.value = comboRowLabel(row);     // visible filter shows the display label
+    closeComboSuggest(field);
+  }
+  // hidden canonical value -> visible display label (draft restore / programmatic set)
+  function syncComboDisplay(field) {
+    var hid = comboHiddenEl(field), inp = comboInputEl(field);
+    if (!hid || !inp) return;
+    var v = hid.value || "";
+    if (!v) { inp.value = ""; return; }
+    var list = OPTION_LISTS[field] || [];
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].value === v) { inp.value = comboRowLabel(list[i]); return; }
+    }
+    inp.value = v;   // unknown/legacy value -> show raw, never blank
+  }
+
+  /* combo wiring: filter on typing/focus, pick on click, Esc/Enter, outside-close.
+     Delegated; the field comes off data-combo. Typing voids any prior pick (the
+     hidden value clears) until they pick again -> a half-typed filter with no pick
+     is an empty value that Required validation blocks. */
+  root.addEventListener("input", function (e) {
+    var t = e.target;
+    if (t && t.getAttribute && t.getAttribute("data-combo") && e.isTrusted) {
+      var field = t.getAttribute("data-combo");
+      var hid = comboHiddenEl(field);
+      if (hid && hid.value) { hid.value = ""; hid.dispatchEvent(new Event("input", { bubbles: true })); }
+      renderComboSuggest(field);
+    }
+  });
+  root.addEventListener("focusin", function (e) {
+    var t = e.target;
+    if (t && t.getAttribute && t.getAttribute("data-combo")) renderComboSuggest(t.getAttribute("data-combo"));
+  });
+  root.addEventListener("keydown", function (e) {
+    var t = e.target;
+    if (!t || !t.getAttribute || !t.getAttribute("data-combo")) return;
+    var field = t.getAttribute("data-combo");
+    if (e.key === "Escape") { closeComboSuggest(field); return; }
+    var box = comboResultsEl(field);
+    if (!box || !box.classList.contains("is-open")) return;
+    if (e.key === "Enter") {
+      e.preventDefault();
+      var m = comboMatches[field] || [];
+      if (m.length) pickCombo(field, m[0]);
+    }
+  });
+  root.addEventListener("click", function (e) {
+    var opt = e.target.closest ? e.target.closest(".ksl-combo-opt") : null;
+    if (!opt || !root.contains(opt)) return;
+    var wrap = opt.closest("[data-combo-wrap]");
+    var field = wrap ? wrap.getAttribute("data-combo-wrap") : null;
+    if (!field) return;
+    var row = (comboMatches[field] || [])[parseInt(opt.getAttribute("data-combo-idx"), 10)];
+    if (row) pickCombo(field, row);
+  });
+  document.addEventListener("mousedown", function (e) {
+    if (!root.querySelector(".ksl-combo-results.is-open")) return;
+    var inWrap = e.target.closest ? e.target.closest("[data-combo-wrap]") : null;
+    if (!inWrap) { closeAllCombos(); return; }
+    var keep = inWrap.getAttribute("data-combo-wrap");
+    root.querySelectorAll("[data-combo]").forEach(function (i) {
+      var f = i.getAttribute("data-combo");
+      if (f !== keep) closeComboSuggest(f);
+    });
   });
 
   /* ---- RESALE VALUE AUTO-FILL ------------------------------------------ */
@@ -2681,6 +2814,8 @@ function titleCase(s) {
     $("ksl-restore-no").addEventListener("click", function () {
       try { sessionStorage.removeItem(DRAFT_KEY); } catch (e) {}
       rb.classList.add("ksl-hidden");
+      prefillNextSku();   // discarding a draft must seed the next SKU (was: stuck on "KS-" until refresh)
+      armPhotoFirst();    // ...and re-arm the photos-first nudge, mirroring the no-draft init path
     });
   }
   // fetch controlled vocab, then fill the remote selects (Path B, live read).
