@@ -258,6 +258,8 @@
   var loadedGrade  = "";     // condition_grade at load — drives the snag-1 photo-coupling cue
   var editResaleVal = null;  // last client-recomputed resale; rides the patch (operator never types it)
   var editLocked  = false;   // true when the loaded row is reserved/claimed
+  var editPrimaryDirty = false; // edit mode: true once the primary photo changed this edit (new front OR make-primary) -> regen the grid thumb on save
+  var editThumbUrl = null;      // edit mode: regenerated grid-thumb URL for this save; null -> buildEditPatch omits thumbnail_url -> DB value preserved
 
   var root = document.getElementById("ks-list-app");
   if (!root) { console.error("[listing] #ks-list-app not found"); return; }
@@ -794,6 +796,47 @@
     });
   }
 
+  /* ---- THUMBNAIL FROM A URL (Option B edit-mode regen) ----------------- */
+  /* Sibling to makeThumb(file): same ~400w JPEG, but the source is a URL, not a
+     File — the edit path has the loaded item's Front photo as a hosted URL (or
+     a fresh blob: after a re-upload), never the original File. crossOrigin so a
+     cross-origin Supabase URL doesn't taint the canvas (ACAO:* confirmed);
+     blob: is same-origin -> a quiet no-op. A cross-origin URL the browser
+     already cached WITHOUT CORS (the on-screen <img>) can re-serve tainted ->
+     toBlob throws SecurityError; the http(s)-only cache-buster forces a fresh
+     CORS fetch so a backfill actually lands. Buster is NEVER applied to blob:
+     (a query param breaks a blob URL). Does NOT revoke the URL — the slot <img>
+     still uses it; this fn doesn't own it. Best-effort: ANY failure -> reject
+     -> caller leaves editThumbUrl null -> patch omits thumbnail_url -> DB value
+     preserved -> browse full-res fallback. */
+  function corsBust(url) {
+    if (typeof url !== "string" || url.indexOf("blob:") === 0) return url;
+    return url + (url.indexOf("?") > -1 ? "&" : "?") + "kscors=1";
+  }
+  function makeThumbFromUrl(url) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = function () {
+        try {
+          var w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+          if (!w || !h) { reject(new Error("no dims")); return; }
+          var tw = Math.min(THUMB_W, w);            // never upscale
+          var th = Math.max(1, Math.round(h * (tw / w)));
+          var cv = document.createElement("canvas");
+          cv.width = tw; cv.height = th;
+          cv.getContext("2d").drawImage(img, 0, 0, tw, th);
+          cv.toBlob(function (blob) {
+            if (!blob) { reject(new Error("toBlob null")); return; }
+            resolve(new File([blob], "thumb.jpg", { type: "image/jpeg" }));
+          }, "image/jpeg", 0.7);
+        } catch (e) { reject(e); }                  // tainted-canvas SecurityError lands here
+      };
+      img.onerror = function () { reject(new Error("img load")); };
+      img.src = corsBust(url);
+    });
+  }
+
   function uid() { return Date.now() + "-" + Math.random().toString(36).slice(2, 7); }
 
   function slotRec(key) { return key === "video" ? video : slots[key]; }
@@ -845,11 +888,17 @@
         rec.url = url; rec.status = "done"; renderSlot(key); saveDraft();
         if (key === "front") {
           focusColorAfterPhotos();
-          thumbUrl = null;                          // invalidate any prior thumb; regen below
-          makeThumb(file)
-            .then(function (tf) { return uploadFile(tf, "thumb"); })
-            .then(function (turl) { if (slots.front === rec) thumbUrl = turl; })  // ignore if front replaced mid-flight
-            .catch(function (e) { console.warn("[thumb] skipped, full-res fallback", e); });
+          if (EDIT_MODE) {
+            // Edit mode: don't run the insert thumb path. Just flag that the
+            // primary changed — runEditSave regenerates from slots.front on save.
+            editPrimaryDirty = true;
+          } else {
+            thumbUrl = null;                          // invalidate any prior thumb; regen below
+            makeThumb(file)
+              .then(function (tf) { return uploadFile(tf, "thumb"); })
+              .then(function (turl) { if (slots.front === rec) thumbUrl = turl; })  // ignore if front replaced mid-flight
+              .catch(function (e) { console.warn("[thumb] skipped, full-res fallback", e); });
+          }
         }
       })
       .catch(function (e) { if (slots[key] === rec) { rec.status = "error"; renderSlot(key); } console.error("[upload photo]", e); });
@@ -1976,12 +2025,15 @@ function titleCase(s) {
     var tmp = slots.front;
     slots.front = slots[key];
     slots[key] = tmp;           // tmp may be null -> the source slot empties
+    editPrimaryDirty = true;    // primary changed -> regen the grid thumb on save
     renderAllSlots();
   }
 
   function enterEditMode(rec) {
     loadedRecord = rec;
     EDIT_MODE = true;
+    editPrimaryDirty = false;   // fresh load: primary is unchanged until the operator touches it
+    editThumbUrl = null;        // no regenerated thumb yet this edit
     editLocked = (rec.status === "reserved" || rec.status === "claimed");
 
     // item type from the record so the theme/reference read coherently
@@ -2103,6 +2155,10 @@ function titleCase(s) {
       patch.condition_grade = grade;
       patch.resale_value = (loadedRecord && loadedRecord.tier === "essentials") ? null : editResaleVal;
     }
+    // Option B grid thumb: ride only when a regen landed this save (runEditSave's
+    // prelude set editThumbUrl). Omitted -> edge fn whitelist preserves the DB
+    // value (the "leave untouched" branch). The client never sends null here.
+    if (editThumbUrl) patch.thumbnail_url = editThumbUrl;
     return patch;
   }
 
@@ -2142,6 +2198,26 @@ function titleCase(s) {
     });
   }
 
+  /* Option B edit-mode thumb prelude — non-rejecting. Regenerate the grid thumb
+     from the current Front photo ONLY when the primary changed this edit OR the
+     loaded row has no thumb yet (opportunistic backfill — returns/relist re-grades
+     flow through here, so the live catalog self-backfills). Else resolve with
+     editThumbUrl null so buildEditPatch omits thumbnail_url and the DB value is
+     preserved (no orphan churn on unchanged-primary edits). ANY failure (canvas
+     taint, network, no source) -> log + resolve null -> omit -> preserve / full-res
+     fallback. NEVER blocks the save. */
+  function prepareEditThumb() {
+    editThumbUrl = null;
+    var have = !!(loadedRecord && loadedRecord.thumbnail_url);
+    var front = slots.front;
+    if (!(editPrimaryDirty || !have)) return Promise.resolve();   // unchanged primary + already thumbed
+    if (!(front && front.objUrl)) return Promise.resolve();       // no source photo -> preserve
+    return makeThumbFromUrl(front.objUrl)
+      .then(function (tf) { return uploadFile(tf, "thumb"); })
+      .then(function (turl) { editThumbUrl = turl; })
+      .catch(function (e) { editThumbUrl = null; console.warn("[edit-thumb] skipped, preserve/full-res", e); });
+  }
+
   function runEditSave() {
     if (!EDIT_MODE || !loadedRecord) { showToast("No item loaded", true); return; }
     if (editLocked) { showToast("This item is reserved/claimed — can't edit", true); return; }
@@ -2161,7 +2237,9 @@ function titleCase(s) {
     var sku = loadedRecord.sku;
     var btn = $("ksl-edit-save");
     if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
-    getToken().then(function (t) {
+    prepareEditThumb().then(function () {
+      return getToken();
+    }).then(function (t) {
       return fetch(FN_EDIT, {
         method: "POST",
         headers: {
@@ -2174,9 +2252,14 @@ function titleCase(s) {
       return r.json().then(function (j) { return { ok: r.ok, status: r.status, j: j }; });
     }).then(function (res) {
       if (res.ok && res.j.ok && res.j.item) {
-        ["status", "primary_photo_url", "photo_urls", "video_url", "bin_location", "featured",
-         "condition_grade", "retail_value", "resale_value"]
+        ["status", "primary_photo_url", "photo_urls", "video_url", "thumbnail_url",
+         "bin_location", "featured", "condition_grade", "retail_value", "resale_value"]
           .forEach(function (k) { if (res.j.item[k] !== undefined) loadedRecord[k] = res.j.item[k]; });
+        // Thumb regen (if any) is now DB truth -> clear the dirty flags so a
+        // follow-up save that doesn't touch the primary skips regeneration
+        // (loadedRecord.thumbnail_url is freshly populated above -> backfill
+        // predicate is satisfied -> no orphan churn).
+        editPrimaryDirty = false; editThumbUrl = null;
         // name + description aren't in the update .select() response — the save
         // succeeded, so the field values we sent are now DB truth.
         loadedRecord.item_name = (($("ksl-edit-name") || {}).value || "").trim();
