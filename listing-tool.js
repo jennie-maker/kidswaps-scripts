@@ -245,6 +245,7 @@
   ];
   var slots = { front:null, back:null, detail:null };
   var video = null;
+  var thumbUrl = null;         // Option B: client-gen grid-thumbnail URL for the current item; null -> browse falls back to full-res
   var token = null;
   var resaleTouched = false;   // resale auto-fill override latch; a tier change resets it
   var gradedForSku = "";       // SKU the current carry-forward data belongs to (drift guard)
@@ -667,7 +668,7 @@
     setAgeHint("");
     root.querySelectorAll(".ksl-pill.is-active").forEach(function (b) { b.classList.remove("is-active"); });
     setChk.checked = false; setCountWrap.classList.add("ksl-hidden"); setCount.value = "";
-    slots = { front:null, back:null, detail:null }; video = null; renderAllSlots();
+    slots = { front:null, back:null, detail:null }; video = null; thumbUrl = null; renderAllSlots();
     clearErrors();
     clearAllCues();
     // reset the resale latch + re-assert the tier gate (tier is now blank -> hidden)
@@ -761,6 +762,38 @@
     });
   }
 
+  /* ---- THUMBNAIL (Option B grid thumb, client-gen) --------------------- */
+  /* Downscale the primary photo to ~400w JPEG (~20-40KB) for the browse grid.
+     Best-effort: ANY failure -> reject -> caller leaves thumbUrl null -> browse
+     grid falls back to the full-res primary (the cost-guard default behavior).
+     JPEG (not WebP) to dodge edge-fn naming + Safari-encode risk. Source is the
+     original full-res File (best-quality downscale), not the rendered objUrl. */
+  var THUMB_W = 400;
+  function makeThumb(file) {
+    return new Promise(function (resolve, reject) {
+      var objUrl = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        try {
+          var w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+          if (!w || !h) { URL.revokeObjectURL(objUrl); reject(new Error("no dims")); return; }
+          var tw = Math.min(THUMB_W, w);            // never upscale
+          var th = Math.max(1, Math.round(h * (tw / w)));
+          var cv = document.createElement("canvas");
+          cv.width = tw; cv.height = th;
+          cv.getContext("2d").drawImage(img, 0, 0, tw, th);
+          URL.revokeObjectURL(objUrl);
+          cv.toBlob(function (blob) {
+            if (!blob) { reject(new Error("toBlob null")); return; }
+            resolve(new File([blob], "thumb.jpg", { type: "image/jpeg" }));
+          }, "image/jpeg", 0.7);
+        } catch (e) { URL.revokeObjectURL(objUrl); reject(e); }
+      };
+      img.onerror = function () { URL.revokeObjectURL(objUrl); reject(new Error("img load")); };
+      img.src = objUrl;
+    });
+  }
+
   function uid() { return Date.now() + "-" + Math.random().toString(36).slice(2, 7); }
 
   function slotRec(key) { return key === "video" ? video : slots[key]; }
@@ -807,7 +840,18 @@
     var rec = { id: uid(), url: null, status: "uploading", name: file.name, objUrl: URL.createObjectURL(file) };
     slots[key] = rec; renderSlot(key);
     uploadFile(file, "photo")
-      .then(function (url) { if (slots[key] === rec) { rec.url = url; rec.status = "done"; renderSlot(key); saveDraft(); if (key === "front") focusColorAfterPhotos(); } })
+      .then(function (url) {
+        if (slots[key] !== rec) return;
+        rec.url = url; rec.status = "done"; renderSlot(key); saveDraft();
+        if (key === "front") {
+          focusColorAfterPhotos();
+          thumbUrl = null;                          // invalidate any prior thumb; regen below
+          makeThumb(file)
+            .then(function (tf) { return uploadFile(tf, "thumb"); })
+            .then(function (turl) { if (slots.front === rec) thumbUrl = turl; })  // ignore if front replaced mid-flight
+            .catch(function (e) { console.warn("[thumb] skipped, full-res fallback", e); });
+        }
+      })
       .catch(function (e) { if (slots[key] === rec) { rec.status = "error"; renderSlot(key); } console.error("[upload photo]", e); });
   }
 
@@ -898,7 +942,7 @@
     }
     var rm = (e.target && e.target.getAttribute) ? e.target.getAttribute("data-rmslot") : null;
     if (rm) {
-      if (rm === "video") video = null; else slots[rm] = null;
+      if (rm === "video") video = null; else { slots[rm] = null; if (rm === "front") thumbUrl = null; }
       renderSlot(rm); saveDraft();
       return;
     }
@@ -1056,6 +1100,7 @@
       .filter(function (r) { return r && r.status === "done"; })
       .map(function (r) { return r.url; });
     if (donePhotos.length) p.photo_urls = donePhotos;
+    if (thumbUrl) p.thumbnail_url = thumbUrl;   // Option B grid thumb; omitted -> server leaves null -> browse full-res fallback
     if (video && video.status === "done") p.video_url = video.url;
     if (itemType === "clothing" && setChk.checked) { p.is_matching_set = true; p.set_piece_count = parseInt(setCount.value, 10); }
     return p;
