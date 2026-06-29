@@ -95,15 +95,27 @@
     return !!catEl && catEl.value === "Shoes";
   }
   function populateSizeOptions() {
-    var sel = root.querySelector('select[data-key="clothing_size"]');
-    if (!sel) return;
     var shoe = isShoeCategory();
-    fillSelect(sel, OPTION_LISTS[shoe ? "shoe_size" : "clothing_size"] || []);
     // relabel for clarity; preserve the required-asterisk span (first text node only)
     var lbl = root.querySelector('.ksl-field[data-field="clothing_size"] .ksl-label');
     if (lbl && lbl.firstChild && lbl.firstChild.nodeType === 3) {
       lbl.firstChild.nodeValue = shoe ? "Shoe size" : "Size";
     }
+    // size is a combo reading comboSource() live — no fillSelect. Drop a value
+    // that's no longer valid for the current vocab (e.g. a clothing size left
+    // over after switching category to Shoes) and refresh the list if it's open.
+    var hid = comboHiddenEl("clothing_size");
+    if (hid && hid.value) {
+      var stillValid = comboSource("clothing_size").some(function (r) { return r.value === hid.value; });
+      if (!stillValid) {
+        hid.value = "";
+        hid.dispatchEvent(new Event("input", { bubbles: true }));
+        var vin = comboInputEl("clothing_size");
+        if (vin) vin.value = "";
+      }
+    }
+    var box = comboResultsEl("clothing_size");
+    if (box && box.classList.contains("is-open")) renderComboSuggest("clothing_size");
   }
 
   /* ---- RESPONSIVE: toy age tiles wrap on phones (E) -------------------- */
@@ -195,7 +207,7 @@
 
   // Fill the remote selects after the fetch resolves. Size is category-aware.
   function injectOptions() {
-    ["color", "condition_grade", "occasion"].forEach(function (key) {
+    ["condition_grade", "occasion"].forEach(function (key) {
       var sel = root.querySelector('select[data-key="' + key + '"]');
       if (sel) fillSelect(sel, OPTION_LISTS[key] || []);
     });
@@ -216,9 +228,9 @@
     { key:"description",    label:"Description",    type:"textarea", group:"both", required:false },
     { key:"toy_age_range",  label:"Age range",      type:"multipills", remote:true, group:"toy", required:true },
     { key:"toy_washability",label:"Washability",    type:"pills",  group:"toy", required:true,  options:["wipeable","washable"] },
-    { key:"color",          label:"Color",          type:"select", remote:true, group:"clothing", required:true },
+    { key:"color",          label:"Color",          type:"select", remote:true, combo:true, group:"clothing", required:true, placeholder:"Type to filter\u2026" },
     { key:"category",       label:"Category",       type:"select", remote:true, combo:true, group:"clothing", required:true, placeholder:"Type to filter\u2026" },
-    { key:"clothing_size",  label:"Size",           type:"select", remote:true, group:"clothing", required:true },
+    { key:"clothing_size",  label:"Size",           type:"select", remote:true, combo:true, group:"clothing", required:true, placeholder:"Type to filter\u2026" },
     { key:"gender_style",   label:"Gender",         type:"select", group:"clothing", required:false, options:[{value:"boy",label:"Male"},{value:"girl",label:"Female"}] },
     { key:"tier",           label:"Tier",           type:"select", group:"both", required:true,  options:["essentials","elevated","special"] },
     { key:"retail_value",   label:"Retail value",   type:"number", group:"both", required:true,  placeholder:"e.g. 48", step:"0.01", min:"0" },
@@ -944,7 +956,8 @@
     var ae = document.activeElement;            // never steal focus mid-typing
     if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) && ae.type !== "file") return;
     setTimeout(function () {
-      var c = root.querySelector('[data-key="color"]');
+      // color is a combo: focus the visible filter, not the hidden data-key input
+      var c = root.querySelector('[data-combo="color"]') || root.querySelector('[data-key="color"]');
       if (c && c.offsetParent !== null) { try { c.focus(); } catch (e) {} }
     }, 50);
   }
@@ -1082,11 +1095,9 @@
       // reflect it into the visible filter input (option_lists is loaded — Restore
       // stays disabled until it settles).
       root.querySelectorAll("[data-combo]").forEach(function (ci) { syncComboDisplay(ci.getAttribute("data-combo")); });
-      var rsize = (d.fields || {})["clothing_size"];
-      if (rsize) {
-        var szSel = root.querySelector('select[data-key="clothing_size"]');
-        if (szSel) szSel.value = rsize;
-      }
+      // (clothing_size is a combo now too — the sync loop above restores it; the
+      //  old select-based re-apply is gone, and populateSizeOptions already set
+      //  the right vocab for the restored category.)
       setChk.checked = !!d.set; setCountWrap.classList.toggle("ksl-hidden", !d.set);
       setCount.value = d.setCount || "";
       var ps = d.photoSlots || {};
@@ -1782,11 +1793,18 @@
   function comboHiddenEl(field)  { return root.querySelector('input[type="hidden"][data-key="' + field + '"]'); }
   function comboResultsEl(field) { return root.querySelector('[data-combo-results="' + field + '"]'); }
   function comboRowLabel(row)    { return row.display_label || row.value || ""; }
+  // option source for a combo field. clothing_size is category-dynamic: it shows
+  // shoe_size when category is Shoes, clothing_size otherwise (storage stays in
+  // inventory.clothing_size either way). Every other combo reads its own list.
+  function comboSource(field) {
+    if (field === "clothing_size") return OPTION_LISTS[isShoeCategory() ? "shoe_size" : "clothing_size"] || [];
+    return OPTION_LISTS[field] || [];
+  }
   function renderComboSuggest(field) {
     var inp = comboInputEl(field), box = comboResultsEl(field);
     if (!inp || !box) return;
     var q = (inp.value || "").trim().toLowerCase();
-    var list = OPTION_LISTS[field] || [];
+    var list = comboSource(field);
     var matches = q
       ? list.filter(function (r) { return comboRowLabel(r).toLowerCase().indexOf(q) !== -1; })
       : list.slice();
@@ -1818,7 +1836,7 @@
     if (!hid || !inp) return;
     var v = hid.value || "";
     if (!v) { inp.value = ""; return; }
-    var list = OPTION_LISTS[field] || [];
+    var list = comboSource(field);
     for (var i = 0; i < list.length; i++) {
       if (list[i].value === v) { inp.value = comboRowLabel(list[i]); return; }
     }
