@@ -246,6 +246,7 @@
       '#ks-detail-root .ks-detail-tier-pill{background:#1E1A19;color:#EEEFE3;border:0;text-transform:none;letter-spacing:.01em;font-weight:600;}' +
       '#ks-detail-root .ks-detail-tier-pill.ks-tier-special{background:#E5AD43;color:#1E1A19;font-weight:700;}' +
       '#ks-detail-root .ks-detail-tier-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px;}' +
+      '#ks-detail-root .ks-detail-name{font-family:"Instrument Serif",Quicksand,sans-serif;}' +
       '#ks-detail-root .ks-detail-meta{display:flex;flex-wrap:wrap;align-items:baseline;gap:7px;margin:9px 0 0;}' +
       '#ks-detail-root .ks-meta-size{font-size:16px;font-weight:500;color:#1E1A19;}' +
       '#ks-detail-root .ks-meta-fit{font-size:13.5px;color:#a99e92;}' +
