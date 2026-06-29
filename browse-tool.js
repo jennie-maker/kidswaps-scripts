@@ -232,9 +232,6 @@
       '#ks-browse-app .ks-browse-media:has(img){background:#fff;}' +
       '#ks-detail-root .ks-detail-main-img{object-fit:contain;}' +
       '#ks-detail-root .ks-detail-media{background:#fff;}' +
-      /* BROWSE-FIX: overlay size text smaller / bolder / more letter-spacing.
-         #ks-detail-root prefix (0,1,1) wins over the per-page .ks-detail-size. */
-      '#ks-detail-root .ks-detail-size{font-size:.78rem;font-weight:700;letter-spacing:.09em;}' +
       /* D: video rail thumb shows the first frame (#t=0.1) under a play overlay */
       '#ks-detail-root .ks-detail-thumb-video{position:relative;overflow:hidden;}' +
       '#ks-detail-root .ks-detail-thumb-vid{width:100%;height:100%;object-fit:cover;display:block;}' +
@@ -248,8 +245,19 @@
          #ks-detail-root prefix wins over the per-page base classes. */
       '#ks-detail-root .ks-detail-tier-pill{background:#1E1A19;color:#EEEFE3;border:0;text-transform:none;letter-spacing:.01em;font-weight:600;}' +
       '#ks-detail-root .ks-detail-tier-pill.ks-tier-special{background:#E5AD43;color:#1E1A19;font-weight:700;}' +
-      '#ks-detail-root .ks-detail-tier-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}' +
-      '#ks-detail-root .ks-detail-fit{color:#a99e92;font-weight:400;letter-spacing:.02em;}' +
+      '#ks-detail-root .ks-detail-tier-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px;}' +
+      '#ks-detail-root .ks-detail-meta{display:flex;flex-wrap:wrap;align-items:baseline;gap:7px;margin:9px 0 0;}' +
+      '#ks-detail-root .ks-meta-size{font-size:16px;font-weight:500;color:#1E1A19;}' +
+      '#ks-detail-root .ks-meta-fit{font-size:13.5px;color:#a99e92;}' +
+      '#ks-detail-root .ks-meta-sku{font-size:13px;letter-spacing:.03em;color:#b3a99d;}' +
+      '#ks-detail-root .ks-meta-sep{color:#cfc4b4;}' +
+      /* SPACING: group rhythm via margin-tops (block-collapse keeps them sane vs the
+         head-box margins); desktop (>=721px, two-col) centers the info block against
+         the image via align-self. mobile keeps the rhythm, top-aligned. these layer
+         over head-box layout rules not visible here -- verify centering + gaps live. */
+      '#ks-detail-root .ks-detail-desc{margin-top:14px;}' +
+      '#ks-detail-root .ks-detail-cta{margin-top:20px;}' +
+      '@media (min-width:721px){#ks-detail-root .ks-detail-info{align-self:center;}}' +
       '#ks-detail-root .ks-detail-cond{display:inline-flex;align-items:center;gap:5px;font-weight:400;font-size:15px;}' +
       '#ks-detail-root .ks-detail-cond-ic{display:inline-flex;color:#6a5f57;}' +
       '#ks-detail-root .ks-detail-retail{display:block;margin:7px 0 0;font-size:14px;font-weight:400;color:#7d7268;}' +
@@ -584,11 +592,13 @@
     var extraLine = extras.length
       ? '<p class="ks-detail-extras">' + extras.join(' \u00b7 ') + '</p>' : '';
 
-    var sizeFit = (item.size || fit)
-      ? '<p class="ks-detail-size">' +
-        (item.size ? escapeHtml(item.size) : '') +
-        (fit ? '<span class="ks-detail-fit">' + (item.size ? ' \u00b7 ' : '') + escapeHtml(fit) + '</span>' : '') +
-        '</p>'
+    var metaParts = [];
+    if (item.size) metaParts.push('<span class="ks-meta-size">' + escapeHtml(item.size) + '</span>');
+    if (fit) metaParts.push('<span class="ks-meta-fit">' + escapeHtml(fit) + '</span>');
+    if (item.sku) metaParts.push('<span class="ks-meta-sku">SKU ' + escapeHtml(item.sku) + '</span>');
+    var metaLine = metaParts.length
+      ? '<p class="ks-detail-meta">' +
+        metaParts.join('<span class="ks-meta-sep" aria-hidden="true">\u00b7</span>') + '</p>'
       : '';
 
     var retail = money(item.retail_value);
@@ -617,8 +627,7 @@
           '<div class="ks-detail-media">' + main + tierBadge + zoom + '</div>' +
           '<div class="ks-detail-info">' +
             '<h2 class="ks-detail-name">' + escapeHtml(descriptor(item)) + '</h2>' +
-            sizeFit +
-            '<p class="ks-detail-sku">SKU ' + escapeHtml(item.sku || '') + '</p>' +
+            metaLine +
             '<div class="ks-detail-tier-row">' + tierPill + condHtml + '</div>' +
             (retail ? '<p class="ks-detail-retail">Retail value new ' + retail + '</p>' : '') +
             (item.is_luxury ? LUX_NOTE : '') +
