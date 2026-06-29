@@ -242,15 +242,17 @@
          serving originals now, so crop them to fill the button via object-fit. */
       '#ks-detail-root .ks-detail-thumb img{width:100%;height:100%;object-fit:cover;display:block;}' +
       '#ks-detail-root .ks-detail-thumb-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.28);color:#fff;}' +
-      /* PILL DIFFERENTIATION (palette-mapped). tier = solid ink badge (weight, not
-         hue, sentence-case); attribute pills tinted per axis from the brand palette.
-         #ks-detail-root prefix (0,1,1 / 0,1,2) wins over the per-page base classes. */
-      '#ks-detail-root .ks-detail-tier-pill{background:#1E1A19;color:#EEEFE3;border:1px solid #1E1A19;text-transform:none;letter-spacing:.01em;}' +
-      '#ks-detail-root .ks-detail-pill.ks-pill-condition{background:#D1DECB;border:1px solid #91BA97;color:#324D37;}' +
-      '#ks-detail-root .ks-detail-pill.ks-pill-gender{background:#CAD1D4;border:1px solid #7B8FB1;color:#222E4A;}' +
-      '#ks-detail-root .ks-detail-pill.ks-pill-wash{background:#EAD4C4;border:1px solid #E0997E;color:#6B3525;}' +
-      '#ks-detail-root .ks-detail-pill.ks-pill-occasion{background:#ECE3C6;border:1px solid #E9C986;color:#72582B;}' +
-      '#ks-detail-root .ks-detail-pill.ks-pill-set{background:#EDDFD9;border:1px solid #EABBC1;color:#724E55;}';
+      /* PILL DIFFERENTIATION. tier = the one pill, colored by value off the brand
+         palette (essentials neutral ink -> elevated blue -> special gold). everything
+         else is a monochrome inline spec line, separated by weight + dividers, not color.
+         #ks-detail-root prefix wins over the per-page base classes. */
+      '#ks-detail-root .ks-detail-tier-pill{background:#1E1A19;color:#EEEFE3;border:0;text-transform:none;letter-spacing:.01em;font-weight:600;}' +
+      '#ks-detail-root .ks-detail-tier-pill.ks-tier-elevated{background:#28498D;color:#EEEFE3;}' +
+      '#ks-detail-root .ks-detail-tier-pill.ks-tier-special{background:#E5AD43;color:#1E1A19;font-weight:700;}' +
+      '#ks-detail-root .ks-detail-pills{display:flex;align-items:center;flex-wrap:wrap;gap:2px 0;}' +
+      '#ks-detail-root .ks-detail-spec{display:inline-flex;align-items:center;gap:5px;font-weight:600;color:#1E1A19;}' +
+      '#ks-detail-root .ks-detail-spec-ic{display:inline-flex;color:#6a5f57;}' +
+      '#ks-detail-root .ks-detail-spec-div{margin:0 11px;color:#cdc6b8;font-weight:400;}';
     var s = document.createElement('style');
     s.id = 'ks-util-css';
     s.textContent = css;
@@ -525,6 +527,15 @@
       'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
       '<path d="M20 6L9 17l-5-5"/></svg></span>' + escapeHtml(text) + '</span>';
   }
+  // one value in the attribute spec line; condition passes withCheck=true to keep its tick
+  function specVal(text, withCheck) {
+    var ic = withCheck
+      ? '<span class="ks-detail-spec-ic"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" ' +
+        'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M20 6L9 17l-5-5"/></svg></span>'
+      : '';
+    return '<span class="ks-detail-spec">' + ic + escapeHtml(text) + '</span>';
+  }
 
   function escapeHtml(s) {
     return String(s == null ? '' : s)
@@ -568,26 +579,26 @@
     var zoom = photos.length
       ? '<button type="button" class="ks-detail-zoom" aria-label="Zoom photo">' + ZOOM_SVG + ' zoom</button>' : '';
 
-    // pills — condition always; then type-specific fit, then occasion, then set
-    var pills = '';
-    if (item.condition_grade) pills += pillCheck(conditionLabel(item.condition_grade), 'ks-pill-condition');
+    // attribute spec line — condition (with check) then fit, occasion, set;
+    // monochrome bold values joined by muted dividers (color lives on the tier pill)
+    var specs = [];
+    if (item.condition_grade) specs.push(specVal(conditionLabel(item.condition_grade), true));
     if (isToy) {
-      if (item.toy_washability) {
-        pills += pill(item.toy_washability.charAt(0).toUpperCase() + item.toy_washability.slice(1), 'ks-pill-wash');
-      }
+      if (item.toy_washability) specs.push(specVal(capFirst(item.toy_washability), false));
     } else {
       var g = genderLabel(item.gender_style);
-      if (g) pills += pill(g, 'ks-pill-gender');
+      if (g) specs.push(specVal(g, false));
     }
-    if (item.occasion) pills += pill(item.occasion, 'ks-pill-occasion');   // occasion tag (present-only)
+    if (item.occasion) specs.push(specVal(item.occasion, false));   // occasion tag (present-only)
     if (item.is_matching_set) {
       var n = item.set_piece_count;
-      pills += pill(n ? ('Complete \u00b7 ' + n + ' pieces') : 'Matching set', 'ks-pill-set');
+      specs.push(specVal(n ? ('Complete \u00b7 ' + n + ' pieces') : 'Matching set', false));
     }
+    var pills = specs.join('<span class="ks-detail-spec-div" aria-hidden="true">|</span>');
 
     var retail = money(item.retail_value);
     var tierPill = item.tier
-      ? '<span class="ks-detail-tier-pill">' + escapeHtml(tierLabel(item.tier)) + '</span>' : '';
+      ? '<span class="ks-detail-tier-pill ks-tier-' + escapeHtml(String(item.tier).toLowerCase()) + '">' + escapeHtml(tierLabel(item.tier)) + '</span>' : '';
 
     var blocks = '';
     if (item.description) {
