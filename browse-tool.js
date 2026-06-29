@@ -1282,7 +1282,7 @@
     rail.innerHTML = '';
 
     var head  = el('div', 'ks-flt-head');
-    head.appendChild(el('span', 'ks-flt-title', 'Filters'));
+    head.appendChild(el('span', 'ks-flt-title', 'Filter'));
     var clear = el('span', 'ks-flt-clear', 'Clear all');
     clear.addEventListener('click', clearAll);
     head.appendChild(clear);
@@ -1427,7 +1427,7 @@
     input.type        = 'text';
     input.className    = 'ks-search-input';
     input.value        = SEARCH;             // reflect a ?q= deep-link on load
-    input.setAttribute('placeholder', 'Search by brand, item, or category');
+    input.setAttribute('placeholder', 'Search');
     input.setAttribute('aria-label', 'Search the collection');
     input.setAttribute('autocomplete', 'off');
     input.setAttribute('enterkeyhint', 'search');
