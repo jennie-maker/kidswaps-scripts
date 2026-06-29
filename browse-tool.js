@@ -242,17 +242,18 @@
          serving originals now, so crop them to fill the button via object-fit. */
       '#ks-detail-root .ks-detail-thumb img{width:100%;height:100%;object-fit:cover;display:block;}' +
       '#ks-detail-root .ks-detail-thumb-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.28);color:#fff;}' +
-      /* PILL DIFFERENTIATION. tier = the one pill, colored by value off the brand
-         palette (essentials neutral ink -> elevated blue -> special gold). everything
-         else is a monochrome inline spec line, separated by weight + dividers, not color.
+      /* PILL DIFFERENTIATION. tier = the one pill: essentials + elevated black,
+         Special gold (the only color left). fit rides the size line (muted); condition
+         pairs with the tier pill at body size; occasion/set are a quiet extras line.
          #ks-detail-root prefix wins over the per-page base classes. */
       '#ks-detail-root .ks-detail-tier-pill{background:#1E1A19;color:#EEEFE3;border:0;text-transform:none;letter-spacing:.01em;font-weight:600;}' +
-      '#ks-detail-root .ks-detail-tier-pill.ks-tier-elevated{background:#28498D;color:#EEEFE3;}' +
       '#ks-detail-root .ks-detail-tier-pill.ks-tier-special{background:#E5AD43;color:#1E1A19;font-weight:700;}' +
-      '#ks-detail-root .ks-detail-pills{display:flex;align-items:center;flex-wrap:wrap;gap:2px 0;}' +
-      '#ks-detail-root .ks-detail-spec{display:inline-flex;align-items:center;gap:5px;font-weight:600;color:#1E1A19;}' +
-      '#ks-detail-root .ks-detail-spec-ic{display:inline-flex;color:#6a5f57;}' +
-      '#ks-detail-root .ks-detail-spec-div{margin:0 11px;color:#cdc6b8;font-weight:400;}';
+      '#ks-detail-root .ks-detail-tier-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}' +
+      '#ks-detail-root .ks-detail-fit{color:#a99e92;font-weight:400;letter-spacing:.02em;}' +
+      '#ks-detail-root .ks-detail-cond{display:inline-flex;align-items:center;gap:5px;font-weight:400;}' +
+      '#ks-detail-root .ks-detail-cond-ic{display:inline-flex;color:#6a5f57;}' +
+      '#ks-detail-root .ks-detail-retail{display:block;margin:7px 0 0;font-size:14px;font-weight:400;color:#7d7268;}' +
+      '#ks-detail-root .ks-detail-extras{margin:7px 0 0;font-size:14px;font-weight:400;color:#7d7268;}';
     var s = document.createElement('style');
     s.id = 'ks-util-css';
     s.textContent = css;
@@ -518,25 +519,6 @@
     return root;
   }
 
-  function pill(text, cls) {
-    return '<span class="ks-detail-pill' + (cls ? ' ' + cls : '') + '">' + escapeHtml(text) + '</span>';
-  }
-  function pillCheck(text, cls) {
-    return '<span class="ks-detail-pill' + (cls ? ' ' + cls : '') + '"><span class="ks-detail-pill-ic">' +
-      '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" ' +
-      'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-      '<path d="M20 6L9 17l-5-5"/></svg></span>' + escapeHtml(text) + '</span>';
-  }
-  // one value in the attribute spec line; condition passes withCheck=true to keep its tick
-  function specVal(text, withCheck) {
-    var ic = withCheck
-      ? '<span class="ks-detail-spec-ic"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" ' +
-        'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-        '<path d="M20 6L9 17l-5-5"/></svg></span>'
-      : '';
-    return '<span class="ks-detail-spec">' + ic + escapeHtml(text) + '</span>';
-  }
-
   function escapeHtml(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -579,22 +561,35 @@
     var zoom = photos.length
       ? '<button type="button" class="ks-detail-zoom" aria-label="Zoom photo">' + ZOOM_SVG + ' zoom</button>' : '';
 
-    // attribute spec line — condition (with check) then fit, occasion, set;
-    // monochrome bold values joined by muted dividers (color lives on the tier pill)
-    var specs = [];
-    if (item.condition_grade) specs.push(specVal(conditionLabel(item.condition_grade), true));
-    if (isToy) {
-      if (item.toy_washability) specs.push(specVal(capFirst(item.toy_washability), false));
-    } else {
-      var g = genderLabel(item.gender_style);
-      if (g) specs.push(specVal(g, false));
-    }
-    if (item.occasion) specs.push(specVal(item.occasion, false));   // occasion tag (present-only)
+    // type-specific fit (gender for clothing, washability for toys) rides the size
+    // line, muted; condition pairs with the tier pill; occasion + set are a quiet
+    // present-only line. monochrome throughout (gold lives on the Special tier only).
+    var fit = isToy
+      ? (item.toy_washability ? capFirst(item.toy_washability) : '')
+      : genderLabel(item.gender_style);
+
+    var condHtml = item.condition_grade
+      ? '<span class="ks-detail-cond"><span class="ks-detail-cond-ic">' +
+        '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" ' +
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M20 6L9 17l-5-5"/></svg></span>' + escapeHtml(conditionLabel(item.condition_grade)) + '</span>'
+      : '';
+
+    var extras = [];
+    if (item.occasion) extras.push(escapeHtml(item.occasion));
     if (item.is_matching_set) {
       var n = item.set_piece_count;
-      specs.push(specVal(n ? ('Complete \u00b7 ' + n + ' pieces') : 'Matching set', false));
+      extras.push(n ? ('Complete \u00b7 ' + n + ' pieces') : 'Matching set');
     }
-    var pills = specs.join('<span class="ks-detail-spec-div" aria-hidden="true">|</span>');
+    var extraLine = extras.length
+      ? '<p class="ks-detail-extras">' + extras.join(' \u00b7 ') + '</p>' : '';
+
+    var sizeFit = (item.size || fit)
+      ? '<p class="ks-detail-size">' +
+        (item.size ? escapeHtml(item.size) : '') +
+        (fit ? '<span class="ks-detail-fit">' + (item.size ? ' \u00b7 ' : '') + escapeHtml(fit) + '</span>' : '') +
+        '</p>'
+      : '';
 
     var retail = money(item.retail_value);
     var tierPill = item.tier
@@ -622,13 +617,12 @@
           '<div class="ks-detail-media">' + main + tierBadge + zoom + '</div>' +
           '<div class="ks-detail-info">' +
             '<h2 class="ks-detail-name">' + escapeHtml(descriptor(item)) + '</h2>' +
-            (item.size ? '<p class="ks-detail-size">' + escapeHtml(item.size) + '</p>' : '') +
+            sizeFit +
             '<p class="ks-detail-sku">SKU ' + escapeHtml(item.sku || '') + '</p>' +
-            '<div class="ks-detail-tier-row">' + tierPill +
-              (retail ? '<span class="ks-detail-retail">Retail value new ' + retail + '</span>' : '') +
-            '</div>' +
+            '<div class="ks-detail-tier-row">' + tierPill + condHtml + '</div>' +
+            (retail ? '<p class="ks-detail-retail">Retail value new ' + retail + '</p>' : '') +
             (item.is_luxury ? LUX_NOTE : '') +
-            (pills ? '<div class="ks-detail-pills">' + pills + '</div>' : '') +
+            extraLine +
             blocks +
             '<button type="button" class="ks-detail-cta" data-bag="1">' + BAG_SVG +
               '<span>Add to bag</span></button>' +
