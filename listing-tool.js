@@ -664,11 +664,11 @@
       clearItem();
       itemType = target; applyType(); saveDraft();
       // Re-fill the SKU after a manual type switch (clearItem reset it to "KS-").
-      // With the grading queue empty this returns the next fresh sequential label
-      // and pulls no graded data, so it never flips the type back. When grading
-      // is live and a graded item is WAITING, this would pull that item and flip
-      // back -> the force-fresh upgrade is banked for grading-go-live.
-      prefillNextSku();
+      // FORCE-FRESH (true): fetch the next sequential label directly so this never
+      // pulls a WAITING graded item — which would flip the type back into a loop
+      // once grading is live. The edge fn honors fresh:true on next_label, and the
+      // client guard above refuses any graded response on this path as a backstop.
+      prefillNextSku(true);
       armPhotoFirst();
     });
   });
@@ -1362,11 +1362,13 @@
     });
     if (newBtn) newBtn.addEventListener("click", function () {
       if (dupeEl) dupeEl.classList.add("ksl-hidden");
-      // clear the colliding SKU + fetch the next free label (won't collide)
+      // clear the colliding SKU + fetch the next free label (won't collide).
+      // FORCE-FRESH (true): like the manual type-switch, this must not pull a
+      // WAITING graded item into the item you're mid-listing once grading is live.
       if (skuEl) skuEl.value = "KS-";
       lastLookup = null;
       gradedForSku = "";
-      prefillNextSku();
+      prefillNextSku(true);
       if (skuEl) { try { skuEl.focus(); } catch (e) {} }
     });
   })();
@@ -1444,7 +1446,7 @@
     el.style.display = text ? "" : "none";
   }
 
-  function prefillNextSku() {
+  function prefillNextSku(forceFresh) {
     if (EDIT_MODE || !skuEl) return;
     getToken().then(function (t) {
       return fetch(FN_LOOKUP, {
@@ -1453,7 +1455,7 @@
           "x-ms-token": t, "content-type": "application/json",
           "apikey": ANON, "authorization": "Bearer " + ANON
         },
-        body: JSON.stringify({ action: "next_label" })
+        body: JSON.stringify(forceFresh ? { action: "next_label", fresh: true } : { action: "next_label" })
       });
     }).then(function (r) {
       return r.json().then(function (j) { return { ok: r.ok, j: j }; });
@@ -1466,6 +1468,14 @@
       }
       var remaining = (typeof res.j.remaining === "number") ? res.j.remaining : 0;
       var mode = (res.j.mode === "graded" || res.j.mode === "fresh") ? res.j.mode : null;
+      if (forceFresh && mode === "graded") {
+        // a manual type-switch must NEVER pull a graded item (that's the loop this
+        // prevents). If the edge fn returns graded under fresh:true (e.g. a stale
+        // deploy window), skip the auto-fill: leave "KS-" for manual entry, and
+        // the next non-forced prefill will pick the graded item up normally.
+        setSkuNote("");
+        return;
+      }
       if (res.j.label) {
         // only auto-fill if the operator hasn't started typing a SKU themselves
         if (!skuEl.value || skuEl.value === "KS-") {
