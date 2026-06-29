@@ -111,6 +111,14 @@
     return g;
   }
 
+  // condition_grade is stored lowercase + hyphenated ("like-new", "new-with-tags").
+  // Render-side label only: sentence-case, hyphens -> spaces. DB value untouched.
+  function conditionLabel(c) {
+    if (!c) return '';
+    c = String(c).toLowerCase().replace(/-/g, ' ');
+    return c.charAt(0).toUpperCase() + c.slice(1);
+  }
+
   function money(v) {
     if (v == null || v === '') return '';
     var n = Number(v);
@@ -233,7 +241,16 @@
       /* COST GUARD: rail thumbs used to be squared by the 120x120 transform;
          serving originals now, so crop them to fill the button via object-fit. */
       '#ks-detail-root .ks-detail-thumb img{width:100%;height:100%;object-fit:cover;display:block;}' +
-      '#ks-detail-root .ks-detail-thumb-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.28);color:#fff;}';
+      '#ks-detail-root .ks-detail-thumb-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.28);color:#fff;}' +
+      /* PILL DIFFERENTIATION (palette-mapped). tier = solid ink badge (weight, not
+         hue, sentence-case); attribute pills tinted per axis from the brand palette.
+         #ks-detail-root prefix (0,1,1 / 0,1,2) wins over the per-page base classes. */
+      '#ks-detail-root .ks-detail-tier-pill{background:#1E1A19;color:#EEEFE3;border:1px solid #1E1A19;text-transform:none;letter-spacing:.01em;}' +
+      '#ks-detail-root .ks-detail-pill.ks-pill-condition{background:#D1DECB;border:1px solid #91BA97;color:#324D37;}' +
+      '#ks-detail-root .ks-detail-pill.ks-pill-gender{background:#CAD1D4;border:1px solid #7B8FB1;color:#222E4A;}' +
+      '#ks-detail-root .ks-detail-pill.ks-pill-wash{background:#EAD4C4;border:1px solid #E0997E;color:#6B3525;}' +
+      '#ks-detail-root .ks-detail-pill.ks-pill-occasion{background:#ECE3C6;border:1px solid #E9C986;color:#72582B;}' +
+      '#ks-detail-root .ks-detail-pill.ks-pill-set{background:#EDDFD9;border:1px solid #EABBC1;color:#724E55;}';
     var s = document.createElement('style');
     s.id = 'ks-util-css';
     s.textContent = css;
@@ -499,11 +516,11 @@
     return root;
   }
 
-  function pill(text) {
-    return '<span class="ks-detail-pill">' + escapeHtml(text) + '</span>';
+  function pill(text, cls) {
+    return '<span class="ks-detail-pill' + (cls ? ' ' + cls : '') + '">' + escapeHtml(text) + '</span>';
   }
-  function pillCheck(text) {
-    return '<span class="ks-detail-pill"><span class="ks-detail-pill-ic">' +
+  function pillCheck(text, cls) {
+    return '<span class="ks-detail-pill' + (cls ? ' ' + cls : '') + '"><span class="ks-detail-pill-ic">' +
       '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" ' +
       'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
       '<path d="M20 6L9 17l-5-5"/></svg></span>' + escapeHtml(text) + '</span>';
@@ -551,21 +568,21 @@
     var zoom = photos.length
       ? '<button type="button" class="ks-detail-zoom" aria-label="Zoom photo">' + ZOOM_SVG + ' zoom</button>' : '';
 
-    // pills — condition always; then type-specific
+    // pills — condition always; then type-specific fit, then occasion, then set
     var pills = '';
-    if (item.condition_grade) pills += pillCheck(item.condition_grade);
-    if (item.occasion) pills += pill(item.occasion);   // occasion tag (present-only)
+    if (item.condition_grade) pills += pillCheck(conditionLabel(item.condition_grade), 'ks-pill-condition');
     if (isToy) {
       if (item.toy_washability) {
-        pills += pill(item.toy_washability.charAt(0).toUpperCase() + item.toy_washability.slice(1));
+        pills += pill(item.toy_washability.charAt(0).toUpperCase() + item.toy_washability.slice(1), 'ks-pill-wash');
       }
     } else {
       var g = genderLabel(item.gender_style);
-      if (g) pills += pill(g);
+      if (g) pills += pill(g, 'ks-pill-gender');
     }
+    if (item.occasion) pills += pill(item.occasion, 'ks-pill-occasion');   // occasion tag (present-only)
     if (item.is_matching_set) {
       var n = item.set_piece_count;
-      pills += pill(n ? ('Complete \u00b7 ' + n + ' pieces') : 'Matching set');
+      pills += pill(n ? ('Complete \u00b7 ' + n + ' pieces') : 'Matching set', 'ks-pill-set');
     }
 
     var retail = money(item.retail_value);
