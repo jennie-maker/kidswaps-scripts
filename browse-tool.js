@@ -258,7 +258,7 @@
          over head-box layout rules not visible here -- verify centering + gaps live. */
       '#ks-detail-root .ks-detail-desc{margin-top:14px;}' +
       '#ks-detail-root .ks-detail-cta{margin-top:20px;}' +
-      '@media (min-width:721px){#ks-detail-root .ks-detail-info{align-self:center;}}' +
+      '@media (min-width:721px){#ks-detail-root .ks-detail-info{align-self:center;}#ks-detail-root .ks-detail-name{font-size:33px;line-height:1.1;}}' +
       '#ks-detail-root .ks-detail-cond{display:inline-flex;align-items:center;gap:5px;font-weight:400;font-size:15px;}' +
       '#ks-detail-root .ks-detail-cond-ic{display:inline-flex;color:#6a5f57;}' +
       '#ks-detail-root .ks-detail-retail{display:block;margin:7px 0 0;font-size:14px;font-weight:400;color:#7d7268;}' +
