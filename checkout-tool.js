@@ -400,8 +400,8 @@
     switch (line.coverage) {
       case "covered": return { cls: "covered", label: "Covered", fee: null, note: null };
       case "covered_extra": return { cls: "covered", label: "Covered", fee: ex ? "+" + money(ex) : null, note: "one extra this month" };
-      case "upgrade": return { cls: "charge", label: "Credit applied", fee: money(up), note: null };
-      case "special_upgrade": return { cls: "charge", label: "Special credit applied", fee: money(up), note: up <= 40 ? "designer find" : null };
+      case "upgrade": return { cls: "charge", label: "Credit applied", fee: money(up), extraFee: ex ? "+" + money(ex) : null, note: null };
+      case "special_upgrade": return { cls: "charge", label: "Special credit applied", fee: money(up), extraFee: ex ? "+" + money(ex) : null, note: up <= 40 ? "designer find" : null };
       default: return { cls: "charge", label: "Credit applied", fee: (up || ex) ? money(up || ex) : null, note: null };
     }
   }
@@ -439,6 +439,7 @@
       var t = tileFor(ln);
       var tag = '<span class="ksc-badge ' + t.cls + '">' + esc(t.label) + "</span>";
       if (t.fee) tag += '<div class="ksc-fee">' + esc(t.fee) + "</div>";
+      if (t.extraFee) tag += '<div class="ksc-fee">' + esc(t.extraFee) + '</div><div class="ksc-note">one extra this month</div>';
       if (t.note) tag += '<div class="ksc-note">' + esc(t.note) + "</div>";
       var href = "/browse?sku=" + encodeURIComponent(ln.sku);
       var tile =
