@@ -1003,7 +1003,7 @@
     var c = findHeaderCart();
     if (!c || c.__ksBagWired) return;
     c.__ksBagWired = true;
-    c.innerHTML = CART_SVG + '<span class="ks-bag-count ks-bag-count-header" aria-hidden="true"></span>';
+    c.insertAdjacentHTML('beforeend', '<span class="ks-cart-badge" aria-hidden="true"></span>');
     c.setAttribute('aria-label', 'Open your bag');
     c.addEventListener('click', function (e) { e.preventDefault(); openBag(); });
     headerCartWired = true;
@@ -1028,10 +1028,10 @@
 
   function updateBagCount() {
     var n = bagCount();
-    var badges = document.querySelectorAll('.ks-bag-count');
+    var badges = document.querySelectorAll('.ks-bag-count, .ks-cart-badge');
     for (var i = 0; i < badges.length; i++) {
       badges[i].textContent = n ? String(n) : '';
-      badges[i].style.display = n ? 'flex' : 'none';
+      badges[i].style.display = n ? 'inline-flex' : 'none';
     }
   }
 
@@ -1156,6 +1156,9 @@
         'line-height:1;align-items:center;justify-content:center;}' +
       '[data-ks-bag]{display:inline-flex;align-items:center;justify-content:center;gap:3px;}' +
       '.ks-cart-ico{vertical-align:middle;}' +
+      '.ks-cart-badge{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;' +
+        'min-width:18px;height:18px;padding:0 5px;margin-left:7px;border-radius:9px;' +
+        'background:#eeece1;color:#1f1a17;font-size:11px;font-weight:700;line-height:1;}' +
       '.ks-bag-count-header{position:static;top:auto;right:auto;background:transparent;color:inherit;' +
         'min-width:auto;height:auto;padding:0;border-radius:0;font-size:14px;font-weight:600;margin-left:2px;}' +
       '.ks-bag-root[hidden]{display:none;}' +
