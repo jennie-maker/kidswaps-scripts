@@ -980,10 +980,27 @@
       'aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>' +
       '<path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></svg>';
 
+  // Find the member CART link to adopt as the bag opener. Priority: an explicit
+  // data-ks-bag tag, else the .verified-dashboard-button whose label is "CART"
+  // (the logged-in twin), else the first visible one that isn't "JOIN". The JOIN
+  // button (the logged-out twin) is never adopted.
+  function findHeaderCart() {
+    var nodes = document.querySelectorAll('[data-ks-bag], .verified-dashboard-button');
+    var fallback = null;
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i];
+      if (n.hasAttribute('data-ks-bag')) return n;
+      var txt = (n.textContent || '').trim().toUpperCase();
+      if (txt === 'CART') return n;
+      if (txt !== 'JOIN' && !fallback && n.offsetParent !== null) fallback = n;
+    }
+    return fallback;
+  }
+
   var headerCartWired = false;
   function wireHeaderCart() {
     ensureBagCss();
-    var c = document.querySelector('[data-ks-bag]');
+    var c = findHeaderCart();
     if (!c || c.__ksBagWired) return;
     c.__ksBagWired = true;
     c.innerHTML = CART_SVG + '<span class="ks-bag-count ks-bag-count-header" aria-hidden="true"></span>';
