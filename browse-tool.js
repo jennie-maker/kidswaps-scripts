@@ -893,8 +893,29 @@
 
   // Memberstack presence check — token VALUE isn't needed here (the picker step
   // will fetch member-claim-context with the real token); we only gate add-to-bag.
-  function ksLoggedIn() {
-    try { return /(?:^|;\s*)_ms-mid=/.test(document.cookie); } catch (e) { return false; }
+  // Login state. The ONLY harmful failure is blocking a real member, so we bias
+  // toward "logged in" and resolve authoritatively via the Memberstack SDK.
+  var MS_LOGGED_IN = null;   // null = unknown, true/false once resolved
+
+  // Async-authoritative check. Fast paths (cache, any _ms- cookie) answer instantly;
+  // otherwise ask the SDK and cache the answer. cb(true|false).
+  function checkLoggedIn(cb) {
+    if (MS_LOGGED_IN === true) { cb(true); return; }
+    try { if (/(?:^|;\s*)_ms-/.test(document.cookie)) { MS_LOGGED_IN = true; cb(true); return; } } catch (e) {}
+    try {
+      var ms = window.$memberstackDom;
+      if (ms && typeof ms.getCurrentMember === 'function') {
+        ms.getCurrentMember().then(function (r) { MS_LOGGED_IN = !!(r && r.data); cb(MS_LOGGED_IN); })
+                             .catch(function () { cb(false); });
+        return;
+      }
+      if (ms && typeof ms.getMemberCookie === 'function') {
+        ms.getMemberCookie().then(function (tok) { MS_LOGGED_IN = !!tok; cb(!!tok); })
+                            .catch(function () { cb(false); });
+        return;
+      }
+    } catch (e) {}
+    cb(false);
   }
 
   function bagRead()  { try { return JSON.parse(sessionStorage.getItem(BAG_KEY)) || []; } catch (e) { return []; } }
@@ -941,14 +962,17 @@
   function bagStub(root) {
     var item = currentDetailItem;
     if (!item) return;
-    if (!ksLoggedIn()) { showJoinPrompt(); return; }
-    var res = addToBag(item);
-    flashCta(root, res === 'dup' ? 'Already in your bag' : 'Added to bag');
+    checkLoggedIn(function (ok) {
+      if (!ok) { showJoinPrompt(); return; }
+      var res = addToBag(item);
+      flashCta(root, res === 'dup' ? 'Already in your bag' : 'Added to bag');
+    });
   }
 
   /* ---- bag button (lives in the search row, tool-built = stable anchor) ---- */
   function mountBagButton(mount) {
     ensureBagCss();
+    checkLoggedIn(function () {});   // prime login state so the first click is instant
     if (!mount || mount.querySelector('.ks-bag-btn')) return;
     var btn = el('button', 'ks-bag-btn');
     btn.type = 'button';
@@ -1120,7 +1144,7 @@
         'border-radius:50px;padding:15px;font-size:15px;font-weight:600;' +
         'font-family:Quicksand,sans-serif;cursor:pointer;}' +
       '.ks-bag-hold{text-align:center;font-size:11px;color:#9a9384;margin-top:9px;}' +
-      '.ks-bag-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);' +
+      '.ks-bag-toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%) translateY(20px);' +
         'background:#1E1A19;color:#eeece1;font-family:Quicksand,sans-serif;font-size:13px;' +
         'padding:12px 16px;border-radius:12px;z-index:10001;opacity:0;pointer-events:none;' +
         'transition:opacity .2s,transform .2s;max-width:90vw;}' +
