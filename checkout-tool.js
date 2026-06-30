@@ -34,6 +34,19 @@
  *   live detail overlay mid-checkout without losing their cart. Tag/fee stays
  *   outside the link. (Cart edit/remove still belongs to the unbuilt browse→bag
  *   workstream, not here.)
+ * rev 6 (2026-06-30): EDITABLE CART (the choosing screen). CART is now a mutable
+ *   module ref (seeded from parseCart); changing a line's credit re-fetches the
+ *   commit:false preview with the new pick and re-renders — money stays 100%
+ *   server-authoritative (resale never client-side). Per line: a "Change" chip
+ *   (ONLY when the fn returns >1 distinct priced credit_option — single-credit
+ *   lines render exactly as before) opens a modal that NAMES tiers, prices each
+ *   option Free/+$X, collapses fungible same-tier credits to one row, highlights
+ *   the current pick, and greys in-use-elsewhere credits ("In use on KS-…",
+ *   flag-and-keep, not selectable). value_loss (applied credit outranks the item,
+ *   re-derived server-side since the URL carries only SKU:credit_id): inline note
+ *   on the line + a checkbox that gates Confirm until acknowledged. Each change
+ *   replaceState()s the new ?items= so a reload keeps the member's choices.
+ *   Confirm is STILL a logged no-op — commit:true is the separate launch flip.
  * ========================================================================== */
 (function () {
   "use strict";
@@ -51,6 +64,11 @@
   // ---- config ---------------------------------------------------------------
   var FN_URL = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1/checkout";
   var MOUNT_ID = "ks-checkout-app";
+
+  // ---- editable-cart state (rev 6) ------------------------------------------
+  var CART = null;          // mutable [{sku, credit_id}] — seeded from parseCart
+  var MODAL_SKU = null;     // which line's modal is open
+  var LAST_LINES = {};      // sku -> last rendered line (for modal open)
 
   var BLOCK_COPY = {
     paused: "Your membership is paused. Resume it to claim items.",
@@ -126,6 +144,60 @@
       out.push({ sku: sku, credit_id: credit });
     }
     return out.length ? out : null;
+  }
+
+  // ---- editable-cart helpers (rev 6) ----------------------------------------
+  function tierName(t) {
+    t = String(t == null ? "" : t).toLowerCase();
+    if (t === "essentials") return "Essentials";
+    if (t === "elevated") return "Elevated";
+    if (t === "special") return "Special";
+    return t ? (t.charAt(0).toUpperCase() + t.slice(1)) : "Credit";
+  }
+  function currentCreditFor(sku) {
+    if (!CART) return null;
+    for (var i = 0; i < CART.length; i++) if (CART[i].sku === sku) return CART[i].credit_id;
+    return null;
+  }
+  function setCreditFor(sku, credit) {
+    if (!CART) return;
+    for (var i = 0; i < CART.length; i++) if (CART[i].sku === sku) { CART[i].credit_id = credit; return; }
+  }
+  function writeCartUrl() {
+    try {
+      if (!CART) return;
+      var raw = CART.map(function (c) { return c.sku + ":" + c.credit_id; }).join(",");
+      var u = new URL(window.location.href);
+      u.searchParams.set("items", raw);
+      window.history.replaceState(null, "", u.toString());
+    } catch (e) {}
+  }
+  // Group a line's credit_options into the choices the member actually sees:
+  //   - selectable (not in_use_elsewhere) collapsed by tier+price to one row
+  //     (representative = the currently-applied credit if it's in that group,
+  //      else the soonest-expiring), sorted cheapest-first;
+  //   - in-use-elsewhere kept separately for flag-and-keep display.
+  // count = number of DISTINCT selectable choices (chip shows only when > 1).
+  function optionRowsFor(line) {
+    var opts = Array.isArray(line.credit_options) ? line.credit_options : [];
+    var cur = currentCreditFor(line.sku);
+    var inUse = [], free = [];
+    opts.forEach(function (o) { (o.in_use_elsewhere ? inUse : free).push(o); });
+    var groups = {};
+    free.forEach(function (o) {
+      var key = String(o.tier) + "|" + String(o.total_owed_cents);
+      (groups[key] || (groups[key] = [])).push(o);
+    });
+    var reps = Object.keys(groups).map(function (key) {
+      var g = groups[key];
+      for (var i = 0; i < g.length; i++) if (g[i].credit_id === cur) return g[i];
+      g.sort(function (a, b) { return String(a.expires_at) < String(b.expires_at) ? -1 : 1; });
+      return g[0];
+    });
+    reps.sort(function (a, b) {
+      return (Number(a.total_owed_cents) - Number(b.total_owed_cents)) || (Number(a.worth) - Number(b.worth));
+    });
+    return { reps: reps, inUse: inUse, count: reps.length };
   }
 
   // ---- CSS (ALL scoped under the mount id; KidSwaps palette only) -----------
@@ -212,11 +284,56 @@
     "  rgba(31,26,23,.05) 25%,rgba(31,26,23,.025) 37%,rgba(31,26,23,.05) 63%); background-size:400% 100%;",
     "  animation:ksc-sh 1.3s ease infinite;}",
     "@keyframes ksc-sh{0%{background-position:100% 0}100%{background-position:0 0}}",
+    // ---- editable cart (rev 6): chip + value-loss note + gate + modal --------
+    ID + " .ksc-item-wrap{display:flex; flex-direction:column;}",
+    ID + " .ksc-item-extra{display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; padding:8px 14px 0;}",
+    ID + " .ksc-chip{display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-family:inherit;",
+    "  background:#faf8f2; border:1px solid var(--ks-line); border-radius:999px; padding:6px 13px;",
+    "  font-size:.82rem; font-weight:700; color:var(--ks-ink);}",
+    ID + " .ksc-chip:hover{border-color:var(--ks-gold);}",
+    ID + " .ksc-chip .cv{color:var(--ks-orange); font-weight:700;}",
+    ID + " .ksc-vlnote{display:flex; align-items:flex-start; gap:6px; font-size:.78rem; line-height:1.35;",
+    "  color:#9a6b12; font-weight:600; flex:1 1 220px; min-width:0;}",
+    ID + " .ksc-vlconfirm{display:flex; align-items:flex-start; gap:10px; background:var(--ks-card);",
+    "  border:1px solid var(--ks-gold); border-radius:12px; padding:12px 14px; margin:0 0 14px; cursor:pointer;}",
+    ID + " .ksc-vlconfirm input{margin-top:1px; width:17px; height:17px; accent-color:var(--ks-green); flex:0 0 auto;}",
+    ID + " .ksc-vlconfirm span{font-size:.86rem; line-height:1.4; color:var(--ks-ink); font-weight:600;}",
+    ID + " .ksc-btn:disabled{background:#c9c2b8; cursor:not-allowed;}",
+    ID + " .ksc-busy{opacity:.55; pointer-events:none;}",
+    // modal (bottom-sheet on mobile, centered on desktop)
+    ID + " .ksc-modal[hidden]{display:none;}",
+    ID + " .ksc-modal{position:fixed; inset:0; z-index:99999; display:flex; align-items:flex-end; justify-content:center;}",
+    ID + " .ksc-modal-bd{position:absolute; inset:0; background:rgba(31,26,23,.45);}",
+    ID + " .ksc-modal-card{position:relative; width:100%; max-width:460px; background:#fbf9f2;",
+    "  border:1px solid var(--ks-line); border-radius:18px 18px 0 0; padding:18px 18px 22px;",
+    "  box-shadow:0 -8px 40px rgba(31,26,23,.18); max-height:82vh; overflow:auto;}",
+    ID + " .ksc-modal-hd{display:flex; align-items:center; justify-content:space-between; margin:0 0 4px;}",
+    ID + " .ksc-modal-hd .t{font-family:'Instrument Serif',Georgia,serif; font-weight:400; font-size:1.5rem; color:var(--ks-ink);}",
+    ID + " .ksc-modal-hd .x{border:0; background:transparent; font-size:1.7rem; line-height:1; cursor:pointer; color:var(--ks-muted); font-family:inherit; padding:0 4px;}",
+    ID + " .ksc-modal-item .mi-name{font-size:.86rem; font-weight:700; color:var(--ks-muted); margin:0 0 14px;}",
+    ID + " .ksc-modal-opts{display:flex; flex-direction:column; gap:10px;}",
+    ID + " .ksc-opt{display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%;",
+    "  text-align:left; font-family:inherit; cursor:pointer; background:#fff; border:1px solid var(--ks-line);",
+    "  border-radius:12px; padding:13px 15px;}",
+    ID + " .ksc-opt:hover{border-color:var(--ks-gold);}",
+    ID + " .ksc-opt.is-current{border-color:var(--ks-green); border-width:2px; padding:12px 14px;}",
+    ID + " .ksc-opt.is-disabled{cursor:default; background:var(--ks-card);}",
+    ID + " .ksc-opt.is-disabled .ot{color:var(--ks-muted);}",
+    ID + " .ksc-opt .ot{font-weight:700; font-size:.96rem; color:var(--ks-ink);}",
+    ID + " .ksc-opt .osub{font-size:.76rem; color:var(--ks-muted); margin-top:3px; font-weight:600;}",
+    ID + " .ksc-opt .free{font-weight:700; color:var(--ks-green); font-size:.96rem; white-space:nowrap;}",
+    ID + " .ksc-opt .fee{font-weight:700; color:var(--ks-ink); font-size:.96rem; white-space:nowrap;}",
+    ID + " .ksc-opt .curtag{display:block; margin-top:2px; font-size:.7rem; font-weight:700; color:var(--ks-green); text-align:right;}",
+    ID + " .ksc-modal-ft{font-size:.76rem; color:var(--ks-muted); margin-top:14px; text-align:center; font-weight:500;}",
     "@media (max-width:600px){",
     ID + " #ksc-bank{justify-content:flex-start;}",
     ID + " .ksc-coins{justify-content:flex-start;}",
     ID + " .ksc-head{font-size:2.5rem;}",
     ID + " .ksc-screen h2{font-size:1.75rem;}",
+    "}",
+    "@media (min-width:601px){",
+    ID + " .ksc-modal{align-items:center;}",
+    ID + " .ksc-modal-card{border-radius:18px; max-height:80vh;}",
     "}",
   ].join("\n");
 
@@ -250,6 +367,12 @@
       '<circle cx="28" cy="28" r="26" stroke="#d24f28" stroke-width="2"/>' +
       '<path d="M28 17v16" stroke="#d24f28" stroke-width="2.6" stroke-linecap="round"/>' +
       '<circle cx="28" cy="39.5" r="1.6" fill="#d24f28"/></svg>';
+  }
+  function warnDot() {
+    return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="flex:0 0 auto;margin-top:1px;">' +
+      '<path d="M12 3l9 16H3L12 3z" stroke="#c9962a" stroke-width="1.6" stroke-linejoin="round"/>' +
+      '<path d="M12 10v4" stroke="#c9962a" stroke-width="1.6" stroke-linecap="round"/>' +
+      '<circle cx="12" cy="16.6" r=".9" fill="#c9962a"/></svg>';
   }
 
   // ---- thumbnail (only renders when a real image exists; hidden until then) --
@@ -307,18 +430,44 @@
     var totalCents = (p.fees && Number(p.fees.total_cents)) || 0;
     var sub = savingsSubline(totalCents, value);
 
+    // keep the rendered lines for modal open + count value-loss lines
+    LAST_LINES = {};
+    var vlCount = 0;
+    lines.forEach(function (l) { LAST_LINES[l.sku] = l; if (l.value_loss) vlCount++; });
+
     var itemsHtml = lines.map(function (ln) {
       var t = tileFor(ln);
       var tag = '<span class="ksc-badge ' + t.cls + '">' + esc(t.label) + "</span>";
       if (t.fee) tag += '<div class="ksc-fee">' + esc(t.fee) + "</div>";
       if (t.note) tag += '<div class="ksc-note">' + esc(t.note) + "</div>";
       var href = "/browse?sku=" + encodeURIComponent(ln.sku);
-      return '<div class="ksc-item">' +
-        '<a class="ksc-itemlink" href="' + esc(href) + '" target="_blank" rel="noopener">' +
-          thumbHtml(ln) +
-          '<div class="ksc-main"><div class="nm">' + esc(ln.item_name || ln.sku) + "</div></div>" +
-        "</a>" +
-        '<div class="ksc-tag">' + tag + "</div></div>";
+      var tile =
+        '<div class="ksc-item">' +
+          '<a class="ksc-itemlink" href="' + esc(href) + '" target="_blank" rel="noopener">' +
+            thumbHtml(ln) +
+            '<div class="ksc-main"><div class="nm">' + esc(ln.item_name || ln.sku) + "</div></div>" +
+          "</a>" +
+          '<div class="ksc-tag">' + tag + "</div>" +
+        "</div>";
+
+      // editable-cart extras: change-credit chip (only when a real choice exists)
+      // + a value-loss note (applied credit outranks the item).
+      var info = optionRowsFor(ln);
+      var appliedTier = tierName(ln.credit_applied && ln.credit_applied.tier);
+      var extras = "";
+      if (info.count > 1) {
+        extras += '<button type="button" class="ksc-chip" data-sku="' + esc(ln.sku) + '">' +
+          "Using " + esc(appliedTier) + " credit" +
+          '<span class="cv">Change \u25be</span></button>';
+      }
+      if (ln.value_loss) {
+        var vlMsg = info.count > 1
+          ? "Using your " + appliedTier + " credit here — tap Change to use a smaller one."
+          : "Using your " + appliedTier + " credit — your only match for this item.";
+        extras += '<div class="ksc-vlnote">' + warnDot() + "<span>" + esc(vlMsg) + "</span></div>";
+      }
+      var extraRow = extras ? '<div class="ksc-item-extra">' + extras + "</div>" : "";
+      return '<div class="ksc-item-wrap">' + tile + extraRow + "</div>";
     }).join("");
 
     var ship = (p.fees && p.fees.shipping) || { state: "included", amount_cents: 0 };
@@ -329,7 +478,27 @@
         '<div class="ksc-row total"><span class="k">Total today</span><span>' + moneyc(totalCents) + "</span></div>" +
       "</div>";
 
-    var btnLabel = totalCents > 0 ? "Confirm swap · " + moneyc(totalCents) : "Confirm swap";
+    // value-loss confirm gate: acknowledge before Confirm enables
+    var vlGate = vlCount > 0
+      ? '<label class="ksc-vlconfirm"><input type="checkbox" id="ksc-vlack">' +
+        "<span>" + (vlCount > 1 ? "Some swaps use" : "One swap uses") +
+        " a higher-value credit than the item needed. I\u2019m good with that.</span></label>"
+      : "";
+
+    var btnLabel = totalCents > 0 ? "Confirm swap \u00b7 " + moneyc(totalCents) : "Confirm swap";
+
+    // modal scaffold (populated on chip tap; hidden until then)
+    var modalHtml =
+      '<div class="ksc-modal" id="ksc-modal" hidden>' +
+        '<div class="ksc-modal-bd" data-close></div>' +
+        '<div class="ksc-modal-card" role="dialog" aria-modal="true" aria-label="Choose a credit">' +
+          '<div class="ksc-modal-hd"><div class="t">Choose a credit</div>' +
+            '<button class="x" type="button" data-close aria-label="Close">\u00d7</button></div>' +
+          '<div class="ksc-modal-item" id="ksc-modal-item"></div>' +
+          '<div class="ksc-modal-opts" id="ksc-modal-opts"></div>' +
+          '<div class="ksc-modal-ft">Prices update the moment you choose.</div>' +
+        "</div>" +
+      "</div>";
 
     setHtml(
       coinsHtml(p.bank, p.cap) +
@@ -339,17 +508,120 @@
       '<div class="ksc-seal">' + shieldCheck() + "<span>Every piece meets The Closet Standard</span></div>" +
       '<div class="ksc-items">' + itemsHtml + "</div>" +
       summary +
+      vlGate +
       '<button class="ksc-btn" id="ksc-confirm" type="button">' + esc(btnLabel) + "</button>" +
       '<div class="ksc-secure">' + lockIcon() + "<span>Secured by Stripe</span></div>" +
-      '<div class="ksc-stub">Preview only — claim wiring comes next (this pass charges nothing)</div>'
+      '<div class="ksc-stub">Preview only — claim wiring comes next (this pass charges nothing)</div>' +
+      modalHtml
     );
 
+    wireReceipt(vlCount > 0);
+  }
+
+  // ---- editable-cart wiring + modal (rev 6) ---------------------------------
+  function wireReceipt(needsAck) {
     var btn = document.getElementById("ksc-confirm");
-    if (btn) btn.addEventListener("click", function () {
-      console.log("[ks-checkout] confirm clicked — commit path not wired yet (preview build)");
-      btn.textContent = "Claim wiring comes next ✓";
-      btn.disabled = true; btn.style.background = "#9a948c";
+    if (btn) {
+      if (needsAck) btn.disabled = true;
+      btn.addEventListener("click", function () {
+        if (btn.disabled) return;
+        console.log("[ks-checkout] confirm clicked — commit path not wired yet (preview build)");
+        btn.textContent = "Claim wiring comes next \u2713";
+        btn.disabled = true; btn.style.background = "#9a948c";
+      });
+    }
+    var ack = document.getElementById("ksc-vlack");
+    if (ack && btn) ack.addEventListener("change", function () { btn.disabled = !ack.checked; });
+
+    // chips -> open modal
+    var chips = document.querySelectorAll("#" + MOUNT_ID + " .ksc-chip");
+    Array.prototype.forEach.call(chips, function (c) {
+      c.addEventListener("click", function () { openModal(c.getAttribute("data-sku")); });
     });
+
+    // modal close (backdrop / × / any [data-close]) — nodes are fresh each render
+    var modal = document.getElementById("ksc-modal");
+    if (modal) modal.addEventListener("click", function (e) {
+      if (e.target.closest("[data-close]")) closeModal();
+    });
+
+    // option select (delegated on the fresh opts container)
+    var optsEl = document.getElementById("ksc-modal-opts");
+    if (optsEl) optsEl.addEventListener("click", function (e) {
+      var b = e.target.closest(".ksc-opt[data-credit]");
+      if (!b) return;
+      var credit = b.getAttribute("data-credit");
+      var sku = MODAL_SKU;
+      closeModal();
+      if (!sku || !credit) return;
+      if (credit === currentCreditFor(sku)) return;   // picked the current one -> no-op
+      setCreditFor(sku, credit);
+      writeCartUrl();
+      refreshPreview();
+    });
+  }
+
+  function optHtml(o, isCurrent) {
+    var price = Number(o.total_owed_cents) === 0
+      ? '<span class="free">Free</span>'
+      : '<span class="fee">+' + moneyc(o.total_owed_cents) + "</span>";
+    var subs = [];
+    if (o.value_loss) subs.push("uses a higher-value credit");
+    if (o.is_soonest) subs.push("soonest to expire");
+    var sub = subs.length ? '<div class="osub">' + esc(subs.join(" \u00b7 ")) + "</div>" : "";
+    var cur = isCurrent ? '<span class="curtag">Current</span>' : "";
+    return '<button type="button" class="ksc-opt' + (isCurrent ? " is-current" : "") + '" data-credit="' + esc(o.credit_id) + '">' +
+      '<div class="ol"><div class="ot">' + esc(tierName(o.tier)) + " credit</div>" + sub + "</div>" +
+      '<div class="orr">' + price + cur + "</div></button>";
+  }
+  function inUseHtml(o) {
+    return '<div class="ksc-opt is-disabled">' +
+      '<div class="ol"><div class="ot">' + esc(tierName(o.tier)) + " credit</div>" +
+      '<div class="osub">In use on ' + esc(o.in_use_on_sku || "another item") + "</div></div>" +
+      '<div class="orr"></div></div>';
+  }
+  function openModal(sku) {
+    var line = LAST_LINES[sku];
+    if (!line) return;
+    MODAL_SKU = sku;
+    var itemEl = document.getElementById("ksc-modal-item");
+    if (itemEl) itemEl.innerHTML = '<div class="mi-name">' + esc(line.item_name || sku) + "</div>";
+    var info = optionRowsFor(line);
+    var cur = currentCreditFor(sku);
+    var html = info.reps.map(function (o) { return optHtml(o, o.credit_id === cur); }).join("") +
+      info.inUse.map(inUseHtml).join("");
+    var optsEl = document.getElementById("ksc-modal-opts");
+    if (optsEl) optsEl.innerHTML = html;
+    var modal = document.getElementById("ksc-modal");
+    if (modal) modal.hidden = false;
+  }
+  function closeModal() {
+    MODAL_SKU = null;
+    var modal = document.getElementById("ksc-modal");
+    if (modal) modal.hidden = true;
+  }
+
+  async function refreshPreview() {
+    var m = getMount();
+    var btn = document.getElementById("ksc-confirm");
+    if (btn) { btn.disabled = true; btn.textContent = "Updating\u2026"; }
+    if (m) m.classList.add("ksc-busy");
+    var token = getToken();
+    if (!token) { if (m) m.classList.remove("ksc-busy"); renderError("Please log in to check out."); return; }
+    try {
+      var res = await fetch(FN_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-ms-token": token },
+        body: JSON.stringify({ commit: false, items: CART }),
+      });
+      var data = null;
+      try { data = await res.json(); } catch (e) { data = null; }
+      if (m) m.classList.remove("ksc-busy");
+      route(data, res.status);
+    } catch (e) {
+      if (m) m.classList.remove("ksc-busy");
+      renderError("We couldn't update your bag. Please try again.");
+    }
   }
 
   // ---- block / failure / error / loading ------------------------------------
@@ -412,6 +684,7 @@
 
     var items = parseCart();
     if (!items) { renderError("Your bag link looks off. Head back and add items again."); return; }
+    CART = items;   // mutable source of truth for credit changes (rev 6)
 
     renderLoading();
     var token = getToken();
@@ -421,7 +694,7 @@
       var res = await fetch(FN_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-ms-token": token },
-        body: JSON.stringify({ commit: false, items: items }),
+        body: JSON.stringify({ commit: false, items: CART }),
       });
       var data = null;
       try { data = await res.json(); } catch (e) { data = null; }
@@ -430,6 +703,14 @@
       renderError("We couldn't load your bag. Please try again.");
     }
   }
+
+  // close the credit modal on Escape (attached once at module load)
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" || e.keyCode === 27) {
+      var m = document.getElementById("ksc-modal");
+      if (m && !m.hidden) closeModal();
+    }
+  });
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run);
   else run();
