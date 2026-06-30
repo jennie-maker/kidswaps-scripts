@@ -1088,19 +1088,19 @@
       ? '<div class="ks-bag-foot">' +
           '<div class="ks-bag-note-line">Credits and any fees are shown at checkout.</div>' +
           '<button type="button" class="ks-bag-checkout" data-bag-checkout>Check out</button>' +
-          '<div class="ks-bag-hold">Items are held for 30 minutes.</div>' +
         '</div>'
       : '';
     root.innerHTML =
       '<div class="ks-bag-backdrop" data-bag-close></div>' +
-      '<div class="ks-bag-sheet" role="dialog" aria-modal="true" aria-label="Your bag">' +
+      '<div class="ks-bag-sheet" role="dialog" aria-modal="true" aria-label="My bag">' +
         '<div class="ks-bag-grip" data-bag-close></div>' +
         '<div class="ks-bag-head">' +
-          '<span class="ks-bag-title">Your bag</span>' +
+          '<span class="ks-bag-title">My bag</span>' +
           '<span class="ks-bag-tally">' +
             (bag.length ? bag.length + (bag.length === 1 ? ' item' : ' items') : '') +
           '</span>' +
         '</div>' +
+        (bag.length ? '<div class="ks-bag-subnote">Items are held for 30 minutes.</div>' : '') +
         '<div class="ks-bag-list">' + rows + '</div>' +
         footer +
       '</div>';
@@ -1164,11 +1164,12 @@
       '.ks-bag-root[hidden]{display:none;}' +
       '.ks-bag-root{position:fixed;inset:0;z-index:9000;}' +
       '.ks-bag-backdrop{position:absolute;inset:0;background:rgba(31,26,23,.42);}' +
-      '.ks-bag-sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;' +
+      '.ks-bag-sheet{position:absolute;left:0;right:0;bottom:0;margin:0 auto;max-width:520px;background:#fff;' +
         'border-radius:22px 22px 0 0;max-height:82vh;display:flex;flex-direction:column;' +
         'font-family:Quicksand,sans-serif;}' +
       '.ks-bag-grip{width:38px;height:4px;border-radius:4px;background:#d8d4c6;margin:12px auto 6px;cursor:pointer;}' +
       '.ks-bag-head{display:flex;align-items:baseline;justify-content:space-between;padding:4px 18px 8px;}' +
+      '.ks-bag-subnote{font-size:11.5px;color:#9a9384;padding:0 18px 10px;margin-top:-2px;}' +
       '.ks-bag-title{font-family:"Instrument Serif",Quicksand,serif;font-size:30px;color:#1E1A19;line-height:1;}' +
       '.ks-bag-tally{font-size:13px;color:#6f6a60;}' +
       '.ks-bag-list{overflow:auto;-webkit-overflow-scrolling:touch;padding:0 18px;}' +
