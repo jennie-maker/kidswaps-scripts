@@ -1324,6 +1324,29 @@
            parts.join(' and ') + ' item' + (total > 1 ? 's' : '') + ' to check out the rest.';
   }
 
+  // Usable credits per class from the claim-context pool (same source the picker uses).
+  function creditCountByClass(ctx) {
+    var by = { clothing: 0, toy: 0 };
+    (ctx.claimable_credits || []).forEach(function (c) {
+      if (c.credit_class === 'clothing') by.clothing += 1;
+      else if (c.credit_class === 'toy') by.toy += 1;
+    });
+    return by;
+  }
+
+  // Zero usable credits in the shorted class(es): tell them how to GET credits
+  // (earn by sending a bag, or buy a Credit Pack) instead of "remove N items".
+  function outOfCreditsBlock(zeroClasses) {
+    var title = zeroClasses.length > 1 ? 'Out of credits'
+              : zeroClasses[0] === 'toy' ? 'Out of toy credits'
+              : 'Out of clothing credits';
+    return {
+      title: title,
+      msg: 'Send a swap bag to earn more, or add a Credit Pack to keep swapping now.',
+      cta: { label: 'Buy a Credit Pack', href: '/dashboard' }
+    };
+  }
+
   // Runs the credit picker on a resolved item set and hands off to /checkout.
   // Shared by the no-removal path and the fail-open path of goCheckout.
   function finishCheckout(items, ctx, btn) {
@@ -1331,7 +1354,18 @@
     if (!res.ok) {
       setCheckoutBusy(btn, false);
       if (res.blocked.type === 'credit_shortage') {
-        showBagBlock('A few too many items', shortageMessage(res.blocked.byClass));
+        var byClass = res.blocked.byClass;
+        var have = creditCountByClass(ctx);
+        var shortClasses = Object.keys(byClass);
+        var zeroClasses = shortClasses.filter(function (k) { return (have[k] || 0) === 0; });
+        if (zeroClasses.length === shortClasses.length) {
+          // every shorted class is truly empty -> earn-or-buy, not "remove N"
+          var oc = outOfCreditsBlock(zeroClasses);
+          showBagBlock(oc.title, oc.msg, oc.cta);
+        } else {
+          // has some credits, just over-bagged -> trim the bag
+          showBagBlock('A few too many items', shortageMessage(byClass));
+        }
       } else if (res.blocked.type === 'extra_swap_cap') {
         showBagBlock('Past this cycle\u2019s limit', 'You can swap up to 5 extra items per cycle. Edit your bag to check out.');
       } else {
