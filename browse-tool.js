@@ -969,10 +969,36 @@
     });
   }
 
-  /* ---- bag button (lives in the search row, tool-built = stable anchor) ---- */
+  /* ---- header CART button (Webflow, member-only) becomes the bag opener ----
+   * The logged-in CART link is tagged data-ks-bag in Webflow; we swap its label
+   * for a cart icon + live count and open the drawer on click. Its orange Webflow
+   * styling is preserved (we set inner content + flex display, nothing else).
+   * The logged-out JOIN button is a separate element and is never touched. */
+  var CART_SVG =
+    '<svg class="ks-cart-ico" viewBox="0 0 24 24" width="19" height="19" fill="none" ' +
+      'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" ' +
+      'aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>' +
+      '<path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></svg>';
+
+  var headerCartWired = false;
+  function wireHeaderCart() {
+    ensureBagCss();
+    var c = document.querySelector('[data-ks-bag]');
+    if (!c || c.__ksBagWired) return;
+    c.__ksBagWired = true;
+    c.innerHTML = CART_SVG + '<span class="ks-bag-count ks-bag-count-header" aria-hidden="true"></span>';
+    c.setAttribute('aria-label', 'Open your bag');
+    c.addEventListener('click', function (e) { e.preventDefault(); openBag(); });
+    headerCartWired = true;
+    checkLoggedIn(function () {});   // prime login state
+    updateBagCount();
+  }
+
+  /* ---- fallback bag button (search row) — only if the header CART isn't tagged ---- */
   function mountBagButton(mount) {
     ensureBagCss();
     checkLoggedIn(function () {});   // prime login state so the first click is instant
+    if (headerCartWired) { updateBagCount(); return; }   // header CART is the opener
     if (!mount || mount.querySelector('.ks-bag-btn')) return;
     var btn = el('button', 'ks-bag-btn');
     btn.type = 'button';
@@ -1111,6 +1137,10 @@
       '.ks-bag-count{position:absolute;top:-2px;right:-2px;min-width:17px;height:17px;padding:0 4px;' +
         'border-radius:9px;background:#d24f28;color:#fff;font-size:10px;font-weight:600;' +
         'line-height:1;align-items:center;justify-content:center;}' +
+      '[data-ks-bag]{display:inline-flex;align-items:center;justify-content:center;gap:3px;}' +
+      '.ks-cart-ico{vertical-align:middle;}' +
+      '.ks-bag-count-header{position:static;top:auto;right:auto;background:transparent;color:inherit;' +
+        'min-width:auto;height:auto;padding:0;border-radius:0;font-size:14px;font-weight:600;margin-left:2px;}' +
       '.ks-bag-root[hidden]{display:none;}' +
       '.ks-bag-root{position:fixed;inset:0;z-index:9000;}' +
       '.ks-bag-backdrop{position:absolute;inset:0;background:rgba(31,26,23,.42);}' +
@@ -1772,6 +1802,7 @@
     // a deep-linked filter immediately (also the pre-seed hook for future
     // member-aware defaults like kids' sizes)
     readUrl();
+    wireHeaderCart();
 
     // initial load; once data lands, build the rail from in-stock values and
     // wire the mobile sheet toggle. if the URL has ?sku=, open that overlay.
