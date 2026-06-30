@@ -1120,7 +1120,7 @@
             (bag.length ? bag.length + (bag.length === 1 ? ' item' : ' items') : '') +
           '</span>' +
         '</div>' +
-        (bag.length ? '<div class="ks-bag-subnote">Items are held for 30 minutes.</div>' : '') +
+        (bag.length ? '<div class="ks-bag-subnote">Nothing\u2019s reserved until you check out.</div>' : '') +
         (pendingRemovalNote ? '<div class="ks-bag-removed">' + escapeHtml(pendingRemovalNote) + '</div>' : '') +
         '<div class="ks-bag-list">' + rows + '</div>' +
         footer +
