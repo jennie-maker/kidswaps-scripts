@@ -1225,11 +1225,18 @@
     pending_first_bag: { label: 'Go to dashboard', href: '/dashboard' }
   };
 
+  // getMemberCookie() returns the JWT as a STRING (not a promise) in this SDK
+  // build — but tolerate a thenable too, so the picker can't regress either way.
   function getToken(cb) {
     try {
       var ms = window.$memberstackDom;
       if (ms && typeof ms.getMemberCookie === 'function') {
-        ms.getMemberCookie().then(function (t) { cb(t || null); }).catch(function () { cb(null); });
+        var v = ms.getMemberCookie();
+        if (v && typeof v.then === 'function') {
+          v.then(function (t) { cb(t || null); }).catch(function () { cb(null); });
+        } else {
+          cb(v || null);
+        }
         return;
       }
     } catch (e) {}
