@@ -1120,18 +1120,226 @@
     document.documentElement.classList.remove('ks-bag-lock');
   }
 
-  // STEP 2 placeholder: the real cart contract is ?items=SKU:credit_id, but credit
-  // resolution is the picker step (not built). So this stays an honest stub — it
-  // proves the button wiring without forming a checkout URL the engine can't read.
-  function goCheckout() {
-    var skus = bagRead().map(function (x) { return x.sku; });
-    console.log(LOG, 'checkout: picker not built yet \u2014 bag =', skus);
-    var btn = document.querySelector('.ks-bag-checkout');
-    if (btn) {
-      var old = btn.textContent;
-      btn.textContent = 'Credit selection is the next step';
-      setTimeout(function () { btn.textContent = old; }, 2200);
+  /* ====================================================================== *
+   *  PICKER (V4 step 3) — replaces the goCheckout stub.                      *
+   *  Resolves the WHOLE bag at once: assigns ONE credit per item from a      *
+   *  shared, shrinking pool. Default = PRESERVE the higher-value credit      *
+   *  (auto-spend a higher credit only when it's the sole option for that     *
+   *  item). No money math here — the checkout fn derives every fee from the  *
+   *  supplied credit_id. On success -> /checkout?items=SKU:credit_id (the    *
+   *  proven commit:false preview takes over). Logic proven by                *
+   *  /tmp/picker.test.js (29/29) before wiring.                              *
+   * ====================================================================== */
+  var TIER_RANK = { essentials: 1, elevated: 2, special: 3 };
+
+  function expMs(c) { var t = Date.parse(c.effective_expiration_date); return isNaN(t) ? Infinity : t; }
+  function pickSoonest(arr) { return arr.reduce(function (b, c) { return expMs(c) < expMs(b) ? c : b; }); }
+  function pickByWorth(arr, dir) {
+    return arr.reduce(function (b, c) {
+      if (c.worth === b.worth) return expMs(c) < expMs(b) ? c : b;        // tie -> soonest-expiring
+      return (dir === 'max' ? c.worth > b.worth : c.worth < b.worth) ? c : b;
+    });
+  }
+
+  // Pure: (bag items {sku,klass,tier}, ctx from member-claim-context) -> resolution.
+  function resolveBag(bag, ctx) {
+    var pool = (ctx.claimable_credits || []).slice();
+    function take(c) { var i = pool.indexOf(c); if (i >= 0) pool.splice(i, 1); }
+
+    var slots = bag.map(function (it) { return { item: it, credit: null, kind: null, value_loss: false }; });
+
+    // Phase 1 — exact-tier locks across the whole bag (same class + same tier).
+    slots.forEach(function (s) {
+      var it = s.item;
+      var m = pool.filter(function (c) { return c.credit_class === it.klass && c.tier === it.tier; });
+      if (m.length) { var c = pickSoonest(m); s.credit = c; s.kind = 'exact'; take(c); }
+    });
+
+    // Phase 2 — cross-tier for the rest, in bag order, from what's left.
+    slots.forEach(function (s) {
+      if (s.credit) return;
+      var it = s.item;
+      var cc = pool.filter(function (c) { return c.credit_class === it.klass; });
+      if (!cc.length) return;                                   // unresolved -> no class credit left
+      var rank = TIER_RANK[it.tier];
+      var below = cc.filter(function (c) { return TIER_RANK[c.tier] < rank; });  // upgrade (fee)
+      var above = cc.filter(function (c) { return TIER_RANK[c.tier] > rank; });  // downgrade (free, wastes value)
+      var c;
+      if (below.length) { c = pickByWorth(below, 'max'); s.kind = 'upgrade'; }   // smallest gap = smallest fee; preserves higher credits
+      else { c = pickByWorth(above, 'min'); s.kind = 'downgrade'; s.value_loss = true; } // sole option -> least value wasted, flag it
+      s.credit = c; take(c);
+    });
+
+    function asgn(s) {
+      return { sku: s.item.sku, klass: s.item.klass, item_tier: s.item.tier,
+               credit_id: s.credit.id, credit_tier: s.credit.tier, kind: s.kind, value_loss: s.value_loss };
     }
+    var assigned = slots.filter(function (s) { return s.credit; });
+    var unresolved = slots.filter(function (s) { return !s.credit; }).map(function (s) { return s.item; });
+
+    // Credit shortage -> block the bag (no silent partial checkout).
+    if (unresolved.length) {
+      var byClass = {};
+      unresolved.forEach(function (it) { byClass[it.klass] = (byClass[it.klass] || 0) + 1; });
+      return { ok: false, blocked: { type: 'credit_shortage', byClass: byClass, items: unresolved },
+               assignments: assigned.map(asgn), unresolved: unresolved };
+    }
+
+    // Extra-swap cap: anything past plan headroom in a class is a $5 extra; max 5 combined/cycle.
+    var caps = ctx.caps || {}, used = ctx.used_this_cycle || {};
+    var perClass = {};
+    assigned.forEach(function (s) { var k = s.item.klass; perClass[k] = (perClass[k] || 0) + 1; });
+    var alreadyExtra = 0, newExtra = 0;
+    ['clothing', 'toy'].forEach(function (k) {
+      var cap = caps[k] || 0, u = used[k] || 0;
+      alreadyExtra += Math.max(0, u - cap);
+      newExtra += Math.max(0, (perClass[k] || 0) - Math.max(0, cap - u));
+    });
+    var totalExtra = alreadyExtra + newExtra;
+    if (totalExtra > 5) {
+      return { ok: false, blocked: { type: 'extra_swap_cap', totalExtra: totalExtra, newExtra: newExtra },
+               assignments: assigned.map(asgn) };
+    }
+
+    return { ok: true, assignments: assigned.map(asgn), extra: newExtra,
+             itemsParam: assigned.map(function (s) { return s.item.sku + ':' + s.credit.id; }).join(',') };
+  }
+
+  /* ---- runtime glue: token, claim-context fetch, gate, in-drawer block --- */
+  var CLAIM_CTX_URL = SUPABASE_URL + '/functions/v1/member-claim-context';
+
+  // member_status blocks (copy mirrors checkout-tool.js so the voice matches).
+  var GATE_TITLE = {
+    paused: 'Your membership is paused',
+    cancelled_ended: 'Reactivate to keep swapping',
+    pending_first_bag: 'Send your first bag to start'
+  };
+  var GATE_COPY = {
+    paused: 'Resume your membership to claim items.',
+    cancelled_ended: 'Reactivate your membership to claim items.',
+    pending_first_bag: 'Send your first bag to earn credits before you can claim.'
+  };
+  var GATE_CTA = {
+    paused: { label: 'Manage membership', href: '/dashboard' },
+    cancelled_ended: { label: 'Reactivate', href: '/dashboard' },
+    pending_first_bag: { label: 'Go to dashboard', href: '/dashboard' }
+  };
+
+  function getToken(cb) {
+    try {
+      var ms = window.$memberstackDom;
+      if (ms && typeof ms.getMemberCookie === 'function') {
+        ms.getMemberCookie().then(function (t) { cb(t || null); }).catch(function () { cb(null); });
+        return;
+      }
+    } catch (e) {}
+    cb(null);
+  }
+
+  function fetchClaimContext(tok, cb) {
+    fetch(CLAIM_CTX_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': ANON_KEY,
+                 'Authorization': 'Bearer ' + ANON_KEY, 'x-ms-token': tok },
+      body: '{}'
+    })
+    .then(function (r) { if (!r.ok) throw new Error('status ' + r.status); return r.json(); })
+    .then(function (d) { cb(null, d); })
+    .catch(function (e) { cb(e, null); });
+  }
+
+  function ensureBagBlockCss() {
+    if (document.getElementById('ks-bag-block-css')) return;
+    var css =
+      '.ks-bag-block{margin:10px 18px 0;padding:13px 15px;border-radius:13px;' +
+        'background:#fbeee9;border:1px solid #efc9bb;font-family:Quicksand,sans-serif;}' +
+      '.ks-bag-block-t{font-weight:600;color:#b23c19;font-size:14.5px;margin-bottom:3px;}' +
+      '.ks-bag-block-m{color:#6f4a3e;font-size:13px;line-height:1.4;}' +
+      '.ks-bag-block-cta{display:inline-block;margin-top:10px;padding:7px 13px;border-radius:9px;' +
+        'background:#d24f28;color:#fff;text-decoration:none;font-size:13px;font-weight:600;}';
+    var s = document.createElement('style'); s.id = 'ks-bag-block-css'; s.textContent = css;
+    document.head.appendChild(s);
+  }
+
+  function clearBagBlock() {
+    var b = document.querySelector('.ks-bag-block'); if (b && b.parentNode) b.parentNode.removeChild(b);
+  }
+
+  function showBagBlock(title, msg, cta) {
+    ensureBagBlockCss();
+    var sheet = document.querySelector('.ks-bag-sheet'); if (!sheet) return;
+    clearBagBlock();
+    var html =
+      '<div class="ks-bag-block" role="alert">' +
+        '<div class="ks-bag-block-t">' + escapeHtml(title) + '</div>' +
+        '<div class="ks-bag-block-m">' + escapeHtml(msg) + '</div>' +
+        (cta ? '<a class="ks-bag-block-cta" href="' + escapeHtml(cta.href) + '">' + escapeHtml(cta.label) + '</a>' : '') +
+      '</div>';
+    var foot = sheet.querySelector('.ks-bag-foot');
+    if (foot) foot.insertAdjacentHTML('beforebegin', html);
+    else sheet.insertAdjacentHTML('beforeend', html);
+  }
+
+  function setCheckoutBusy(btn, on) {
+    if (!btn) return;
+    if (on) { btn.__old = btn.textContent; btn.textContent = 'Checking your credits\u2026'; btn.disabled = true; btn.style.opacity = '.7'; }
+    else { if (btn.__old) btn.textContent = btn.__old; btn.disabled = false; btn.style.opacity = ''; }
+  }
+
+  function shortageMessage(byClass) {
+    var parts = [];
+    if (byClass.clothing) parts.push(byClass.clothing + ' clothing');
+    if (byClass.toy) parts.push(byClass.toy + ' toy');
+    var total = (byClass.clothing || 0) + (byClass.toy || 0);
+    return 'You don\u2019t have enough credits for everything in your bag. Remove ' +
+           parts.join(' and ') + ' item' + (total > 1 ? 's' : '') + ' to check out the rest.';
+  }
+
+  // The picker. Replaces the step-2 stub; wired to [data-bag-checkout].
+  function goCheckout() {
+    var bag = bagRead();
+    if (!bag.length) return;
+    var btn = document.querySelector('.ks-bag-checkout');
+    clearBagBlock();
+    setCheckoutBusy(btn, true);
+
+    getToken(function (tok) {
+      if (!tok) {
+        setCheckoutBusy(btn, false);
+        showBagBlock('Please log in', 'Log in to check out your bag.', { label: 'Log in', href: '/pricing' });
+        return;
+      }
+      fetchClaimContext(tok, function (err, ctx) {
+        setCheckoutBusy(btn, false);
+        if (err || !ctx) {
+          showBagBlock('Couldn\u2019t load your bag', 'Something went wrong reading your credits. Please try again in a moment.');
+          return;
+        }
+
+        var st = ctx.member_status;
+        if (st === 'paused' || st === 'cancelled_ended' || st === 'pending_first_bag') {
+          showBagBlock(GATE_TITLE[st], GATE_COPY[st], GATE_CTA[st]);
+          return;
+        }
+        // st === 'active' (or any unrecognized status) -> proceed. The checkout fn
+        // is the authoritative gate, so an unknown status falls through to it.
+
+        var res = resolveBag(bag, ctx);
+        if (!res.ok) {
+          if (res.blocked.type === 'credit_shortage') {
+            showBagBlock('A few too many items', shortageMessage(res.blocked.byClass));
+          } else if (res.blocked.type === 'extra_swap_cap') {
+            showBagBlock('Past this cycle\u2019s limit', 'You can swap up to 5 extra items per cycle. Edit your bag to check out.');
+          } else {
+            showBagBlock('Something\u2019s off', 'Please edit your bag and try again.');
+          }
+          return;
+        }
+
+        console.log(LOG, 'picker resolved', res.assignments);
+        window.location.href = '/checkout?items=' + encodeURIComponent(res.itemsParam);
+      });
+    });
   }
 
   // Logged-out add-to-bag -> gentle nudge to /pricing
