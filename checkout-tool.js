@@ -292,6 +292,7 @@
     "  font-size:.82rem; font-weight:700; color:var(--ks-ink);}",
     ID + " .ksc-chip:hover{border-color:var(--ks-gold);}",
     ID + " .ksc-chip .cv{color:var(--ks-orange); font-weight:700;}",
+    ID + " .ksc-freehint{flex:1 1 100%; font-size:.78rem; font-weight:700; color:var(--ks-green); padding-top:2px;}",
     ID + " .ksc-vlnote{display:flex; align-items:flex-start; gap:6px; font-size:.78rem; line-height:1.35;",
     "  color:#9a6b12; font-weight:600; flex:1 1 220px; min-width:0;}",
     ID + " .ksc-vlconfirm{display:flex; align-items:flex-start; gap:10px; background:var(--ks-card);",
@@ -460,6 +461,13 @@
         extras += '<button type="button" class="ksc-chip" data-sku="' + esc(ln.sku) + '">' +
           "Using " + esc(appliedTier) + " credit" +
           '<span class="cv">Change \u25be</span></button>';
+        // free-hint: this line is charging a fee AND a $0 credit option exists
+        // -> surface the no-cost choice (the value-loss confirm still backstops it).
+        var lineFee = (Number(ln.upgrade_fee) || 0) + (Number(ln.extra_swap_fee) || 0);
+        var hasFree = info.reps.some(function (r) { return Number(r.total_owed_cents) === 0; });
+        if (lineFee > 0 && hasFree) {
+          extras += '<div class="ksc-freehint">Free option available \u2014 tap Change</div>';
+        }
       }
       if (ln.value_loss) {
         var vlMsg = info.count > 1
