@@ -636,7 +636,7 @@
             blocks +
             '<button type="button" class="ks-detail-cta" data-bag="1">' + BAG_SVG +
               '<span>Add to bag</span></button>' +
-            '<span class="ks-detail-cta-cs">Redemption coming soon</span>' +
+            '<span class="ks-detail-cta-cs" aria-live="polite"></span>' +
           '</div>' +
         '</div>' +
       '</div>';
@@ -881,12 +881,256 @@
     });
   }
 
-  function bagStub(root) {
+  /* ====================================================================== *
+   *  BAG (V4 step 2) — the cycle bag that feeds checkout.                    *
+   *  Front half only: accumulate SKUs across the 3 browse pages, no credit  *
+   *  resolution yet (that's the picker step). State = sessionStorage so it   *
+   *  survives /browse <-> /clothing <-> /toys. CSS self-injects (zoom-layer  *
+   *  pattern) so there's NO Webflow CSS-box edit and one deploy covers all.  *
+   * ====================================================================== */
+
+  var BAG_KEY = 'ksBag';
+
+  // Memberstack presence check — token VALUE isn't needed here (the picker step
+  // will fetch member-claim-context with the real token); we only gate add-to-bag.
+  function ksLoggedIn() {
+    try { return /(?:^|;\s*)_ms-mid=/.test(document.cookie); } catch (e) { return false; }
+  }
+
+  function bagRead()  { try { return JSON.parse(sessionStorage.getItem(BAG_KEY)) || []; } catch (e) { return []; } }
+  function bagWrite(a){ try { sessionStorage.setItem(BAG_KEY, JSON.stringify(a)); } catch (e) {} }
+  function bagCount() { return bagRead().length; }
+
+  // Add currentDetailItem's shape to the bag. Returns 'added' | 'dup' | 'noop'.
+  function addToBag(item) {
+    if (!item || !item.sku) return 'noop';
+    var bag = bagRead();
+    for (var i = 0; i < bag.length; i++) { if (bag[i].sku === item.sku) return 'dup'; }
+    var thumb = item.thumbnail_url || item.primary_photo_url ||
+                (Array.isArray(item.photo_urls) ? item.photo_urls[0] : '') || '';
+    bag.push({
+      sku:   item.sku,
+      name:  descriptor(item),
+      tier:  item.tier || '',
+      klass: item.item_type || '',     // 'clothing' | 'toy' — the credit class
+      size:  item.size || '',
+      thumb: thumb
+    });
+    bagWrite(bag);
+    updateBagCount();
+    return 'added';
+  }
+
+  function removeFromBag(sku) {
+    bagWrite(bagRead().filter(function (x) { return x.sku !== sku; }));
+    updateBagCount();
+    renderBag();
+  }
+
+  // flash a short status message in the detail CTA's status span
+  function flashCta(root, msg) {
     var cs = root.querySelector('.ks-detail-cta-cs');
     if (!cs) return;
+    cs.textContent = msg;
     cs.classList.add('is-on');
     clearTimeout(cs.__t);
     cs.__t = setTimeout(function () { cs.classList.remove('is-on'); }, 1800);
+  }
+
+  // Detail-overlay "Add to bag" handler (data-bag). Logged-out -> /pricing prompt.
+  function bagStub(root) {
+    var item = currentDetailItem;
+    if (!item) return;
+    if (!ksLoggedIn()) { showJoinPrompt(); return; }
+    var res = addToBag(item);
+    flashCta(root, res === 'dup' ? 'Already in your bag' : 'Added to bag');
+  }
+
+  /* ---- bag button (lives in the search row, tool-built = stable anchor) ---- */
+  function mountBagButton(mount) {
+    ensureBagCss();
+    if (!mount || mount.querySelector('.ks-bag-btn')) return;
+    var btn = el('button', 'ks-bag-btn');
+    btn.type = 'button';
+    btn.setAttribute('aria-label', 'Open your bag');
+    btn.innerHTML = BAG_SVG + '<span class="ks-bag-count" aria-hidden="true"></span>';
+    btn.addEventListener('click', openBag);
+    mount.appendChild(btn);
+    updateBagCount();
+  }
+
+  function updateBagCount() {
+    var n = bagCount();
+    var badges = document.querySelectorAll('.ks-bag-count');
+    for (var i = 0; i < badges.length; i++) {
+      badges[i].textContent = n ? String(n) : '';
+      badges[i].style.display = n ? 'flex' : 'none';
+    }
+  }
+
+  /* ---- bag drawer (bottom sheet, self-contained, body-appended) ---- */
+  function ensureBagRoot() {
+    var root = document.getElementById('ks-bag-root');
+    if (root) return root;
+    root = el('div'); root.id = 'ks-bag-root'; root.className = 'ks-bag-root';
+    root.setAttribute('hidden', '');
+    document.body.appendChild(root);
+    // attach-once delegated handlers (innerHTML is rebuilt each open)
+    root.addEventListener('click', function (e) {
+      if (e.target.closest('[data-bag-close]'))    { closeBag(); return; }
+      var rm = e.target.closest('[data-bag-remove]');
+      if (rm) { removeFromBag(rm.getAttribute('data-bag-remove')); return; }
+      if (e.target.closest('[data-bag-checkout]'))  { goCheckout(); return; }
+    });
+    return root;
+  }
+
+  function renderBag() {
+    var root = document.getElementById('ks-bag-root');
+    if (!root || root.hasAttribute('hidden')) return;
+    var bag = bagRead();
+    var rows = '';
+    if (!bag.length) {
+      rows = '<div class="ks-bag-empty">Your bag is empty.' +
+             '<span>Tap \u201cAdd to bag\u201d on any piece to start.</span></div>';
+    } else {
+      for (var i = 0; i < bag.length; i++) {
+        var it = bag[i];
+        var dot = it.tier ? ('ks-tier-' + String(it.tier).toLowerCase()) : '';
+        var meta = [];
+        if (it.tier) meta.push(tierLabel(it.tier));
+        if (it.size) meta.push(it.size);
+        else if (it.klass === 'toy') meta.push('Toy');
+        var thumb = it.thumb
+          ? '<img src="' + escapeHtml(it.thumb) + '" alt="" onerror="this.style.display=&quot;none&quot;">'
+          : '';
+        rows +=
+          '<div class="ks-bag-row">' +
+            '<div class="ks-bag-thumb">' + thumb + '</div>' +
+            '<div class="ks-bag-info">' +
+              '<div class="ks-bag-name">' + escapeHtml(it.name) + '</div>' +
+              '<div class="ks-bag-meta"><span class="ks-bag-dot ' + dot + '"></span>' +
+                escapeHtml(meta.join(' \u00b7 ')) + '</div>' +
+            '</div>' +
+            '<button type="button" class="ks-bag-x" data-bag-remove="' + escapeHtml(it.sku) +
+              '" aria-label="Remove from bag">' + X_SVG + '</button>' +
+          '</div>';
+      }
+    }
+    var footer = bag.length
+      ? '<div class="ks-bag-foot">' +
+          '<div class="ks-bag-note-line">Credits and any fees are shown at checkout.</div>' +
+          '<button type="button" class="ks-bag-checkout" data-bag-checkout>Check out</button>' +
+          '<div class="ks-bag-hold">Items are held for 30 minutes.</div>' +
+        '</div>'
+      : '';
+    root.innerHTML =
+      '<div class="ks-bag-backdrop" data-bag-close></div>' +
+      '<div class="ks-bag-sheet" role="dialog" aria-modal="true" aria-label="Your bag">' +
+        '<div class="ks-bag-grip" data-bag-close></div>' +
+        '<div class="ks-bag-head">' +
+          '<span class="ks-bag-title">Your bag</span>' +
+          '<span class="ks-bag-tally">' +
+            (bag.length ? bag.length + (bag.length === 1 ? ' item' : ' items') : '') +
+          '</span>' +
+        '</div>' +
+        '<div class="ks-bag-list">' + rows + '</div>' +
+        footer +
+      '</div>';
+  }
+
+  function openBag() {
+    ensureBagCss();
+    var root = ensureBagRoot();
+    root.removeAttribute('hidden');
+    renderBag();
+    document.documentElement.classList.add('ks-bag-lock');
+  }
+
+  function closeBag() {
+    var root = document.getElementById('ks-bag-root');
+    if (root) { root.setAttribute('hidden', ''); root.innerHTML = ''; }
+    document.documentElement.classList.remove('ks-bag-lock');
+  }
+
+  // STEP 2 placeholder: the real cart contract is ?items=SKU:credit_id, but credit
+  // resolution is the picker step (not built). So this stays an honest stub — it
+  // proves the button wiring without forming a checkout URL the engine can't read.
+  function goCheckout() {
+    var skus = bagRead().map(function (x) { return x.sku; });
+    console.log(LOG, 'checkout: picker not built yet \u2014 bag =', skus);
+    var btn = document.querySelector('.ks-bag-checkout');
+    if (btn) {
+      var old = btn.textContent;
+      btn.textContent = 'Credit selection is the next step';
+      setTimeout(function () { btn.textContent = old; }, 2200);
+    }
+  }
+
+  // Logged-out add-to-bag -> gentle nudge to /pricing
+  function showJoinPrompt() {
+    ensureBagCss();
+    var t = document.getElementById('ks-bag-toast');
+    if (!t) { t = el('div'); t.id = 'ks-bag-toast'; t.className = 'ks-bag-toast'; document.body.appendChild(t); }
+    t.innerHTML = '<span>Join KidSwaps to start swapping.</span><a href="/pricing">See plans</a>';
+    t.classList.add('is-on');
+    clearTimeout(t.__t);
+    t.__t = setTimeout(function () { t.classList.remove('is-on'); }, 4200);
+  }
+
+  function ensureBagCss() {
+    if (document.getElementById('ks-bag-css')) return;
+    var css =
+      '.ks-bag-btn{position:relative;display:inline-flex;align-items:center;justify-content:center;' +
+        'width:40px;height:40px;border:0;background:transparent;color:#1E1A19;cursor:pointer;flex:none;}' +
+      '.ks-bag-btn svg{width:22px;height:22px;}' +
+      '.ks-bag-count{position:absolute;top:-2px;right:-2px;min-width:17px;height:17px;padding:0 4px;' +
+        'border-radius:9px;background:#d24f28;color:#fff;font-size:10px;font-weight:600;' +
+        'line-height:1;align-items:center;justify-content:center;}' +
+      '.ks-bag-root[hidden]{display:none;}' +
+      '.ks-bag-root{position:fixed;inset:0;z-index:9000;}' +
+      '.ks-bag-backdrop{position:absolute;inset:0;background:rgba(31,26,23,.42);}' +
+      '.ks-bag-sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;' +
+        'border-radius:22px 22px 0 0;max-height:82vh;display:flex;flex-direction:column;' +
+        'font-family:Quicksand,sans-serif;}' +
+      '.ks-bag-grip{width:38px;height:4px;border-radius:4px;background:#d8d4c6;margin:12px auto 6px;cursor:pointer;}' +
+      '.ks-bag-head{display:flex;align-items:baseline;justify-content:space-between;padding:4px 18px 8px;}' +
+      '.ks-bag-title{font-family:"Instrument Serif",Quicksand,serif;font-size:30px;color:#1E1A19;line-height:1;}' +
+      '.ks-bag-tally{font-size:13px;color:#6f6a60;}' +
+      '.ks-bag-list{overflow:auto;-webkit-overflow-scrolling:touch;padding:0 18px;}' +
+      '.ks-bag-row{display:flex;gap:14px;align-items:center;padding:13px 0;border-top:1px solid #efece2;}' +
+      '.ks-bag-thumb{width:56px;height:56px;border-radius:10px;background:#efe9dd;overflow:hidden;flex:none;}' +
+      '.ks-bag-thumb img{width:100%;height:100%;object-fit:cover;display:block;}' +
+      '.ks-bag-info{flex:1;min-width:0;}' +
+      '.ks-bag-name{font-size:14.5px;font-weight:500;color:#1E1A19;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}' +
+      '.ks-bag-meta{font-size:12.5px;color:#6f6a60;display:flex;align-items:center;gap:6px;margin-top:3px;}' +
+      '.ks-bag-dot{width:7px;height:7px;border-radius:50%;background:#b9b2a3;flex:none;}' +
+      '.ks-bag-dot.ks-tier-essentials{background:#54935f;}' +
+      '.ks-bag-dot.ks-tier-elevated{background:#E5AD43;}' +
+      '.ks-bag-dot.ks-tier-special{background:#d24f28;}' +
+      '.ks-bag-x{width:40px;height:40px;border:0;background:transparent;color:#9a9384;cursor:pointer;' +
+        'flex:none;display:flex;align-items:center;justify-content:center;}' +
+      '.ks-bag-x svg{width:16px;height:16px;}' +
+      '.ks-bag-empty{padding:26px 4px 30px;text-align:center;color:#6f6a60;font-size:14px;' +
+        'display:flex;flex-direction:column;gap:6px;}' +
+      '.ks-bag-empty span{font-size:12.5px;color:#a89f8e;}' +
+      '.ks-bag-foot{padding:14px 18px 18px;border-top:1px solid #efece2;}' +
+      '.ks-bag-note-line{font-size:12px;color:#6f6a60;margin-bottom:11px;}' +
+      '.ks-bag-checkout{display:block;width:100%;background:#d24f28;color:#fdf6ec;border:0;' +
+        'border-radius:50px;padding:15px;font-size:15px;font-weight:600;' +
+        'font-family:Quicksand,sans-serif;cursor:pointer;}' +
+      '.ks-bag-hold{text-align:center;font-size:11px;color:#9a9384;margin-top:9px;}' +
+      '.ks-bag-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);' +
+        'background:#1E1A19;color:#eeece1;font-family:Quicksand,sans-serif;font-size:13px;' +
+        'padding:12px 16px;border-radius:12px;z-index:10001;opacity:0;pointer-events:none;' +
+        'transition:opacity .2s,transform .2s;max-width:90vw;}' +
+      '.ks-bag-toast.is-on{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto;}' +
+      '.ks-bag-toast a{color:#E5AD43;font-weight:600;text-decoration:underline;margin-left:5px;}' +
+      'html.ks-bag-lock{overflow:hidden;}';
+    var s = document.createElement('style');
+    s.id = 'ks-bag-css';
+    s.textContent = css;
+    document.head.appendChild(s);
   }
 
   /* ---- full-screen zoom (self-contained; ALL styles inlined here — zero page-head CSS) ---- */
@@ -1447,6 +1691,8 @@
     // breakpoint CSS — hidden on desktop (search fills the row), shown on mobile.
     var mft = document.querySelector('.mobile-filter-toggle');
     if (mft) mount.appendChild(mft);
+
+    mountBagButton(mount);
 
     input.addEventListener('input', function () {
       SEARCH = input.value;
