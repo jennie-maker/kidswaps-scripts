@@ -70,6 +70,7 @@
   /* ---- module state ------------------------------------------------------- */
   var CURRENT = [];           // last rendered (post-type-filter) item set
   var ALL = [];               // last fetched (pre-type-filter) — overlay looks here
+  var FETCHED = false;        // true once a real inventory fetch returns — fail-open guard for the bag's "no longer available" flag (never flag before a confirmed fetch)
   var overlayOpen = false;
   var lastFocusEl = null;     // element to restore focus to when the overlay closes
   var currentDetailItem = null; // live overlay item — read by the mobile swipe gestures
@@ -890,6 +891,7 @@
    * ====================================================================== */
 
   var BAG_KEY = 'ksBag';
+  var pendingRemovalNote = null;   // one-shot bag banner ("we removed X — just swapped"); rendered next, cleared on close/re-tap
 
   // Memberstack presence check — token VALUE isn't needed here (the picker step
   // will fetch member-claim-context with the real token); we only gate add-to-bag.
@@ -921,6 +923,21 @@
   function bagRead()  { try { return JSON.parse(sessionStorage.getItem(BAG_KEY)) || []; } catch (e) { return []; } }
   function bagWrite(a){ try { sessionStorage.setItem(BAG_KEY, JSON.stringify(a)); } catch (e) {} }
   function bagCount() { return bagRead().length; }
+
+  // Membership map of available SKUs from an inventory array, used as a Set.
+  // The single availability signal both #3 surfaces read: the bag flag checks
+  // the cached ALL, the checkout catch rebuilds it from a fresh fetch. Pure —
+  // touches no module state, so either caller can pass whatever array it trusts.
+  function skuSetOf(items) {
+    var s = {};
+    if (Array.isArray(items)) {
+      for (var i = 0; i < items.length; i++) {
+        var it = items[i];
+        if (it && it.sku) s[it.sku] = true;
+      }
+    }
+    return s;
+  }
 
   // Add currentDetailItem's shape to the bag. Returns 'added' | 'dup' | 'noop'.
   function addToBag(item) {
@@ -1061,8 +1078,10 @@
       rows = '<div class="ks-bag-empty">Your bag is empty.' +
              '<span>Tap \u201cAdd to bag\u201d on any piece to start.</span></div>';
     } else {
+      var avail = FETCHED ? skuSetOf(ALL) : null;   // null until a real fetch lands — never flag before then
       for (var i = 0; i < bag.length; i++) {
         var it = bag[i];
+        var gone = avail && !avail[it.sku];          // bagged but no longer in the available catalog
         var dot = it.tier ? ('ks-tier-' + String(it.tier).toLowerCase()) : '';
         var meta = [];
         if (it.tier) meta.push(tierLabel(it.tier));
@@ -1072,12 +1091,13 @@
           ? '<img src="' + escapeHtml(it.thumb) + '" alt="" onerror="this.style.display=&quot;none&quot;">'
           : '';
         rows +=
-          '<div class="ks-bag-row">' +
+          '<div class="ks-bag-row' + (gone ? ' is-gone' : '') + '">' +
             '<div class="ks-bag-thumb">' + thumb + '</div>' +
             '<div class="ks-bag-info">' +
               '<div class="ks-bag-name">' + escapeHtml(it.name) + '</div>' +
               '<div class="ks-bag-meta"><span class="ks-bag-dot ' + dot + '"></span>' +
                 escapeHtml(meta.join(' \u00b7 ')) + '</div>' +
+            (gone ? '<div class="ks-bag-gone">No longer available</div>' : '') +
             '</div>' +
             '<button type="button" class="ks-bag-x" data-bag-remove="' + escapeHtml(it.sku) +
               '" aria-label="Remove from bag">' + X_SVG + '</button>' +
@@ -1100,7 +1120,8 @@
             (bag.length ? bag.length + (bag.length === 1 ? ' item' : ' items') : '') +
           '</span>' +
         '</div>' +
-        (bag.length ? '<div class="ks-bag-subnote">Items are held for 30 minutes.</div>' : '') +
+        (bag.length ? '<div class="ks-bag-subnote">Nothing\u2019s reserved until you check out.</div>' : '') +
+        (pendingRemovalNote ? '<div class="ks-bag-removed">' + escapeHtml(pendingRemovalNote) + '</div>' : '') +
         '<div class="ks-bag-list">' + rows + '</div>' +
         footer +
       '</div>';
@@ -1115,6 +1136,7 @@
   }
 
   function closeBag() {
+    pendingRemovalNote = null;
     var root = document.getElementById('ks-bag-root');
     if (root) { root.setAttribute('hidden', ''); root.innerHTML = ''; }
     document.documentElement.classList.remove('ks-bag-lock');
@@ -1143,6 +1165,19 @@
 
   // Pure: (bag items {sku,klass,tier}, ctx from member-claim-context) -> resolution.
   function resolveBag(bag, ctx) {
+    // Off-plan class: an item whose class isn't on the member's plan (cap 0) can't be
+    // swapped here. Block with an upgrade nudge instead of billing it as an extra swap.
+    var planCaps = ctx.caps || {};
+    // Fail-open: only judge off-plan when caps actually loaded (get_member_state always
+    // returns both keys) — a data hiccup must never block a member's valid bag.
+    var capsLoaded = planCaps.hasOwnProperty('clothing') && planCaps.hasOwnProperty('toy');
+    var offPlan = capsLoaded ? bag.filter(function (it) { return (planCaps[it.klass] || 0) === 0; }) : [];
+    if (offPlan.length) {
+      var offClasses = {};
+      offPlan.forEach(function (it) { offClasses[it.klass] = true; });
+      return { ok: false, blocked: { type: 'off_plan', classes: Object.keys(offClasses), count: offPlan.length } };
+    }
+
     var pool = (ctx.claimable_credits || []).slice();
     function take(c) { var i = pool.indexOf(c); if (i >= 0) pool.splice(i, 1); }
 
@@ -1225,11 +1260,18 @@
     pending_first_bag: { label: 'Go to dashboard', href: '/dashboard' }
   };
 
+  // getMemberCookie() returns the JWT as a STRING (not a promise) in this SDK
+  // build — but tolerate a thenable too, so the picker can't regress either way.
   function getToken(cb) {
     try {
       var ms = window.$memberstackDom;
       if (ms && typeof ms.getMemberCookie === 'function') {
-        ms.getMemberCookie().then(function (t) { cb(t || null); }).catch(function () { cb(null); });
+        var v = ms.getMemberCookie();
+        if (v && typeof v.then === 'function') {
+          v.then(function (t) { cb(t || null); }).catch(function () { cb(null); });
+        } else {
+          cb(v || null);
+        }
         return;
       }
     } catch (e) {}
@@ -1295,12 +1337,89 @@
            parts.join(' and ') + ' item' + (total > 1 ? 's' : '') + ' to check out the rest.';
   }
 
+  // Usable credits per class from the claim-context pool (same source the picker uses).
+  function creditCountByClass(ctx) {
+    var by = { clothing: 0, toy: 0 };
+    (ctx.claimable_credits || []).forEach(function (c) {
+      if (c.credit_class === 'clothing') by.clothing += 1;
+      else if (c.credit_class === 'toy') by.toy += 1;
+    });
+    return by;
+  }
+
+  // Zero usable credits in the shorted class(es): tell them how to GET credits
+  // (earn by sending a bag, or buy a Credit Pack) instead of "remove N items".
+  function outOfCreditsBlock(zeroClasses) {
+    var title = zeroClasses.length > 1 ? 'Out of credits'
+              : zeroClasses[0] === 'toy' ? 'Out of toy credits'
+              : 'Out of clothing credits';
+    return {
+      title: title,
+      msg: 'Send a swap bag to earn more, or add a Credit Pack to keep swapping now.',
+      cta: { label: 'Buy a Credit Pack', href: '/dashboard' }
+    };
+  }
+
+  // Runs the credit picker on a resolved item set and hands off to /checkout.
+  // Shared by the no-removal path and the fail-open path of goCheckout.
+  // Block copy for a bag holding items whose class isn't on the member's plan.
+  function offPlanBlock(classes, count) {
+    var word = (classes.indexOf('toy') >= 0 && classes.indexOf('clothing') >= 0) ? 'those items'
+             : (classes.indexOf('toy') >= 0) ? 'toys' : 'clothing';
+    var them = count > 1 ? 'them' : 'it';
+    return {
+      title: 'Not on your plan',
+      msg: 'Your plan doesn\u2019t include ' + word + '. Remove ' + them +
+           ' from your bag, or upgrade your plan to swap ' + word + '.',
+      cta: { label: 'Upgrade plan', href: '/dashboard' }
+    };
+  }
+
+  function finishCheckout(items, ctx, btn) {
+    var res = resolveBag(items, ctx);
+    if (!res.ok) {
+      setCheckoutBusy(btn, false);
+      if (res.blocked.type === 'credit_shortage') {
+        var byClass = res.blocked.byClass;
+        var have = creditCountByClass(ctx);
+        var shortClasses = Object.keys(byClass);
+        var zeroClasses = shortClasses.filter(function (k) { return (have[k] || 0) === 0; });
+        if (zeroClasses.length === shortClasses.length) {
+          // every shorted class is truly empty -> earn-or-buy, not "remove N"
+          var oc = outOfCreditsBlock(zeroClasses);
+          showBagBlock(oc.title, oc.msg, oc.cta);
+        } else {
+          // has some credits, just over-bagged -> trim the bag
+          showBagBlock('A few too many items', shortageMessage(byClass));
+        }
+      } else if (res.blocked.type === 'extra_swap_cap') {
+        showBagBlock('Past this cycle\u2019s limit', 'You can swap up to 5 extra items per cycle. Edit your bag to check out.');
+      } else if (res.blocked.type === 'off_plan') {
+        var ob = offPlanBlock(res.blocked.classes, res.blocked.count);
+        showBagBlock(ob.title, ob.msg, ob.cta);
+      } else {
+        showBagBlock('Something\u2019s off', 'Please edit your bag and try again.');
+      }
+      return;
+    }
+    console.log(LOG, 'picker resolved', res.assignments);
+    window.location.href = '/checkout?items=' + encodeURIComponent(res.itemsParam);
+  }
+
+  // One-shot bag-banner text after checkout drops just-swapped items.
+  function removalNote(removed) {
+    var names = removed.map(function (x) { return x.name; });
+    if (names.length === 1) return 'We removed ' + names[0] + ' \u2014 it was just swapped by someone else.';
+    return 'We removed ' + names.join(', ') + ' \u2014 they were just swapped by someone else.';
+  }
+
   // The picker. Replaces the step-2 stub; wired to [data-bag-checkout].
   function goCheckout() {
     var bag = bagRead();
     if (!bag.length) return;
     var btn = document.querySelector('.ks-bag-checkout');
     clearBagBlock();
+    pendingRemovalNote = null;
     setCheckoutBusy(btn, true);
 
     getToken(function (tok) {
@@ -1310,34 +1429,43 @@
         return;
       }
       fetchClaimContext(tok, function (err, ctx) {
-        setCheckoutBusy(btn, false);
         if (err || !ctx) {
+          setCheckoutBusy(btn, false);
           showBagBlock('Couldn\u2019t load your bag', 'Something went wrong reading your credits. Please try again in a moment.');
           return;
         }
 
         var st = ctx.member_status;
         if (st === 'paused' || st === 'cancelled_ended' || st === 'pending_first_bag') {
+          setCheckoutBusy(btn, false);
           showBagBlock(GATE_TITLE[st], GATE_COPY[st], GATE_CTA[st]);
           return;
         }
         // st === 'active' (or any unrecognized status) -> proceed. The checkout fn
         // is the authoritative gate, so an unknown status falls through to it.
 
-        var res = resolveBag(bag, ctx);
-        if (!res.ok) {
-          if (res.blocked.type === 'credit_shortage') {
-            showBagBlock('A few too many items', shortageMessage(res.blocked.byClass));
-          } else if (res.blocked.type === 'extra_swap_cap') {
-            showBagBlock('Past this cycle\u2019s limit', 'You can swap up to 5 extra items per cycle. Edit your bag to check out.');
-          } else {
-            showBagBlock('Something\u2019s off', 'Please edit your bag and try again.');
+        // Fresh availability read at the tap. The bag is a wishlist, so a piece
+        // can be claimed by someone else between bagging and now. Drop anything
+        // that's gone, tell the member, and run the picker on what survives.
+        // Fail-open: a network hiccup here must never block a real member.
+        fetchInventory().then(function (freshItems) {
+          var live = skuSetOf(freshItems);
+          var survivors = [], removed = [];
+          for (var i = 0; i < bag.length; i++) {
+            (live[bag[i].sku] ? survivors : removed).push(bag[i]);
           }
-          return;
-        }
-
-        console.log(LOG, 'picker resolved', res.assignments);
-        window.location.href = '/checkout?items=' + encodeURIComponent(res.itemsParam);
+          if (removed.length) {
+            bagWrite(survivors);
+            updateBagCount();
+            pendingRemovalNote = removalNote(removed);
+            renderBag();                  // trimmed bag + note; member taps Check out again
+            setCheckoutBusy(btn, false);
+            return;                       // no redirect on a removal pass
+          }
+          finishCheckout(bag, ctx, btn);  // nothing gone -> straight through
+        }).catch(function () {
+          finishCheckout(bag, ctx, btn);  // fail-open: proceed on the full bag
+        });
       });
     });
   }
@@ -1409,6 +1537,12 @@
         'transition:opacity .2s,transform .2s;max-width:90vw;}' +
       '.ks-bag-toast.is-on{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto;}' +
       '.ks-bag-toast a{color:#E5AD43;font-weight:600;text-decoration:underline;margin-left:5px;}' +
+      '.ks-bag-row.is-gone .ks-bag-thumb{filter:grayscale(1);opacity:.55;}' +
+      '.ks-bag-row.is-gone .ks-bag-name{opacity:.55;}' +
+      '.ks-bag-row.is-gone .ks-bag-meta{display:none;}' +
+      '.ks-bag-gone{font-size:12.5px;color:#b4542f;font-weight:600;margin-top:3px;}' +
+      '.ks-bag-removed{margin:2px 18px 10px;padding:10px 12px;background:#faf3e6;' +
+        'border-left:3px solid #d24f28;border-radius:8px;font-size:12.5px;color:#1f1a17;line-height:1.4;}' +
       'html.ks-bag-lock{overflow:hidden;}';
     var s = document.createElement('style');
     s.id = 'ks-bag-css';
@@ -1597,6 +1731,7 @@
     if (!silent) showLoading(mount);
     fetchInventory()
       .then(function (items) {
+        FETCHED = true;
         render(mount, items);
         if (typeof afterRender === 'function') afterRender();
       })
@@ -1787,10 +1922,10 @@
     // ---- default mode: all rows, optional 6 + "Show all" CSS cap (unchanged) ----
     options.forEach(function (opt, i) {
       var row = makeRow(opt);
-      if (showAll && i >= 6) row.classList.add('ks-flt-extra');   // hidden until "show all"
+      if (showAll && i >= 4) row.classList.add('ks-flt-extra');   // hidden until "show all"
       body.appendChild(row);
     });
-    if (showAll && options.length > 6) {
+    if (showAll && options.length > 4) {
       var more2 = el('span', 'ks-flt-more', 'Show all (' + options.length + ')');
       more2.addEventListener('click', function () {
         var open = grp.classList.toggle('ks-flt-expanded');
@@ -1819,9 +1954,30 @@
     head.appendChild(close);
     rail.appendChild(head);
 
+    // B: Type nav — a discoverable second path across the three browse pages,
+    // and a populated header so /browse doesn't read as sparse. Links, not facets.
+    var typeGrp = el('div', 'ks-flt-group');
+    var typeLbl = el('div', 'ks-flt-grouplabel');
+    typeLbl.appendChild(el('span', null, 'Type'));
+    typeGrp.appendChild(typeLbl);
+    var typeBody = el('div', 'ks-flt-groupbody');
+    [['All', '/browse', 'all'], ['Clothing', '/clothing', 'clothing'], ['Toys', '/toys', 'toy']]
+      .forEach(function (t) {
+        var a = document.createElement('a');
+        a.className = 'ks-flt-row';
+        a.href = t[1];
+        a.style.textDecoration = 'none';
+        a.style.color = 'inherit';
+        if (BROWSE_TYPE === t[2]) a.style.fontWeight = '700';
+        a.appendChild(el('span', 'ks-flt-rowtext', t[0]));
+        typeBody.appendChild(a);
+      });
+    typeGrp.appendChild(typeBody);
+    rail.appendChild(typeGrp);
+
     activeFacetKeys().forEach(function (key, idx) {
       var def = FACETS[key];
-      buildGroup(rail, key, def.title, facetOptions(key), !!def.showAll, idx === 0);
+      buildGroup(rail, key, def.title, facetOptions(key), true, true);
     });
 
     var apply = el('button', 'ks-flt-apply', '');   // mobile-only (CSS)
