@@ -1922,10 +1922,10 @@
     // ---- default mode: all rows, optional 6 + "Show all" CSS cap (unchanged) ----
     options.forEach(function (opt, i) {
       var row = makeRow(opt);
-      if (showAll && i >= 6) row.classList.add('ks-flt-extra');   // hidden until "show all"
+      if (showAll && i >= 4) row.classList.add('ks-flt-extra');   // hidden until "show all"
       body.appendChild(row);
     });
-    if (showAll && options.length > 6) {
+    if (showAll && options.length > 4) {
       var more2 = el('span', 'ks-flt-more', 'Show all (' + options.length + ')');
       more2.addEventListener('click', function () {
         var open = grp.classList.toggle('ks-flt-expanded');
@@ -1954,9 +1954,30 @@
     head.appendChild(close);
     rail.appendChild(head);
 
+    // B: Type nav — a discoverable second path across the three browse pages,
+    // and a populated header so /browse doesn't read as sparse. Links, not facets.
+    var typeGrp = el('div', 'ks-flt-group');
+    var typeLbl = el('div', 'ks-flt-grouplabel');
+    typeLbl.appendChild(el('span', null, 'Type'));
+    typeGrp.appendChild(typeLbl);
+    var typeBody = el('div', 'ks-flt-groupbody');
+    [['All', '/browse', 'all'], ['Clothing', '/clothing', 'clothing'], ['Toys', '/toys', 'toy']]
+      .forEach(function (t) {
+        var a = document.createElement('a');
+        a.className = 'ks-flt-row';
+        a.href = t[1];
+        a.style.textDecoration = 'none';
+        a.style.color = 'inherit';
+        if (BROWSE_TYPE === t[2]) a.style.fontWeight = '700';
+        a.appendChild(el('span', 'ks-flt-rowtext', t[0]));
+        typeBody.appendChild(a);
+      });
+    typeGrp.appendChild(typeBody);
+    rail.appendChild(typeGrp);
+
     activeFacetKeys().forEach(function (key, idx) {
       var def = FACETS[key];
-      buildGroup(rail, key, def.title, facetOptions(key), !!def.showAll, idx === 0);
+      buildGroup(rail, key, def.title, facetOptions(key), true, true);
     });
 
     var apply = el('button', 'ks-flt-apply', '');   // mobile-only (CSS)
