@@ -683,6 +683,7 @@
       var v = (el.value || "").trim();
       if (!v) return;
       if (el.getAttribute("data-key") === "sku" && v === "KS-") return;
+      if (el.getAttribute("data-key") === "condition_grade" && v === "great") return;
       any = true;
     });
     if (slots.front || slots.back || slots.detail || video) any = true;
