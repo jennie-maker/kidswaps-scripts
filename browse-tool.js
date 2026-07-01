@@ -1165,6 +1165,19 @@
 
   // Pure: (bag items {sku,klass,tier}, ctx from member-claim-context) -> resolution.
   function resolveBag(bag, ctx) {
+    // Off-plan class: an item whose class isn't on the member's plan (cap 0) can't be
+    // swapped here. Block with an upgrade nudge instead of billing it as an extra swap.
+    var planCaps = ctx.caps || {};
+    // Fail-open: only judge off-plan when caps actually loaded (get_member_state always
+    // returns both keys) — a data hiccup must never block a member's valid bag.
+    var capsLoaded = planCaps.hasOwnProperty('clothing') && planCaps.hasOwnProperty('toy');
+    var offPlan = capsLoaded ? bag.filter(function (it) { return (planCaps[it.klass] || 0) === 0; }) : [];
+    if (offPlan.length) {
+      var offClasses = {};
+      offPlan.forEach(function (it) { offClasses[it.klass] = true; });
+      return { ok: false, blocked: { type: 'off_plan', classes: Object.keys(offClasses), count: offPlan.length } };
+    }
+
     var pool = (ctx.claimable_credits || []).slice();
     function take(c) { var i = pool.indexOf(c); if (i >= 0) pool.splice(i, 1); }
 
@@ -1349,6 +1362,19 @@
 
   // Runs the credit picker on a resolved item set and hands off to /checkout.
   // Shared by the no-removal path and the fail-open path of goCheckout.
+  // Block copy for a bag holding items whose class isn't on the member's plan.
+  function offPlanBlock(classes, count) {
+    var word = (classes.indexOf('toy') >= 0 && classes.indexOf('clothing') >= 0) ? 'those items'
+             : (classes.indexOf('toy') >= 0) ? 'toys' : 'clothing';
+    var them = count > 1 ? 'them' : 'it';
+    return {
+      title: 'Not on your plan',
+      msg: 'Your plan doesn\u2019t include ' + word + '. Remove ' + them +
+           ' from your bag, or upgrade your plan to swap ' + word + '.',
+      cta: { label: 'Upgrade plan', href: '/dashboard' }
+    };
+  }
+
   function finishCheckout(items, ctx, btn) {
     var res = resolveBag(items, ctx);
     if (!res.ok) {
@@ -1368,6 +1394,9 @@
         }
       } else if (res.blocked.type === 'extra_swap_cap') {
         showBagBlock('Past this cycle\u2019s limit', 'You can swap up to 5 extra items per cycle. Edit your bag to check out.');
+      } else if (res.blocked.type === 'off_plan') {
+        var ob = offPlanBlock(res.blocked.classes, res.blocked.count);
+        showBagBlock(ob.title, ob.msg, ob.cta);
       } else {
         showBagBlock('Something\u2019s off', 'Please edit your bag and try again.');
       }
