@@ -637,6 +637,10 @@
     if (nmPh) nmPh.placeholder = (itemType === "toy")
       ? "e.g. Lovevery Play Gym"
       : "auto-fills from brand + category";
+    // A: toys aren't sold new, so "retail" reads as an average current price
+    var retLbl = root.querySelector('.ksl-field[data-field="retail_value"] .ksl-label');
+    if (retLbl) retLbl.innerHTML = (itemType === "toy" ? "Average current price" : "Retail value") +
+      '<span class="ksl-req">*</span>';
     // toy: item name sits right under Brand; clothing: after the size/gender group
     var nameField = root.querySelector('.ksl-field[data-field="item_name"]');
     if (nameField) {
@@ -1200,6 +1204,10 @@
     return '<div class="ksl-review-row"><span class="ksl-review-k">' + label +
            '</span><span class="ksl-review-v">' + value + '</span></div>';
   }
+  function reviewRowEmpty(label) {
+    return '<div class="ksl-review-row"><span class="ksl-review-k">' + label +
+           '</span><span class="ksl-review-v" style="color:var(--ks-amber);font-weight:600">not set</span></div>';
+  }
   function showReview() {
     // TYPE BANNER: prominent, color-coded, first thing in the review — so a
     // wrong-type listing (clothing form left on for a toy, or vice versa) is
@@ -1214,14 +1222,25 @@
                  'color:' + bannerInk + ';font-size:1rem;font-weight:700;letter-spacing:.02em;text-align:center">' +
                  'Listing a ' + (isToy ? "TOY" : "CLOTHING") + ' item' +
                '</div>';
+    // L7: photo thumbnails up top — visual proof of what's being listed
+    var revThumbs = ["front", "back", "detail"].map(function (k) {
+      var s = slots[k];
+      if (!s || s.status !== "done") return "";
+      var src = s.url || s.objUrl;
+      return src ? '<img src="' + esc(src) + '" alt="" style="width:58px;height:58px;object-fit:cover;' +
+                   'border-radius:8px;border:1px solid var(--ks-line)">' : "";
+    }).filter(Boolean).join("");
+    if (revThumbs) rows += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px">' + revThumbs + '</div>';
     SCHEMA.forEach(function (f) {
       if (!(f.group === "both" || f.group === itemType)) return;
       var el = root.querySelector('[data-key="' + f.key + '"]');
       if (!el) return;
+      var wrap = el.closest(".ksl-field");
+      if (wrap && wrap.classList.contains("ksl-hidden")) return;   // skip fields hidden for this item (e.g. resale on essentials)
+      var lbl = (f.key === "retail_value" && isToy) ? "Average current price" : f.label;   // A
       var v = (el.value || "").trim();
-      if (!v) return;
-      if (f.key === "gender_style") v = (v === "boy") ? "Male" : (v === "girl") ? "Female" : v;
-      rows += reviewRow(f.label, v);
+      if (f.key === "gender_style" && v) v = (v === "boy") ? "Male" : (v === "girl") ? "Female" : v;
+      rows += v ? reviewRow(lbl, v) : reviewRowEmpty(lbl);   // L8: flag blanks instead of hiding
     });
     if (itemType === "clothing" && setChk.checked) rows += reviewRow("Matching set", setCount.value + " pieces");
     var pc = ["front", "back", "detail"].filter(function (k) { return slots[k] && slots[k].status === "done"; }).length;
