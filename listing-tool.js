@@ -270,6 +270,7 @@
   var EDIT_MODE   = false;   // true once an existing item is loaded for editing
   var loadedRecord = null;   // the inventory row returned by inventory-edit "load"
   var loadedGrade  = "";     // condition_grade at load — drives the snag-1 photo-coupling cue
+  var loadedTier   = "";     // (L1) tier at load — buildEditPatch sends tier ONLY when it changes from this
   var editResaleVal = null;  // last client-recomputed resale; rides the patch (operator never types it)
   var editLocked  = false;   // true when the loaded row is reserved/claimed
   var editPrimaryDirty = false; // edit mode: true once the primary photo changed this edit (new front OR make-primary) -> regen the grid thumb on save
@@ -416,6 +417,10 @@
         '<label class="ksl-label" for="ksl-edit-condition">Condition grade</label>' +
         '<select id="ksl-edit-condition"></select>' +
         '<div class="ksl-edit-photonote ksl-hidden" id="ksl-edit-photonote">Re-graded? Confirm the photo above shows this condition before saving.</div>' +
+      '</div>' +
+      '<div class="ksl-field ksl-edit-tier">' +
+        '<label class="ksl-label" for="ksl-edit-tier">Tier</label>' +
+        '<select id="ksl-edit-tier"></select>' +
       '</div>' +
       '<div class="ksl-field ksl-edit-resale">' +
         '<label class="ksl-label">Resale value</label>' +
@@ -2176,6 +2181,8 @@ function titleCase(s) {
     if (del) del.disabled = true;
     var cond = $("ksl-edit-condition");   // (1c) re-grading is locked too
     if (cond) cond.disabled = true;
+    var tierL = $("ksl-edit-tier");       // (L1) re-tiering is locked too
+    if (tierL) tierL.disabled = true;
   }
   function hideLockBanner() {
     var el = $("ksl-edit-lock");
@@ -2186,6 +2193,8 @@ function titleCase(s) {
     if (del) del.disabled = false;
     var cond = $("ksl-edit-condition");
     if (cond) cond.disabled = false;
+    var tierL = $("ksl-edit-tier");
+    if (tierL) tierL.disabled = false;
   }
 
   /* swap insert chrome (toggle / details / List-item) <-> edit panel */
@@ -2268,6 +2277,9 @@ function titleCase(s) {
     var cond = $("ksl-edit-condition");
     if (cond) { fillSelect(cond, OPTION_LISTS.condition_grade || []); cond.value = rec.condition_grade || ""; }
     loadedGrade = rec.condition_grade || "";              // (1c) baseline for the photo-coupling cue
+    var tierSel = $("ksl-edit-tier");                     // (L1) tier editable in edit mode
+    if (tierSel) { fillSelect(tierSel, [{value:"essentials"},{value:"elevated"},{value:"special"}]); tierSel.value = rec.tier || ""; }
+    loadedTier = rec.tier || "";                          // (L1) baseline for the tier-changed check
     var pnote = $("ksl-edit-photonote");
     if (pnote) pnote.classList.add("ksl-hidden");
     renderEditResale();                                  // paint stored/computed resale (or essentials label)
@@ -2312,7 +2324,10 @@ function titleCase(s) {
 
   function renderEditResale() {
     if (!loadedRecord) return;
-    var tier = loadedRecord.tier;
+    // (L1) tier is now editable — recompute against the SELECTED tier, falling
+    // back to the loaded tier before the select exists / is filled.
+    var tierSel = $("ksl-edit-tier");
+    var tier = (tierSel && tierSel.value) ? tierSel.value : loadedRecord.tier;
     if (tier === "essentials") { editResaleVal = null; paintResaleBox(tier, null); return; }
     if (tier !== "elevated" && tier !== "special") {
       // legacy/unknown tier: don't invent a price, show whatever is stored
@@ -2338,6 +2353,12 @@ function titleCase(s) {
     if (note && sel) note.classList.toggle("ksl-hidden", sel.value === loadedGrade);
   }
 
+  function onEditTierChange() {
+    // (L1) re-tier recomputes resale silently — no photo-coupling note (that cue
+    // is condition<->photo only; a tier change doesn't imply a bad photo).
+    renderEditResale();
+  }
+
   function buildEditPatch() {
     var photos = ["front", "back", "detail"]
       .map(function (k) { return slots[k]; })
@@ -2361,9 +2382,19 @@ function titleCase(s) {
     renderEditResale();                                     // guarantee editResaleVal is fresh
     var cond = $("ksl-edit-condition");
     var grade = cond ? cond.value : "";
-    if (grade) {
-      patch.condition_grade = grade;
-      patch.resale_value = (loadedRecord && loadedRecord.tier === "essentials") ? null : editResaleVal;
+    var tierSel = $("ksl-edit-tier");
+    var selTier = (tierSel && tierSel.value) ? tierSel.value : (loadedRecord ? loadedRecord.tier : "");
+    var tierChanged = !!(loadedRecord && selTier && selTier !== loadedTier);
+    // (L1) send tier ONLY when it actually changed from the loaded value — keeps
+    // the legacy null-resale exemption intact (an unchanged elevated/special row
+    // can still take a plain bin/photo edit without tripping the server guard).
+    if (tierChanged) patch.tier = selTier;
+    // condition_grade rides when a grade is selected; resale rides when a grade is
+    // selected OR the tier changed. The essentials-null decision reads the
+    // SELECTED tier (where the item lands), not the loaded one.
+    if (grade || tierChanged) {
+      if (grade) patch.condition_grade = grade;
+      patch.resale_value = (selTier === "essentials") ? null : editResaleVal;
     }
     // Option B grid thumb: ride only when a regen landed this save (runEditSave's
     // prelude set editThumbUrl). Omitted -> edge fn whitelist preserves the DB
@@ -2463,7 +2494,7 @@ function titleCase(s) {
     }).then(function (res) {
       if (res.ok && res.j.ok && res.j.item) {
         ["status", "primary_photo_url", "photo_urls", "video_url", "thumbnail_url",
-         "bin_location", "featured", "condition_grade", "retail_value", "resale_value"]
+         "bin_location", "featured", "tier", "condition_grade", "retail_value", "resale_value"]
           .forEach(function (k) { if (res.j.item[k] !== undefined) loadedRecord[k] = res.j.item[k]; });
         // Thumb regen (if any) is now DB truth -> clear the dirty flags so a
         // follow-up save that doesn't touch the primary skips regeneration
@@ -2482,6 +2513,11 @@ function titleCase(s) {
         var condEl = $("ksl-edit-condition");
         if (condEl && loadedRecord.condition_grade != null) condEl.value = loadedRecord.condition_grade;
         loadedGrade = loadedRecord.condition_grade || "";
+        // (L1) sync the tier select + baseline to the echoed row, so the next
+        // save computes tierChanged against DB truth (not the pre-save value).
+        var tierElB = $("ksl-edit-tier");
+        if (tierElB && loadedRecord.tier != null) tierElB.value = loadedRecord.tier;
+        loadedTier = loadedRecord.tier || "";
         editResaleVal = (loadedRecord.resale_value != null) ? Number(loadedRecord.resale_value) : null;
         paintResaleBox(loadedRecord.tier, loadedRecord.resale_value);
         var pn = $("ksl-edit-photonote"); if (pn) pn.classList.add("ksl-hidden");
@@ -2848,6 +2884,8 @@ function titleCase(s) {
     if (delBtn) delBtn.addEventListener("click", runEditDelete);
     var condSel = $("ksl-edit-condition");   // (1c) recompute resale + photo cue on re-grade
     if (condSel) condSel.addEventListener("input", onEditGradeChange);
+    var tierSelW = $("ksl-edit-tier");       // (L1) recompute resale on re-tier
+    if (tierSelW) tierSelW.addEventListener("input", onEditTierChange);
   })();
 
   /* ---- INIT ------------------------------------------------------------ */
