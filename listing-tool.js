@@ -165,10 +165,10 @@
     var st = document.createElement("style");
     st.id = "ksl-toggle-css";
     st.textContent =
-      "#ks-list-app .ksl-toggle{display:inline-flex;gap:0;padding:3px;border-radius:10px;" +
+      "#ks-list-app .ksl-toggle{display:flex;width:100%;box-sizing:border-box;gap:0;padding:3px;border-radius:10px;" +
         "background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);}" +
       "#ks-list-app .ksl-toggle button{appearance:none;-webkit-appearance:none;border:0;background:transparent;" +
-        "color:inherit;font:inherit;font-weight:600;padding:8px 22px;border-radius:8px;cursor:pointer;" +
+        "flex:1;text-align:center;color:inherit;font:inherit;font-weight:600;padding:8px 22px;border-radius:8px;cursor:pointer;" +
         "opacity:.55;transition:background .15s,opacity .15s;}" +
       "#ks-list-app .ksl-toggle button.is-active{background:#d24f28;color:#fff;opacity:1;}";
     document.head.appendChild(st);
