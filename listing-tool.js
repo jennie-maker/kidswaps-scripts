@@ -680,13 +680,13 @@
   });
 
   /* has the operator entered anything for the current item?
-     (SKU left at its "KS-" default does NOT count as content) */
+     (the auto-generated SKU + the default condition don't count as content) */
   function hasContent() {
     var any = false;
     root.querySelectorAll("[data-key]").forEach(function (el) {
       var v = (el.value || "").trim();
       if (!v) return;
-      if (el.getAttribute("data-key") === "sku" && v === "KS-") return;
+      if (el.getAttribute("data-key") === "sku") return;   // SKU is always auto-generated — never a draft signal
       if (el.getAttribute("data-key") === "condition_grade" && v === "great") return;
       any = true;
     });
