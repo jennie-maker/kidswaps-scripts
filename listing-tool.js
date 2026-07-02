@@ -224,24 +224,27 @@
      type:  text | number | select | textarea | checkbox
      add a field later  ==  add one entry here. */
   var SCHEMA = [
+    /* U1 2026-07-01c: size/age/retail lead — manual entry remembers these off the
+     * physical item first. Rarely-filled fields (season/occasion/note) sit dead
+     * last; review order follows this array too. */
+    { key:"clothing_size",  label:"Size",           type:"select", remote:true, combo:true, group:"clothing", required:true, placeholder:"Type to filter\u2026" },
+    { key:"toy_age_range",  label:"Age range",      type:"multipills", remote:true, group:"toy", required:true },
+    { key:"retail_value",   label:"Retail value",   type:"number", group:"both", required:true,  placeholder:"e.g. 48", step:"0.01", min:"0" },
     { key:"sku",            label:"SKU",            type:"text",   group:"both", required:true,  placeholder:"KS-00000", hint:"the KS label number on the item" },
     { key:"brand",          label:"Brand",          type:"text",   group:"both", required:true,  placeholder:"e.g. Patagonia" },
     { key:"item_name",      label:"Item name",      type:"text",   group:"both", required:true,  placeholder:"auto-fills from brand + category" },
     { key:"description",    label:"Description",    type:"textarea", group:"both", required:false },
-    { key:"toy_age_range",  label:"Age range",      type:"multipills", remote:true, group:"toy", required:true },
     { key:"toy_washability",label:"Washability",    type:"pills",  group:"toy", required:true,  options:["wipeable","washable"] },
     { key:"color",          label:"Color",          type:"select", remote:true, combo:true, group:"clothing", required:true, placeholder:"Type to filter\u2026" },
     { key:"category",       label:"Category",       type:"select", remote:true, combo:true, group:"clothing", required:true, placeholder:"Type to filter\u2026" },
-    { key:"clothing_size",  label:"Size",           type:"select", remote:true, combo:true, group:"clothing", required:true, placeholder:"Type to filter\u2026" },
     { key:"gender_style",   label:"Gender",         type:"select", group:"clothing", required:false, options:[{value:"boy",label:"Male"},{value:"girl",label:"Female"}] },
     { key:"tier",           label:"Tier",           type:"select", group:"both", required:true,  options:["essentials","elevated","special"] },
-    { key:"retail_value",   label:"Retail value",   type:"number", group:"both", required:true,  placeholder:"e.g. 48", step:"0.01", min:"0" },
     { key:"resale_value",   label:"Resale value",   type:"number", group:"both", required:false, noOptTag:true, step:"0.01", min:"0", hint:"Auto-fills for Elevated/Special — editable; Essentials skips it" },
     { key:"condition_grade",label:"Condition grade",type:"select", remote:true, group:"both", required:false },
+    { key:"bin_location",   label:"Bin location",   type:"text",     group:"both", required:true,  placeholder:"where it's stored" },
     { key:"season",         label:"Season",         type:"text",     group:"clothing", required:false, placeholder:"e.g. winter, all-season" },
     { key:"occasion",       label:"Occasion",       type:"select", remote:true, group:"both", required:false },
     { key:"condition_notes",label:"Personal note",  type:"textarea", group:"both", required:false, placeholder:"e.g. really soft fabric, runs a little big" },
-    { key:"bin_location",   label:"Bin location",   type:"text",     group:"both", required:true,  placeholder:"where it's stored" },
   ];
 
   /* upload validation mirrors inventory-upload */
@@ -968,8 +971,11 @@
     var ae = document.activeElement;            // never steal focus mid-typing
     if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) && ae.type !== "file") return;
     setTimeout(function () {
-      // color is a combo: focus the visible filter, not the hidden data-key input
-      var c = root.querySelector('[data-combo="color"]') || root.querySelector('[data-key="color"]');
+      // U1: the form now opens on Size (clothing) / Age (toy) — land the cursor there.
+      // size is a combo: focus the visible filter, not the hidden data-key input.
+      var c = (itemType === "toy")
+        ? root.querySelector('[data-pillbox="toy_age_range"] .ksl-pill')
+        : (root.querySelector('[data-combo="clothing_size"]') || root.querySelector('[data-key="clothing_size"]'));
       if (c && c.offsetParent !== null) { try { c.focus(); } catch (e) {} }
     }, 50);
   }
