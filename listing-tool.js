@@ -259,6 +259,7 @@
     { key:"item_name",      label:"Item name",      type:"text",   group:"both", required:true,  placeholder:"auto-fills from brand + category" },
     { key:"description",    label:"Description",    type:"textarea", group:"both", required:false },
     { key:"toy_washability",label:"Washability",    type:"pills",  group:"toy", required:true,  options:["wipeable","washable"] },
+    { key:"is_complete",    label:"Completeness",   type:"pills",  group:"toy", required:true,  options:[{value:"complete",label:"Complete"},{value:"missing",label:"Missing pieces"}] },
     { key:"color",          label:"Color",          type:"select", remote:true, combo:true, group:"clothing", required:true, placeholder:"Type to filter\u2026" },
     { key:"category",       label:"Category",       type:"select", remote:true, combo:true, group:"clothing", required:true, placeholder:"Type to filter\u2026" },
     { key:"gender_style",   label:"Gender",         type:"select", group:"clothing", required:false, options:[{value:"boy",label:"Male"},{value:"girl",label:"Female"}] },
@@ -298,6 +299,7 @@
   var loadedRecord = null;   // the inventory row returned by inventory-edit "load"
   var loadedGrade  = "";     // condition_grade at load — drives the snag-1 photo-coupling cue
   var loadedTier   = "";     // (L1) tier at load — buildEditPatch sends tier ONLY when it changes from this
+  var loadedComplete = "";   // (L3) completeness at load ("", "complete", "missing") — send only on change
   var editResaleVal = null;  // last client-recomputed resale; rides the patch (operator never types it)
   var editLocked  = false;   // true when the loaded row is reserved/claimed
   var editPrimaryDirty = false; // edit mode: true once the primary photo changed this edit (new front OR make-primary) -> regen the grid thumb on save
@@ -448,6 +450,14 @@
       '<div class="ksl-field ksl-edit-tier">' +
         '<label class="ksl-label" for="ksl-edit-tier">Tier</label>' +
         '<select id="ksl-edit-tier"></select>' +
+      '</div>' +
+      '<div class="ksl-field ksl-edit-complete ksl-hidden" id="ksl-edit-complete-wrap">' +
+        '<label class="ksl-label" for="ksl-edit-complete">Completeness</label>' +
+        '<select id="ksl-edit-complete">' +
+          '<option value="">\u2014</option>' +
+          '<option value="complete">Complete</option>' +
+          '<option value="missing">Missing pieces</option>' +
+        '</select>' +
       '</div>' +
       '<div class="ksl-field ksl-edit-resale">' +
         '<label class="ksl-label">Resale value</label>' +
@@ -1219,6 +1229,9 @@
       if (v === "") return;
       p[f.key] = (f.type === "number") ? Number(v) : v;
     });
+    // L3: completeness pills -> boolean (key only exists on toys via group:"toy";
+    // unpicked -> key absent -> server leaves is_complete null)
+    if (typeof p.is_complete === "string") p.is_complete = (p.is_complete === "complete");
     var donePhotos = ["front", "back", "detail"]
       .map(function (k) { return slots[k]; })
       .filter(function (r) { return r && r.status === "done"; })
@@ -1277,6 +1290,7 @@
       var lbl = (f.key === "retail_value" && isToy) ? "Average current price" : f.label;   // A
       var v = (el.value || "").trim();
       if (f.key === "gender_style" && v) v = (v === "boy") ? "Male" : (v === "girl") ? "Female" : v;
+      if (f.key === "is_complete" && v) v = (v === "complete") ? "Complete" : "Missing pieces";   // L3
       // U2: long-text fields span both grid columns
       var wide = (f.key === "item_name" || f.key === "description" || f.key === "condition_notes");
       rows += v ? reviewRow(lbl, v, wide) : reviewRowEmpty(lbl, wide);   // L8: flag blanks instead of hiding
@@ -2070,6 +2084,12 @@
       var pickedAges = String(rec.size || "").split(", ")
                          .filter(function (v) { return validAges.indexOf(v) !== -1; });
       setField("toy_age_range", pickedAges.join(", "));
+      // L3: completeness carries forward from grading (intake.is_complete).
+      // Only false means "missing"; true/anything-else defaults complete.
+      if (rec.is_complete !== null && rec.is_complete !== undefined) {
+        setField("is_complete", rec.is_complete === false ? "missing" : "complete");
+        cueField("is_complete");
+      }
       reflectPills();
       if (pickedAges.length) cueField("toy_age_range");
       setAgeHint(rec.size && !pickedAges.length
@@ -2217,6 +2237,8 @@ function titleCase(s) {
     if (cond) cond.disabled = true;
     var tierL = $("ksl-edit-tier");       // (L1) re-tiering is locked too
     if (tierL) tierL.disabled = true;
+    var compL = $("ksl-edit-complete");   // (L3) completeness is locked too
+    if (compL) compL.disabled = true;
   }
   function hideLockBanner() {
     var el = $("ksl-edit-lock");
@@ -2229,6 +2251,8 @@ function titleCase(s) {
     if (cond) cond.disabled = false;
     var tierL = $("ksl-edit-tier");
     if (tierL) tierL.disabled = false;
+    var compL = $("ksl-edit-complete");
+    if (compL) compL.disabled = false;
   }
 
   /* swap insert chrome (toggle / details / List-item) <-> edit panel */
@@ -2314,6 +2338,11 @@ function titleCase(s) {
     var tierSel = $("ksl-edit-tier");                     // (L1) tier editable in edit mode
     if (tierSel) { fillSelect(tierSel, [{value:"essentials"},{value:"elevated"},{value:"special"}]); tierSel.value = rec.tier || ""; }
     loadedTier = rec.tier || "";                          // (L1) baseline for the tier-changed check
+    // (L3) completeness: toy-only control; null shows as "—" (legacy/ungraded rows)
+    var compW = $("ksl-edit-complete-wrap"), compS = $("ksl-edit-complete");
+    if (compW) compW.classList.toggle("ksl-hidden", t !== "toy");
+    loadedComplete = (rec.is_complete === true) ? "complete" : (rec.is_complete === false) ? "missing" : "";
+    if (compS) compS.value = loadedComplete;
     var pnote = $("ksl-edit-photonote");
     if (pnote) pnote.classList.add("ksl-hidden");
     renderEditResale();                                  // paint stored/computed resale (or essentials label)
@@ -2430,6 +2459,13 @@ function titleCase(s) {
       if (grade) patch.condition_grade = grade;
       patch.resale_value = (selTier === "essentials") ? null : editResaleVal;
     }
+    // (L3) completeness: toy records only, send ONLY when changed from the loaded
+    // value (mirrors tier) — "" clears to null, otherwise boolean. Outside the
+    // pricing guard server-side, so it never trips resale validation.
+    var compS2 = $("ksl-edit-complete");
+    if (compS2 && loadedRecord && loadedRecord.item_type === "toy" && compS2.value !== loadedComplete) {
+      patch.is_complete = (compS2.value === "") ? null : (compS2.value === "complete");
+    }
     // Option B grid thumb: ride only when a regen landed this save (runEditSave's
     // prelude set editThumbUrl). Omitted -> edge fn whitelist preserves the DB
     // value (the "leave untouched" branch). The client never sends null here.
@@ -2528,7 +2564,7 @@ function titleCase(s) {
     }).then(function (res) {
       if (res.ok && res.j.ok && res.j.item) {
         ["status", "primary_photo_url", "photo_urls", "video_url", "thumbnail_url",
-         "bin_location", "featured", "tier", "condition_grade", "retail_value", "resale_value"]
+         "bin_location", "featured", "tier", "condition_grade", "retail_value", "resale_value", "is_complete"]
           .forEach(function (k) { if (res.j.item[k] !== undefined) loadedRecord[k] = res.j.item[k]; });
         // Thumb regen (if any) is now DB truth -> clear the dirty flags so a
         // follow-up save that doesn't touch the primary skips regeneration
@@ -2552,6 +2588,11 @@ function titleCase(s) {
         var tierElB = $("ksl-edit-tier");
         if (tierElB && loadedRecord.tier != null) tierElB.value = loadedRecord.tier;
         loadedTier = loadedRecord.tier || "";
+        // (L3) sync the completeness select + baseline to the echoed row
+        loadedComplete = (loadedRecord.is_complete === true) ? "complete"
+                       : (loadedRecord.is_complete === false) ? "missing" : "";
+        var compElB = $("ksl-edit-complete");
+        if (compElB) compElB.value = loadedComplete;
         editResaleVal = (loadedRecord.resale_value != null) ? Number(loadedRecord.resale_value) : null;
         paintResaleBox(loadedRecord.tier, loadedRecord.resale_value);
         var pn = $("ksl-edit-photonote"); if (pn) pn.classList.add("ksl-hidden");
