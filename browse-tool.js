@@ -643,7 +643,8 @@
             '<h2 class="ks-detail-name">' + escapeHtml(descriptor(item)) + '</h2>' +
             metaLine +
             '<div class="ks-detail-tier-row">' + tierPill + condHtml + '</div>' +
-            (retail ? '<p class="ks-detail-retail">Retail value new ' + retail + '</p>' : '') +
+            (retail ? '<p class="ks-detail-retail">' +
+              (isToy ? 'Worth about ' + retail : 'Retail value new ' + retail) + '</p>' : '') +
             (item.is_luxury ? LUX_NOTE : '') +
             extraLine +
             blocks +
