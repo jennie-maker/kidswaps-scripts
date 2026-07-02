@@ -172,7 +172,31 @@
       "#ks-list-app .ksl-toggle button{appearance:none;-webkit-appearance:none;border:0;background:transparent;" +
         "flex:1;text-align:center;color:inherit;font:inherit;font-weight:600;padding:8px 22px;border-radius:8px;cursor:pointer;" +
         "opacity:.55;transition:background .15s,opacity .15s;}" +
-      "#ks-list-app .ksl-toggle button.is-active{background:var(--ksl-btn);color:#fff;opacity:1;}";
+    document.head.appendChild(st);
+  })();
+
+  /* U2 2026-07-01c: (a) item_name + description span the full form row (long
+     text fields, cramped at 1/3 width); covers grid AND flex layouts so it
+     doesn't care how the page CSS lays out .ksl-details. (b) review panel =
+     compact 2-col grid of label-over-value cells so the whole review scans on
+     one phone screen; banner/thumbs/wide rows span both columns. #ksl-review-body
+     ID specificity wins over the page-CSS class rules. Pure JS inject. */
+  (function injectReviewCss() {
+    if (document.getElementById("ksl-review-css")) return;
+    var st = document.createElement("style");
+    st.id = "ksl-review-css";
+    st.textContent =
+      '#ks-list-app .ksl-details .ksl-field[data-field="item_name"],' +
+      '#ks-list-app .ksl-details .ksl-field[data-field="description"]{' +
+        'grid-column:1/-1;flex-basis:100%;width:100%;max-width:100%;box-sizing:border-box;}' +
+      "#ksl-review-body{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;}" +
+      "#ksl-review-body>*:not(.ksl-review-row){grid-column:1/-1;}" +
+      "#ksl-review-body .ksl-review-row{display:flex;flex-direction:column;gap:1px;margin:0;" +
+        "padding:6px 9px;background:rgba(255,255,255,.05);border:0;border-radius:8px;}" +
+      "#ksl-review-body .ksl-review-row.is-wide{grid-column:1/-1;}" +
+      "#ksl-review-body .ksl-review-k{font-size:.68rem;font-weight:600;letter-spacing:.05em;" +
+        "text-transform:uppercase;opacity:.6;}" +
+      "#ksl-review-body .ksl-review-v{font-size:.92rem;line-height:1.3;word-break:break-word;}";
     document.head.appendChild(st);
   })();
 
@@ -1211,12 +1235,12 @@
     return up || (video && video.status === "uploading");
   }
 
-  function reviewRow(label, value) {
-    return '<div class="ksl-review-row"><span class="ksl-review-k">' + label +
+  function reviewRow(label, value, wide) {
+    return '<div class="ksl-review-row' + (wide ? ' is-wide' : '') + '"><span class="ksl-review-k">' + label +
            '</span><span class="ksl-review-v">' + value + '</span></div>';
   }
-  function reviewRowEmpty(label) {
-    return '<div class="ksl-review-row"><span class="ksl-review-k">' + label +
+  function reviewRowEmpty(label, wide) {
+    return '<div class="ksl-review-row' + (wide ? ' is-wide' : '') + '"><span class="ksl-review-k">' + label +
            '</span><span class="ksl-review-v" style="color:var(--ks-amber);font-weight:600">not set</span></div>';
   }
   function showReview() {
@@ -1225,13 +1249,15 @@
     // caught at the one glance before Confirm, the autopilot failure point.
     // Inline-styled so it needs no page CSS (pure JS deploy).
     var isToy = (itemType === "toy");
-    var bannerBg = isToy ? "rgba(245,145,169,.14)" : "rgba(231,80,37,.14)";
     var bannerBd = isToy ? "rgba(245,145,169,.55)" : "rgba(231,80,37,.55)";
     var bannerInk = isToy ? "#F591A9" : "#E75025";
-    var rows = '<div style="margin:0 0 14px;padding:10px 14px;border-radius:10px;' +
-                 'background:' + bannerBg + ';border:1px solid ' + bannerBd + ';' +
-                 'color:' + bannerInk + ';font-size:1rem;font-weight:700;letter-spacing:.02em;text-align:center">' +
-                 'Listing a ' + (isToy ? "TOY" : "CLOTHING") + ' item' +
+    // U2: heading treatment (left-aligned, colored underline, no fill) — the old
+    // filled pill read as a button. Color-coding kept: it's the wrong-type catch.
+    var rows = '<div style="margin:0 0 12px;padding:0 0 8px;' +
+                 'border-bottom:2px solid ' + bannerBd + ';' +
+                 'color:' + bannerInk + ';font-size:1.02rem;font-weight:700;' +
+                 'letter-spacing:.06em;text-transform:uppercase">' +
+                 'Listing a ' + (isToy ? "toy" : "clothing") + ' item' +
                '</div>';
     // L7: photo thumbnails up top — visual proof of what's being listed
     var revThumbs = ["front", "back", "detail"].map(function (k) {
@@ -1251,7 +1277,9 @@
       var lbl = (f.key === "retail_value" && isToy) ? "Average current price" : f.label;   // A
       var v = (el.value || "").trim();
       if (f.key === "gender_style" && v) v = (v === "boy") ? "Male" : (v === "girl") ? "Female" : v;
-      rows += v ? reviewRow(lbl, v) : reviewRowEmpty(lbl);   // L8: flag blanks instead of hiding
+      // U2: long-text fields span both grid columns
+      var wide = (f.key === "item_name" || f.key === "description" || f.key === "condition_notes");
+      rows += v ? reviewRow(lbl, v, wide) : reviewRowEmpty(lbl, wide);   // L8: flag blanks instead of hiding
     });
     if (itemType === "clothing" && setChk.checked) rows += reviewRow("Matching set", setCount.value + " pieces");
     var pc = ["front", "back", "detail"].filter(function (k) { return slots[k] && slots[k].status === "done"; }).length;
