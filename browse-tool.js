@@ -74,6 +74,14 @@
   var overlayOpen = false;
   var lastFocusEl = null;     // element to restore focus to when the overlay closes
   var currentDetailItem = null; // live overlay item — read by the mobile swipe gestures
+  // OP-BAR (post-list confirmation unit): true when this page load carried &op=1
+  // (only the listing tool's post-list/post-save redirect produces it). Session-
+  // sticky on purpose — openDetail's pushState rewrites the URL to bare ?sku=,
+  // so shared member URLs stay clean while the operator keeps the bar. The bar
+  // only LINKS to /admin/listing, which is admin-gated — param = convenience,
+  // the tool's gate = the security.
+  var OP_MODE = false;
+  try { OP_MODE = new URLSearchParams(location.search).get('op') === '1'; } catch (e) {}
 
   var SEARCH = '';            // current free-text query (raw; normalized at match time)
 
@@ -586,6 +594,10 @@
       : '';
 
     var extras = [];
+    // L3: toy completeness (member-facing honesty attribute) leads the line;
+    // null (legacy/ungraded) shows nothing — present-only like the rest.
+    if (isToy && item.is_complete === true) extras.push('Complete');
+    else if (isToy && item.is_complete === false) extras.push('Missing pieces');
     if (item.occasion) extras.push(escapeHtml(item.occasion));
     if (item.is_matching_set) {
       var n = item.set_piece_count;
@@ -638,12 +650,34 @@
             '<button type="button" class="ks-detail-cta" data-bag="1">' + BAG_SVG +
               '<span>Add to bag</span></button>' +
             '<span class="ks-detail-cta-cs" aria-live="polite"></span>' +
+            (OP_MODE && item.sku ? opBarHtml(item.sku) : '') +
           '</div>' +
         '</div>' +
       '</div>';
   }
 
+  /* OP-BAR: operator actions under the overlay (post-list confirmation unit).
+     Inline-styled — no Webflow CSS edit, same discipline as the rail type links.
+     Edit deep-links the listing tool's ?edit= handler; New listing is a fresh
+     form load. Anchors, so Cmd/middle-click works. */
+  function opBarHtml(sku) {
+    var btn = 'display:inline-block;padding:8px 14px;border-radius:8px;font-size:.85rem;' +
+              'font-weight:600;text-decoration:none;line-height:1.2;';
+    return '<div class="ks-detail-opbar" style="margin-top:14px;padding-top:12px;' +
+             'border-top:1px dashed rgba(0,0,0,.2);display:flex;gap:10px;align-items:center;flex-wrap:wrap">' +
+             '<span style="font-size:.68rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;opacity:.55">Operator</span>' +
+             '<a href="/admin/listing?edit=' + encodeURIComponent(sku) + '" style="' + btn +
+               'border:1px solid rgba(0,0,0,.28);color:inherit">Edit this listing</a>' +
+             '<a href="/admin/listing" style="' + btn + 'background:#E75025;color:#fff">New listing</a>' +
+           '</div>';
+  }
+
   function showUnavailable(root) {
+    // OP-BAR rides here too: an edit-save that retires an item redirects to a
+    // ?sku= that's no longer in the available set — the operator still needs
+    // Edit/New. SKU comes from the URL (a retired item is still Manage-loadable).
+    var opSku = '';
+    try { opSku = new URLSearchParams(location.search).get('sku') || ''; } catch (e) {}
     root.innerHTML =
       '<div class="ks-detail-backdrop" data-close="1"></div>' +
       '<div class="ks-detail-panel ks-detail-panel-msg" role="dialog" aria-modal="true">' +
@@ -651,6 +685,7 @@
         '<div class="ks-detail-msg">' +
           '<div class="ks-detail-msg-title">This piece is no longer available</div>' +
           '<div class="ks-detail-msg-sub">It may have just been claimed. Browse what\u2019s still in the collection.</div>' +
+          (OP_MODE && opSku ? opBarHtml(opSku) : '') +
         '</div>' +
       '</div>';
     root.removeAttribute('hidden');
