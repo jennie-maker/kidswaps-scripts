@@ -9,7 +9,7 @@
  *   - ?state=<x>   client-side override to paint block/failure screens, NO fetch.
  *   - ONE fetch commit:false → header / savings / coverage tiles / summary /
  *     coins / Closet-Standard seal / secure line, OR a block/failure screen.
- *     Charges/writes NOTHING. Confirm button is a LOGGED NO-OP this pass.
+ *     Charges/writes NOTHING (preview). Confirm now commits — see rev 7 below.
  *
  * rev 2 (2026-06-24): all CSS scoped under #ks-checkout-app so Webflow global
  *   heading/link styles can't bleed in (root cause of the centered header +
@@ -46,7 +46,17 @@
  *   re-derived server-side since the URL carries only SKU:credit_id): inline note
  *   on the line + a checkbox that gates Confirm until acknowledged. Each change
  *   replaceState()s the new ?items= so a reload keeps the member's choices.
- *   Confirm is STILL a logged no-op — commit:true is the separate launch flip.
+ * rev 7 (2026-07-02): COMMIT WIRED — Confirm now POSTs {commit:true, items:CART,
+ *   idempotency_key} (assume-commit default; idem key = crypto.randomUUID, stable
+ *   per unchanged cart, reset on any credit change). Server charges the saved card
+ *   off-session + commit_claim_batch; the page just sends and routes the result.
+ *   NEW renderSuccess() (the "You're all set." screen) reads items/value/bank from
+ *   the stashed last preview (LAST_PREVIEW) + charge/shipping from the commit
+ *   response; route() gains an ok+claim_ids branch. Every failure code already had
+ *   copy (renderFailure), so only the success screen was net-new. OPEN: lifetime-
+ *   saved $ hidden until the fn passes state.lifetime (line renders only if present);
+ *   browse-bag not cleared from here (checkout owns no bag storage). The ship-
+ *   tracking email the screen promises is a SEPARATE flow (manual at soft launch).
  * ========================================================================== */
 (function () {
   "use strict";
@@ -69,6 +79,13 @@
   var CART = null;          // mutable [{sku, credit_id}] — seeded from parseCart
   var MODAL_SKU = null;     // which line's modal is open
   var LAST_LINES = {};      // sku -> last rendered line (for modal open)
+  var LAST_PREVIEW = null;  // last preview payload (success screen reads items/value/bank from it)
+  var IDEM_KEY = null;      // stable per unchanged cart; reset on any credit change (fresh order = fresh key)
+
+  function newIdemKey() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return "ks-" + Date.now() + "-" + Math.random().toString(16).slice(2);
+  }
 
   var BLOCK_COPY = {
     paused: "Your membership is paused. Resume it to claim items.",
@@ -425,6 +442,7 @@
 
   // ---- receipt --------------------------------------------------------------
   function renderReceipt(p) {
+    LAST_PREVIEW = p;   // success screen reads items / value_of_items / bank-after from here
     var lines = Array.isArray(p.lines) ? p.lines : [];
     var head = lines.length === 1 ? "Your swap is ready" : "Your swaps are ready";
     var value = Number(p.value_of_items) || 0;
@@ -520,7 +538,6 @@
       vlGate +
       '<button class="ksc-btn" id="ksc-confirm" type="button">' + esc(btnLabel) + "</button>" +
       '<div class="ksc-secure">' + lockIcon() + "<span>Secured by Stripe</span></div>" +
-      '<div class="ksc-stub">Preview only — claim wiring comes next (this pass charges nothing)</div>' +
       modalHtml
     );
 
@@ -534,9 +551,7 @@
       if (needsAck) btn.disabled = true;
       btn.addEventListener("click", function () {
         if (btn.disabled) return;
-        console.log("[ks-checkout] confirm clicked — commit path not wired yet (preview build)");
-        btn.textContent = "Claim wiring comes next \u2713";
-        btn.disabled = true; btn.style.background = "#9a948c";
+        commitSwap(btn);
       });
     }
     var ack = document.getElementById("ksc-vlack");
@@ -565,6 +580,7 @@
       if (!sku || !credit) return;
       if (credit === currentCreditFor(sku)) return;   // picked the current one -> no-op
       setCreditFor(sku, credit);
+      IDEM_KEY = null;   // cart changed -> new order identity (avoids a stale key replaying)
       writeCartUrl();
       refreshPreview();
     });
@@ -633,6 +649,116 @@
     }
   }
 
+  // ---- commit (Confirm) -----------------------------------------------------
+  async function commitSwap(btn) {
+    var m = getMount();
+    var token = getToken();
+    if (!token) { renderError("Please log in to check out."); return; }
+    if (!IDEM_KEY) IDEM_KEY = newIdemKey();   // one identity per unchanged cart (double-tap / retry safe)
+    var restore = btn ? btn.textContent : "";
+    if (btn) { btn.disabled = true; btn.textContent = "Placing your swap\u2026"; }
+    if (m) m.classList.add("ksc-busy");
+    try {
+      var res = await fetch(FN_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-ms-token": token },
+        body: JSON.stringify({ commit: true, items: CART, idempotency_key: IDEM_KEY }),
+      });
+      var data = null;
+      try { data = await res.json(); } catch (e) { data = null; }
+      if (m) m.classList.remove("ksc-busy");
+      route(data, res.status);   // success -> renderSuccess; every failure -> existing screens
+    } catch (e) {
+      if (m) m.classList.remove("ksc-busy");
+      if (btn) { btn.disabled = false; btn.textContent = restore; }
+      renderError("We couldn't reach checkout. Your bag is saved \u2014 please try again.");
+    }
+  }
+
+  // ---- success (commit ok) --------------------------------------------------
+  function renderSuccess(commit) {
+    var p = LAST_PREVIEW || {};
+    var lines = Array.isArray(p.lines) ? p.lines : [];
+    var value = Number(p.value_of_items) || 0;
+    var charged = Number(commit && commit.charged_cents) || 0;
+    var shipCents = Number(commit && commit.shipping_cents) || 0;
+
+    var icCheck = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+    var icTruck = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17h4V5H2v12h3"/><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5v8h1"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="17.5" cy="17.5" r="1.5"/></svg>';
+    var icMail = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>';
+
+    var itemsHtml = lines.map(function (ln) {
+      return '<div class="ksc-item" style="padding:10px 12px; margin-bottom:8px;">' +
+        thumbHtml(ln) +
+        '<div class="ksc-main"><div class="nm">' + esc(ln.item_name || ln.sku) + "</div></div>" +
+      "</div>";
+    }).join("");
+
+    var payLine = charged === 0
+      ? '<div style="display:flex; align-items:center; gap:9px; color:var(--ks-green); font-weight:700;">' + icCheck + "<span>No charge, covered by your credits</span></div>"
+      : '<div style="display:flex; align-items:center; gap:9px; color:var(--ks-ink); font-weight:700;">' + icCheck + "<span>" + esc(moneyc(charged)) + " charged to your card</span></div>";
+    var shipLine = '<div style="display:flex; align-items:center; gap:9px; color:var(--ks-muted);">' + icTruck +
+      "<span>" + (shipCents > 0 ? "Shipping " + esc(moneyc(shipCents)) : "Shipping included") + "</span></div>";
+    var mailLine = '<div style="display:flex; align-items:center; gap:9px; color:var(--ks-muted);">' + icMail +
+      "<span>We\u2019ll email tracking when it ships</span></div>";
+
+    // lifetime saved: render ONLY if the payload carries it (not wired yet -> hidden, never blocks)
+    var lifetime = (p.lifetime && p.lifetime.saved_dollars != null) ? Number(p.lifetime.saved_dollars) : null;
+    var lifetimeBlock = (lifetime != null)
+      ? '<div style="border-top:1px solid var(--ks-line); margin-top:11px; padding-top:9px;">' +
+          '<div style="font-size:1.05rem; font-weight:700; color:var(--ks-orange); line-height:1.1;">' + esc(moneyRound(lifetime)) + "</div>" +
+          '<div style="font-size:.74rem; color:var(--ks-muted); margin-top:3px;">Saved with KidSwaps so far</div></div>'
+      : "";
+
+    function step(label, active) {
+      var dot = active
+        ? '<div style="width:16px; height:16px; border-radius:50%; background:var(--ks-orange); margin:0 auto 6px;"></div>'
+        : '<div style="width:16px; height:16px; border-radius:50%; background:var(--ks-cream); border:2px solid var(--ks-line); box-sizing:border-box; margin:0 auto 6px;"></div>';
+      var tx = active ? "color:var(--ks-ink); font-weight:700;" : "color:var(--ks-muted);";
+      return '<div style="position:relative; text-align:center; flex:1;">' + dot +
+        '<span style="font-size:.7rem; ' + tx + '">' + esc(label) + "</span></div>";
+    }
+    var timeline =
+      '<div style="background:var(--ks-card); border:1px solid var(--ks-line); border-radius:12px; padding:15px 14px; margin:12px 0;">' +
+        '<div style="display:flex; justify-content:space-between; position:relative;">' +
+          '<div style="position:absolute; top:7px; left:16%; right:16%; height:2px; background:var(--ks-line);"></div>' +
+          step("Confirmed", true) + step("Shipped", false) + step("Delivered", false) +
+        "</div>" +
+      "</div>";
+
+    var savingsTile =
+      '<div style="background:var(--ks-card); border:1px solid var(--ks-line); border-radius:12px; padding:14px;">' +
+        '<div style="font-size:1.7rem; font-weight:700; color:var(--ks-orange); line-height:1.1;">' + esc(moneyRound(value)) + "</div>" +
+        '<div style="font-size:.76rem; color:var(--ks-muted); margin-top:3px;">Saved on this swap</div>' +
+        lifetimeBlock +
+      "</div>";
+    var earnTile =
+      '<div style="background:var(--ks-card); border:1px solid var(--ks-line); border-radius:12px; padding:14px;">' +
+        '<div style="font-weight:700; font-size:.95rem; color:var(--ks-ink); margin-bottom:6px;">The more you send, the more you earn</div>' +
+        '<div style="font-size:.82rem; color:var(--ks-muted); line-height:1.5;">Every accepted item you send in adds a credit to your bank.</div>' +
+      "</div>";
+
+    // headline is count-neutral; name dropped (not in payload) -> surface first name later to greet by name
+    setHtml(
+      coinsHtml(p.bank, p.cap) +
+      '<div style="background:var(--ks-card); border:1px solid var(--ks-line); border-radius:12px; padding:16px; margin:6px 0 12px;">' +
+        '<h1 class="ksc-head" style="font-size:2.4rem; margin:0 0 14px;">You\u2019re all set.</h1>' +
+        itemsHtml +
+        '<div style="border-top:1px solid var(--ks-line); margin-top:6px; padding-top:12px; display:flex; flex-direction:column; gap:8px; font-size:.9rem;">' +
+          payLine + shipLine + mailLine +
+        "</div>" +
+        '<div style="border-top:1px solid var(--ks-line); margin-top:14px; padding-top:12px;">' +
+          '<div style="font-weight:700; font-size:1rem; color:var(--ks-ink); margin-bottom:6px;">Thank you for swapping</div>' +
+          '<div style="font-size:.9rem; color:var(--ks-muted); line-height:1.6;">You chose a new way to shop for your kids, and gave good things a second life.</div>' +
+        "</div>" +
+      "</div>" +
+      timeline +
+      '<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">' + savingsTile + earnTile + "</div>" +
+      '<a class="ksc-btn" href="/dashboard" style="text-decoration:none; text-align:center; box-sizing:border-box;">Go to my dashboard</a>' +
+      '<a href="/browse" style="display:block; width:100%; box-sizing:border-box; text-align:center; margin-top:8px; background:transparent; color:var(--ks-orange); border:1px solid var(--ks-line); border-radius:50px; padding:14px; font-weight:700; text-decoration:none;">Keep browsing</a>'
+    );
+  }
+
   // ---- block / failure / error / loading ------------------------------------
   function renderBlock(reason, note) {
     var title = BLOCK_TITLE[reason] || "Just a moment";
@@ -668,6 +794,7 @@
 
   function route(data, status) {
     if (data && data.ok === true && data.mode === "preview") { renderReceipt(data); return; }
+    if (data && data.ok === true && Array.isArray(data.claim_ids)) { renderSuccess(data); return; }
     if (data && data.can_claim === false && data.block_reason) { renderBlock(data.block_reason, data.note); return; }
     if (data && data.failure) { renderFailure(data.failure, data.note); return; }
     if (status === 401 || status === 403) { renderError(friendlyError(data && data.error)); return; }
