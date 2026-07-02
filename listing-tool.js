@@ -599,6 +599,24 @@
       "#ks-list-app .ksl-bm-cancel{padding:9px 16px;border:1px solid rgba(255,255,255,.22);border-radius:8px;background:transparent;color:inherit;font:inherit;cursor:pointer}" +
       "#ks-list-app .ksl-bm-confirm{padding:9px 18px;border:0;border-radius:8px;background:var(--ksl-btn);color:#fff;font:inherit;font-weight:600;cursor:pointer}" +
       "#ks-list-app .ksl-bm-confirm:disabled{opacity:.6;cursor:default}" +
+      /* --- brand EDIT (BR): pencil on rows + edit/cascade modal states --- */
+      "#ks-list-app .ksl-brand-nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
+      "#ks-list-app .ksl-brand-edit{flex:0 0 auto;opacity:.45;cursor:pointer;font-size:.9rem;line-height:1;padding:2px 7px;border-radius:6px}" +
+      "#ks-list-app .ksl-brand-edit:hover{opacity:1;background:color-mix(in srgb, var(--ksl-btn) 22%, transparent)}" +
+      "#ks-list-app .ksl-bm-namerow{margin:0 0 16px}" +
+      "#ks-list-app .ksl-bm-nameinput{width:100%;box-sizing:border-box;padding:10px 12px;margin:6px 0 0;border:1px solid rgba(255,255,255,.22);border-radius:9px;background:rgba(255,255,255,.05);color:inherit;font:inherit}" +
+      "#ks-list-app .ksl-bm-err{margin:0 0 12px;font-size:.8rem;color:#e0857a;display:none}" +
+      "#ks-list-app .ksl-bm-err.is-shown{display:block}" +
+      "#ks-list-app .ksl-bm-casc-msg{margin:0 0 18px;font-size:.9rem;line-height:1.45}" +
+      "#ks-list-app .ksl-bm-casc-msg b{font-weight:600}" +
+      "#ks-list-app .ksl-bm-casc-keep{padding:9px 16px;border:1px solid rgba(255,255,255,.22);border-radius:8px;background:transparent;color:inherit;font:inherit;cursor:pointer}" +
+      "#ks-list-app .ksl-bm-casc-go{padding:9px 18px;border:0;border-radius:8px;background:var(--ksl-btn);color:#fff;font:inherit;font-weight:600;cursor:pointer}" +
+      "#ks-list-app .ksl-bm-casc-go:disabled{opacity:.6;cursor:default}" +
+      "#ks-list-app .ksl-bm-namerow,#ks-list-app .ksl-bm-cascade{display:none}" +
+      "#ks-list-app .ksl-brand-card.mode-edit .ksl-bm-addsub{display:none}" +
+      "#ks-list-app .ksl-brand-card.mode-edit .ksl-bm-namerow{display:block}" +
+      "#ks-list-app .ksl-brand-card.mode-cascade .ksl-bm-addsub,#ks-list-app .ksl-brand-card.mode-cascade .ksl-bm-namerow,#ks-list-app .ksl-brand-card.mode-cascade .ksl-bm-err,#ks-list-app .ksl-brand-card.mode-cascade .ksl-bm-tierlabel,#ks-list-app .ksl-brand-card.mode-cascade .ksl-bm-tiers,#ks-list-app .ksl-brand-card.mode-cascade > .ksl-bm-warn,#ks-list-app .ksl-brand-card.mode-cascade > .ksl-bm-actions{display:none}" +
+      "#ks-list-app .ksl-brand-card.mode-cascade .ksl-bm-cascade{display:block}" +
       "#ks-list-app .ksl-field[data-field='resale_value'] input{border-left:3px solid var(--ksl-btn);background:color-mix(in srgb, var(--ksl-btn) 6%, transparent)}" +
       "#ks-list-app .ksl-field[data-field='resale_value'] > .ksl-label::after{content:'computed';margin-left:8px;padding:1px 7px;border-radius:999px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.05);color:#c2bcb4;font-size:.62rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;vertical-align:middle;white-space:nowrap}" +
       "#ks-list-app .ksl-batch-btn{display:block;width:100%;margin:0 0 12px;padding:11px 14px;border:1px dashed color-mix(in srgb, var(--ksl-btn) 55%, transparent);border-radius:10px;background:color-mix(in srgb, var(--ksl-btn) 6%, transparent);color:var(--ksl-btn);font:inherit;font-weight:600;font-size:.9rem;cursor:pointer}" +
@@ -1674,8 +1692,11 @@
     var html = matches.map(function (b, i) {
       var tier = b.default_tier
         ? '<span class="ksl-brand-tier">' + escBrand(b.default_tier) + '</span>' : "";
+      var pencil = b.id
+        ? '<span class="ksl-brand-edit" data-brand-edit="' + i + '" title="Edit brand">\u270E</span>' : "";
       return '<div class="ksl-brand-opt" data-brand-idx="' + i + '">' +
-               escBrand(b.brand_name) + tier + '</div>';
+               '<span class="ksl-brand-nm">' + escBrand(b.brand_name) + '</span>' +
+               tier + pencil + '</div>';
     }).join("");
     if (!matches.length && q) html = '<div class="ksl-brand-empty">No match in your list</div>';
     if (q && !hasExact) {
@@ -1699,6 +1720,10 @@
 
   /* add-new modal (built once, lazily) */
   var brandModal = null, brandModalName = "", brandModalTier = "essentials";
+  /* BR edit-mode context */
+  var brandModalMode = "add";        // "add" | "edit"
+  var brandEditId = null, brandEditOrigName = "", brandEditOrigTier = "", brandEditType = "";
+  var cascadeCtx = null;             // {old_name, new_name, item_type} while confirming a cascade
   function paintBrandModalTiers() {
     if (!brandModal) return;
     brandModal.querySelectorAll("[data-bm-tier]").forEach(function (b) {
@@ -1710,19 +1735,31 @@
     var m = document.createElement("div");
     m.className = "ksl-brand-modal";
     m.innerHTML =
-      '<div class="ksl-brand-card">' +
-        '<h3>Add a brand</h3>' +
-        '<p class="ksl-bm-sub">Adding <span class="ksl-bm-name"></span> to your permanent brand list.</p>' +
-        '<p class="ksl-bm-label">Default tier</p>' +
+      '<div class="ksl-brand-card mode-add">' +
+        '<h3 data-bm-title>Add a brand</h3>' +
+        '<p class="ksl-bm-sub ksl-bm-addsub">Adding <span class="ksl-bm-name"></span> to your permanent brand list.</p>' +
+        '<div class="ksl-bm-namerow">' +
+          '<p class="ksl-bm-label">Brand name</p>' +
+          '<input type="text" class="ksl-bm-nameinput" autocomplete="off" spellcheck="false" />' +
+        '</div>' +
+        '<p class="ksl-bm-err" data-bm-err></p>' +
+        '<p class="ksl-bm-label ksl-bm-tierlabel">Default tier</p>' +
         '<div class="ksl-bm-tiers">' +
           '<button type="button" class="ksl-bm-tier" data-bm-tier="essentials">essentials</button>' +
           '<button type="button" class="ksl-bm-tier" data-bm-tier="elevated">elevated</button>' +
           '<button type="button" class="ksl-bm-tier" data-bm-tier="special">special</button>' +
         '</div>' +
-        '<p class="ksl-bm-warn">Saves permanently \u2014 appears for every future listing.</p>' +
+        '<p class="ksl-bm-warn" data-bm-warn>Saves permanently \u2014 appears for every future listing.</p>' +
         '<div class="ksl-bm-actions">' +
           '<button type="button" class="ksl-bm-cancel">Cancel</button>' +
           '<button type="button" class="ksl-bm-confirm">Add brand</button>' +
+        '</div>' +
+        '<div class="ksl-bm-cascade">' +
+          '<p class="ksl-bm-casc-msg"></p>' +
+          '<div class="ksl-bm-actions">' +
+            '<button type="button" class="ksl-bm-casc-keep">Keep old name on them</button>' +
+            '<button type="button" class="ksl-bm-casc-go"></button>' +
+          '</div>' +
         '</div>' +
       '</div>';
     root.appendChild(m);
@@ -1732,15 +1769,41 @@
       });
     });
     m.querySelector(".ksl-bm-cancel").addEventListener("click", closeBrandModal);
-    m.querySelector(".ksl-bm-confirm").addEventListener("click", submitBrandAdd);
+    // confirm dispatches by mode: add -> insert, edit -> update
+    m.querySelector(".ksl-bm-confirm").addEventListener("click", function () {
+      if (brandModalMode === "edit") submitBrandEdit(); else submitBrandAdd();
+    });
+    m.querySelector(".ksl-bm-casc-keep").addEventListener("click", function () {
+      cascadeCtx = null; closeBrandModal();
+      showToast("Renamed \u2014 listed items keep the old name");
+    });
+    m.querySelector(".ksl-bm-casc-go").addEventListener("click", runCascade);
     m.addEventListener("mousedown", function (e) { if (e.target === m) closeBrandModal(); }); // backdrop
     brandModal = m;
     return m;
+  }
+  function showBrandModalState(mode) {
+    if (!brandModal) return;
+    var card = brandModal.querySelector(".ksl-brand-card");
+    card.classList.remove("mode-add", "mode-edit", "mode-cascade");
+    card.classList.add("mode-" + mode);
+  }
+  function setBrandErr(msg) {
+    if (!brandModal) return;
+    var el = brandModal.querySelector("[data-bm-err]");
+    if (!el) return;
+    if (msg) { el.textContent = msg; el.classList.add("is-shown"); }
+    else { el.textContent = ""; el.classList.remove("is-shown"); }
   }
   function openBrandModal(name) {
     name = (name || "").trim();
     if (!name) return;
     ensureBrandModal();
+    brandModalMode = "add";
+    setBrandErr("");
+    brandModal.querySelector("[data-bm-title]").textContent = "Add a brand";
+    brandModal.querySelector("[data-bm-warn]").textContent =
+      "Saves permanently \u2014 appears for every future listing.";
     brandModalName = name;
     brandModal.querySelector(".ksl-bm-name").textContent = "\u201c" + name + "\u201d";
     var tEl = root.querySelector('[data-key="tier"]');
@@ -1749,10 +1812,11 @@
     paintBrandModalTiers();
     var cf = brandModal.querySelector(".ksl-bm-confirm");
     cf.disabled = false; cf.textContent = "Add brand";
+    showBrandModalState("add");
     brandModal.classList.add("is-open");
     closeBrandSuggest();
   }
-  function closeBrandModal() { if (brandModal) brandModal.classList.remove("is-open"); }
+  function closeBrandModal() { cascadeCtx = null; if (brandModal) brandModal.classList.remove("is-open"); }
   function submitBrandAdd() {
     var cf = brandModal.querySelector(".ksl-bm-confirm");
     var name = brandModalName, type = itemType, tier = brandModalTier;
@@ -1768,10 +1832,9 @@
       });
     }).then(function (r) { return r.json(); }).then(function (d) {
       if (d && d.ok) {
-        if (!Array.isArray(BRANDS_BY_TYPE[type])) BRANDS_BY_TYPE[type] = [];
-        BRANDS_BY_TYPE[type].push({ brand_name: name, default_tier: tier });
         pickBrand(name); closeBrandModal();
         showToast("Added \u201c" + name + "\u201d to your brand list");
+        delete BRANDS_BY_TYPE[type]; loadBrands(type);   // refresh so the new row carries its id (edit needs it)
       } else if (d && d.reason === "exists") {
         pickBrand(name); closeBrandModal();
         showToast("Already in your list \u2014 selected it");
@@ -1783,6 +1846,130 @@
     }).catch(function () {
       cf.disabled = false; cf.textContent = "Add brand";
       showToast("Network error adding brand \u2014 try again", true);
+    });
+  }
+
+  /* ---- BRAND EDIT (BR) ------------------------------------------------- */
+  /* Reuses the add modal in edit mode (editable name + tier, prefilled from the
+     row). Keyed on the row's id (list now returns it). On save -> update; if the
+     rename touches listed inventory (affected>0), swap to the cascade-confirm
+     state so the operator chooses whether to rewrite those items too. */
+  function openBrandEditModal(row) {
+    if (!row || !row.id) {
+      showToast("Reload the page to edit this brand", true);
+      return;
+    }
+    ensureBrandModal();
+    brandModalMode = "edit";
+    brandEditId = row.id;
+    brandEditType = row.item_type || itemType;
+    brandEditOrigName = String(row.brand_name || "");
+    brandEditOrigTier = String(row.default_tier || "");
+    setBrandErr("");
+    brandModal.querySelector("[data-bm-title]").textContent = "Edit brand";
+    brandModal.querySelector("[data-bm-warn]").textContent =
+      "Renaming updates future listings and your approved list. You'll be asked before any items already listed under the old name are changed.";
+    var nameInput = brandModal.querySelector(".ksl-bm-nameinput");
+    nameInput.value = brandEditOrigName;
+    brandModalTier = (brandEditOrigTier === "essentials" || brandEditOrigTier === "elevated" ||
+                      brandEditOrigTier === "special") ? brandEditOrigTier : "essentials";
+    paintBrandModalTiers();
+    var cf = brandModal.querySelector(".ksl-bm-confirm");
+    cf.disabled = false; cf.textContent = "Save changes";
+    showBrandModalState("edit");
+    brandModal.classList.add("is-open");
+    closeBrandSuggest();
+  }
+  function submitBrandEdit() {
+    var cf = brandModal.querySelector(".ksl-bm-confirm");
+    var nameInput = brandModal.querySelector(".ksl-bm-nameinput");
+    var newName = (nameInput.value || "").trim();
+    var newTier = brandModalTier;
+    setBrandErr("");
+    if (!newName) { setBrandErr("Brand name can\u2019t be empty."); return; }
+    // no-op guard: nothing actually changed
+    if (newName === brandEditOrigName && newTier === brandEditOrigTier) {
+      closeBrandModal();
+      return;
+    }
+    var id = brandEditId, type = brandEditType, oldName = brandEditOrigName;
+    cf.disabled = true; cf.textContent = "Saving\u2026";
+    getToken().then(function (t) {
+      return fetch(FN_BRAND, {
+        method: "POST",
+        headers: {
+          "x-ms-token": t, "content-type": "application/json",
+          "apikey": ANON, "authorization": "Bearer " + ANON
+        },
+        body: JSON.stringify({ action: "update", id: id, brand_name: newName, default_tier: newTier })
+      });
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (d && d.ok) {
+        // patch the local canonical row so the dropdown reflects the change now
+        var list = BRANDS_BY_TYPE[type];
+        if (Array.isArray(list)) {
+          for (var i = 0; i < list.length; i++) {
+            if (list[i].id === id) { list[i].brand_name = newName; list[i].default_tier = newTier; break; }
+          }
+        }
+        renderBrandSuggest();
+        if (d.name_changed && d.affected > 0) {
+          openCascadeConfirm(d.old_name || oldName, d.new_name || newName, d.item_type || type, d.affected);
+        } else {
+          closeBrandModal();
+          showToast("Saved changes to \u201c" + newName + "\u201d");
+        }
+      } else if (d && d.reason === "exists") {
+        cf.disabled = false; cf.textContent = "Save changes";
+        setBrandErr("That name already exists for " + type + ".");
+      } else {
+        cf.disabled = false; cf.textContent = "Save changes";
+        showToast("Couldn\u2019t save that change \u2014 try again", true);
+      }
+    }).catch(function () {
+      cf.disabled = false; cf.textContent = "Save changes";
+      showToast("Network error saving brand \u2014 try again", true);
+    });
+  }
+  function openCascadeConfirm(oldName, newName, type, affected) {
+    cascadeCtx = { old_name: oldName, new_name: newName, item_type: type };
+    var n = affected, word = n === 1 ? "item" : "items";
+    brandModal.querySelector(".ksl-bm-casc-msg").innerHTML =
+      "<b>" + escBrand(String(n)) + " listed " + word + "</b> still show the old name \u201c" +
+      escBrand(oldName) + "\u201d. Update " + (n === 1 ? "it" : "them") + " to \u201c" +
+      escBrand(newName) + "\u201d too?";
+    var go = brandModal.querySelector(".ksl-bm-casc-go");
+    go.disabled = false;
+    go.textContent = "Update " + n + " " + word;
+    showBrandModalState("cascade");
+  }
+  function runCascade() {
+    if (!cascadeCtx) { closeBrandModal(); return; }
+    var go = brandModal.querySelector(".ksl-bm-casc-go");
+    var ctx = cascadeCtx;
+    go.disabled = true; go.textContent = "Updating\u2026";
+    getToken().then(function (t) {
+      return fetch(FN_BRAND, {
+        method: "POST",
+        headers: {
+          "x-ms-token": t, "content-type": "application/json",
+          "apikey": ANON, "authorization": "Bearer " + ANON
+        },
+        body: JSON.stringify({
+          action: "cascade", old_name: ctx.old_name, new_name: ctx.new_name, item_type: ctx.item_type
+        })
+      });
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      cascadeCtx = null; closeBrandModal();
+      if (d && d.ok) {
+        var u = d.updated || 0;
+        showToast("Updated " + u + " listed " + (u === 1 ? "item" : "items"));
+      } else {
+        showToast("Rename saved, but updating listed items failed \u2014 retry from the pencil", true);
+      }
+    }).catch(function () {
+      cascadeCtx = null; closeBrandModal();
+      showToast("Rename saved, but updating listed items failed \u2014 network error", true);
     });
   }
 
@@ -1811,6 +1998,13 @@
     }
   });
   root.addEventListener("click", function (e) {
+    var pen = e.target.closest ? e.target.closest("[data-brand-edit]") : null;
+    if (pen && root.contains(pen)) {
+      e.stopPropagation();
+      var b2 = brandMatches[parseInt(pen.getAttribute("data-brand-edit"), 10)];
+      if (b2) openBrandEditModal(b2);
+      return;
+    }
     var opt = e.target.closest ? e.target.closest(".ksl-brand-opt") : null;
     if (opt && root.contains(opt)) {
       var b = brandMatches[parseInt(opt.getAttribute("data-brand-idx"), 10)];
