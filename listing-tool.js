@@ -524,17 +524,6 @@
       '</div>' +
     '</div>' +
 
-    '<div class="ksl-review ksl-hidden" id="ksl-success">' +
-      '<div class="ksl-review-panel">' +
-        '<h3 class="ksl-review-title ksl-success-title">\u2713 Listed</h3>' +
-        '<div class="ksl-success-body" id="ksl-success-body"></div>' +
-        '<div class="ksl-review-actions">' +
-          '<button type="button" class="ksl-review-back" id="ksl-success-view">View live on browse</button>' +
-          '<button type="button" class="ksl-submit ksl-review-confirm" id="ksl-success-again">List another</button>' +
-        '</div>' +
-      '</div>' +
-    '</div>' +
-
     '<div class="ksl-review ksl-hidden" id="ksl-dupe">' +
       '<div class="ksl-review-panel">' +
         '<h3 class="ksl-review-title">SKU already in use</h3>' +
@@ -660,9 +649,6 @@
   var submitBtn = $("ksl-submit"), toast = $("ksl-toast");
   var reviewEl = $("ksl-review"), reviewBody = $("ksl-review-body");
   var reviewBack = $("ksl-review-back"), reviewConfirm = $("ksl-review-confirm");
-  var successEl = $("ksl-success"), successBody = $("ksl-success-body");
-  var successView = $("ksl-success-view"), successAgain = $("ksl-success-again");
-  var lastListedSku = "";
 
   /* ---- ITEM TYPE TOGGLE ------------------------------------------------ */
   function applyType() {
@@ -1375,8 +1361,17 @@
       reviewEl.classList.add("ksl-hidden");
       if (res.ok && res.j.ok) {
         var sku = res.j.item && res.j.item.sku ? res.j.item.sku : "";
-        showToast("Listed " + sku + " ✓");
-        showSuccess(res.j.item || { sku: sku });
+        // U4: the live browse overlay IS the confirmation (real photo + data a
+        // member sees). Clear the draft first — a stale draft would raise the
+        // restore banner when the op-bar's "New listing" brings us back. &op=1
+        // is the post-list marker that gates the browse operator action bar.
+        if (sku) {
+          try { sessionStorage.removeItem(DRAFT_KEY); } catch (e2) {}
+          window.location.href = (itemType === "toy" ? "/toys" : "/clothing") +
+            "?sku=" + encodeURIComponent(sku) + "&op=1";
+          return;
+        }
+        showToast("Listed \u2713");   // no echoed SKU (shouldn't happen) — stay put
       } else if (res.j && res.j.code === "duplicate_sku") {
         // SKU collision: the DB UNIQUE constraint refused it. Show the blocking
         // three-out panel (Edit that item / different number / Cancel) instead
@@ -1396,13 +1391,8 @@
     });
   });
 
-  function resetForm() {
-    clearItem();
-    try { sessionStorage.removeItem(DRAFT_KEY); } catch (e) {}
-    window.scrollTo({ top: 0, behavior: "smooth" });
-    prefillNextSku();        // next label + graded data ready for the next item
-    armPhotoFirst();         // photos-first nudge + re-arm Color-after-photos
-  }
+  /* (U4: resetForm removed — "List another" was its only caller; the op-bar's
+     "New listing" is a fresh /admin/listing page load, which resets naturally.) */
 
   /* ---- DUPLICATE-SKU COLLISION PANEL ----------------------------------- */
   /* Shown when inventory-list refuses a duplicate SKU (the DB UNIQUE constraint
@@ -1448,34 +1438,12 @@
     });
   })();
 
-  /* ---- POST-LIST SUCCESS PANEL ----------------------------------------- */
-  /* On a successful list, show a confirm panel with a live deep-link to the
-     just-listed item on /browse (?sku= opens the overlay) + "List another"
-     (the existing resetForm path). Always links to /browse (the All page) so
-     any item type resolves in the available set. Client-only; reuses the
-     review-modal shell + the proven ?sku= deep-link. */
-  function showSuccess(item) {
-    lastListedSku = (item && item.sku) ? item.sku : "";
-    var img = (item && item.primary_photo_url) ? item.primary_photo_url : "";
-    var name = (item && item.item_name) ? item.item_name : "";
-    var html = "";
-    if (img) html += '<img class="ksl-success-thumb" src="' + esc(img) + '" alt="">';
-    html += '<div class="ksl-success-meta">' +
-              '<div class="ksl-success-sku">' + esc(lastListedSku) + '</div>' +
-              (name ? '<div class="ksl-success-name">' + esc(name) + '</div>' : '') +
-            '</div>';
-    if (successBody) successBody.innerHTML = html;
-    var title = root.querySelector(".ksl-success-title");
-    if (title) title.textContent = "\u2713 Listed " + lastListedSku;
-    if (successEl) successEl.classList.remove("ksl-hidden");
-  }
-  if (successView) successView.addEventListener("click", function () {
-    if (lastListedSku) window.open("/browse?sku=" + encodeURIComponent(lastListedSku), "_blank");
-  });
-  if (successAgain) successAgain.addEventListener("click", function () {
-    if (successEl) successEl.classList.add("ksl-hidden");
-    resetForm();
-  });
+  /* ---- POST-LIST CONFIRMATION ------------------------------------------- */
+  /* U4 2026-07-01c: the old success panel is GONE. A successful list (and
+     edit-save) redirects to the item's TYPE page at ?sku=KS-XXXXX&op=1 — the
+     live browse overlay is the confirmation. The browse-side &op=1 operator
+     action bar (Edit this listing -> /admin/listing?edit=SKU · New listing ->
+     /admin/listing) ships in the browse half of this unit. */
 
   /* ---- TOAST ----------------------------------------------------------- */
   var toastTimer;
@@ -2596,7 +2564,11 @@ function titleCase(s) {
         editResaleVal = (loadedRecord.resale_value != null) ? Number(loadedRecord.resale_value) : null;
         paintResaleBox(loadedRecord.tier, loadedRecord.resale_value);
         var pn = $("ksl-edit-photonote"); if (pn) pn.classList.add("ksl-hidden");
-        showToast("Saved " + sku + " \u2713 — verify in Supabase");
+        // U4: edit-save confirms on the live browse overlay too. Retired items
+        // land on the overlay's graceful "no longer available" fallback.
+        window.location.href = ((loadedRecord && loadedRecord.item_type === "toy") ? "/toys" : "/clothing") +
+          "?sku=" + encodeURIComponent(sku) + "&op=1";
+        return;
       } else if (res.status === 409) {
         editLocked = true;
         showLockBanner("This item is now reserved/claimed — editing is locked.");
@@ -2989,6 +2961,19 @@ function titleCase(s) {
     .catch(function (e) { console.error("[option_lists] load failed", e); })
     .then(function () { var ry = $("ksl-restore-yes"); if (ry) ry.disabled = false; })
     .then(function () {
+      // U4: ?edit=KS-XXXXX deep-link (the browse op-bar "Edit this listing"
+      // path) -> auto-load Manage-Item edit mode. Runs after option_lists
+      // settles so enterEditMode's selects fill with real options. Takes
+      // precedence over SKU prefill; the listing tool's admin gate + the
+      // operator-gated inventory-edit fn are the real security, not this param.
+      var editParam = null;
+      try { editParam = new URLSearchParams(window.location.search).get("edit"); } catch (e) {}
+      if (editParam) {
+        var mng = $("ksl-mng-sku");
+        if (mng) mng.value = editParam;
+        runManageLoad();
+        return;
+      }
       // Auto-advance the SKU only when there's no draft waiting to restore
       // (a draft owns the SKU; the restore banner handles it). Runs after
       // option_lists settles so the graded-data pull writes into ready selects.
