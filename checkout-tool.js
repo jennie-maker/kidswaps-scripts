@@ -114,6 +114,7 @@
     credit_unavailable: "A credit needs refreshing",
     no_card: "Add a card to check out",
     reprice: "Your total just changed",
+    off_plan: "Not on your plan",
   };
   var FAILURE_COPY = {
     card_declined: "We couldn't charge your card. Your bag is saved — update your card and try again.",
@@ -125,6 +126,7 @@
     credit_unavailable: "A credit in your bag is no longer available — please refresh your bag.",
     no_card: "No saved card on file. Add a card to check out.",
     reprice: "Your total changed since you opened this page. Please review and confirm again.",
+    off_plan: "This item isn't available on your current plan.",
   };
 
   // ---- helpers --------------------------------------------------------------
@@ -832,8 +834,13 @@
   function renderFailure(failure, note) {
     var title = FAILURE_TITLE[failure] || "Something needs a look";
     var copy = note || FAILURE_COPY[failure] || "Something went wrong — nothing was charged. Your bag is saved.";
+    // off_plan gets a plan-upgrade CTA (primary -> /pricing), browsing as the ghost fallback
+    var cta = (failure === "off_plan")
+      ? '<a class="act" href="/pricing">See our plans</a>' +
+        '<a class="act ghost" href="/browse" style="margin-top:8px;">Back to browsing</a>'
+      : '<a class="act ghost" href="/browse">Back to browsing</a>';
     setHtml('<div class="ksc-screen">' + bigIcon() + "<h2>" + esc(title) + "</h2><p>" + esc(copy) + "</p>" +
-      '<a class="act ghost" href="/browse">Back to browsing</a></div>');
+      cta + "</div>");
   }
   function renderError(msg) {
     setHtml('<div class="ksc-screen">' + bigIcon() + "<h2>We hit a snag</h2><p>" +
