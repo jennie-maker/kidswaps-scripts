@@ -744,9 +744,9 @@
 
     // savings = retail total (value_of_items); full-width gold; hidden when the retail figure is missing/0 so we never show "$0"
     var savingsBlock = (value > 0)
-      ? '<div style="background:var(--ks-gold); border-radius:12px; padding:18px 16px; margin-bottom:14px; text-align:center;">' +
-          '<div style="font-size:2.1rem; font-weight:700; color:#4a3410; line-height:1;">' + esc(moneyRound(value)) + "</div>" +
-          '<div style="font-size:.8rem; color:#7a5f1e; margin-top:5px;">What you\u2019d pay for these new</div>' +
+      ? '<div style="background:var(--ks-card); border:1px solid var(--ks-line); border-radius:12px; padding:16px; margin-bottom:14px; text-align:center;">' +
+          '<div style="font-size:2.1rem; font-weight:700; color:var(--ks-gold); line-height:1;">' + esc(moneyRound(value)) + "</div>" +
+          '<div style="font-size:.8rem; color:var(--ks-ink); margin-top:5px;">What you\u2019d pay for these new</div>' +
         "</div>"
       : "";
     // bank band: coin balance + earn nudge share the top row; #ksc-bank stays the mount for the future animated coin
@@ -814,8 +814,10 @@
       "</div>" +
       timeline +
       savingsBlock +
-      '<a class="ksc-btn" href="/dashboard" style="text-decoration:none; text-align:center; box-sizing:border-box;">Go to my dashboard</a>' +
-      '<a href="/browse" style="display:block; width:100%; box-sizing:border-box; text-align:center; margin-top:8px; background:transparent; color:var(--ks-orange); border:1px solid var(--ks-line); border-radius:50px; padding:14px; font-weight:700; text-decoration:none;">Keep browsing</a>'
+      '<div style="display:flex; gap:8px;">' +
+        '<a class="ksc-btn" href="/dashboard" style="flex:1; width:auto; font-size:.9rem; padding:14px 10px; text-decoration:none; text-align:center; box-sizing:border-box;">Go to my dashboard</a>' +
+        '<a href="/browse" style="flex:1; box-sizing:border-box; text-align:center; background:transparent; color:var(--ks-orange); border:1px solid var(--ks-line); border-radius:50px; padding:14px 10px; font-weight:700; font-size:.9rem; text-decoration:none;">Keep browsing</a>' +
+      "</div>"
     );
   }
 
