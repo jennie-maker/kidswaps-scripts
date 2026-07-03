@@ -742,16 +742,21 @@
         "</div>" +
       "</div>";
 
-    var savingsTile =
-      '<div style="background:var(--ks-card); border:1px solid var(--ks-line); border-radius:12px; padding:14px;">' +
-        '<div style="font-size:1.7rem; font-weight:700; color:var(--ks-orange); line-height:1.1;">' + esc(moneyRound(value)) + "</div>" +
-        '<div style="font-size:.76rem; color:var(--ks-muted); margin-top:3px;">Saved on this swap</div>' +
-        lifetimeBlock +
-      "</div>";
-    var earnTile =
-      '<div style="background:var(--ks-card); border:1px solid var(--ks-line); border-radius:12px; padding:14px;">' +
-        '<div style="font-weight:700; font-size:.95rem; color:var(--ks-ink); margin-bottom:6px;">The more you send, the more you earn</div>' +
-        '<div style="font-size:.82rem; color:var(--ks-muted); line-height:1.5;">Every accepted item you send in adds a credit to your bank.</div>' +
+    // savings = retail total (value_of_items); full-width gold; hidden when the retail figure is missing/0 so we never show "$0"
+    var savingsBlock = (value > 0)
+      ? '<div style="background:var(--ks-gold); border-radius:12px; padding:18px 16px; margin-bottom:14px; text-align:center;">' +
+          '<div style="font-size:2.1rem; font-weight:700; color:#4a3410; line-height:1;">' + esc(moneyRound(value)) + "</div>" +
+          '<div style="font-size:.8rem; color:#7a5f1e; margin-top:5px;">What you\u2019d pay for these new</div>' +
+        "</div>"
+      : "";
+    // bank band: coin balance + earn nudge share the top row; #ksc-bank stays the mount for the future animated coin
+    var bankBandHtml =
+      '<div style="background:var(--ks-card); border:1px solid var(--ks-line); border-radius:12px; padding:12px; display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin:6px 0 10px;">' +
+        '<div style="flex-shrink:0;">' + coinsHtml(p.bank, p.cap) + "</div>" +
+        '<div style="flex:1; min-width:150px;">' +
+          '<div style="font-weight:700; font-size:.9rem; color:var(--ks-ink); line-height:1.25; margin-bottom:4px;">The more you send, the more you earn</div>' +
+          '<div style="font-size:.8rem; color:var(--ks-muted); line-height:1.5;">Every accepted item you send in adds a credit to your bank.</div>' +
+        "</div>" +
       "</div>";
 
     // greet by name when present; count-neutral, drops cleanly to "You're all set." with no fallback word
@@ -761,7 +766,7 @@
     // order number = first 8 hex of the idempotency key (per-checkout identity; exact-match lookup on claim_idempotency PK)
     var orderNo = IDEM_KEY ? ("#" + String(IDEM_KEY).replace(/-/g, "").slice(0, 8).toUpperCase()) : "";
     var orderNoHtml = orderNo
-      ? '<div style="font-size:.8rem; color:var(--ks-muted); margin:0 0 14px; letter-spacing:.02em;">Order ' + esc(orderNo) + "</div>"
+      ? '<div style="margin:0 0 14px;"><span style="display:inline-block; background:#efe6d3; color:#6b6152; font-size:.75rem; font-weight:700; letter-spacing:.02em; padding:4px 11px; border-radius:20px;">Order ' + esc(orderNo) + "</span></div>"
       : "";
 
     // shipping-to (Memberstack customFields; render only when a street is on file; apartment line only when present)
@@ -790,7 +795,7 @@
       : "";
 
     setHtml(
-      coinsHtml(p.bank, p.cap) +
+      bankBandHtml +
       '<div style="background:var(--ks-card); border:1px solid var(--ks-line); border-radius:12px; padding:16px; margin:6px 0 12px;">' +
         '<h1 class="ksc-head" style="font-size:2.4rem; margin:0 0 2px;">' + headline + "</h1>" +
         orderNoHtml +
@@ -799,13 +804,16 @@
           payLine + shipLine + mailLine +
         "</div>" +
         shipToHtml +
-        '<div style="border-top:1px solid var(--ks-line); margin-top:14px; padding-top:12px;">' +
-          '<div style="font-weight:700; font-size:1rem; color:var(--ks-ink); margin-bottom:6px;">Thank you for swapping</div>' +
-          '<div style="font-size:.9rem; color:var(--ks-muted); line-height:1.6;">You chose a new way to shop for your kids, and gave good things a second life.</div>' +
+        '<div style="background:#f4e3d9; border-radius:12px; padding:15px; margin-top:14px; display:flex; gap:12px; align-items:flex-start;">' +
+          '<div style="flex-shrink:0; width:38px; height:38px; border-radius:50%; background:#e9c9b8; color:#c0491f; display:flex; align-items:center; justify-content:center;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg></div>' +
+          '<div>' +
+            '<div style="font-weight:700; font-size:1.05rem; color:var(--ks-ink); margin-bottom:4px;">Thank you for swapping</div>' +
+            '<div style="font-size:.88rem; color:#8a5f4d; line-height:1.55;">You chose a new way to shop for your kids, and gave good things a second life.</div>' +
+          "</div>" +
         "</div>" +
       "</div>" +
       timeline +
-      '<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">' + savingsTile + earnTile + "</div>" +
+      savingsBlock +
       '<a class="ksc-btn" href="/dashboard" style="text-decoration:none; text-align:center; box-sizing:border-box;">Go to my dashboard</a>' +
       '<a href="/browse" style="display:block; width:100%; box-sizing:border-box; text-align:center; margin-top:8px; background:transparent; color:var(--ks-orange); border:1px solid var(--ks-line); border-radius:50px; padding:14px; font-weight:700; text-decoration:none;">Keep browsing</a>'
     );
