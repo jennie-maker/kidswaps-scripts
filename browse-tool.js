@@ -636,6 +636,7 @@
       '<div class="ks-detail-panel" role="dialog" aria-modal="true" aria-label="' +
         escapeHtml(descriptor(item)) + '">' +
         '<button type="button" class="ks-detail-x" data-close="1" aria-label="Close">' + X_SVG + '</button>' +
+        (OP_MODE && item.sku ? opBarHtml(item.sku) : '') +
         '<div class="ks-detail-cols">' +
           (thumbs ? '<div class="ks-detail-rail">' + thumbs + '</div>' : '') +
           '<div class="ks-detail-media">' + main + tierBadge + zoom + '</div>' +
@@ -651,7 +652,6 @@
             '<button type="button" class="ks-detail-cta" data-bag="1">' + BAG_SVG +
               '<span>Add to bag</span></button>' +
             '<span class="ks-detail-cta-cs" aria-live="polite"></span>' +
-            (OP_MODE && item.sku ? opBarHtml(item.sku) : '') +
           '</div>' +
         '</div>' +
       '</div>';
@@ -664,8 +664,8 @@
   function opBarHtml(sku) {
     var btn = 'display:inline-block;padding:8px 14px;border-radius:8px;font-size:.85rem;' +
               'font-weight:600;text-decoration:none;line-height:1.2;';
-    return '<div class="ks-detail-opbar" style="margin-top:14px;padding-top:12px;' +
-             'border-top:1px dashed rgba(0,0,0,.2);display:flex;gap:10px;align-items:center;flex-wrap:wrap">' +
+    return '<div class="ks-detail-opbar" style="margin:0 0 14px;padding:0 44px 12px 0;' +
+             'border-bottom:1px dashed rgba(0,0,0,.2);display:flex;gap:10px;align-items:center;flex-wrap:wrap">' +
              '<span style="font-size:.68rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;opacity:.55">Operator</span>' +
              '<a href="/admin/listing?edit=' + encodeURIComponent(sku) + '" style="' + btn +
                'border:1px solid rgba(0,0,0,.28);color:inherit">Edit this listing</a>' +
@@ -683,10 +683,10 @@
       '<div class="ks-detail-backdrop" data-close="1"></div>' +
       '<div class="ks-detail-panel ks-detail-panel-msg" role="dialog" aria-modal="true">' +
         '<button type="button" class="ks-detail-x" data-close="1" aria-label="Close">' + X_SVG + '</button>' +
+        (OP_MODE && opSku ? opBarHtml(opSku) : '') +
         '<div class="ks-detail-msg">' +
           '<div class="ks-detail-msg-title">This piece is no longer available</div>' +
           '<div class="ks-detail-msg-sub">It may have just been claimed. Browse what\u2019s still in the collection.</div>' +
-          (OP_MODE && opSku ? opBarHtml(opSku) : '') +
         '</div>' +
       '</div>';
     root.removeAttribute('hidden');
