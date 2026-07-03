@@ -189,7 +189,7 @@
       '#ks-list-app .ksl-details .ksl-field[data-field="item_name"],' +
       '#ks-list-app .ksl-details .ksl-field[data-field="description"]{' +
         'grid-column:1/-1;flex-basis:100%;width:100%;max-width:100%;box-sizing:border-box;}' +
-      "#ksl-review-body{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;}" +
+      "#ksl-review-body{display:grid;grid-template-columns:repeat(3,1fr);gap:6px 8px;}" +
       "#ksl-review-body>*:not(.ksl-review-row){grid-column:1/-1;}" +
       "#ksl-review-body .ksl-review-row{display:flex;flex-direction:column;gap:1px;margin:0;" +
         "padding:6px 9px;background:rgba(255,255,255,.05);border:0;border-radius:8px;}" +
@@ -574,7 +574,7 @@
       "#ks-list-app .ksl-brand-results.is-open{display:block}" +
       "#ks-list-app .ksl-brand-opt{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;cursor:pointer;font-size:.9rem}" +
       "#ks-list-app .ksl-brand-opt:hover{background:color-mix(in srgb, var(--ksl-btn) 18%, transparent)}" +
-      "#ks-list-app .ksl-brand-tier{font-size:.66rem;opacity:.5;text-transform:uppercase;letter-spacing:.05em}" +
+      "#ks-list-app .ksl-brand-tier{font-size:.5rem;opacity:.3;text-transform:uppercase;letter-spacing:.02em;flex:0 0 auto}" +
       "#ks-list-app .ksl-brand-empty{padding:9px 12px;font-size:.82rem;opacity:.5}" +
       "#ks-list-app .ksl-combo-wrap{position:relative}" +
       "#ks-list-app .ksl-combo-results{display:none;position:absolute;left:0;right:0;top:100%;margin-top:3px;z-index:60;max-height:260px;overflow-y:auto;background:#1f1f1f;border:1px solid rgba(255,255,255,.18);border-radius:9px;box-shadow:0 10px 28px rgba(0,0,0,.45)}" +
@@ -1285,6 +1285,9 @@
                    'border-radius:8px;border:1px solid var(--ks-line)">' : "";
     }).filter(Boolean).join("");
     if (revThumbs) rows += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px">' + revThumbs + '</div>';
+    // U3: group wide fields (name/description on top, personal note + media at bottom)
+    // so the short specs pack into a clean 3-col grid with no lone-cell gaps.
+    var topWide = "", narrow = "", botWide = "";
     SCHEMA.forEach(function (f) {
       if (!(f.group === "both" || f.group === itemType)) return;
       var el = root.querySelector('[data-key="' + f.key + '"]');
@@ -1295,13 +1298,16 @@
       var v = (el.value || "").trim();
       if (f.key === "gender_style" && v) v = (v === "boy") ? "Male" : (v === "girl") ? "Female" : v;
       if (f.key === "is_complete" && v) v = (v === "complete") ? "Complete" : "Missing pieces";   // L3
-      // U2: long-text fields span both grid columns
-      var wide = (f.key === "item_name" || f.key === "description" || f.key === "condition_notes");
-      rows += v ? reviewRow(lbl, v, wide) : reviewRowEmpty(lbl, wide);   // L8: flag blanks instead of hiding
+      var isTop = (f.key === "item_name" || f.key === "description");
+      var isBot = (f.key === "condition_notes");
+      var wide = isTop || isBot;
+      var html = v ? reviewRow(lbl, v, wide) : reviewRowEmpty(lbl, wide);   // L8: flag blanks instead of hiding
+      if (isTop) topWide += html; else if (isBot) botWide += html; else narrow += html;
     });
-    if (itemType === "clothing" && setChk.checked) rows += reviewRow("Matching set", setCount.value + " pieces");
+    if (itemType === "clothing" && setChk.checked) narrow += reviewRow("Matching set", setCount.value + " pieces");
     var pc = ["front", "back", "detail"].filter(function (k) { return slots[k] && slots[k].status === "done"; }).length;
-    rows += reviewRow("Media", pc + (pc === 1 ? " photo" : " photos") + (video && video.status === "done" ? " + video" : ""));
+    botWide += reviewRow("Media", pc + (pc === 1 ? " photo" : " photos") + (video && video.status === "done" ? " + video" : ""), true);
+    rows += topWide + narrow + botWide;
     reviewBody.innerHTML = rows;
     reviewEl.classList.remove("ksl-hidden");
   }
