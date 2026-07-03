@@ -81,6 +81,7 @@
   var LAST_LINES = {};      // sku -> last rendered line (for modal open)
   var LAST_PREVIEW = null;  // last preview payload (success screen reads items/value/bank from it)
   var IDEM_KEY = null;      // stable per unchanged cart; reset on any credit change (fresh order = fresh key)
+  var MS_FIELDS = null;     // Memberstack customFields (shipping-* + name); loaded once at boot, read synchronously by renderSuccess
 
   function newIdemKey() {
     if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
@@ -140,6 +141,21 @@
       return (window.$memberstackDom && window.$memberstackDom.getMemberCookie &&
         window.$memberstackDom.getMemberCookie()) || null;
     } catch (e) { return null; }
+  }
+  function loadMsFields() {
+    try {
+      if (!(window.$memberstackDom && window.$memberstackDom.getCurrentMember)) return;
+      window.$memberstackDom.getCurrentMember().then(function (m) {
+        MS_FIELDS = (m && m.data && m.data.customFields) || null;
+      }).catch(function () {});
+    } catch (e) {}
+  }
+  function msField(k) {
+    var v = MS_FIELDS && MS_FIELDS[k];
+    return (typeof v === "string") ? v.trim() : "";
+  }
+  function titleCase(s) {
+    return String(s || "").toLowerCase().replace(/\b([a-z])/g, function (_, c) { return c.toUpperCase(); });
   }
   function getMount() { return document.getElementById(MOUNT_ID); }
   function qp(name) {
@@ -738,15 +754,51 @@
         '<div style="font-size:.82rem; color:var(--ks-muted); line-height:1.5;">Every accepted item you send in adds a credit to your bank.</div>' +
       "</div>";
 
-    // headline is count-neutral; name dropped (not in payload) -> surface first name later to greet by name
+    // greet by name when present; count-neutral, drops cleanly to "You're all set." with no fallback word
+    var firstName = msField("first-name");
+    var headline = firstName ? ("You\u2019re all set, " + esc(firstName) + ".") : "You\u2019re all set.";
+
+    // order number = first 8 hex of the idempotency key (per-checkout identity; exact-match lookup on claim_idempotency PK)
+    var orderNo = IDEM_KEY ? ("#" + String(IDEM_KEY).replace(/-/g, "").slice(0, 8).toUpperCase()) : "";
+    var orderNoHtml = orderNo
+      ? '<div style="font-size:.8rem; color:var(--ks-muted); margin:0 0 14px; letter-spacing:.02em;">Order ' + esc(orderNo) + "</div>"
+      : "";
+
+    // shipping-to (Memberstack customFields; render only when a street is on file; apartment line only when present)
+    var shStreet = msField("shipping-street");
+    var shApt    = msField("shipping-apartment-or-unit");
+    var shCity   = msField("shipping-city");
+    var shState  = msField("shipping-state");
+    var shZip    = msField("shipping-zip");
+    var shName   = [msField("first-name"), msField("last-name")].filter(Boolean).join(" ");
+    var cityStateZip = "";
+    if (shCity || shState || shZip) {
+      cityStateZip = titleCase(shCity);
+      if (shState) cityStateZip += (cityStateZip ? ", " : "") + shState.toUpperCase();
+      if (shZip)   cityStateZip += (cityStateZip ? " " : "") + shZip;
+    }
+    var shipToHtml = shStreet
+      ? '<div style="border-top:1px solid var(--ks-line); margin-top:14px; padding-top:12px;">' +
+          '<div style="font-weight:700; font-size:1rem; color:var(--ks-ink); margin-bottom:6px;">Shipping to</div>' +
+          '<div style="font-size:.9rem; color:var(--ks-muted); line-height:1.6;">' +
+            (shName ? esc(shName) + "<br>" : "") +
+            esc(titleCase(shStreet)) + "<br>" +
+            (shApt ? esc(shApt) + "<br>" : "") +
+            (cityStateZip ? esc(cityStateZip) : "") +
+          "</div>" +
+        "</div>"
+      : "";
+
     setHtml(
       coinsHtml(p.bank, p.cap) +
       '<div style="background:var(--ks-card); border:1px solid var(--ks-line); border-radius:12px; padding:16px; margin:6px 0 12px;">' +
-        '<h1 class="ksc-head" style="font-size:2.4rem; margin:0 0 14px;">You\u2019re all set.</h1>' +
+        '<h1 class="ksc-head" style="font-size:2.4rem; margin:0 0 2px;">' + headline + "</h1>" +
+        orderNoHtml +
         itemsHtml +
         '<div style="border-top:1px solid var(--ks-line); margin-top:6px; padding-top:12px; display:flex; flex-direction:column; gap:8px; font-size:.9rem;">' +
           payLine + shipLine + mailLine +
         "</div>" +
+        shipToHtml +
         '<div style="border-top:1px solid var(--ks-line); margin-top:14px; padding-top:12px;">' +
           '<div style="font-weight:700; font-size:1rem; color:var(--ks-ink); margin-bottom:6px;">Thank you for swapping</div>' +
           '<div style="font-size:.9rem; color:var(--ks-muted); line-height:1.6;">You chose a new way to shop for your kids, and gave good things a second life.</div>' +
@@ -815,6 +867,7 @@
 
   async function run() {
     injectCss();
+    loadMsFields();   // fire-and-forget; resolves well before the success screen (renderSuccess reads MS_FIELDS synchronously)
     if (!getMount()) return;
     if (handleStateOverride()) return;
 
