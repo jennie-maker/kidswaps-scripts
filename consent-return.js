@@ -26,6 +26,11 @@
     try { token = ms.getMemberCookie ? (ms.getMemberCookie() || "") : ""; } catch(e){}
     if (!token) return;
     done = true;
+    // Clear the stash synchronously, BEFORE the async fetch, so a second page-load
+    // (e.g. /verify-email -> /dashboard) reads an empty stash and never dispatches a
+    // duplicate. Restore it on failure so retry still works. (The unique index is the
+    // real guard; this just stops us firing needless duplicate requests.)
+    try { sessionStorage.removeItem("ks_consent_pending"); } catch(e){}
     var body = {
       consent_type: payload.consent_type,
       terms_version: payload.terms_version,
@@ -41,9 +46,8 @@
       headers: { "Content-Type":"application/json", "apikey": ANON_KEY, "x-ms-token": token },
       body: JSON.stringify(body)
     }).then(function(r){
-      if (r.ok) { try { sessionStorage.removeItem("ks_consent_pending"); } catch(e){} }
-      else { done = false; }
-    }).catch(function(){ done = false; });
+      if (!r.ok) { try { sessionStorage.setItem("ks_consent_pending", raw); } catch(e){} done = false; }
+    }).catch(function(){ try { sessionStorage.setItem("ks_consent_pending", raw); } catch(e){} done = false; });
   }
 
   function start(){
