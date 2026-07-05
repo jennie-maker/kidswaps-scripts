@@ -197,7 +197,12 @@
       "#ksl-review-body .ksl-review-row.is-wide2{grid-column:span 2;}" +
       "#ksl-review-body .ksl-review-k{font-size:.68rem;font-weight:600;letter-spacing:.05em;" +
         "text-transform:uppercase;opacity:.6;}" +
-      "#ksl-review-body .ksl-review-v{font-size:.92rem;line-height:1.3;word-break:break-word;}";
+      "#ksl-review-body .ksl-review-v{font-size:.92rem;line-height:1.3;word-break:break-word;}" +
+      /* U5 2026-07-05: mobile-only — stop a lone/orphan entry field from flex-growing
+         to fill the row (Gender was stranding onto its own row and stretching to full
+         width at phone width; same effect hits Brand/others when a row runs short).
+         Scoped to <=600px so desktop packing is untouched. Mirrors the toy-age @media. */
+      "@media (max-width:600px){#ks-list-app .ksl-details>.ksl-field{flex-grow:0}}";
     document.head.appendChild(st);
   })();
 
@@ -1316,8 +1321,6 @@
       var span = (idx === narrowCells.length - 1) ? (rem === 1 ? "is-wide" : (rem === 2 ? "is-wide2" : false)) : false;
       return c.v ? reviewRow(c.lbl, c.v, span) : reviewRowEmpty(c.lbl, span);
     }).join("");
-    var pc = ["front", "back", "detail"].filter(function (k) { return slots[k] && slots[k].status === "done"; }).length;
-    botWide += reviewRow("Media", pc + (pc === 1 ? " photo" : " photos") + (video && video.status === "done" ? " + video" : ""), true);
     rows += topWide + narrow + botWide;
     reviewBody.innerHTML = rows;
     reviewEl.classList.remove("ksl-hidden");
