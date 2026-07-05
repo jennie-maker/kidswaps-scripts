@@ -763,6 +763,7 @@
     // reset the resale latch + re-assert the tier gate (tier is now blank -> hidden)
     resaleTouched = false;
     applyResaleVisibility();
+    applyDuoState();           // DUO: category is now blank -> unlock tier, restore asterisks
     closeBrandSuggest();
     root.querySelectorAll(".ksl-combo-input").forEach(function (ci) { ci.value = ""; });
     closeAllCombos();
@@ -1170,6 +1171,7 @@
       renderAllSlots(); reflectPills();
       // re-assert resale tier-gate after a restore (tier value is now in place)
       applyResaleVisibility();
+      applyDuoState();           // DUO: restored category may be "Duo" -> re-lock tier
     } catch (e) {}
   }
   root.addEventListener("input", saveDraft);
@@ -1181,6 +1183,7 @@
     var t = e.target;
     if (t && t.getAttribute && t.getAttribute("data-key") === "category") {
       populateSizeOptions();
+      applyDuoState();           // DUO: category = "Duo" locks Essentials + optional brand/color
     }
   });
 
@@ -1204,9 +1207,12 @@
   function validate() {
     clearErrors();
     var bad = [];
+    // DUO: brand + color are optional on a duo (two items may share neither).
+    var isDuo = (root.querySelector('[data-key="category"]') || {}).value === "Duo";
     SCHEMA.forEach(function (f) {
       if (!(f.group === "both" || f.group === itemType)) return;
       if (!f.required) return;
+      if (isDuo && (f.key === "brand" || f.key === "color")) return;   // duo exemption
       var el = root.querySelector('[data-key="' + f.key + '"]');
       var v = el ? el.value.trim() : "";
       if (!v) { bad.push(f.key); markError(f.key); }
@@ -2204,6 +2210,29 @@
       if (resaleEl) resaleEl.value = "";
       resaleTouched = false;
     }
+  }
+
+  /* ---- DUO MODE (category = "Duo") ------------------------------------- */
+  /* A duo is two half-credit pieces (e.g. shirt + shorts) listed as ONE
+     Essentials item, claimed for 1 credit. When category = Duo: Tier locks to
+     essentials (picker disabled) and Brand + Color drop their required-asterisk
+     (validate() already exempts them, since a duo may share neither). Nothing is
+     hidden or moved; the form is otherwise unchanged. Leaving Duo re-enables Tier
+     and restores the asterisks. Re-applied from category-input + clearItem +
+     draft-restore so every entry path stays consistent. */
+  function applyDuoState() {
+    var catEl  = root.querySelector('[data-key="category"]');
+    var isDuo  = !!catEl && catEl.value === "Duo";
+    var tierEl = root.querySelector('[data-key="tier"]');
+    if (tierEl) {
+      if (isDuo) { tierEl.value = "essentials"; tierEl.disabled = true; }
+      else       { tierEl.disabled = false; }
+    }
+    ["brand", "color"].forEach(function (k) {
+      var req = root.querySelector('.ksl-field[data-field="' + k + '"] .ksl-req');
+      if (req) req.style.display = isDuo ? "none" : "";
+    });
+    applyResaleVisibility();   // essentials -> resale hides, consistent with the tier lock
   }
 
   function onTierInput() {
