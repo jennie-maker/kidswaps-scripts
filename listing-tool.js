@@ -198,11 +198,22 @@
       "#ksl-review-body .ksl-review-k{font-size:.68rem;font-weight:600;letter-spacing:.05em;" +
         "text-transform:uppercase;opacity:.6;}" +
       "#ksl-review-body .ksl-review-v{font-size:.92rem;line-height:1.3;word-break:break-word;}" +
-      /* U5 2026-07-05: mobile-only — stop a lone/orphan entry field from flex-growing
-         to fill the row (Gender was stranding onto its own row and stretching to full
-         width at phone width; same effect hits Brand/others when a row runs short).
-         Scoped to <=600px so desktop packing is untouched. Mirrors the toy-age @media. */
-      "@media (max-width:600px){#ks-list-app .ksl-details>.ksl-field{flex-grow:0}}";
+      /* U5 2026-07-05b: mobile-only, superseding the first pass. The v1 fix
+         (flex-grow:0) stopped the lone-Gender stretch but ALSO stopped normal
+         pairs from filling the row -> fields went narrow -> labels wrapped to two
+         lines -> wrapped fields pushed their inputs out of line. New approach:
+         let fields fill as before, but CAP any field at half-row so a lone orphan
+         (Gender) can't balloon to full width; and give every label a min-height so
+         a one-line and a two-line label still line their inputs up. Full-width
+         fields (name/description/matching-set) are exempt from the cap. <=600px
+         only; desktop untouched. */
+      "@media (max-width:600px){" +
+        "#ks-list-app .ksl-details>.ksl-field{max-width:calc(50% - 5px)}" +
+        "#ks-list-app .ksl-details>.ksl-field[data-field=\"item_name\"]," +
+        "#ks-list-app .ksl-details>.ksl-field[data-field=\"description\"]," +
+        "#ks-list-app .ksl-details>.ksl-field[data-field=\"__set\"]{max-width:100%}" +
+        "#ks-list-app .ksl-details>.ksl-field>.ksl-label{min-height:2.5em}" +
+      "}";
     document.head.appendChild(st);
   })();
 
@@ -763,7 +774,7 @@
     // reset the resale latch + re-assert the tier gate (tier is now blank -> hidden)
     resaleTouched = false;
     applyResaleVisibility();
-    applyDuoState();           // DUO: category is now blank -> unlock tier, restore asterisks
+    applyDuoState();           // DUO: category now blank -> restore brand/color asterisks
     closeBrandSuggest();
     root.querySelectorAll(".ksl-combo-input").forEach(function (ci) { ci.value = ""; });
     closeAllCombos();
@@ -1171,7 +1182,7 @@
       renderAllSlots(); reflectPills();
       // re-assert resale tier-gate after a restore (tier value is now in place)
       applyResaleVisibility();
-      applyDuoState();           // DUO: restored category may be "Duo" -> re-lock tier
+      applyDuoState();           // DUO: restored category may be "Duo" -> re-apply optional brand/color
     } catch (e) {}
   }
   root.addEventListener("input", saveDraft);
@@ -1183,7 +1194,7 @@
     var t = e.target;
     if (t && t.getAttribute && t.getAttribute("data-key") === "category") {
       populateSizeOptions();
-      applyDuoState();           // DUO: category = "Duo" locks Essentials + optional brand/color
+      applyDuoState();           // DUO: category = "Duo" -> brand/color optional
     }
   });
 
@@ -2213,26 +2224,21 @@
   }
 
   /* ---- DUO MODE (category = "Duo") ------------------------------------- */
-  /* A duo is two half-credit pieces (e.g. shirt + shorts) listed as ONE
-     Essentials item, claimed for 1 credit. When category = Duo: Tier locks to
-     essentials (picker disabled) and Brand + Color drop their required-asterisk
-     (validate() already exempts them, since a duo may share neither). Nothing is
-     hidden or moved; the form is otherwise unchanged. Leaving Duo re-enables Tier
-     and restores the asterisks. Re-applied from category-input + clearItem +
-     draft-restore so every entry path stays consistent. */
+  /* A duo is two half-credit pieces (e.g. shirt + shorts) listed as ONE item,
+     claimed for 1 credit. When category = Duo: Brand + Color become optional
+     (validate() exempts them, since a duo may share neither) and their required-
+     asterisk is hidden. Tier and Retail stay NORMAL — a duo may be essentials OR
+     elevated, operator's call. Nothing is hidden or moved. Re-applied from
+     category-input + clearItem + draft-restore so every entry path stays consistent.
+     NOTE: Brand is ALSO required by the inventory-list edge fn (server) — the
+     client exemption alone won't let a blank-brand duo save until that's relaxed. */
   function applyDuoState() {
-    var catEl  = root.querySelector('[data-key="category"]');
-    var isDuo  = !!catEl && catEl.value === "Duo";
-    var tierEl = root.querySelector('[data-key="tier"]');
-    if (tierEl) {
-      if (isDuo) { tierEl.value = "essentials"; tierEl.disabled = true; }
-      else       { tierEl.disabled = false; }
-    }
+    var catEl = root.querySelector('[data-key="category"]');
+    var isDuo = !!catEl && catEl.value === "Duo";
     ["brand", "color"].forEach(function (k) {
       var req = root.querySelector('.ksl-field[data-field="' + k + '"] .ksl-req');
       if (req) req.style.display = isDuo ? "none" : "";
     });
-    applyResaleVisibility();   // essentials -> resale hides, consistent with the tier lock
   }
 
   function onTierInput() {
