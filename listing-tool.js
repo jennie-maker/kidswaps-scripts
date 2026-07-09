@@ -870,6 +870,246 @@
     }, { passive: true });
   })();
 
+  /* ---- §11 STORAGE 2026-07-09: guided bin entry + Boxes panel ----------- */
+  /* Guided entry: on the bin field, type ONE band letter -> it resolves to the
+     current non-full box of that band (lowest pick_seq) and previews "room for N";
+     Enter or leaving the field commits the full label (e.g. SMALL-3). Multi-letter
+     input is treated as a manual/override label (HOLD, SHIP, or a specific box),
+     so staging is reachable only by typing it and is never auto-suggested. Warn-
+     and-continue on a full band; physical truth (a typed label) always wins.
+     Boxes panel: a collapsible capacity editor with band rollups. Occupancy is
+     derived server-side; this only ever edits `capacity`. All reads/writes go
+     through the operator-gated location-fill edge fn. */
+  (function initBinGuide() {
+    var FN_BINFILL = BASE + "/location-fill";
+    var binFill = [];        // [{code,zone,size_band,type,capacity,filled,remaining,is_full,pick_seq}]
+    var panelOpen = false;
+    var loaded = false;
+    var pending = null;      // {code} when a single-letter suggestion is live
+
+    // band letter maps (the page already knows clothing vs toy via itemType)
+    function bandFor(letter, type) {
+      letter = (letter || "").toLowerCase();
+      if (type === "toy") { return letter === "l" ? "L" : letter === "m" ? "M" : letter === "s" ? "S" : null; }
+      return letter === "x" ? "XS" : letter === "s" ? "S" : letter === "m" ? "M" : letter === "l" ? "L" : null;
+    }
+    function zoneFor(type) { return type === "toy" ? "TY" : "CL"; }
+
+    // current box for a band = lowest pick_seq that isn't full; else band is full
+    function resolveBox(type, letter) {
+      var band = bandFor(letter, type);
+      if (!band) return null;
+      var zone = zoneFor(type);
+      var boxes = binFill.filter(function (b) { return b.zone === zone && b.size_band === band; })
+                         .sort(function (a, b) { return (a.pick_seq || 0) - (b.pick_seq || 0); });
+      if (!boxes.length) return { none: true };
+      var open = boxes.filter(function (b) { return !b.is_full; });
+      if (!open.length) return { full: true, boxes: boxes };
+      return { box: open[0] };
+    }
+
+    function callFn(payload) {
+      return getToken().then(function (t) {
+        return fetch(FN_BINFILL, {
+          method: "POST",
+          headers: { "x-ms-token": t, "content-type": "application/json",
+                     "apikey": ANON, "authorization": "Bearer " + ANON },
+          body: JSON.stringify(payload)
+        });
+      }).then(function (r) {
+        return r.json().then(function (j) {
+          if (!r.ok || !j.ok) throw new Error(j.error || ("status " + r.status));
+          return j;
+        });
+      });
+    }
+    function loadBinFill() {
+      return callFn({ action: "read" }).then(function (j) {
+        binFill = j.boxes || []; loaded = true;
+        if (panelOpen) renderPanel();
+        return binFill;
+      }).catch(function (e) { console.warn("[ks-listing] bin fill load failed:", e.message); });
+    }
+
+    // ---- bin field hint ----
+    function hintEl() {
+      var field = root.querySelector('[data-field="bin_location"]');
+      if (!field) return null;
+      var h = field.querySelector(".ksl-bin-hint");
+      if (!h) { h = document.createElement("div"); h.className = "ksl-bin-hint"; field.appendChild(h); }
+      return h;
+    }
+    function setHint(html, tone) {
+      var h = hintEl(); if (!h) return;
+      h.innerHTML = html || "";
+      h.style.color = tone === "warn" ? "#ffcf6b" : tone === "ok" ? "#9be7a0" : "rgba(255,255,255,.65)";
+      h.style.display = html ? "block" : "none";
+    }
+    function bandName(code) { return code.replace(/-\d+$/, ""); }
+
+    function onBinInput(el) {
+      var v = (el.value || "").trim();
+      pending = null;
+      if (!v) { setHint("", null); return; }
+      if (v.length === 1 && bandFor(v, itemType)) {
+        var r = resolveBox(itemType, v);
+        if (r && r.box) {
+          pending = { code: r.box.code };
+          setHint("\u21B5 <b>" + r.box.code + "</b> \u00B7 room for " + r.box.remaining, "ok");
+        } else if (r && r.full) {
+          setHint("All " + bandName(r.boxes[0].code) + " boxes full \u2014 type a full label to override", "warn");
+        } else {
+          setHint("No box for that size yet", "warn");
+        }
+        return;
+      }
+      var match = binFill.filter(function (b) { return b.code.toLowerCase() === v.toLowerCase(); })[0];
+      if (match) {
+        el.value = match.code;   // canonicalize case
+        if (match.capacity == null) setHint("<b>" + match.code + "</b> \u00B7 staging", "ok");
+        else setHint("<b>" + match.code + "</b> \u00B7 " + match.filled + "/" + match.capacity +
+                     (match.is_full ? " (full \u2014 using anyway)" : " \u00B7 room " + match.remaining),
+                     match.is_full ? "warn" : "ok");
+      } else {
+        setHint("Custom location", null);
+      }
+    }
+    function commitPending(el) {
+      if (!pending) return false;
+      el.value = pending.code; onBinInput(el); return true;
+    }
+
+    // delegated wiring (bin field lives in the persistent root; survives re-renders)
+    root.addEventListener("input", function (e) {
+      if (e.target && e.target.matches && e.target.matches('[data-key="bin_location"]')) onBinInput(e.target);
+    });
+    root.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && e.target && e.target.matches && e.target.matches('[data-key="bin_location"]')) {
+        if (pending) { e.preventDefault(); commitPending(e.target); }
+      }
+    });
+    root.addEventListener("focusin", function (e) {
+      if (loaded && e.target && e.target.matches && e.target.matches('[data-key="bin_location"]')) loadBinFill();
+    });
+    root.addEventListener("focusout", function (e) {
+      if (e.target && e.target.matches && e.target.matches('[data-key="bin_location"]')) {
+        var v = (e.target.value || "").trim();
+        if (v.length === 1 && pending) commitPending(e.target);   // lone letter -> auto-commit on leave
+      }
+    });
+
+    // ---- Boxes panel styles ----
+    (function css() {
+      if (document.getElementById("ksl-bins-css")) return;
+      var st = document.createElement("style"); st.id = "ksl-bins-css";
+      st.textContent =
+        ".ksl-bin-hint{margin-top:6px;font-size:.85rem;line-height:1.3;display:none;}" +
+        "#ksl-bins{margin:14px 0;border:1px solid rgba(255,255,255,.15);border-radius:12px;overflow:hidden;}" +
+        "#ksl-bins-head{display:flex;align-items:center;justify-content:space-between;cursor:pointer;" +
+          "padding:12px 14px;background:rgba(255,255,255,.05);color:inherit;font-weight:600;}" +
+        "#ksl-bins-body{padding:6px 14px 12px;display:none;}" +
+        "#ksl-bins.open #ksl-bins-body{display:block;}" +
+        ".ksl-bg-grp{margin-top:12px;}" +
+        ".ksl-bg-h{font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;opacity:.7;margin-bottom:2px;}" +
+        ".ksl-bg-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;" +
+          "border-top:1px solid rgba(255,255,255,.07);font-size:.9rem;}" +
+        ".ksl-bg-row .code{font-family:monospace;}" +
+        ".ksl-bg-fill{opacity:.85;}.ksl-bg-full{color:#ffcf6b;}" +
+        ".ksl-bg-edit{background:none;border:1px solid rgba(255,255,255,.25);color:inherit;border-radius:6px;" +
+          "padding:2px 8px;font-size:.8rem;cursor:pointer;margin-left:8px;}" +
+        ".ksl-bg-cap{width:56px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.3);" +
+          "color:inherit;border-radius:6px;padding:2px 6px;font-size:.85rem;}";
+      document.head.appendChild(st);
+    })();
+
+    var GROUPS = [
+      { zone:"CL", band:"XS", label:"Extra small" },
+      { zone:"CL", band:"S",  label:"Small" },
+      { zone:"CL", band:"M",  label:"Medium" },
+      { zone:"CL", band:"L",  label:"Large" },
+      { zone:"TY", band:"L",  label:"Toy large" },
+      { zone:"TY", band:"M",  label:"Toy medium" },
+      { zone:"TY", band:"S",  label:"Toy small" },
+      { zone:"OCC", band:null, label:"Seasonal" },
+      { zones:["HOLD","SHIP"], label:"Staging" }
+    ];
+    function groupBoxes(g) {
+      return binFill.filter(function (b) {
+        if (g.zones) return g.zones.indexOf(b.zone) !== -1;
+        return b.zone === g.zone && (g.band == null || b.size_band === g.band);
+      }).sort(function (a, b) { return (a.pick_seq || 0) - (b.pick_seq || 0); });
+    }
+    function renderPanel() {
+      var body = document.getElementById("ksl-bins-body"); if (!body) return;
+      var html = "";
+      GROUPS.forEach(function (g) {
+        var boxes = groupBoxes(g); if (!boxes.length) return;
+        var capped = boxes.filter(function (b) { return b.capacity != null; });
+        var head;
+        if (capped.length) {
+          var fill = capped.reduce(function (s, b) { return s + Number(b.filled); }, 0);
+          var cap  = capped.reduce(function (s, b) { return s + Number(b.capacity); }, 0);
+          head = g.label + " \u00B7 " + fill + "/" + cap + " (" + (cap ? Math.round(fill / cap * 100) : 0) + "%)";
+        } else { head = g.label + " \u00B7 uncapped"; }
+        var rows = boxes.map(function (b) {
+          var right = (b.capacity == null)
+            ? '<span class="ksl-bg-fill">' + b.filled + ' \u00B7 uncapped</span>'
+            : '<span class="ksl-bg-fill' + (b.is_full ? " ksl-bg-full" : "") + '">' + b.filled + "/" + b.capacity + "</span>" +
+              '<button type="button" class="ksl-bg-edit" data-cap-edit="' + b.code + '">edit</button>';
+          return '<div class="ksl-bg-row" data-cap-row="' + b.code + '"><span class="code">' + b.code + "</span><span>" + right + "</span></div>";
+        }).join("");
+        html += '<div class="ksl-bg-grp"><div class="ksl-bg-h">' + head + "</div>" + rows + "</div>";
+      });
+      body.innerHTML = html || "<p style='opacity:.6'>No boxes.</p>";
+    }
+    function startCapEdit(code) {
+      var box = binFill.filter(function (b) { return b.code === code; })[0]; if (!box) return;
+      var row = document.querySelector('[data-cap-row="' + code + '"]'); if (!row) return;
+      var right = row.lastChild;
+      right.innerHTML = '<input type="number" min="0" step="1" class="ksl-bg-cap" value="' + box.capacity + '">' +
+                        '<button type="button" class="ksl-bg-edit" data-cap-save="' + code + '">save</button>' +
+                        '<button type="button" class="ksl-bg-edit" data-cap-cancel="' + code + '">\u00D7</button>';
+      var inp = right.querySelector("input"); inp.focus(); inp.select();
+      right.querySelector("[data-cap-save]").addEventListener("click", function () {
+        var n = parseInt(inp.value, 10); if (isNaN(n) || n < 0) { inp.focus(); return; } saveCap(code, n);
+      });
+      right.querySelector("[data-cap-cancel]").addEventListener("click", renderPanel);
+      inp.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") { var n = parseInt(inp.value, 10); if (!isNaN(n) && n >= 0) saveCap(code, n); }
+        if (e.key === "Escape") renderPanel();
+      });
+    }
+    function saveCap(code, n) {
+      callFn({ action: "set_capacity", code: code, capacity: n }).then(function (j) {
+        binFill = j.boxes || binFill; renderPanel();
+      }).catch(function (e) { alert("Couldn't save capacity: " + e.message); renderPanel(); });
+    }
+    function mountPanel() {
+      if (document.getElementById("ksl-bins")) return;
+      var anchor = document.getElementById("ksl-manage");
+      if (!anchor || !anchor.parentNode) return;
+      var panel = document.createElement("div");
+      panel.id = "ksl-bins";
+      panel.innerHTML =
+        '<div id="ksl-bins-head"><span>\uD83D\uDCE6 Boxes</span><span id="ksl-bins-caret">\u203A</span></div>' +
+        '<div id="ksl-bins-body"></div>';
+      anchor.parentNode.insertBefore(panel, anchor.nextSibling);
+      document.getElementById("ksl-bins-head").addEventListener("click", function () {
+        panelOpen = !panelOpen;
+        panel.classList.toggle("open", panelOpen);
+        document.getElementById("ksl-bins-caret").textContent = panelOpen ? "\u2304" : "\u203A";
+        if (panelOpen) { renderPanel(); loadBinFill(); }
+      });
+      document.getElementById("ksl-bins-body").addEventListener("click", function (e) {
+        var btn = e.target.closest ? e.target.closest("[data-cap-edit]") : null;
+        if (btn) startCapEdit(btn.getAttribute("data-cap-edit"));
+      });
+    }
+
+    mountPanel();
+    loadBinFill();   // warm the counts so the first item's suggestion is ready
+  })();
+
   /* ---- SET TOGGLE ------------------------------------------------------ */
   setChk.addEventListener("change", function () {
     setCountWrap.classList.toggle("ksl-hidden", !setChk.checked);
