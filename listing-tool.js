@@ -136,6 +136,27 @@
     document.head.appendChild(st);
   })();
 
+  /* ---- FIX #2 2026-07-08: even pill heights on mobile ------------------ */
+  /* On mobile the toy fields sit at 50% width (U5), so the washability pills
+     ("wipeable"/"washable") and completeness pills ("Complete"/"Missing pieces")
+     landed at different heights — the longer label wrapped, growing that pill.
+     Give every pill a uniform min-height, center its label, and keep labels on
+     one line (nowrap) so button height no longer depends on label length; let the
+     pill ROW wrap instead if two don't fit side by side. <=600px only; desktop
+     untouched. Pure JS inject; #ks-list-app wins specificity over the page CSS. */
+  (function injectPillEvenCss() {
+    if (document.getElementById("ksl-pilleven-css")) return;
+    var st = document.createElement("style");
+    st.id = "ksl-pilleven-css";
+    st.textContent =
+      "@media (max-width:600px){" +
+        "#ks-list-app .ksl-pills{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;}" +
+        "#ks-list-app .ksl-pill{min-height:42px;display:inline-flex;align-items:center;" +
+          "justify-content:center;white-space:nowrap;}" +
+      "}";
+    document.head.appendChild(st);
+  })();
+
   /* ---- VISIBILITY: draft-restore banner stands out ------------------- */
   /* The Restore/Discard buttons inherited near-invisible defaults from the page
      CSS. Inject a clear alert-card look (reusing the browse luxury-note gold
@@ -781,6 +802,74 @@
     defaultCondition();        // next item starts on the "great" default
   }
 
+  /* ---- FIX #6 2026-07-08: pull-down-from-top -> fresh blank listing ----- */
+  /* Mobile-only. A deliberate downward pull while scrolled to the very top wipes
+     the current item and starts a fresh listing (same type, next SKU) — the
+     gesture version of "List another". Guards: (a) only arms at scrollTop so it
+     can't fire mid-scroll while filling the form; (b) requires a real ~90px pull;
+     (c) if there's typed/photographed input it confirms before wiping, so a stray
+     pull can't nuke a half-entered item. Does NOT preventDefault (native scroll
+     stays intact). <=600px only. */
+  (function initPullToFresh() {
+    var THRESHOLD = 90;      // px of downward pull required
+    var startY = null, armed = false, ready = false;
+    var isMobile = function () {
+      try { return window.matchMedia("(max-width:600px)").matches; } catch (e) { return false; }
+    };
+    var atTop = function () {
+      return (window.scrollY || document.documentElement.scrollTop || 0) <= 0;
+    };
+    // "dirty?" reuses the existing hasContent() helper (the same guard the
+    // type-toggle uses) — it already ignores the auto SKU + default condition and
+    // counts an in-progress upload / matching-set as content worth confirming.
+    // small pull hint (created once, hidden until pulling)
+    var hint = null;
+    function showHint(text, isReady) {
+      if (!hint) {
+        hint = document.createElement("div");
+        hint.id = "ksl-pull-hint";
+        hint.style.cssText = "position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:9999;" +
+          "margin-top:8px;padding:7px 16px;border-radius:999px;font:inherit;font-size:.8rem;font-weight:600;" +
+          "background:#1f1f1f;color:#fff;border:1px solid rgba(255,255,255,.2);box-shadow:0 6px 20px rgba(0,0,0,.4);" +
+          "pointer-events:none;opacity:0;transition:opacity .12s;white-space:nowrap;";
+        document.body.appendChild(hint);
+      }
+      hint.textContent = text;
+      hint.style.borderColor = isReady ? "var(--ks-coral, #E75025)" : "rgba(255,255,255,.2)";
+      hint.style.opacity = "1";
+    }
+    function hideHint() { if (hint) hint.style.opacity = "0"; }
+
+    function doFreshListing() {
+      if (hasContent() &&
+          !window.confirm("Start a new blank listing? This clears the item you're working on.")) return;
+      clearItem();
+      try { sessionStorage.removeItem(DRAFT_KEY); } catch (e) {}   // don't re-offer a restore
+      if (typeof prefillNextSku === "function") prefillNextSku();  // fresh form gets its next SKU
+      if (typeof armPhotoFirst === "function") armPhotoFirst();
+      window.scrollTo(0, 0);
+    }
+
+    document.addEventListener("touchstart", function (e) {
+      if (!isMobile() || !atTop() || !e.touches || e.touches.length !== 1) { armed = false; return; }
+      startY = e.touches[0].clientY; armed = true; ready = false;
+    }, { passive: true });
+
+    document.addEventListener("touchmove", function (e) {
+      if (!armed || startY === null || !e.touches || e.touches.length !== 1) return;
+      if (!atTop()) { armed = false; ready = false; hideHint(); return; }   // they started scrolling
+      var dy = e.touches[0].clientY - startY;
+      if (dy <= 0) { hideHint(); ready = false; return; }
+      if (dy >= THRESHOLD) { ready = true; showHint("Release to start a new listing", true); }
+      else { ready = false; showHint("Keep pulling for a new listing", false); }
+    }, { passive: true });
+
+    document.addEventListener("touchend", function () {
+      if (armed && ready) doFreshListing();
+      armed = false; ready = false; startY = null; hideHint();
+    }, { passive: true });
+  })();
+
   /* ---- SET TOGGLE ------------------------------------------------------ */
   setChk.addEventListener("change", function () {
     setCountWrap.classList.toggle("ksl-hidden", !setChk.checked);
@@ -1220,10 +1309,15 @@
     var bad = [];
     // DUO: brand + color are optional on a duo (two items may share neither).
     var isDuo = (root.querySelector('[data-key="category"]') || {}).value === "Duo";
+    // TOYS (#1 2026-07-08): brand + completeness are optional on toys. (Retail-
+    // optional-on-essentials-toys is deferred — it needs retail_value made nullable
+    // plus null-safe browse + checkout display; see the build doc.) Same shape as
+    // the duo exemption above.
     SCHEMA.forEach(function (f) {
       if (!(f.group === "both" || f.group === itemType)) return;
       if (!f.required) return;
       if (isDuo && (f.key === "brand" || f.key === "color")) return;   // duo exemption
+      if (itemType === "toy" && (f.key === "brand" || f.key === "is_complete")) return;   // toy: brand + completeness optional
       var el = root.querySelector('[data-key="' + f.key + '"]');
       var v = el ? el.value.trim() : "";
       if (!v) { bad.push(f.key); markError(f.key); }
@@ -1323,6 +1417,10 @@
       if (wrap && wrap.classList.contains("ksl-hidden")) return;   // skip fields hidden for this item (e.g. resale on essentials)
       var lbl = (f.key === "retail_value" && isToy) ? "Average current price" : f.label;   // A
       var v = (el.value || "").trim();
+      // #1 2026-07-08: on toys, brand + completeness are optional -> omit from the
+      // review entirely when blank (not the "not set" flag). (Retail stays flagged;
+      // retail-optional-on-essentials-toys is deferred — see the build doc.)
+      if (isToy && !v && (f.key === "brand" || f.key === "is_complete")) return;
       if (f.key === "gender_style" && v) v = (v === "boy") ? "Male" : (v === "girl") ? "Female" : v;
       if (f.key === "is_complete" && v) v = (v === "complete") ? "Complete" : "Missing pieces";   // L3
       var isTop = (f.key === "item_name" || f.key === "description");
