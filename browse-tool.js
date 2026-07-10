@@ -1343,15 +1343,19 @@
     var b = document.querySelector('.ks-bag-block'); if (b && b.parentNode) b.parentNode.removeChild(b);
   }
 
-  function showBagBlock(title, msg, cta) {
+function showBagBlock(title, msg, cta) {
     ensureBagBlockCss();
     var sheet = document.querySelector('.ks-bag-sheet'); if (!sheet) return;
     clearBagBlock();
+    var list = cta ? (Array.isArray(cta) ? cta : [cta]) : [];
+    var btns = list.map(function (c) {
+      return '<a class="ks-bag-block-cta" href="' + escapeHtml(c.href) + '">' + escapeHtml(c.label) + '</a>';
+    }).join('');
     var html =
       '<div class="ks-bag-block" role="alert">' +
         '<div class="ks-bag-block-t">' + escapeHtml(title) + '</div>' +
         '<div class="ks-bag-block-m">' + escapeHtml(msg) + '</div>' +
-        (cta ? '<a class="ks-bag-block-cta" href="' + escapeHtml(cta.href) + '">' + escapeHtml(cta.label) + '</a>' : '') +
+        (btns ? '<div class="ks-bag-block-ctas">' + btns + '</div>' : '') +
       '</div>';
     var foot = sheet.querySelector('.ks-bag-foot');
     if (foot) foot.insertAdjacentHTML('beforebegin', html);
@@ -1385,17 +1389,19 @@
 
   // Zero usable credits in the shorted class(es): tell them how to GET credits
   // (earn by sending a bag, or buy a Credit Pack) instead of "remove N items".
-  function outOfCreditsBlock(zeroClasses) {
+function outOfCreditsBlock(zeroClasses) {
     var title = zeroClasses.length > 1 ? 'Out of credits'
               : zeroClasses[0] === 'toy' ? 'Out of toy credits'
               : 'Out of clothing credits';
     return {
       title: title,
-      msg: 'Send a swap bag to earn more, or add a Credit Pack to keep swapping now.',
-      cta: { label: 'Buy a Credit Pack', href: '/dashboard' }
+      msg: 'You\u2019re out of credits for this cycle. You\u2019ll earn more when your next bag is accepted, or you can add a Credit Pack to keep swapping now.',
+      ctas: [
+        { label: 'Send in a swap bag', href: '/dashboard' },
+        { label: 'Buy a Credit Pack', href: '/dashboard' }
+      ]
     };
   }
-
   // Runs the credit picker on a resolved item set and hands off to /checkout.
   // Shared by the no-removal path and the fail-open path of goCheckout.
   // Block copy for a bag holding items whose class isn't on the member's plan.
@@ -1422,8 +1428,8 @@
         var zeroClasses = shortClasses.filter(function (k) { return (have[k] || 0) === 0; });
         if (zeroClasses.length === shortClasses.length) {
           // every shorted class is truly empty -> earn-or-buy, not "remove N"
-          var oc = outOfCreditsBlock(zeroClasses);
-          showBagBlock(oc.title, oc.msg, oc.cta);
+  var oc = outOfCreditsBlock(zeroClasses);
+          showBagBlock(oc.title, oc.msg, oc.ctas);
         } else {
           // has some credits, just over-bagged -> trim the bag
           showBagBlock('A few too many items', shortageMessage(byClass));
