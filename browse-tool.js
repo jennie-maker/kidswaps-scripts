@@ -1285,9 +1285,9 @@
     cancelled_ended: 'Reactivate to keep swapping',
     pending_first_bag: 'Send your first bag to start'
   };
-  var GATE_COPY = {
+var GATE_COPY = {
     paused: 'Resume your membership to claim items.',
-    cancelled_ended: 'Reactivate your membership to claim items.',
+    cancelled_ended: 'Your membership is cancelled, but your closet\u2019s still here. Reactivate whenever you\u2019re ready to start swapping again.',
     pending_first_bag: 'Send your first bag to earn credits before you can claim.'
   };
   var GATE_CTA = {
@@ -1333,8 +1333,12 @@
         'background:#fbeee9;border:1px solid #efc9bb;font-family:Quicksand,sans-serif;}' +
       '.ks-bag-block-t{font-weight:600;color:#b23c19;font-size:14.5px;margin-bottom:3px;}' +
       '.ks-bag-block-m{color:#6f4a3e;font-size:13px;line-height:1.4;}' +
-      '.ks-bag-block-cta{display:inline-block;margin-top:10px;padding:7px 13px;border-radius:9px;' +
-        'background:#d24f28;color:#fff;text-decoration:none;font-size:13px;font-weight:600;}';
+     '.ks-bag-block-cta{display:inline-block;margin-top:10px;padding:7px 13px;border-radius:9px;' +
+        'background:#d24f28;color:#fff;text-decoration:none;font-size:13px;font-weight:600;}' +
+      '.ks-bag-block-ctas{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}' +
+      '.ks-bag-block-ctas .ks-bag-block-cta{margin-top:0;}' +
+      '.ks-bag-block-ctas .ks-bag-block-cta:nth-child(2){background:#fff;color:#b23c19;' +
+        'border:1px solid #d8a892;}';
     var s = document.createElement('style'); s.id = 'ks-bag-block-css'; s.textContent = css;
     document.head.appendChild(s);
   }
