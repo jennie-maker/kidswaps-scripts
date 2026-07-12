@@ -719,7 +719,7 @@
     // close affordances
     root.addEventListener('click', function (e) {
       if (e.target.closest('[data-close]')) { e.preventDefault(); closeDetail(); }
-      if (e.target.closest('[data-bag]')) { e.preventDefault(); bagStub(root); }
+      if (e.target.closest('[data-bag]')) { e.preventDefault(); addFromDetail(root); }
 
       var t = e.target.closest('[data-photo]');
       if (t) { swapMain(root, currentDetailItem, parseInt(t.getAttribute('data-photo'), 10), false); }
@@ -927,7 +927,11 @@
    * ====================================================================== */
 
   var BAG_KEY = 'ksBag';
-  var pendingRemovalNote = null;   // one-shot bag banner ("we removed X — just swapped"); rendered next, cleared on close/re-tap
+  // One-shot banner at the top of the bag drawer. TWO writers, both one-shot,
+  // both cleared on close: (1) the checkout trim note ("we removed X, it was just
+  // swapped"), (2) the duplicate-add note. Renamed from pendingRemovalNote 2026-07-12
+  // when the second writer landed — the old name only described half its job.
+  var pendingBagNote = null;
 
   // Memberstack presence check — token VALUE isn't needed here (the picker step
   // will fetch member-claim-context with the real token); we only gate add-to-bag.
@@ -1001,7 +1005,11 @@
     renderBag();
   }
 
-  // flash a short status message in the detail CTA's status span
+  /* ⚠ DEAD as of 2026-07-12. Nothing calls this. The detail CTA's flash was replaced
+   * by drawer-on-add (see addFromDetail). The .ks-detail-cta-cs span it writes into
+   * is likewise dead but left in the overlay template. Left in place, harmless.
+   * WHY IT DIED: it worked. It rendered. It was 11px of #A89E90 under the button and
+   * a member could not see it. Do not "fix" this by re-enabling it. */
   function flashCta(root, msg) {
     var cs = root.querySelector('.ks-detail-cta-cs');
     if (!cs) return;
@@ -1011,14 +1019,24 @@
     cs.__t = setTimeout(function () { cs.classList.remove('is-on'); }, 1800);
   }
 
-  // Detail-overlay "Add to bag" handler (data-bag). Logged-out -> /pricing prompt.
-  function bagStub(root) {
+  /* Detail-overlay "Add to bag" handler (data-bag). Logged-out -> /pricing prompt.
+   * THE DRAWER IS THE CONFIRMATION. The overlay closes and the bag slides in
+   * showing the item, instead of flashing an 11px whisper under the button that
+   * nobody could see (2026-07-12: proven live -- the flash rendered correctly and
+   * was still missable; a member is TOLD the item landed by being SHOWN the bag).
+   * ⚠ The logged-out branch is UNCHANGED and must stay that way -- showJoinPrompt()
+   * is a different message on a different path and it never touches the bag. */
+  function addFromDetail(root) {
     var item = currentDetailItem;
     if (!item) return;
     checkLoggedIn(function (ok) {
       if (!ok) { showJoinPrompt(); return; }
       var res = addToBag(item);
-      flashCta(root, res === 'dup' ? 'Already in your bag' : 'Added to bag');
+      // A re-tap is silent otherwise: with 6 rows in the drawer, nothing would say
+      // WHICH one was already there. Reuses the existing one-shot banner seam.
+      if (res === 'dup') pendingBagNote = 'That\u2019s already in your bag.';
+      closeDetail();   // drops ks-detail-lock, strips ?sku=
+      openBag();       // adds ks-bag-lock, calls renderBag()
     });
   }
 
@@ -1157,7 +1175,7 @@
           '</span>' +
         '</div>' +
         (bag.length ? '<div class="ks-bag-subnote">Nothing\u2019s reserved until you check out.</div>' : '') +
-        (pendingRemovalNote ? '<div class="ks-bag-removed">' + escapeHtml(pendingRemovalNote) + '</div>' : '') +
+        (pendingBagNote ? '<div class="ks-bag-removed">' + escapeHtml(pendingBagNote) + '</div>' : '') +
         '<div class="ks-bag-list">' + rows + '</div>' +
         footer +
       '</div>';
@@ -1172,7 +1190,7 @@
   }
 
   function closeBag() {
-    pendingRemovalNote = null;
+    pendingBagNote = null;
     var root = document.getElementById('ks-bag-root');
     if (root) { root.setAttribute('hidden', ''); root.innerHTML = ''; }
     document.documentElement.classList.remove('ks-bag-lock');
@@ -1465,7 +1483,7 @@ function outOfCreditsBlock(zeroClasses) {
     if (!bag.length) return;
     var btn = document.querySelector('.ks-bag-checkout');
     clearBagBlock();
-    pendingRemovalNote = null;
+    pendingBagNote = null;
     setCheckoutBusy(btn, true);
 
     getToken(function (tok) {
@@ -1503,7 +1521,7 @@ function outOfCreditsBlock(zeroClasses) {
           if (removed.length) {
             bagWrite(survivors);
             updateBagCount();
-            pendingRemovalNote = removalNote(removed);
+            pendingBagNote = removalNote(removed);
             renderBag();                  // trimmed bag + note; member taps Check out again
             setCheckoutBusy(btn, false);
             return;                       // no redirect on a removal pass
