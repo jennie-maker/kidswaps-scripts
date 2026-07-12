@@ -57,6 +57,25 @@
  *   saved $ hidden until the fn passes state.lifetime (line renders only if present);
  *   browse-bag not cleared from here (checkout owns no bag storage). The ship-
  *   tracking email the screen promises is a SEPARATE flow (manual at soft launch).
+ * rev 8 (2026-07-12): TWO SHIPPING-COPY BUGS FIXED. Both were dormant only
+ *   because shipping had never fired; the bags panel is what wakes them. The fn
+ *   already sent everything needed — this file had simply never read it. CLIENT
+ *   ONLY: no Edge Fn change.
+ *   (1) fees.shipping.note NOW HAS A DOM HOME (.ksc-shipnote, under the Shipping
+ *       row). The fn has always sent it; every version of that copy has been dead
+ *       text. ⚠ GATED TO state==="charged" — the fn's INCLUDED note is the label
+ *       "Shipping — Included", which the row already says; rendering it would
+ *       print the same fact twice. Only the charged note is a real sentence.
+ *   (2) THE COVERAGE SUBLINE NO LONGER KEYS OFF total_cents. It now feeds off
+ *       fees.upgrade_total (×100 — that key is DOLLARS, this fn wants CENTS).
+ *       total_cents = upgrade + extra-swap + SHIPPING, so a member whose credit
+ *       fully covered her item but who owed $15 shipping was told her credits
+ *       fell short. ONLY AN UPGRADE FEE IS A CREDIT SHORTFALL: extra-swap is a
+ *       QUANTITY fee (she must still hold a credit to use it) and shipping is a
+ *       LOGISTICS fee. Ruled by Jennie 2026-07-12. The tile already agreed — an
+ *       over-cap item renders "Covered" with a +$5 beside it.
+ *   ⚠ The button label + Total row still use total_cents, correctly — she really
+ *     does owe it. ONLY the subline's input changed.
  * ========================================================================== */
 (function () {
   "use strict";
@@ -297,6 +316,11 @@
     ID + " .ksc-row.total{font-size:1.12rem; font-weight:700; padding-top:10px;}",
     ID + " .ksc-row.total .k{color:var(--ks-ink);}",
     ID + " .ksc-row.total span{color:var(--ks-ink);}",
+    // shipping note: renders ONLY in the charged state (see renderReceipt).
+    // Full-width sentence between the Shipping row and Total — not a .ksc-row
+    // (it has no right-hand value), so it must not inherit the flex layout.
+    ID + " .ksc-shipnote{font-size:.78rem; line-height:1.45; color:var(--ks-muted);",
+    "  padding:2px 0 6px; max-width:44ch;}",
     // button + secure
     ID + " .ksc-btn{display:block; width:100%; border:0; cursor:pointer; background:var(--ks-orange);",
     "  color:#fff; font-weight:700; font-size:1.02rem; font-family:inherit; border-radius:50px;",
@@ -420,11 +444,15 @@
   }
 
   // ---- savings subline (locked bands + $0 celebration) ----------------------
-  function savingsSubline(totalCents, valueDollars) {
-    if ((Number(totalCents) || 0) === 0) return { text: "Your credits covered it all", flat: false };
+  // ⚠ TAKES UPGRADE CENTS, *NOT* TOTAL CENTS. The param is named for what it
+  // must receive: only an UPGRADE fee means the member's credit fell short of
+  // the item. Shipping and extra-swap are NOT shortfalls (§2). Feeding this
+  // total_cents is the bug fixed 2026-07-12 — do not "simplify" it back.
+  function savingsSubline(upgradeCents, valueDollars) {
+    if ((Number(upgradeCents) || 0) === 0) return { text: "Your credits covered it all", flat: false };
     var valueCents = Math.round((Number(valueDollars) || 0) * 100);
     if (valueCents <= 0) return { text: "Here's your swap", flat: true };
-    var ratio = totalCents / valueCents;
+    var ratio = upgradeCents / valueCents;
     if (ratio <= 0.34) return { text: "Your credits covered most of it", flat: false };
     if (ratio <= 0.67) return { text: "Your credits covered the bulk of it", flat: false };
     return { text: "Here's your swap", flat: true };
@@ -465,7 +493,15 @@
     var head = lines.length === 1 ? "Your swap is ready" : "Your swaps are ready";
     var value = Number(p.value_of_items) || 0;
     var totalCents = (p.fees && Number(p.fees.total_cents)) || 0;
-    var sub = savingsSubline(totalCents, value);
+
+    // COVERAGE SUBLINE feeds off UPGRADE FEES ONLY — never total_cents (§2, §1 bug 2).
+    // total_cents = upgrade + extra-swap + SHIPPING. Only the UPGRADE fee is a credit
+    // shortfall. Extra-swap is a QUANTITY fee (she still had to hold a credit to use
+    // it) and shipping is a LOGISTICS fee — neither says her credit fell short. The
+    // tile already knew this: an over-cap item renders "Covered" with a +$5 beside it.
+    // UNITS: fees.upgrade_total is DOLLARS (claims-native); savingsSubline wants CENTS.
+    var upgradeCents = Math.round(((p.fees && Number(p.fees.upgrade_total)) || 0) * 100);
+    var sub = savingsSubline(upgradeCents, value);
 
     // keep the rendered lines for modal open + count value-loss lines
     LAST_LINES = {};
@@ -517,9 +553,21 @@
 
     var ship = (p.fees && p.fees.shipping) || { state: "included", amount_cents: 0 };
     var shipVal = ship.state === "charged" ? moneyc(ship.amount_cents) : "Included";
+
+    // SHIPPING NOTE — gated to state==="charged" ON PURPOSE (§1 bug 1, §5).
+    // The fn sends a note in BOTH states and they are different animals: the
+    // INCLUDED note is the LABEL "Shipping — Included" (the row above already
+    // says that — rendering it would print the same fact twice, stacked), while
+    // the CHARGED note is the real round-trip explanation. Only the charged
+    // state carries information the row doesn't already have.
+    var shipNote = (ship.state === "charged" && ship.note)
+      ? '<div class="ksc-shipnote">' + esc(ship.note) + "</div>"
+      : "";
+
     var summary =
       '<div class="ksc-sum">' +
         '<div class="ksc-row"><span class="k">Shipping</span><span>' + esc(shipVal) + "</span></div>" +
+        shipNote +
         '<div class="ksc-row total"><span class="k">Total today</span><span>' + moneyc(totalCents) + "</span></div>" +
       "</div>";
 
