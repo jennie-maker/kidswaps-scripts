@@ -1,5 +1,5 @@
 /* ks-bags — the ship desk. /admin/bags
-   Phone-first: cards are the primary layout, the table is a desktop enhancement.
+   Phone-first: cards are the primary layout, desktop just widens the fields.
    Server is authoritative on every guard; this file is the hands, not the brain.
    Path A: Jennie prints labels in Shippo's own UI and pastes the tracking back.
    ⚠ The panel NEVER calls Shippo. Under Path B the EDGE FN fills these same two
@@ -8,39 +8,48 @@
 (function () {
   "use strict";
 
-  var BUILD = "dev";
+  var BUILD = "v2";
   var FN = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1/bags-manage";
   var MOUNT_ID = "ks-bags-app";
 
-  /* ⚠ AGING THRESHOLDS — GUARD 3. Deliberately a constant, not a migration.
-     No SLA exists yet (nothing member-facing promises a handling time), so these
-     are honest-for-now, not derived. Change the numbers; nothing else moves. */
+  /* ⚠ AGING — GUARD 3. Deliberately constants, not a migration. No SLA exists yet
+     (nothing member-facing promises a handling time), so these are honest-for-now,
+     not derived. Change the numbers; nothing else moves. */
   var AGE_AMBER_DAYS = 2;
   var AGE_RED_DAYS = 4;
+
+  /* ⚠ #C0392B IS A 9th VALUE AND IT IS DELIBERATE — ADMIN SURFACES ONLY.
+     The 8-hex palette is a BRAND system; it exists so MEMBERS see a coherent product.
+     This page has exactly one user and it is the operator. An overdue bag is a WARNING
+     LIGHT, not a brand accent. The alternative was spending a FOURTH coral, which is
+     precisely what §DASH.2's tripwire exists to prevent. Ruled 2026-07-12.
+     ⚠ NEVER let this hex reach a member-facing surface. */
+  var RED = "#C0392B";
 
   /* The four bag types this panel can create. 'order' is absent ON PURPOSE —
      checkout's commit_claim_batch owns order rows. The edge fn refuses anything
      not on this list; swap_bags.source DEFAULTS to 'order', so an unset source
      would silently bill the member $15. */
   var SOURCES = [
-    { key: "signup",         label: "First bag (new member)",  hint: "Her first empty bag. Free, never counted." },
-    { key: "comp",           label: "Make-good bag",           hint: "Never arrived, lost, or all items declined. Free." },
-    { key: "requested_free", label: "Free replacement bag",    hint: "She did not order this cycle. Free, restarts her loop." },
-    { key: "requested_paid", label: "Paid extra bag",          hint: "$15 NOT charged by this panel — collect it manually." }
+    { key: "signup",         label: "First bag",         cost: "Free" },
+    { key: "comp",           label: "Make-good",         cost: "Free" },
+    { key: "requested_free", label: "Free replacement",  cost: "Free" },
+    { key: "requested_paid", label: "Paid extra",        cost: "$15" }
   ];
 
   var SOURCE_LABEL = {
     signup: "First bag",
-    comp: "Make-good",
+    comp: "Make-good bag",
     requested_free: "Free replacement",
-    requested_paid: "Paid extra ($15 uncharged)",
-    order: "Order"
+    requested_paid: "Paid extra bag",
+    order: "Order + bag"
   };
 
-  var _panel = null;      // last payload from the server
+  var _panel = null;
   var _token = null;
   var _busy = false;
   var _root = null;
+  var _formSource = "signup";
 
   /* ---------- utils ---------------------------------------------------- */
 
@@ -50,11 +59,9 @@
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
   }
-  function isPhone() { return window.matchMedia("(max-width:720px)").matches; }
 
   function fullName(r) {
-    var n = (r.first_name || "") + " " + (r.last_name || "");
-    n = n.trim();
+    var n = ((r.first_name || "") + " " + (r.last_name || "")).trim();
     return n || r.email || "Unknown member";
   }
 
@@ -65,34 +72,39 @@
     return Math.floor((Date.now() - then) / 86400000);
   }
 
-  function ageClass(days) {
-    if (days >= AGE_RED_DAYS) return "ksb-age--red";
-    if (days >= AGE_AMBER_DAYS) return "ksb-age--amber";
-    return "ksb-age--ok";
+  function ageClass(d) {
+    if (d >= AGE_RED_DAYS) return "ksb-red";
+    if (d >= AGE_AMBER_DAYS) return "ksb-amber";
+    return "ksb-fresh";
   }
 
-  function ageText(days) {
-    if (days <= 0) return "Today";
-    if (days === 1) return "1 day old";
-    return days + " days old";
+  function ageText(d) {
+    if (d <= 0) return "Today";
+    if (d === 1) return "1 day old";
+    return d + " days old";
   }
 
   /* ⚠ ADDRESS IS THE WHOLE POINT OF THIS PANEL — eyeball it before printing.
      Every shipping_* column is NULLABLE. A member with no address must SHOUT,
-     not render a tidy blank. (S1 is OFF; blanks are expected in testing.) */
+     not render a tidy blank — a tidy blank is exactly what hid the S1 gap for a month.
+     ⚠ line2 IS RENDERED. A Cowork mockup silently dropped "Apt 4B" off the one
+     fixture in the system that has one. An apartment number is a door. */
   function addressBlock(r) {
     var l1 = (r.shipping_address_line1 || "").trim();
     if (!l1) {
-      return '<div class="ksb-addr ksb-addr--missing">⚠ NO ADDRESS ON FILE — do not print a label</div>';
+      return '<div class="ksb-noaddr"><span class="ksb-noaddr-i">⚠</span>' +
+             '<span>NO ADDRESS ON FILE — do not print a label.</span></div>';
     }
     var l2 = (r.shipping_address_line2 || "").trim();
     var city = (r.shipping_city || "").trim();
     var st = (r.shipping_state || "").trim();
     var zip = (r.shipping_zip || "").trim();
-    var lines = [esc(l1)];
-    if (l2) lines.push(esc(l2));
-    lines.push(esc(city) + (city && st ? ", " : "") + esc(st) + " " + esc(zip));
-    return '<div class="ksb-addr">' + lines.join("<br>") + "</div>";
+    var out = '<div class="ksb-addr"><div class="ksb-addr-who">' + esc(fullName(r)) + "</div>";
+    out += '<div class="ksb-addr-l">' + esc(l1) + "</div>";
+    if (l2) out += '<div class="ksb-addr-l">' + esc(l2) + "</div>";
+    out += '<div class="ksb-addr-l">' + esc(city) + (city && st ? ", " : "") +
+           esc(st) + " " + esc(zip) + "</div></div>";
+    return out;
   }
 
   /* ---------- server --------------------------------------------------- */
@@ -106,7 +118,6 @@
       return r.json().then(function (j) {
         if (!r.ok || j.error) {
           var e = new Error(j.error || "Request failed");
-          e.code = j.code;
           e.detail = j.detail;
           throw e;
         }
@@ -126,75 +137,87 @@
     }).catch(function (e) {
       alert(e.message + (e.detail ? "\n\n" + e.detail : ""));
       if (btn) { btn.disabled = false; btn.textContent = old; }
-      throw e;
     }).finally(function () { _busy = false; });
   }
 
-  /* ---------- render: a bag card (BOTH queues end the same way) ---------- */
+  /* ---------- a bag card (BOTH queues end the same way) ------------------ */
 
   function bagCard(r) {
-    var days = daysSince(r.opened_at);
+    var d = daysSince(r.opened_at);
     var isOrder = r.source === "order";
+    var paid = r.source === "requested_paid";
 
     return '' +
-      '<article class="ksb-card ' + ageClass(days) + '" data-bag="' + esc(r.id) + '">' +
-        '<header class="ksb-card-head">' +
-          '<div>' +
-            '<h3 class="ksb-name">' + esc(fullName(r)) + '</h3>' +
-            '<div class="ksb-meta">' +
-              '<span class="ksb-chip">' + esc(r.plan || "No plan") + '</span>' +
-              '<span class="ksb-chip ksb-chip--src">' + esc(SOURCE_LABEL[r.source] || r.source) + '</span>' +
-            '</div>' +
-          '</div>' +
-          '<span class="ksb-age">' + esc(ageText(days)) + '</span>' +
-        '</header>' +
+      '<article class="ksb-card ' + ageClass(d) + '" data-bag="' + esc(r.id) + '">' +
+        '<div class="ksb-top">' +
+          '<h3 class="ksb-name">' + esc(fullName(r)) + "</h3>" +
+          '<span class="ksb-age">' + esc(ageText(d)) + "</span>" +
+        "</div>" +
+
+        '<div class="ksb-chips">' +
+          '<span class="ksb-chip">' + esc(r.plan || "No plan") + "</span>" +
+          '<span class="ksb-chip ksb-chip--type">' + esc(SOURCE_LABEL[r.source] || r.source) + "</span>" +
+          (paid ? '<span class="ksb-chip ksb-chip--paid">$15 · not charged here</span>' : "") +
+        "</div>" +
 
         addressBlock(r) +
 
-        (isOrder
-          ? '<p class="ksb-note">Pack her items <strong>plus an empty bag</strong> with the return label on it.</p>'
-          : '<p class="ksb-note">Empty bag with the return label on it, folded into an envelope. <strong>No items.</strong></p>') +
+        '<p class="ksb-instr"><span class="ksb-arrow">›</span>' +
+          (isOrder
+            ? "Pack her items <strong>plus an empty bag</strong> with the return label on it."
+            : "Empty bag with the return label on it, folded into an envelope. <strong>No items.</strong>") +
+        "</p>" +
 
-        '<div class="ksb-fields">' +
-          '<label class="ksb-field">' +
-            '<span>Outbound tracking <em>(the package)</em></span>' +
+        /* THE JOB — the heart of the card. Two labels, born in one sitting. */
+        '<div class="ksb-job">' +
+          '<div class="ksb-job-t">Two labels <span class="ksb-of2">· one job</span></div>' +
+          '<div class="ksb-field">' +
+            "<label>Outbound tracking <em>(the package)</em></label>" +
+            /* ⚠ inputmode TEXT, never numeric. Tracking numbers are ALPHANUMERIC —
+               UPS is 1Z... A numeric keypad cannot type a Z. */
             '<input type="text" inputmode="text" autocomplete="off" spellcheck="false" data-tr="out" placeholder="Paste from Shippo">' +
-          '</label>' +
-          '<label class="ksb-field">' +
-            '<span>Return tracking <em>(the bag inside)</em></span>' +
+            '<span class="ksb-tick">✓</span>' +
+          "</div>" +
+          '<div class="ksb-field">' +
+            "<label>Return tracking <em>(the bag inside)</em></label>" +
             '<input type="text" inputmode="text" autocomplete="off" spellcheck="false" data-tr="ret" placeholder="Paste from Shippo">' +
-          '</label>' +
-        '</div>' +
+            '<span class="ksb-tick">✓</span>' +
+          "</div>" +
+        "</div>" +
 
         '<div class="ksb-actions">' +
-          '<button class="ksb-btn ksb-btn--ship" data-act="ship">Mark shipped</button>' +
-          '<button class="ksb-btn ksb-btn--ghost" data-act="cancel">Cancel bag</button>' +
-        '</div>' +
-      '</article>';
+          /* ⚠⚠ GUARD 1 — DISABLED UNTIL BOTH TRACKING NUMBERS ARE IN.
+             Prevention, not nagging: the button cannot be pressed, so there is
+             nothing to misclick. ⚠ NO UNDO, DELIBERATELY — marking shipped is NOT
+             reversible (the package is in the mail), and an unship action would let
+             a mailed bag return to 'open', break Guard 2, and un-fire a $15 fee that
+             was correctly charged. Two deliberate pastes IS the confirmation. */
+          '<button class="ksb-btn ksb-btn--go" data-act="ship" disabled>Mark shipped</button>' +
+          '<button class="ksb-btn ksb-btn--ghost" data-act="cancel">Cancel</button>' +
+        "</div>" +
+        '<div class="ksb-lock">Both tracking numbers needed to ship</div>' +
+      "</article>";
   }
 
-  /* ---------- render: needs-a-bag ---------------------------------------- */
+  /* ---------- needs-a-bag ------------------------------------------------ */
 
   function needsCard(m) {
     return '' +
-      '<article class="ksb-card ksb-card--needs" data-needs="' + esc(m.member_id) + '">' +
-        '<header class="ksb-card-head">' +
-          '<div>' +
-            '<h3 class="ksb-name">' + esc(fullName(m)) + '</h3>' +
-            '<div class="ksb-meta">' +
-              '<span class="ksb-chip">' + esc(m.plan || "No plan") + '</span>' +
-              '<span class="ksb-chip">Never sent a bag</span>' +
-            '</div>' +
-          '</div>' +
-        '</header>' +
+      '<article class="ksb-card ksb-first" data-needs="' + esc(m.member_id) + '">' +
+        '<div class="ksb-top"><h3 class="ksb-name">' + esc(fullName(m)) + "</h3></div>" +
+        '<div class="ksb-chips">' +
+          '<span class="ksb-chip">' + esc(m.plan || "No plan") + "</span>" +
+          '<span class="ksb-chip ksb-chip--free">Free · never counted</span>' +
+        "</div>" +
         addressBlock(m) +
+        '<p class="ksb-instr"><span class="ksb-arrow">›</span>Her first empty bag. Free, never counted, never billed.</p>' +
         '<div class="ksb-actions">' +
-          '<button class="ksb-btn ksb-btn--ship" data-act="create-signup">Create her first bag</button>' +
-        '</div>' +
-      '</article>';
+          '<button class="ksb-btn ksb-btn--go ksb-btn--wide" data-act="create-signup">Create her first bag</button>' +
+        "</div>" +
+      "</article>";
   }
 
-  /* ---------- render: the send-a-bag form ------------------------------- */
+  /* ---------- the send-a-bag form ---------------------------------------- */
 
   function sendForm() {
     var members = (_panel.members || []).slice().sort(function (a, b) {
@@ -202,70 +225,76 @@
     });
 
     var opts = members.map(function (m) {
-      /* ⚠ GUARD 4 — flag a member who ALREADY has a bag out. Warn, never block
-         (§6 override-with-warning; physical truth wins, she may have a reason). */
-      var warn = m.open_bags > 0 ? "  ⚠ already has a bag out" : "";
       return '<option value="' + esc(m.member_id) + '" data-open="' + m.open_bags + '">' +
-             esc(fullName(m)) + " — " + esc(m.plan || "no plan") + esc(warn) + "</option>";
+             esc(fullName(m)) + " — " + esc(m.plan || "no plan") + "</option>";
     }).join("");
 
-    var srcOpts = SOURCES.map(function (s) {
-      return '<option value="' + s.key + '">' + esc(s.label) + "</option>";
+    /* Reason as TAP TILES, not a dropdown — far better with a thumb. */
+    var tiles = SOURCES.map(function (s, i) {
+      return '<button class="ksb-reason' + (i === 0 ? " is-sel" : "") + '" data-src="' + s.key + '">' +
+             esc(s.label) +
+             '<span class="ksb-reason-c ' + (s.cost === "$15" ? "is-paid" : "is-free") + '">' + esc(s.cost) + "</span>" +
+             "</button>";
     }).join("");
 
     return '' +
       '<div class="ksb-form" id="ksb-form" hidden>' +
-        '<label class="ksb-field">' +
-          '<span>Member</span>' +
-          '<select id="ksb-f-member"><option value="">Choose a member...</option>' + opts + "</select>" +
-        "</label>" +
-        '<label class="ksb-field">' +
-          '<span>Why</span>' +
-          '<select id="ksb-f-source">' + srcOpts + "</select>" +
-        "</label>" +
-        '<p class="ksb-hint" id="ksb-f-hint"></p>' +
-        '<p class="ksb-warn" id="ksb-f-warn" hidden></p>' +
+        '<div class="ksb-flabel">Member</div>' +
+        '<select id="ksb-f-member"><option value="">Pick a member...</option>' + opts + "</select>" +
+        /* ⚠ GUARD 4 — warn, never block (§6 override-with-warning; she may have a reason). */
+        '<div class="ksb-dup" id="ksb-f-warn" hidden>' +
+          "<strong>⚠ This member already has a bag out.</strong> Sending another is allowed. " +
+          "This warns, it never blocks. Send it if you have a reason." +
+        "</div>" +
+        '<div class="ksb-flabel">Reason</div>' +
+        '<div class="ksb-reasons" id="ksb-f-reasons">' + tiles + "</div>" +
+        '<div class="ksb-paid" id="ksb-f-paid" hidden>' +
+          "$15 — <strong>not charged by this page.</strong> There is no payment step here. Collect it manually." +
+        "</div>" +
         '<div class="ksb-actions">' +
-          '<button class="ksb-btn ksb-btn--ship" id="ksb-f-create">Create bag</button>' +
-          '<button class="ksb-btn ksb-btn--ghost" id="ksb-f-close">Never mind</button>' +
+          '<button class="ksb-btn ksb-btn--go" id="ksb-f-create">Add to queue</button>' +
+          '<button class="ksb-btn ksb-btn--ghost" id="ksb-f-close">Close</button>' +
         "</div>" +
       "</div>";
   }
 
-  /* ---------- render: the page ------------------------------------------ */
+  /* ---------- render ----------------------------------------------------- */
 
   function render() {
-    var orders = _panel.orders || [];
-    var envelopes = _panel.envelopes || [];
+    /* ⚠ GUARD 3, THE HALF THAT ACTUALLY WORKS: OVERDUE FLOATS TO THE TOP.
+       A red border 400px down the page is a color a tired person learns to scroll
+       past. Position is the loudest signal there is, and it costs one sort. */
+    function byAge(a, b) { return daysSince(a.opened_at) - daysSince(b.opened_at); }
+    var orders = (_panel.orders || []).slice().sort(byAge).reverse();
+    var envelopes = (_panel.envelopes || []).slice().sort(byAge).reverse();
     var needs = (_panel.members || []).filter(function (m) { return m.total_bags === 0; });
 
     _root.innerHTML = '' +
       '<div class="ksb">' +
-        '<header class="ksb-top">' +
-          "<h1>Ship desk</h1>" +
-          '<button class="ksb-btn ksb-btn--ghost ksb-refresh" id="ksb-refresh">Refresh</button>' +
+        '<header class="ksb-head">' +
+          "<h1>The ship desk</h1>" +
+          '<p class="ksb-sub">Two labels, one job. Check the address before you print.</p>' +
+          '<button class="ksb-btn ksb-btn--ghost ksb-btn--sm" id="ksb-refresh">Refresh</button>' +
         "</header>" +
 
         (needs.length
           ? '<section class="ksb-sec">' +
-              "<h2>Waiting on a first bag <span class=\"ksb-count\">" + needs.length + "</span></h2>" +
+              '<div class="ksb-sech"><h2>Waiting on a first bag</h2><span class="ksb-count">' + needs.length + "</span></div>" +
               needs.map(needsCard).join("") +
             "</section>"
           : "") +
 
         '<section class="ksb-sec">' +
-          '<div class="ksb-sec-head">' +
-            "<h2>Bags to send <span class=\"ksb-count\">" + envelopes.length + "</span></h2>" +
-            '<button class="ksb-btn ksb-btn--ship ksb-btn--sm" id="ksb-send">+ Send a bag</button>' +
-          "</div>" +
-          sendForm() +
+          '<div class="ksb-sech"><h2>Bags to send</h2><span class="ksb-count">' + envelopes.length + "</span></div>" +
           (envelopes.length
             ? envelopes.map(bagCard).join("")
             : '<p class="ksb-empty">Nothing to send. Bag-only jobs show up here.</p>') +
+          '<button class="ksb-add" id="ksb-send">+ Send a bag</button>' +
+          sendForm() +
         "</section>" +
 
         '<section class="ksb-sec">' +
-          "<h2>Orders to send <span class=\"ksb-count\">" + orders.length + "</span></h2>" +
+          '<div class="ksb-sech"><h2>Orders to send</h2><span class="ksb-count">' + orders.length + "</span></div>" +
           (orders.length
             ? orders.map(bagCard).join("")
             : '<p class="ksb-empty">No orders waiting. Checkout puts them here.</p>') +
@@ -275,7 +304,30 @@
     wire();
   }
 
-  /* ---------- wiring ---------------------------------------------------- */
+  /* ---------- wiring ----------------------------------------------------- */
+
+  function checkJob(input) {
+    var field = input.parentNode;
+    var has = input.value.trim().length > 0;
+    if (has) field.classList.add("is-done"); else field.classList.remove("is-done");
+
+    var card = input.closest("[data-bag]");
+    var ins = card.querySelectorAll("[data-tr]");
+    var both = true;
+    for (var i = 0; i < ins.length; i++) {
+      if (!ins[i].value.trim()) { both = false; break; }
+    }
+    var btn = card.querySelector('[data-act="ship"]');
+    var lock = card.querySelector(".ksb-lock");
+    btn.disabled = !both;
+    if (both) {
+      lock.textContent = "✓ Both labels captured — safe to ship";
+      lock.classList.add("is-ready");
+    } else {
+      lock.textContent = "Both tracking numbers needed to ship";
+      lock.classList.remove("is-ready");
+    }
+  }
 
   function wire() {
     el("ksb-refresh").addEventListener("click", function (e) {
@@ -283,56 +335,45 @@
     });
 
     var form = el("ksb-form");
-    var sendBtn = el("ksb-send");
     var mSel = el("ksb-f-member");
-    var sSel = el("ksb-f-source");
-    var hint = el("ksb-f-hint");
     var warn = el("ksb-f-warn");
+    var paid = el("ksb-f-paid");
 
-    function refreshHint() {
-      var s = SOURCES.filter(function (x) { return x.key === sSel.value; })[0];
-      hint.textContent = s ? s.hint : "";
-      var opt = mSel.options[mSel.selectedIndex];
-      var open = opt ? Number(opt.getAttribute("data-open") || 0) : 0;
-      if (open > 0) {
-        warn.hidden = false;
-        warn.textContent = "⚠ This member already has a bag out. You can still send one — just make sure you mean to.";
-      } else {
-        warn.hidden = true;
-      }
-    }
-
-    sendBtn.addEventListener("click", function () {
-      form.hidden = !form.hidden;
-      if (!form.hidden) refreshHint();
-    });
+    el("ksb-send").addEventListener("click", function () { form.hidden = !form.hidden; });
     el("ksb-f-close").addEventListener("click", function () { form.hidden = true; });
-    mSel.addEventListener("change", refreshHint);
-    sSel.addEventListener("change", refreshHint);
+
+    mSel.addEventListener("change", function () {
+      var o = mSel.options[mSel.selectedIndex];
+      warn.hidden = !(o && Number(o.getAttribute("data-open") || 0) > 0);
+    });
+
+    el("ksb-f-reasons").addEventListener("click", function (e) {
+      var t = e.target.closest ? e.target.closest("[data-src]") : null;
+      if (!t) return;
+      var all = el("ksb-f-reasons").querySelectorAll("[data-src]");
+      for (var i = 0; i < all.length; i++) all[i].classList.remove("is-sel");
+      t.classList.add("is-sel");
+      _formSource = t.getAttribute("data-src");
+      paid.hidden = _formSource !== "requested_paid";
+    });
 
     el("ksb-f-create").addEventListener("click", function (e) {
-      var memberId = mSel.value;
-      if (!memberId) { alert("Choose a member first."); return; }
-      withBusy(call({
-        action: "create",
-        member_id: memberId,
-        source: sSel.value
-      }), e.target, "Creating...");
+      if (!mSel.value) { alert("Pick a member first."); return; }
+      withBusy(call({ action: "create", member_id: mSel.value, source: _formSource }), e.target, "Creating...");
     });
 
-    /* one delegated handler for every card action */
+    _root.addEventListener("input", function (e) {
+      if (e.target.hasAttribute && e.target.hasAttribute("data-tr")) checkJob(e.target);
+    });
+
     _root.addEventListener("click", function (e) {
       var btn = e.target.closest ? e.target.closest("[data-act]") : null;
       if (!btn) return;
       var act = btn.getAttribute("data-act");
 
       if (act === "create-signup") {
-        var nCard = btn.closest("[data-needs]");
-        withBusy(call({
-          action: "create",
-          member_id: nCard.getAttribute("data-needs"),
-          source: "signup"
-        }), btn, "Creating...");
+        var n = btn.closest("[data-needs]");
+        withBusy(call({ action: "create", member_id: n.getAttribute("data-needs"), source: "signup" }), btn, "Creating...");
         return;
       }
 
@@ -343,18 +384,10 @@
       if (act === "ship") {
         var out = card.querySelector('[data-tr="out"]').value.trim();
         var ret = card.querySelector('[data-tr="ret"]').value.trim();
-        /* ⚠⚠ GUARD 1 — BOTH tracking numbers. Checked here for a fast, kind
-           message; ENFORCED in the edge fn, which is the one that counts.
-           A tracking number cannot be invented — it is proof the label printed. */
-        if (!out || !ret) {
-          alert("Both tracking numbers are required.\n\nOne for the outer package, one for the empty bag inside it. If you only have one, the job isn't finished.");
-          return;
-        }
+        if (!out || !ret) return;   /* unreachable — the button is disabled. Belt to the server's braces. */
         withBusy(call({
-          action: "ship",
-          bag_id: bagId,
-          outbound_tracking: out,
-          return_tracking: ret
+          action: "ship", bag_id: bagId,
+          outbound_tracking: out, return_tracking: ret
         }), btn, "Shipping...");
         return;
       }
@@ -366,62 +399,112 @@
     });
   }
 
-  /* ---------- styles ---------------------------------------------------- */
+  /* ---------- styles ----------------------------------------------------- */
 
   function injectCSS() {
     if (el("ksb-css")) return;
+    var R = "#" + MOUNT_ID;
     var s = document.createElement("style");
     s.id = "ksb-css";
+    /* ⚠ EVERY RULE IS PREFIXED WITH THE MOUNT ID. The v1 h1/h2 rules were NOT, and
+       Webflow's global heading styles beat them — the section headings rendered as
+       invisible text and only the count chips showed. Specificity, not magic. */
     s.textContent = [
-      "#" + MOUNT_ID + " *{box-sizing:border-box}",
-      ".ksb{font-family:Quicksand,sans-serif;color:#1E1A19;max-width:900px;margin:0 auto;padding:16px}",
-      ".ksb-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}",
-      ".ksb h1{font-family:'Instrument Serif',serif;font-weight:400;font-size:40px;margin:0}",
-      ".ksb h2{font-family:'Instrument Serif',serif;font-weight:400;font-size:26px;margin:0}",
-      ".ksb-sec{margin-top:28px}",
-      ".ksb-sec-head{display:flex;align-items:center;justify-content:space-between;gap:12px}",
-      ".ksb-count{display:inline-block;min-width:24px;text-align:center;font-family:Quicksand,sans-serif;font-size:13px;font-weight:600;background:#EEEFE3;color:#75736E;border-radius:999px;padding:2px 8px;vertical-align:middle}",
-      ".ksb-empty{color:#75736E;font-size:14px;margin:12px 0 0}",
-      /* cards are the PRIMARY layout — phone first */
-      ".ksb-card{background:#FFF;border:1px solid #EEEFE3;border-left:5px solid #EEEFE3;border-radius:14px;padding:16px;margin-top:12px;box-shadow:0 10px 30px -12px #C9C7BC}",
-      ".ksb-age--amber{border-left-color:#E5AD43}",
-      ".ksb-age--red{border-left-color:#D65A35}",
-      ".ksb-card--needs{border-left-color:#28498D}",
-      ".ksb-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}",
-      ".ksb-name{font-family:Quicksand,sans-serif;font-size:18px;font-weight:600;margin:0 0 6px}",
-      ".ksb-meta{display:flex;flex-wrap:wrap;gap:6px}",
-      ".ksb-chip{font-size:12px;font-weight:600;background:#F7E4D9;color:#D65A35;border-radius:999px;padding:3px 10px}",
-      ".ksb-chip--src{background:#EEEFE3;color:#75736E}",
-      ".ksb-age{font-size:12px;font-weight:600;color:#75736E;white-space:nowrap}",
-      ".ksb-age--amber .ksb-age{color:#E5AD43}",
-      ".ksb-age--red .ksb-age{color:#D65A35}",
-      ".ksb-addr{margin-top:12px;padding:12px;background:#EEEFE3;border-radius:10px;font-size:15px;line-height:1.5}",
-      ".ksb-addr--missing{background:#F7E4D9;color:#D65A35;font-weight:600}",
-      ".ksb-note{font-size:13px;color:#75736E;margin:10px 0 0;line-height:1.5}",
-      ".ksb-fields{margin-top:12px;display:grid;gap:10px}",
-      ".ksb-field{display:block}",
-      ".ksb-field>span{display:block;font-size:13px;font-weight:600;margin-bottom:4px}",
-      ".ksb-field em{font-style:normal;font-weight:400;color:#75736E}",
-      /* 16px inputs: iOS zooms the page on focus below 16 */
-      ".ksb-field input,.ksb-field select{width:100%;font-family:Quicksand,sans-serif;font-size:16px;padding:12px;border:1px solid #EEEFE3;border-radius:10px;background:#FFF;color:#1E1A19}",
-      ".ksb-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}",
-      ".ksb-btn{font-family:Quicksand,sans-serif;font-size:15px;font-weight:600;border-radius:999px;padding:12px 20px;border:1px solid transparent;cursor:pointer;min-height:44px}",
-      ".ksb-btn--ship{background:#D65A35;color:#EEEFE3;flex:1}",
-      ".ksb-btn--ship:hover{background:#BE4C2E}",
-      ".ksb-btn--ghost{background:transparent;color:#75736E;border-color:#EEEFE3}",
-      ".ksb-btn--sm{flex:0 0 auto;padding:8px 16px;font-size:14px;min-height:0}",
-      ".ksb-btn:disabled{opacity:1;background:#75736E;color:#EEEFE3;cursor:default}",
-      ".ksb-form{background:#EEEFE3;border-radius:14px;padding:16px;margin-top:12px;display:grid;gap:10px}",
-      ".ksb-hint{font-size:13px;color:#75736E;margin:0}",
-      ".ksb-warn{font-size:13px;color:#D65A35;font-weight:600;margin:0;line-height:1.5}",
-      ".ksb-refresh{min-height:0;padding:8px 16px;font-size:14px}",
-      /* desktop enhancement: two fields side by side, tighter cards */
-      "@media(min-width:721px){.ksb-fields{grid-template-columns:1fr 1fr}.ksb-btn--ship{flex:0 0 auto}}"
+      R + " *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}",
+      R + " .ksb{font-family:Quicksand,sans-serif;font-weight:500;color:#1E1A19;max-width:460px;margin:0 auto;padding:8px 16px 80px;line-height:1.45}",
+
+      R + " .ksb-head{padding:18px 0 4px}",
+      R + " .ksb h1{font-family:'Instrument Serif',serif!important;font-weight:400!important;font-size:40px!important;line-height:1!important;margin:0!important;color:#1E1A19!important;text-transform:none!important}",
+      R + " .ksb-sub{color:#75736E;font-size:14px;margin:6px 0 0}",
+      R + " #ksb-refresh{margin-top:12px}",
+
+      R + " .ksb-sec{margin-top:20px}",
+      R + " .ksb-sech{display:flex;align-items:baseline;gap:10px;position:sticky;top:0;z-index:5;background:#F2F1EB;padding:14px 0 10px}",
+      R + " .ksb h2{font-family:'Instrument Serif',serif!important;font-weight:400!important;font-size:26px!important;line-height:1!important;margin:0!important;color:#1E1A19!important;text-transform:none!important}",
+      R + " .ksb-count{font-weight:600;font-size:13px;min-width:26px;height:26px;padding:0 8px;border-radius:13px;display:inline-flex;align-items:center;justify-content:center;background:#EEEFE3;color:#75736E}",
+      R + " .ksb-empty{color:#75736E;font-size:14px;margin:8px 0 0}",
+
+      /* cards — phone first */
+      R + " .ksb-card{background:#FFF;border-radius:18px;box-shadow:0 10px 30px -12px #C9C7BC;padding:16px;margin:0 0 16px;border-left:6px solid #75736E}",
+      R + " .ksb-amber{border-left-color:#E5AD43}",
+      R + " .ksb-red{border-left-color:" + RED + "}",
+      R + " .ksb-first{border-left-color:#28498D}",
+
+      R + " .ksb-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}",
+      R + " .ksb-name{font-family:Quicksand,sans-serif!important;font-size:20px!important;font-weight:600!important;margin:0!important;color:#1E1A19!important;letter-spacing:-.01em}",
+      R + " .ksb-age{font-size:13px;color:#75736E;font-weight:600;white-space:nowrap;padding-top:3px}",
+      R + " .ksb-amber .ksb-age{color:#E5AD43}",
+      /* the overdue badge is FILLED — colour + shape + size, not just a hairline */
+      R + " .ksb-red .ksb-age{color:#FFF;background:" + RED + ";padding:5px 10px;border-radius:11px;font-size:12.5px;padding-top:5px}",
+
+      R + " .ksb-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px}",
+      R + " .ksb-chip{font-size:13px;font-weight:600;padding:5px 11px;border-radius:20px;background:#EEEFE3;color:#1E1A19}",
+      R + " .ksb-chip--type{background:#F7E4D9;color:#BE4C2E}",
+      R + " .ksb-chip--paid{background:#F7E4D9;color:#BE4C2E}",
+      R + " .ksb-chip--free{background:#EEEFE3;color:#4E9360}",
+
+      R + " .ksb-addr{background:#EEEFE3;border-radius:12px;padding:12px 14px;margin-top:14px;font-size:15px;line-height:1.4}",
+      R + " .ksb-addr-who{font-weight:600}",
+      R + " .ksb-addr-l{color:#75736E}",
+      R + " .ksb-noaddr{background:#F7E4D9;border:2px solid #D65A35;border-radius:12px;padding:13px 14px;margin-top:14px;color:#BE4C2E;font-weight:600;font-size:15px;display:flex;gap:9px;align-items:flex-start;line-height:1.35}",
+      R + " .ksb-noaddr-i{font-size:18px;line-height:1}",
+
+      R + " .ksb-instr{margin:14px 0 0;font-size:14px;color:#75736E;line-height:1.4}",
+      R + " .ksb-arrow{color:#D65A35;font-weight:600;margin-right:6px}",
+
+      /* the job — the heart of the card */
+      R + " .ksb-job{margin-top:16px;background:#EEEFE3;border-radius:14px;padding:14px}",
+      R + " .ksb-job-t{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#75736E;margin-bottom:11px}",
+      R + " .ksb-of2{color:#BE4C2E}",
+      R + " .ksb-field{position:relative;margin-top:10px}",
+      R + " .ksb-field:first-of-type{margin-top:0}",
+      R + " .ksb-field label{font-size:13px;font-weight:600;color:#1E1A19;display:block;margin-bottom:5px}",
+      R + " .ksb-field em{font-style:normal;font-weight:500;color:#75736E}",
+      /* 16px minimum: below it, iOS zooms the page on focus */
+      R + " .ksb-field input{width:100%;height:52px;border-radius:11px;border:2px solid #EEEFE3;background:#FFF;padding:0 44px 0 14px;font-family:Quicksand,sans-serif;font-weight:600;font-size:16px;color:#1E1A19}",
+      R + " .ksb-field input:focus{outline:none;border-color:#D65A35}",
+      R + " .ksb-field.is-done input{border-color:#4E9360}",
+      R + " .ksb-tick{position:absolute;right:14px;top:36px;font-size:18px;color:#4E9360;display:none}",
+      R + " .ksb-field.is-done .ksb-tick{display:inline}",
+
+      R + " .ksb-actions{display:flex;gap:10px;margin-top:16px}",
+      R + " .ksb-btn{height:54px;border-radius:13px;border:none;font-family:Quicksand,sans-serif;font-weight:600;font-size:16px;cursor:pointer;flex:1;display:inline-flex;align-items:center;justify-content:center}",
+      R + " .ksb-btn--go{background:#D65A35;color:#FFF}",
+      R + " .ksb-btn--go:hover{background:#BE4C2E}",
+      /* ⚠ NO OPACITY (§DASH.2) — the disabled state is a solid hex, not a faded coral */
+      R + " .ksb-btn--go:disabled{background:#EEEFE3;color:#75736E;cursor:not-allowed}",
+      R + " .ksb-btn--ghost{flex:0 0 auto;background:#FFF;color:#75736E;border:2px solid #EEEFE3;padding:0 18px}",
+      R + " .ksb-btn--sm{height:40px;font-size:14px;flex:0 0 auto;padding:0 16px}",
+      R + " .ksb-btn--wide{flex:1}",
+      R + " .ksb-lock{font-size:12.5px;color:#75736E;margin-top:9px;text-align:center;font-weight:600}",
+      R + " .ksb-lock.is-ready{color:#4E9360}",
+
+      R + " .ksb-add{width:100%;height:52px;border-radius:14px;margin-top:4px;background:#FFF;border:2px dashed #75736E;color:#BE4C2E;font-family:Quicksand,sans-serif;font-weight:600;font-size:16px;cursor:pointer}",
+      R + " .ksb-form{background:#FFF;border-radius:18px;box-shadow:0 10px 30px -12px #C9C7BC;padding:16px;margin-top:12px}",
+      R + " .ksb-flabel{font-size:13px;font-weight:600;margin:12px 0 6px}",
+      R + " .ksb-flabel:first-child{margin-top:0}",
+      R + " .ksb-form select{width:100%;height:52px;border-radius:11px;border:2px solid #EEEFE3;background:#FFF;padding:0 14px;font-family:Quicksand,sans-serif;font-weight:600;font-size:16px;color:#1E1A19}",
+      R + " .ksb-reasons{display:grid;grid-template-columns:1fr 1fr;gap:8px}",
+      R + " .ksb-reason{border:2px solid #EEEFE3;border-radius:11px;padding:11px 10px;cursor:pointer;font-size:14px;font-weight:600;text-align:center;background:#FFF;color:#1E1A19;font-family:Quicksand,sans-serif;min-height:56px}",
+      R + " .ksb-reason.is-sel{border-color:#D65A35;background:#F7E4D9}",
+      R + " .ksb-reason-c{display:block;font-size:11.5px;font-weight:600;margin-top:3px}",
+      R + " .ksb-reason-c.is-free{color:#4E9360}",
+      R + " .ksb-reason-c.is-paid{color:#BE4C2E}",
+      R + " .ksb-paid{margin-top:12px;background:#F7E4D9;border-radius:11px;padding:11px 13px;font-size:13.5px;font-weight:600;color:#BE4C2E;line-height:1.35}",
+      R + " .ksb-dup{margin-top:12px;background:#F7E4D9;border:2px solid #E5AD43;border-radius:11px;padding:11px 13px;font-size:13.5px;font-weight:600;color:#1E1A19;line-height:1.4}",
+
+      /* desktop: just a wider column and side-by-side fields. Not a second build. */
+      "@media(min-width:721px){" + R + " .ksb{max-width:720px}" +
+        R + " .ksb-job{display:grid;grid-template-columns:1fr 1fr;gap:12px;grid-template-areas:'t t' 'a b'}" +
+        R + " .ksb-job-t{grid-area:t;margin-bottom:0}" +
+        R + " .ksb-field:first-of-type{grid-area:a}" +
+        R + " .ksb-field:last-of-type{grid-area:b;margin-top:0}" +
+        R + " .ksb-btn--go{flex:0 0 auto;padding:0 28px}}"
     ].join("\n");
     document.head.appendChild(s);
   }
 
-  /* ---------- boot ------------------------------------------------------ */
+  /* ---------- boot ------------------------------------------------------- */
 
   function boot() {
     _root = el(MOUNT_ID);
@@ -429,9 +512,9 @@
     injectCSS();
     _root.innerHTML = '<p style="font-family:Quicksand,sans-serif;color:#75736E;padding:16px">Loading the ship desk...</p>';
 
-  /* ⚠ getMemberCookie() is SYNCHRONOUS — it returns the token string, not a
-       promise. Calling .then() on it throws OUTSIDE the catch below and freezes
-       the page on "Loading...". Found live 2026-07-12. */
+    /* ⚠ getMemberCookie() is SYNCHRONOUS — it returns the token STRING, not a promise.
+       Calling .then() on it throws OUTSIDE the catch below and freezes the page on
+       "Loading...". Found live 2026-07-12. */
     var c = window.$memberstackDom.getMemberCookie();
     _token = (c && c.data) ? c.data : c;
 
