@@ -211,7 +211,7 @@
       'stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
       '<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-7.2-7.2A2 2 0 0 1 2.8 12V4a1.2 1.2 0 0 1 1.2-1.2H12a2 2 0 0 1 1.4.6l7.2 7.2a2 2 0 0 1 0 2.8Z"/>' +
       '<circle cx="7.5" cy="7.5" r="1.1"/></svg>' +
-      '<p>Designer piece \u2014 priced like resale, not retail. Your credit goes toward the cost, and ' +
+      '<p>Designer piece. Priced like resale, not retail. Your credit goes toward the cost, and ' +
       'you pay the difference at checkout. You\u2019ll see the exact amount before you confirm.</p>' +
     '</div>';
 
@@ -297,7 +297,7 @@
     mount.innerHTML = '';
     var w = el('div', 'ks-browse-state ks-browse-empty');
     w.appendChild(el('div', 'ks-browse-state-title', 'Nothing available right now'));
-    w.appendChild(el('div', 'ks-browse-state-sub', 'Check back soon \u2014 new pieces are added every cycle.'));
+    w.appendChild(el('div', 'ks-browse-state-sub', 'Check back soon. New pieces are added every cycle.'));
     mount.appendChild(w);
   }
   function showSearchEmpty(mount) {
@@ -305,7 +305,7 @@
     var w = el('div', 'ks-browse-state ks-browse-empty');
     // textContent (via el) keeps the user query XSS-safe
     w.appendChild(el('div', 'ks-browse-state-title', 'No matches for \u201c' + SEARCH.trim() + '\u201d'));
-    w.appendChild(el('div', 'ks-browse-state-sub', 'Try a brand, item, or category \u2014 or clear your search.'));
+    w.appendChild(el('div', 'ks-browse-state-sub', 'Try a brand, item, or category. Or clear your search.'));
     var btn = el('button', 'ks-browse-retry', 'Clear search');
     btn.type = 'button';
     btn.addEventListener('click', clearSearch);
@@ -1473,8 +1473,8 @@ function outOfCreditsBlock(zeroClasses) {
   // One-shot bag-banner text after checkout drops just-swapped items.
   function removalNote(removed) {
     var names = removed.map(function (x) { return x.name; });
-    if (names.length === 1) return 'We removed ' + names[0] + ' \u2014 it was just swapped by someone else.';
-    return 'We removed ' + names.join(', ') + ' \u2014 they were just swapped by someone else.';
+    if (names.length === 1) return 'We removed ' + names[0] + '. It is no longer available.';
+    return 'We removed ' + names.join(', ') + '. They are no longer available.';
   }
 
   // The picker. Replaces the step-2 stub; wired to [data-bag-checkout].
