@@ -429,10 +429,13 @@
     injectCSS();
     _root.innerHTML = '<p style="font-family:Quicksand,sans-serif;color:#75736E;padding:16px">Loading the ship desk...</p>';
 
-    window.$memberstackDom.getMemberCookie().then(function (c) {
-      _token = (c && c.data) ? c.data : c;
-      return call({ action: "read" });
-    }).then(function (res) {
+  /* ⚠ getMemberCookie() is SYNCHRONOUS — it returns the token string, not a
+       promise. Calling .then() on it throws OUTSIDE the catch below and freezes
+       the page on "Loading...". Found live 2026-07-12. */
+    var c = window.$memberstackDom.getMemberCookie();
+    _token = (c && c.data) ? c.data : c;
+
+    call({ action: "read" }).then(function (res) {
       _panel = res.panel;
       render();
       console.log("[ks-bags] build " + BUILD);
