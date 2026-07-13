@@ -1,4 +1,4 @@
-
+(function () {
 	/* ---- BUILD STAMP --------------------------------------------------------
    * Print the live jsDelivr pin on load, parsed from THIS script's own src —
    * always reflects the actual @<sha> running, no manual bump, never stale.
