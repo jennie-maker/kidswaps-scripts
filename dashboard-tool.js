@@ -430,29 +430,9 @@ function paintCoins(s) {
     setText('.ks-avail-reset', 'Resets ' + fmtDate(cyc.cycle_reset));
 
    // ---------- SHIPPING (Section 10) ----------
-    var sh = s.shipping || {};
-    var shLine1 = document.querySelector('[data-ship-line1]');
-    var shLine2 = document.querySelector('[data-ship-line2]');
-    var shCsz = document.querySelector('[data-ship-citystatezip]');
-    var shEmpty = document.querySelector('[data-ship-empty]');
-    if (sh.line1) {
-      if (shLine1) shLine1.textContent = sh.line1;
-      if (shLine2) {
-        if (sh.line2) { shLine2.textContent = sh.line2; shLine2.style.display = ''; }
-        else { shLine2.style.display = 'none'; }
-      }
-      if (shCsz) {
-        var csz = [sh.city, sh.state].filter(Boolean).join(', ');
-        if (sh.zip) csz += (csz ? ' ' : '') + sh.zip;
-        shCsz.textContent = csz;
-      }
-      if (shEmpty) shEmpty.style.display = 'none';
-    } else {
-      if (shLine1) shLine1.textContent = '';
-      if (shLine2) shLine2.style.display = 'none';
-      if (shCsz) shCsz.textContent = '';
-      if (shEmpty) shEmpty.style.display = '';
-    }
+    // The render logic lives in renderShipping() so the ADDRESS EDIT block can reuse it
+    // after a save (2026-07-13, §ADDR). ONE source of truth for how an address looks.
+    renderShipping(s.shipping);
 
     // ---------- LIFETIME / IMPACT ----------
     // The $ value line was DELETED 2026-07-12 — the hero savings inset already paints
@@ -1060,6 +1040,256 @@ function paintCloset(s) {
 
 
   
+  // ================= SHIPPING ADDRESS: EDIT (§ADDR, 2026-07-13) =================
+  // Server half (RPC + member-address edge fn + dual write) was built and PROVEN in the
+  // 15th session. This is the UI, which only ever waited on somewhere to live.
+  //
+  // ⚠⚠ THE DISPLAY HALF ALREADY EXISTED. paint() has always filled the four hooks
+  // ([data-ship-line1] / -line2 / -citystatezip / -empty). This ADDS an Edit affordance
+  // beside that card. It does NOT rebuild the card and it RETYPES NOTHING.
+  //
+  // ⚠⚠ THE CARD LIVES INSIDE AN OPEN ACCORDION BODY. An open body is frozen at the height
+  // it had when it opened (max-height from scrollHeight, once, + overflow:hidden). So EVERY
+  // height change here MUST call accResize() or the form renders perfectly, below the
+  // visible edge, and nothing reports it (§DASH.9). Open, close, save, error: all four.
+  //
+  // ⚠ THE ANCHOR IS THE HOOK, NOT A CLASS NAME. The doc said inject at ".code-embed-9
+  // .ks-card"; that class is NOT on the card (read live 2026-07-13). We derive the card
+  // from [data-ship-line1], which paint() writes to on every load, so this selector cannot
+  // miss unless the display half is already broken.
+
+  var ADDR_URL = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1/member-address";
+
+  var ADDR_FIELDS = [
+    ['line1', 'Street address',                    'address-line1',   40],
+    ['line2', 'Apartment, suite, etc. (optional)', 'address-line2',   40],
+    ['city',  'City',                              'address-level2',  40],
+    ['state', 'State',                             'address-level1',   2],
+    ['zip',   'ZIP',                               'postal-code',     10]
+  ];
+
+  // ONE source of truth for how an address renders. paint() calls it on load; addrSave()
+  // calls it again with the edge fn's FRESH READ. Never render from the form's own inputs.
+  function renderShipping(shipping) {
+    var sh = shipping || {};
+    var shLine1 = document.querySelector('[data-ship-line1]');
+    var shLine2 = document.querySelector('[data-ship-line2]');
+    var shCsz   = document.querySelector('[data-ship-citystatezip]');
+    var shEmpty = document.querySelector('[data-ship-empty]');
+    if (sh.line1) {
+      if (shLine1) shLine1.textContent = sh.line1;
+      if (shLine2) {
+        if (sh.line2) { shLine2.textContent = sh.line2; shLine2.style.display = ''; }
+        else { shLine2.style.display = 'none'; }
+      }
+      if (shCsz) {
+        var csz = [sh.city, sh.state].filter(Boolean).join(', ');
+        if (sh.zip) csz += (csz ? ' ' : '') + sh.zip;
+        shCsz.textContent = csz;
+      }
+      if (shEmpty) shEmpty.style.display = 'none';
+    } else {
+      if (shLine1) shLine1.textContent = '';
+      if (shLine2) shLine2.style.display = 'none';
+      if (shCsz) shCsz.textContent = '';
+      if (shEmpty) shEmpty.style.display = '';
+    }
+  }
+
+  function addrCard() {
+    var h = document.querySelector('[data-ship-line1]');
+    return (h && h.closest) ? h.closest('.ks-card') : null;
+  }
+
+  // ⚠ EVERY height change inside the open accordion body goes through here.
+  function addrResize() {
+    var card = addrCard();
+    if (card) accResize(card);
+  }
+
+  // ⚠ MIRRORS prefStatus(): the region lives in the DOM PERMANENTLY and EMPTIES rather than
+  // hiding. A screen reader does NOT announce text written into a display:none region that
+  // is then revealed. Do not "tidy" a display toggle back in (§DASH.9).
+  // ⚠ NO OPACITY (§DASH.2). Solid hexes only: muted grey = quiet, ink = loud.
+  function addrStatus(msg, ok) {
+    var el = document.querySelector('.ks-addr-status');
+    if (!el) return;
+    el.style.color = ok ? '#75736E' : '#1E1A19';
+    el.textContent = msg || '';
+    addrResize();
+  }
+
+  function addrBuild() {
+    var card = addrCard();
+    if (!card || card.querySelector('.ks-addr-edit')) return;   // build once
+
+    var edit = document.createElement('button');
+    edit.type = 'button';
+    edit.className = 'ks-addr-edit';
+    edit.textContent = 'Edit';
+
+    var form = document.createElement('div');
+    form.className = 'ks-addr-form';
+    form.style.display = 'none';
+
+    var html = '';
+    for (var i = 0; i < ADDR_FIELDS.length; i++) {
+      var f = ADDR_FIELDS[i];
+      html += '<label class="ks-addr-row">' +
+                '<span class="ks-addr-label">' + f[1] + '</span>' +
+                '<input type="text" class="ks-addr-input" data-addr="' + f[0] + '" ' +
+                       'autocomplete="' + f[2] + '" maxlength="' + f[3] + '">' +
+              '</label>';
+    }
+    html += '<div class="ks-addr-actions">' +
+              '<button type="button" class="ks-addr-save">Save address</button>' +
+              '<button type="button" class="ks-addr-cancel">Cancel</button>' +
+            '</div>' +
+            '<div class="ks-addr-status" aria-live="polite" role="status"></div>';
+    form.innerHTML = html;
+
+    card.appendChild(edit);
+    card.appendChild(form);
+
+    edit.addEventListener('click', addrOpen);
+    form.querySelector('.ks-addr-cancel').addEventListener('click', addrClose);
+    form.querySelector('.ks-addr-save').addEventListener('click', addrSave);
+  }
+
+  function addrDisplayRows(show) {
+    ['[data-ship-line1]', '[data-ship-citystatezip]'].forEach(function (sel) {
+      var el = document.querySelector(sel);
+      if (el) el.style.display = show ? '' : 'none';
+    });
+    // ⚠ line2 and empty are display-MANAGED by renderShipping (line2 hides when absent,
+    // empty shows only when there is no address). Hide them while editing; on close we
+    // re-render from the payload rather than guessing what they were.
+    ['[data-ship-line2]', '[data-ship-empty]'].forEach(function (sel) {
+      var el = document.querySelector(sel);
+      if (el && !show) el.style.display = 'none';
+    });
+  }
+
+  function addrOpen() {
+    var card = addrCard();
+    if (!card) return;
+    var sh = (_state && _state.shipping) || {};
+    // ⚠ PREFILL FROM THE PAYLOAD, NEVER FROM THE DOM. [data-ship-citystatezip] is a JOINED
+    // display string; parsing it back would be reading our own output.
+    card.querySelectorAll('.ks-addr-input').forEach(function (inp) {
+      inp.value = sh[inp.getAttribute('data-addr')] || '';
+    });
+    addrStatus('', true);
+    addrDisplayRows(false);
+    card.querySelector('.ks-addr-edit').style.display = 'none';
+    card.querySelector('.ks-addr-form').style.display = '';
+    addrResize();
+    var first = card.querySelector('.ks-addr-input');
+    if (first) first.focus();
+  }
+
+  function addrClose() {
+    var card = addrCard();
+    if (!card) return;
+    card.querySelector('.ks-addr-form').style.display = 'none';
+    card.querySelector('.ks-addr-edit').style.display = '';
+    addrDisplayRows(true);
+    renderShipping(_state && _state.shipping);   // restore the true display state
+    addrStatus('', true);
+    addrResize();
+  }
+
+  function addrSave() {
+    var card = addrCard();
+    if (!card) return;
+    var saveBtn = card.querySelector('.ks-addr-save');
+
+    var body = {};
+    card.querySelectorAll('.ks-addr-input').forEach(function (inp) {
+      body[inp.getAttribute('data-addr')] = (inp.value || '').trim();
+    });
+
+    // Client guard, so she is not made to wait for a round trip to be told a field is blank.
+    // ⚠ The SERVER is still authoritative and is ALL-OR-NOTHING: a blank required field
+    // writes NOTHING (a half-applied address erases one we could previously mail to).
+    if (!body.line1 || !body.city || !body.state || !body.zip) {
+      addrStatus('We need a street, city, state and ZIP to mail your bag.', false);
+      return;
+    }
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving\u2026';
+    addrStatus('', true);
+
+    var token = window.$memberstackDom.getMemberCookie();   // bare string, never a promise
+
+    fetch(ADDR_URL, {
+      method: 'POST',
+      headers: {
+        'x-ms-token': token,
+        'apikey': ANON,
+        'Authorization': 'Bearer ' + ANON,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    })
+      .then(function (r) { return r.json().then(function (j) { return { status: r.status, body: j }; }); })
+      .then(function (res) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save address';
+
+        if (res.status === 200 && res.body && res.body.ok) {
+          // ⚠ RE-RENDER FROM THE FN'S FRESH READ. It returns what the DB HOLDS, not what it
+          // was handed. Never re-render from the form's own inputs (§ADDR).
+          if (_state) _state.shipping = res.body.shipping || {};
+          card.querySelector('.ks-addr-form').style.display = 'none';
+          card.querySelector('.ks-addr-edit').style.display = '';
+          addrDisplayRows(true);
+          renderShipping(_state && _state.shipping);
+          addrResize();
+          // ⚠ The Memberstack half is NON-FATAL by design. If it failed, Supabase already
+          // holds the truth and the label prints correctly. Never tell her it did not save.
+          addrSaved();
+          return;
+        }
+
+        var err = (res.body && res.body.error) || '';
+        if (err === 'missing_required') {
+          addrStatus('We need a street, city, state and ZIP to mail your bag.', false);
+        } else if (err === 'bad_state') {
+          addrStatus('State needs to be two letters, like CA.', false);
+        } else {
+          addrStatus('That didn\u2019t save. Try again, or email us.', false);
+        }
+      })
+      .catch(function () {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save address';
+        addrStatus('That didn\u2019t save. Try again, or email us.', false);
+      });
+  }
+
+  // "Saved." confirms on the CARD after the form closes, then clears itself.
+  function addrSaved() {
+    var card = addrCard();
+    if (!card) return;
+    var el = card.querySelector('.ks-addr-saved');
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'ks-addr-saved';
+      el.setAttribute('aria-live', 'polite');
+      el.setAttribute('role', 'status');
+      card.appendChild(el);
+    }
+    el.textContent = 'Saved.';
+    addrResize();
+    clearTimeout(addrSaved._t);
+    addrSaved._t = setTimeout(function () {
+      el.textContent = '';
+      addrResize();
+    }, 2500);
+  }
+
   // ---------- TEST: ?fake= payload override (display-only, never writes) ----------
   var _FAKE = new URLSearchParams(window.location.search).get('fake');
   function applyFake(s) {
@@ -1105,7 +1335,7 @@ function paintCloset(s) {
   })
     .then(function (res) { return res.json(); })
     .then(function (state) {
-if (state && !state.error) { applyFake(state); paint(state); paintGreeting(state); }
+if (state && !state.error) { applyFake(state); paint(state); paintGreeting(state); addrBuild(); }
 else { console.error('member-state error', state); neutralGreeting(); }
     })
     .catch(function (e) { console.error('member-state paint error', e); neutralGreeting(); });
