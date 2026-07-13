@@ -125,7 +125,7 @@
 
   var FAILURE_TITLE = {
     card_declined: "Your card needs a quick update",
-    item_taken: "One item just got claimed",
+    item_taken: "One item is no longer available",
     reservation_expired: "Your hold expired",
     extra_swap_limit: "One past this cycle's limit",
     resale_missing: "This item isn't ready yet",
@@ -136,13 +136,13 @@
     off_plan: "Not on your plan",
   };
   var FAILURE_COPY = {
-    card_declined: "We couldn't charge your card. Your bag is saved — update your card and try again.",
-    item_taken: "An item in your bag was just claimed by someone else. Your other items are saved.",
-    reservation_expired: "Your hold expired — please re-add the item to your bag.",
+    card_declined: "We couldn't charge your card. Your bag is saved. Update your card and try again.",
+    item_taken: "One item in your bag is no longer available, so nothing was charged. Your other items are saved. If you just placed an order, check your dashboard before trying again.",
+    reservation_expired: "Your hold expired. Please re-add the item to your bag.",
     extra_swap_limit: "That's past the 5 extra-swap limit for this cycle. Remove that item to check out the rest now.",
     resale_missing: "This item isn't ready to claim yet. Nothing was charged.",
     bad_tier: "This item isn't ready to claim yet. Nothing was charged.",
-    credit_unavailable: "A credit in your bag is no longer available — please refresh your bag.",
+    credit_unavailable: "A credit in your bag is no longer available. Please refresh your bag.",
     no_card: "No saved card on file. Add a card to check out.",
     reprice: "Your total changed since you opened this page. Please review and confirm again.",
     off_plan: "This item isn't available on your current plan.",
@@ -543,8 +543,8 @@
       }
       if (ln.value_loss) {
         var vlMsg = info.count > 1
-          ? "Using your " + appliedTier + " credit here — tap Change to use a smaller one."
-          : "Using your " + appliedTier + " credit — your only match for this item.";
+          ? "Using your " + appliedTier + " credit here. Tap Change to use a smaller one."
+          : "Using your " + appliedTier + " credit. It's your only match for this item.";
         extras += '<div class="ksc-vlnote">' + warnDot() + "<span>" + esc(vlMsg) + "</span></div>";
       }
       var extraRow = extras ? '<div class="ksc-item-extra">' + extras + "</div>" : "";
@@ -881,7 +881,7 @@
   }
   function renderFailure(failure, note) {
     var title = FAILURE_TITLE[failure] || "Something needs a look";
-    var copy = note || FAILURE_COPY[failure] || "Something went wrong — nothing was charged. Your bag is saved.";
+    var copy = note || FAILURE_COPY[failure] || "Something went wrong. Nothing was charged. Your bag is saved.";
     // off_plan gets a plan-upgrade CTA (primary -> /pricing), browsing as the ghost fallback
     var cta = (failure === "off_plan")
       ? '<a class="act" href="/pricing">See our plans</a>' +
