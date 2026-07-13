@@ -495,6 +495,29 @@ function paintCoins(s) {
                       : hasT ? 'toys'
                       : 'clothes';
     }
+	  // DESKTOP LINE BREAK after "…clothes." — the sentence was leaving "far." orphaned.
+    // ⚠ CSS CANNOT DO THIS. The break belongs AFTER the period, and that period is the first
+    // character of a raw TEXT NODE (". That's ") authored in Webflow. CSS cannot address a
+    // text node, so a ::after break would orphan the period onto line two.
+    // ⚠ THE <br> IS INERT BY DEFAULT: .ks-sv-br is display:none and only becomes a break at
+    // >=940px. DESKTOP-ONLY therefore lives in the CSS, and it survives a window resize —
+    // a JS width check would freeze at whatever width the page happened to load at.
+    // ⚠⚠ THE LEADING SPACE IN " That's " IS KEPT ON PURPOSE. With the <br> hidden, that space
+    // is the ONLY thing between "clothes." and "That's". Strip it and mobile reads
+    // "clothes.That's". When the break IS on, CSS collapses it at the start of the line.
+    // ⚠ Guarded + idempotent: it will not stack a second <br> if paint() ever runs twice.
+    if (cls && cls.parentNode && !block.querySelector('.ks-sv-br')) {
+      var t = cls.nextSibling;
+      if (t && t.nodeType === 3 && t.nodeValue.charAt(0) === '.') {
+        var rest = t.nodeValue.slice(1);        // " That's " — KEEP THE SPACE
+        var br = document.createElement('br');
+        br.className = 'ks-sv-br';
+        t.nodeValue = '.';
+        var p = t.parentNode;
+        p.insertBefore(br, t.nextSibling);
+        p.insertBefore(document.createTextNode(rest), br.nextSibling);
+      }
+    }
   }
 // ---------- CLOSET / ACTIVITY / HOW CREDITS ----------
   function fmtShort(iso) {
