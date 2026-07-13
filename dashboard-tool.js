@@ -89,13 +89,19 @@ function paintHeadline(member) {
       cta.removeAttribute('href');
       cta.style.cursor = 'pointer';
       cta.onclick = function (e) {
-        // Membership is a VISIBLE card now (2026-07-12, ARL: the cancel path must not
-        // sit behind a disclosure). It is no longer inside the account panel, so this
-        // must NOT open the panel — that would open six unrelated sections and hide
-        // nothing she needs. Scroll straight to the card.
+        // ⚠⚠ BUG FIXED 2026-07-13. This used to scroll to .ks-section--membership. That
+        // card is now display:none (its guts moved to the utility row), and
+        // scrollIntoView ON A HIDDEN ELEMENT DOES NOTHING — so a cancelled or paused
+        // member tapped "Reactivate" and the page just sat there. It shipped live in
+        // @80dfafc. The manage control is now the utility row's link, so point at THAT.
+        // ⚠ Never point this at an element that can be hidden. Fail loudly, not silently.
         e.preventDefault();
-        var m = document.querySelector('.ks-section--membership');
-        if (m) m.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        var m = document.querySelector('.ks-util .ks-membership-manage') ||
+                document.querySelector('.ks-membership-manage');
+        if (!m) return;
+        m.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        m.classList.add('is-flagged');
+        setTimeout(function () { m.classList.remove('is-flagged'); }, 2200);
       };
     } else {
       cta.onclick = null;
@@ -570,11 +576,18 @@ function paintCoins(s) {
     wrap.insertBefore(grid, hero);
     main.appendChild(hero);
 
-    // THE PRIMARY ACTION MOVES INTO THE HERO, directly under the payoff.
-    // Bank -> what it is worth -> go spend it. It had been sitting BELOW the
-    // account panel at the very bottom of the page since the first build.
+    // THE PRIMARY ACTION SITS UNDER THE GREETING, CENTRED. It is the PAGE's one action,
+    // not the credit card's conclusion — inside the hero it read as a random left-aligned
+    // pill hanging off the savings inset. It was at the very BOTTOM of the page, below the
+    // account panel, for the whole life of this build.
+    // ⚠ It is STATE-DRIVEN (setCTA): on cancelled/paused it becomes "Reactivate" and
+    // stops being a link. It belongs with the greeting, which is the other state-driven
+    // surface on this page.
     var cta = document.querySelector('.ks-greet-cta');
-    if (cta) hero.appendChild(cta);
+    var gsub = document.querySelector('.ks-greet-sub');
+    if (cta && gsub && gsub.parentNode) {
+      gsub.parentNode.insertBefore(cta, gsub.nextSibling);
+    }
 
     buildUtilityRow(wrap, grid);
     return grid;
@@ -638,17 +651,62 @@ function paintCoins(s) {
       util.appendChild(grp);
     }
 
-    var tog = document.querySelector('.ks-account-toggle');
-    if (tog) util.appendChild(tog);                // MOVE
+    // The plan chip is account chrome too. It was a lone coral pill floating under the
+    // greeting; here it sits with the things it belongs to. ⚠ paintPlanChip() injects it
+    // relative to .ks-greet-sub and HIDES ITSELF on an unknown/null plan (a cancelled
+    // member has no plan), so it may not exist yet or at all. Re-home it if it turns up.
+    var chip = document.querySelector('.ks-plan-chip');
+    if (chip) util.insertBefore(chip, util.firstChild);
 
-    // The panel opens BELOW the greeting and ABOVE the grid, full width. Left where
-    // it was, it would open at the bottom of the page while its toggle sat at the top.
+    // ACCOUNT & SETTINGS IS A REAL DROPDOWN NOW, anchored to its own button.
+    // ⚠ THE PANEL MUST BE A SIBLING OF THE TOGGLE INSIDE A position:relative BOX, or
+    // absolute positioning has nothing to hang off and it lands relative to the page.
+    var acct = document.createElement('div');
+    acct.className = 'ks-util-acct';
+    util.appendChild(acct);
+
+    var tog = document.querySelector('.ks-account-toggle');
+    if (tog) acct.appendChild(tog);                // MOVE
+
     var pnl = document.querySelector('.ks-account-panel');
-    if (pnl && grid && grid.parentNode === wrap) wrap.insertBefore(pnl, grid);
+    if (pnl) acct.appendChild(pnl);                // MOVE
 
     // Gutted, so hide it. NOT removed - see the header comment.
     var mem = document.querySelector('.ks-section--membership');
     if (mem) mem.classList.add('ks-mem-hidden');
+
+    wireDropdownDismiss();
+  }
+
+  /* A dropdown that cannot be dismissed by clicking away is not a dropdown, it is a
+     trapdoor. Click-outside + Escape. ⚠ Delegated on document and guarded on .is-open,
+     so it costs nothing when closed and cannot fight wireAccountToggle's own handler
+     (that one lives on the button, and a click on the button is INSIDE .ks-util-acct,
+     so this listener returns before touching it). */
+  function wireDropdownDismiss() {
+    if (document.documentElement.hasAttribute('data-ks-dd')) return;
+    document.documentElement.setAttribute('data-ks-dd', '1');
+
+    function shut() {
+      var pnl = document.querySelector('.ks-account-panel');
+      var tog = document.querySelector('.ks-account-toggle');
+      if (pnl) pnl.classList.remove('is-open');
+      if (tog) tog.classList.remove('is-open');
+    }
+    document.addEventListener('click', function (e) {
+      var pnl = document.querySelector('.ks-account-panel');
+      if (!pnl || !pnl.classList.contains('is-open')) return;
+      if (e.target.closest && e.target.closest('.ks-util-acct')) return;
+      shut();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      var pnl = document.querySelector('.ks-account-panel');
+      if (!pnl || !pnl.classList.contains('is-open')) return;
+      shut();
+      var tog = document.querySelector('.ks-account-toggle');
+      if (tog) tog.focus();          // never strand focus inside a closed region
+    });
   }
 
   // which = 'main' | 'rail'. Append order IS call order within a column, so the
