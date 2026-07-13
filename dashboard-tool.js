@@ -461,7 +461,6 @@ function paintCoins(s) {
 	paintCycleLine(s);
     paintCycleBar(s);
 	paintSavings(s);
-    _lastInjected = null;
     paintCloset(s);
     paintHowCredits();
     paintActivity(s);
@@ -518,107 +517,94 @@ function paintCoins(s) {
       .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  function sectionAfterHero(cls, headText) {
+  /* ============================================================
+     THE PAGE GRID — 19th session, 2026-07-13.
+     THE DIAGNOSIS: this page never had a layout. Every section injected itself
+     AFTER the previous one, so the running order was the order things got BUILT,
+     not a decision. Result: the hero stranded alone in a 900px band, the primary
+     CTA in the basement, and the membership card - a COMPLIANCE surface - dumped
+     at the very bottom.
+     THE FIX: one 2/3 MAIN column + one 1/3 RAIL. A grid a new section can slot
+     into, instead of a stack it gets appended to the bottom of.
+
+       MAIN: credit bank (+ the Browse CTA, inside it) -> my closet -> recent activity
+       RAIL: your membership -> how credits work -> review / referral slot
+
+     ⚠ THE RAIL IS WHAT KILLS THE .is-solo PROBLEM. The review card is hidden for
+     most members and hidden FOREVER once clicked. In a 2-column GRID that collapsed
+     a track and flung activity to 900px. In a RAIL, a missing card just makes the
+     column SHORTER. There is no track to collapse. No branching, no class, no hack.
+
+     ⚠⚠ EVERYTHING HERE IS A **MOVE**, NEVER A RETYPE (§0). appendChild relocates a
+     live node with its classes, attributes and listeners intact. The three moved
+     elements are all load-bearing and NONE of them may be rebuilt:
+       · .ks-hero-card         - named by the data-ks-ready visibility gate
+       · .ks-section--membership - named by the gate AND by setCTA's manage branch,
+         and it carries data-ms-action="customer-portal" as a WEBFLOW attribute.
+         That attribute IS the cancel path. It is not in this script and not in the
+         CSS. Retyping this element deletes the only way a member can cancel.
+       · .ks-greet-cta         - the state-driven primary button.
+     Both gate selectors keep matching after a move: the gate names CLASSES, not
+     positions.
+     ============================================================ */
+  function ensureGrid() {
+    var grid = document.querySelector('.ks-grid');
+    if (grid) return grid;
+
     var hero = document.querySelector('.ks-hero-card');
-    if (!hero || !hero.parentNode) return null;
-    var sec = document.querySelector('.' + cls);
-    if (!sec) {
-      sec = document.createElement('div');
-      sec.className = 'ks-closet-sec ' + cls;
-      if (headText) {
-        var h = document.createElement('div');
-        h.className = 'ks-sec-head';
-        h.textContent = headText;
-        sec.appendChild(h);
-      }
-      var panel = document.createElement('div');
-      panel.className = 'ks-panel';
-      sec.appendChild(panel);
-      var anchor = _lastInjected || hero;
-      anchor.parentNode.insertBefore(sec, anchor.nextSibling);
-    }
-    _lastInjected = sec;
-    return sec.querySelector('.ks-panel');
+    if (!hero || !hero.parentNode) return null;   // fail closed: no hero, no grid
+
+    grid = document.createElement('div');
+    grid.className = 'ks-grid';
+    var main = document.createElement('div');
+    main.className = 'ks-col ks-main';
+    var rail = document.createElement('div');
+    rail.className = 'ks-col ks-rail';
+    grid.appendChild(main);
+    grid.appendChild(rail);
+
+    // The grid takes the hero's place in the flow, then swallows it.
+    hero.parentNode.insertBefore(grid, hero);
+    main.appendChild(hero);
+
+    // THE PRIMARY ACTION MOVES INTO THE HERO, directly under the payoff.
+    // Bank -> what it is worth -> go spend it. It had been sitting BELOW the
+    // account panel at the very bottom of the page since the first build.
+    var cta = document.querySelector('.ks-greet-cta');
+    if (cta) hero.appendChild(cta);
+
+    // MEMBERSHIP LEADS THE RAIL. ⚠ THIS IS A COMPLIANCE PLACEMENT, NOT A LAYOUT
+    // PREFERENCE. CA ARL 17602(d) wants the cancel path "prominently located."
+    // DASH.8 lifted this card out of the account panel to make it VISIBLE - and
+    // "visible" got satisfied by dropping it at the end of the page, which is
+    // arguably the opposite of prominent. Top of the rail fixes that.
+    // ⚠ DO NOT move it back down, and do not put it behind a disclosure.
+    var mem = document.querySelector('.ks-section--membership');
+    if (mem) rail.appendChild(mem);
+
+    return grid;
   }
 
-  // THE 2-UP ROW (2026-07-13). Recent activity + the review prompt share one row on
-  // desktop and stack on mobile. The CSS is grid auto-fit, NOT a hardcoded 2 columns,
-  // and that is LOAD-BEARING: the review prompt is INVISIBLE for most members (gate =
-  // >= 2 finds, and it hides itself forever on click). A display:none child leaves grid
-  // flow entirely, so a lone Recent activity takes the full width by itself. No
-  // branching, no dead half-column. Activity can vanish too (history fetch failure) and
-  // the row simply collapses.
-  // NOTE: the row sets _lastInjected, so 'How credits work' chains BELOW it, not inside it.
-  function rowAfterHero() {
-    var row = document.querySelector('.ks-2up');
-    if (row) return row;
-    var hero = document.querySelector('.ks-hero-card');
-    if (!hero || !hero.parentNode) return null;
-    row = document.createElement('div');
-    row.className = 'ks-2up';
-    var anchor = _lastInjected || hero;
-    anchor.parentNode.insertBefore(row, anchor.nextSibling);
-    _lastInjected = row;
-    return row;
-  }
+  // which = 'main' | 'rail'. Append order IS call order within a column, so the
+  // paint() call order below is the visual order. Same contract as the old
+  // sectionAfterHero: returns the .ks-panel to write into, or null.
+  function sectionIn(which, cls) {
+    var grid = ensureGrid();
+    if (!grid) return null;
+    var col = grid.querySelector(which === 'rail' ? '.ks-rail' : '.ks-main');
+    if (!col) return null;
 
-  // Same contract as sectionAfterHero (returns the .ks-panel to write into), but the
-  // section lands INSIDE the row instead of in the top-level chain. Append order is the
-  // call order: paintActivity runs before paintReviewPrompt, so activity is column 1.
-  function sectionInRow(cls) {
-    var row = rowAfterHero();
-    if (!row) return null;
-    var sec = row.querySelector('.' + cls);
-    if (!sec) {
-      sec = document.createElement('div');
-      sec.className = 'ks-closet-sec ' + cls;
-      var panel = document.createElement('div');
-      panel.className = 'ks-panel';
-      sec.appendChild(panel);
-      row.appendChild(sec);
-    }
-    return sec.querySelector('.ks-panel');
-  }
-
-  // THE SPLIT ROW (2026-07-13). My closet | How credits work.
-  // ⚠ FLEX, NOT GRID, AND THAT IS LOAD-BEARING. This row is ASYMMETRIC (closet 2/3,
-  // credits 1/3), so auto-fit cannot express it. But paintCloset CAN hide its section
-  // (history fetch failure -> display:none), while paintHowCredits never can. With fixed
-  // grid columns a hidden closet would strand 'How credits work' in the left track with a
-  // DEAD COLUMN beside it. A display:none child is NOT a flex item, so under flex the
-  // survivor simply grows to fill the row. Same virtue auto-fit buys the .ks-2up row,
-  // with an uneven split. Do not "simplify" this to grid.
-  function splitAfterHero() {
-    var split = document.querySelector('.ks-split');
-    if (split) return split;           // early return: do NOT touch _lastInjected
-    var hero = document.querySelector('.ks-hero-card');
-    if (!hero || !hero.parentNode) return null;
-    split = document.createElement('div');
-    split.className = 'ks-split';
-    var anchor = _lastInjected || hero;
-    anchor.parentNode.insertBefore(split, anchor.nextSibling);
-    _lastInjected = split;
-    return split;
-  }
-
-  // Same contract as sectionAfterHero (returns the .ks-panel to write into), but the
-  // section lands INSIDE the split. Append order is call order: paintCloset runs before
-  // paintHowCredits, so the closet is column 1.
-  function sectionInSplit(cls) {
-    var split = splitAfterHero();
-    if (!split) return null;
-    var sec = split.querySelector('.' + cls);
+    var sec = col.querySelector('.' + cls);
     if (!sec) {
       sec = document.createElement('div');
       sec.className = 'ks-closet-sec ' + cls;
       var panel = document.createElement('div');
       panel.className = 'ks-panel';
       sec.appendChild(panel);
-      split.appendChild(sec);
+      col.appendChild(sec);
     }
     return sec.querySelector('.ks-panel');
   }
-  var _lastInjected = null;
 var _EMPTY_TEST = new URLSearchParams(window.location.search).get('empty') === '1';
   var CLOSET_VISIBLE = 6;
   var CLOSET_H = '<div class="ks-panel-h">My closet</div>';
@@ -638,7 +624,7 @@ var _EMPTY_TEST = new URLSearchParams(window.location.search).get('empty') === '
       '</div></div>';
   }
 function paintCloset(s) {
-    var panel = sectionInSplit('ks-sec-closet');
+    var panel = sectionIn('main', 'ks-sec-closet');
     if (!panel) return;
 
     var list = _EMPTY_TEST ? [] : s.closet;
@@ -723,7 +709,7 @@ function paintCloset(s) {
   }
 
   function paintActivity(s) {
-    var panel = sectionInRow('ks-sec-activity');
+    var panel = sectionIn('main', 'ks-sec-activity');
     if (!panel) return;
     var list = _EMPTY_TEST ? [] : s.activity;
 
@@ -760,7 +746,7 @@ function paintCloset(s) {
   }
 
   function paintHowCredits() {
-    var panel = sectionInSplit('ks-sec-hcw');
+    var panel = sectionIn('rail', 'ks-sec-hcw');
     if (!panel) return;
     panel.innerHTML =
       '<div class="ks-panel-h">How credits work</div>' +
@@ -796,7 +782,7 @@ function paintCloset(s) {
     // "hasn't reviewed" - it is "we don't know", and we must never ask on a guess.
     // So if getCurrentMember fails, this block simply never appears. Fail closed.
     if (!_state || !_member) return;
-    var panel = sectionInRow('ks-sec-review');
+    var panel = sectionIn('rail', 'ks-sec-review');
     if (!panel) return;
     var sec = panel.parentNode;
 
