@@ -833,7 +833,7 @@ function paintCloset(s) {
   }
 
   function paintActivity(s) {
-    var panel = sectionIn('main', 'ks-sec-activity');
+    var panel = sectionIn('rail', 'ks-sec-activity');
     if (!panel) return;
     var list = _EMPTY_TEST ? [] : s.activity;
 
@@ -870,7 +870,7 @@ function paintCloset(s) {
   }
 
   function paintHowCredits() {
-    var panel = sectionIn('rail', 'ks-sec-hcw');
+    var panel = sectionIn('main', 'ks-sec-hcw');
     if (!panel) return;
     panel.innerHTML =
       '<div class="ks-panel-h">How credits work</div>' +
