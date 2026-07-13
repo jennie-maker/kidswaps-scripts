@@ -1,4 +1,22 @@
 (function () {
+	/* ---- BUILD STAMP --------------------------------------------------------
+   * Print the live jsDelivr pin on load, parsed from THIS script's own src —
+   * always reflects the actual @<sha> running, no manual bump, never stale.
+   * Wrapped so a stamp failure can never break the app. */
+  try {
+    var __ksScript = document.currentScript;
+    if (!__ksScript) {
+      var __ksScripts = document.getElementsByTagName('script');
+      for (var __ksJ = 0; __ksJ < __ksScripts.length; __ksJ++) {
+        if (__ksScripts[__ksJ].src && __ksScripts[__ksJ].src.indexOf('dashboard-tool.js') !== -1) {
+          __ksScript = __ksScripts[__ksJ]; break;
+        }
+      }
+    }
+    var __ksSrc = __ksScript && __ksScript.src ? __ksScript.src : '';
+    var __ksPin = (__ksSrc.match(/@([^/]+)\/dashboard-tool\.js/) || [])[1] || 'unknown';
+    console.log('%c[ks-dash] build ' + __ksPin, 'color:#d24f28;font-weight:600', __ksSrc || '(no src)');
+  } catch (__ksErr) {}
   var FN_URL  = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1/member-state";
   var PREF_URL = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1/member-pref";
 var ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqc29iaXZxeGV4Y25pd2lmeHp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNzI4MjIsImV4cCI6MjA5MTk0ODgyMn0.IFtzADITLHrEhnc8oHfjzyulcxWySp0o3s6v8XTZ5VM";
