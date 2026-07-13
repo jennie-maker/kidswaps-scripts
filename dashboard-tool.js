@@ -540,6 +540,45 @@ function paintCoins(s) {
     _lastInjected = sec;
     return sec.querySelector('.ks-panel');
   }
+
+  // THE 2-UP ROW (2026-07-13). Recent activity + the review prompt share one row on
+  // desktop and stack on mobile. The CSS is grid auto-fit, NOT a hardcoded 2 columns,
+  // and that is LOAD-BEARING: the review prompt is INVISIBLE for most members (gate =
+  // >= 2 finds, and it hides itself forever on click). A display:none child leaves grid
+  // flow entirely, so a lone Recent activity takes the full width by itself. No
+  // branching, no dead half-column. Activity can vanish too (history fetch failure) and
+  // the row simply collapses.
+  // NOTE: the row sets _lastInjected, so 'How credits work' chains BELOW it, not inside it.
+  function rowAfterHero() {
+    var row = document.querySelector('.ks-2up');
+    if (row) return row;
+    var hero = document.querySelector('.ks-hero-card');
+    if (!hero || !hero.parentNode) return null;
+    row = document.createElement('div');
+    row.className = 'ks-2up';
+    var anchor = _lastInjected || hero;
+    anchor.parentNode.insertBefore(row, anchor.nextSibling);
+    _lastInjected = row;
+    return row;
+  }
+
+  // Same contract as sectionAfterHero (returns the .ks-panel to write into), but the
+  // section lands INSIDE the row instead of in the top-level chain. Append order is the
+  // call order: paintActivity runs before paintReviewPrompt, so activity is column 1.
+  function sectionInRow(cls) {
+    var row = rowAfterHero();
+    if (!row) return null;
+    var sec = row.querySelector('.' + cls);
+    if (!sec) {
+      sec = document.createElement('div');
+      sec.className = 'ks-closet-sec ' + cls;
+      var panel = document.createElement('div');
+      panel.className = 'ks-panel';
+      sec.appendChild(panel);
+      row.appendChild(sec);
+    }
+    return sec.querySelector('.ks-panel');
+  }
   var _lastInjected = null;
 var _EMPTY_TEST = new URLSearchParams(window.location.search).get('empty') === '1';
   var CLOSET_VISIBLE = 6;
@@ -643,7 +682,7 @@ function paintCloset(s) {
   }
 
   function paintActivity(s) {
-    var panel = sectionAfterHero('ks-sec-activity', null);
+    var panel = sectionInRow('ks-sec-activity');
     if (!panel) return;
     var list = _EMPTY_TEST ? [] : s.activity;
 
@@ -716,7 +755,7 @@ function paintCloset(s) {
     // "hasn't reviewed" - it is "we don't know", and we must never ask on a guess.
     // So if getCurrentMember fails, this block simply never appears. Fail closed.
     if (!_state || !_member) return;
-    var panel = sectionAfterHero('ks-sec-review', null);
+    var panel = sectionInRow('ks-sec-review');
     if (!panel) return;
     var sec = panel.parentNode;
 
@@ -980,7 +1019,11 @@ function paintCloset(s) {
     _accPairs.forEach(function (p) { closeAcc(p.head, p.body); });
     if (_accPairs[0]) openAcc(_accPairs[0].head, _accPairs[0].body);
   }
-  var ACC_LABELS = ['Your impact', 'Children', 'Shipping address', 'Profile', 'Email preferences', 'Help & contact'];
+  var ACC_LABELS = ['Children', 'Shipping address', 'Profile', 'Email preferences', 'Help & contact'];
+  // 2026-07-13: 'Your impact' REMOVED. The impact embed (code-embed-5) was dragged OUT of
+  // .ks-account-panel in Navigator. ACC_LABELS IS INDEXED BY POSITION over the panel's direct
+  // children - drop a section without dropping its label and every row below is silently
+  // mislabeled. Verified live against the panel's real child order before this edit.
   function buildAccordion() {
     var panel = document.querySelector('.ks-account-panel');
     if (!panel) return;
