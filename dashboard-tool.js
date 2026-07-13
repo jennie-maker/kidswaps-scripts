@@ -264,8 +264,7 @@ function paintBankLabel() {
       label.className = 'ks-bank-label';
       row.parentNode.insertBefore(label, row);
     }
-label.style.cssText = 'font-size:14px;letter-spacing:2px;color:#5F5E5A;text-transform:uppercase;text-align:center;margin:28px 0 8px;';
-label.textContent = 'your credit bank';
+label.textContent = 'Your Credit Bank';
   }
 
   var PLAN_PRICE = { 'basics': 30, 'toy chest': 45, 'full wardrobe': 45, 'everything bag': 70 };
