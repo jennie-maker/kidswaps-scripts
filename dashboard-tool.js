@@ -463,8 +463,8 @@ function paintCoins(s) {
 	paintSavings(s);
     _lastInjected = null;
     paintCloset(s);
-    paintActivity(s);
     paintHowCredits();
+    paintActivity(s);
     _state = s;
     paintReviewPrompt();
    paintChildren(s);
@@ -579,9 +579,49 @@ function paintCoins(s) {
     }
     return sec.querySelector('.ks-panel');
   }
+
+  // THE SPLIT ROW (2026-07-13). My closet | How credits work.
+  // ⚠ FLEX, NOT GRID, AND THAT IS LOAD-BEARING. This row is ASYMMETRIC (closet 2/3,
+  // credits 1/3), so auto-fit cannot express it. But paintCloset CAN hide its section
+  // (history fetch failure -> display:none), while paintHowCredits never can. With fixed
+  // grid columns a hidden closet would strand 'How credits work' in the left track with a
+  // DEAD COLUMN beside it. A display:none child is NOT a flex item, so under flex the
+  // survivor simply grows to fill the row. Same virtue auto-fit buys the .ks-2up row,
+  // with an uneven split. Do not "simplify" this to grid.
+  function splitAfterHero() {
+    var split = document.querySelector('.ks-split');
+    if (split) return split;           // early return: do NOT touch _lastInjected
+    var hero = document.querySelector('.ks-hero-card');
+    if (!hero || !hero.parentNode) return null;
+    split = document.createElement('div');
+    split.className = 'ks-split';
+    var anchor = _lastInjected || hero;
+    anchor.parentNode.insertBefore(split, anchor.nextSibling);
+    _lastInjected = split;
+    return split;
+  }
+
+  // Same contract as sectionAfterHero (returns the .ks-panel to write into), but the
+  // section lands INSIDE the split. Append order is call order: paintCloset runs before
+  // paintHowCredits, so the closet is column 1.
+  function sectionInSplit(cls) {
+    var split = splitAfterHero();
+    if (!split) return null;
+    var sec = split.querySelector('.' + cls);
+    if (!sec) {
+      sec = document.createElement('div');
+      sec.className = 'ks-closet-sec ' + cls;
+      var panel = document.createElement('div');
+      panel.className = 'ks-panel';
+      sec.appendChild(panel);
+      split.appendChild(sec);
+    }
+    return sec.querySelector('.ks-panel');
+  }
   var _lastInjected = null;
 var _EMPTY_TEST = new URLSearchParams(window.location.search).get('empty') === '1';
   var CLOSET_VISIBLE = 6;
+  var CLOSET_H = '<div class="ks-panel-h">My closet</div>';
 
   function findCardHTML(it) {
     var dot = TIER_DOT[it.tier] || 'ks-dot--ess';
@@ -598,7 +638,7 @@ var _EMPTY_TEST = new URLSearchParams(window.location.search).get('empty') === '
       '</div></div>';
   }
 function paintCloset(s) {
-    var panel = sectionAfterHero('ks-sec-closet', 'Your closet');
+    var panel = sectionInSplit('ks-sec-closet');
     if (!panel) return;
 
     var list = _EMPTY_TEST ? [] : s.closet;
@@ -611,6 +651,7 @@ function paintCloset(s) {
 
     if (!list.length) {
       panel.innerHTML =
+        CLOSET_H +
         '<div class="ks-empty">' +
           '<div class="ks-empty-h">Nothing in here yet</div>' +
           '<div class="ks-empty-p">Send in a bag of outgrown clothes. Every item we accept adds a credit to your bank, and everything you bring home stays yours.</div>' +
@@ -622,7 +663,7 @@ function paintCloset(s) {
  
 
     var shown = list.slice(0, CLOSET_VISIBLE);
-    var html = '<div class="ks-closet-grid">' + shown.map(findCardHTML).join('') + '</div>';
+    var html = CLOSET_H + '<div class="ks-closet-grid">' + shown.map(findCardHTML).join('') + '</div>';
     if (list.length > CLOSET_VISIBLE) {
       html += '<button type="button" class="ks-showall">Show all ' + list.length + '</button>';
     }
@@ -694,7 +735,7 @@ function paintCloset(s) {
 
     if (!list.length) {
       panel.innerHTML =
-        '<div class="ks-act-label">Recent activity</div>' +
+        '<div class="ks-panel-h">Recent activity</div>' +
         '<div class="ks-empty" style="padding:8px 8px 4px">' +
           '<div class="ks-empty-p">Your bags and swaps will show up here once your first bag is graded.</div>' +
         '</div>';
@@ -702,7 +743,7 @@ function paintCloset(s) {
     }
 
     var shown = list.slice(0, ACT_VISIBLE);
-    var html = '<div class="ks-act-label">Recent activity</div>' +
+    var html = '<div class="ks-panel-h">Recent activity</div>' +
                shown.map(actRowHTML).join('');
     if (list.length > ACT_VISIBLE) {
       html += '<button type="button" class="ks-showall">Show more</button>';
@@ -712,17 +753,17 @@ function paintCloset(s) {
     var btn = panel.querySelector('.ks-showall');
     if (btn) {
       btn.addEventListener('click', function () {
-        panel.innerHTML = '<div class="ks-act-label">Recent activity</div>' +
+        panel.innerHTML = '<div class="ks-panel-h">Recent activity</div>' +
                           list.map(actRowHTML).join('');
       });
     }
   }
 
   function paintHowCredits() {
-    var panel = sectionAfterHero('ks-sec-hcw', null);
+    var panel = sectionInSplit('ks-sec-hcw');
     if (!panel) return;
     panel.innerHTML =
-      '<div class="ks-act-label">How credits work</div>' +
+      '<div class="ks-panel-h">How credits work</div>' +
       '<div class="ks-hcw-row"><div class="ks-hcw-n">1</div><div>' +
         '<div class="ks-hcw-t">One item, one credit</div>' +
         '<div class="ks-hcw-b">Every item we accept earns you one credit, whatever the brand. One credit brings one item home.</div>' +
