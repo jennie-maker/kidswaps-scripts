@@ -440,25 +440,13 @@ function paintCoins(s) {
     // after a save (2026-07-13, §ADDR). ONE source of truth for how an address looks.
     renderShipping(s.shipping);
 
-    // ---------- LIFETIME / IMPACT ----------
-    // The $ value line was DELETED 2026-07-12 — the hero savings inset already paints
-    // lifetime.value_received, louder and better. Do not re-add it here.
-    // items_kept_from_landfill counts INTAKE (accepted_at_grading OR donated) = what she
-    // SENT IN. It is NOT items received. The old "kept out of a landfill" copy was an
-    // unprovable environmental claim (§2) and is dead.
-    var lt = s.lifetime || {};
-
-    var sent = Number(lt.items_kept_from_landfill) || 0;
-    setText('.ks-lifetime-landfill', fmt(sent));
-    setText('.ks-lifetime-landfill-label',
-      (sent === 1 ? 'item' : 'items') + " you've passed on to another family");
-
-    var earned = Number(lt.credits_earned) || 0;
-    setText('.ks-lifetime-credits', fmt(earned));
-    setText('.ks-lifetime-credits-label',
-      (earned === 1 ? 'credit' : 'credits') + ' earned to date');
-
-    setText('.ks-lifetime-since', 'Member since ' + fmtDate(lt.member_since));
+    // ---------- LIFETIME / CONTRIBUTION ----------
+    // These five writes USED to live here as loose setText() calls into a Webflow Code
+    // Embed. THE EMBED WAS DRAGGED OUT OF ITS CONTAINER IN NAVIGATOR AND SILENTLY DELETED
+    // (#IMPACT-RESTORE), and because setText() is if(el)-guarded they went on no-op'ing
+    // into nothing, on every load, for days, reporting no error.
+    // The section is now SCRIPT-INJECTED and self-contained -> see paintImpact(), called
+    // below. Nothing to write here any more. Do not re-add hooks to this block.
 
   paintPlanChip(s);
     paintBankLabel();
@@ -469,6 +457,9 @@ function paintCoins(s) {
 	paintSavings(s);
     paintCloset(s);
     paintHowCredits();
+    // ⚠ RAIL ORDER IS CALL ORDER (§DASH.12). paintImpact MUST stay above paintActivity
+    // or the summary lands underneath the detail it summarises.
+    paintImpact(s);
     paintActivity(s);
     _state = s;
     paintReviewPrompt();
@@ -533,8 +524,12 @@ function paintCoins(s) {
      THE FIX: one 2/3 MAIN column + one 1/3 RAIL. A grid a new section can slot
      into, instead of a stack it gets appended to the bottom of.
 
-       MAIN: credit bank (+ the Browse CTA, inside it) -> my closet -> recent activity
-       RAIL: your membership -> how credits work -> review / referral slot
+       MAIN: credit bank -> my closet -> how credits work
+       RAIL: your contribution -> recent activity -> review / referral slot
+
+     ⚠ THIS BLOCK ONCE DESCRIBED AN ABANDONED FIRST DRAFT and had the columns BACKWARDS
+     (activity in main; membership + how-credits in the rail). It was wrong for a full
+     session. THE sectionIn() CALLS ARE THE TRUTH, NOT THIS COMMENT. Read them.
 
      ⚠ THE RAIL IS WHAT KILLS THE .is-solo PROBLEM. The review card is hidden for
      most members and hidden FOREVER once clicked. In a 2-column GRID that collapsed
@@ -886,6 +881,72 @@ function paintCloset(s) {
         '<div class="ks-hcw-t">Your credit\'s tier is how far it reaches</div>' +
         '<div class="ks-hcw-b">Essentials, Elevated, and Special. Reach above your credit\'s tier and there\'s a small upgrade fee. A Special credit brings home almost anything at no extra charge.</div>' +
       '</div></div>';
+  }
+
+  // ---------- YOUR CONTRIBUTION (#IMPACT-RESTORE) ----------
+  // SCRIPT-INJECTED, NOT A CODE EMBED, AND THAT IS THE WHOLE POINT. The old embed died
+  // because a Designer embed can be dragged out of its container in Navigator and nothing
+  // anywhere reports it. A script-injected section cannot be dragged out of anything, cannot
+  // flash a Webflow placeholder (it does not exist until the payload lands, so it needs no
+  // data-ks-ready gate), and sidesteps the ACC_LABELS positional-index trap entirely.
+  // DO NOT REBUILD THIS AS A CODE EMBED.
+  //
+  // ⚠ IT HIDES AT ZERO, PER LINE — RULED BY JENNIE 2026-07-13.
+  // A zero here is a REPORT OF NOTHING, not a promise. "0 items you've passed on to another
+  // family" is exactly the failure the savings inset was fixed to avoid, on the state every
+  // new member sits in for WEEKS (§DASH.7: the empty state is the primary state). The COINS
+  // are the deliberate exception — a zero coin is the shape of a thing about to be filled.
+  // Both stats zero -> the whole card is hidden. Per-line, because a member who buys a
+  // STARTER PACK has credits_earned > 0 while items_sent is still 0, and hiding the card
+  // would erase a real number she really earned.
+  //
+  // ⚠⚠ THE DONATION TRIPWIRE. items_kept_from_landfill counts donated = true AS WELL AS
+  // accepted at grading. A DONATED ITEM DID NOT GO TO ANOTHER FAMILY. The donated flag has
+  // NO WRITER today, so this sentence is TRUE right now. THE DAY DONATION GETS A WRITER,
+  // THIS COPY BECOMES FALSE. Whoever builds the donation checkbox must come back here.
+  //
+  // ⚠ credits_earned has NO status filter in get_member_state -> it will DOUBLE-COUNT a
+  // merged half once anything ever merges (a real 1.0 would read 1.5). LATENT, not bleeding:
+  // zero merged rows have ever existed. Banked for the get_member_state session.
+  //
+  // COPY IS APPROVED AND LOCKED. Heading "Your contribution" (Jennie, 2026-07-13 — the
+  // four-session rename question, finally ruled). The two stat lines replaced the unprovable
+  // "kept out of a landfill" claim. DO NOT RE-LITIGATE ANY OF IT.
+  function paintImpact(s) {
+    var panel = sectionIn('rail', 'ks-sec-impact');
+    if (!panel) return;
+    var sec = panel.parentNode;
+
+    var lt     = (s && s.lifetime) || {};
+    var sent   = Number(lt.items_kept_from_landfill) || 0;
+    var earned = Number(lt.credits_earned) || 0;
+
+    if (sent <= 0 && earned <= 0) { sec.style.display = 'none'; return; }
+    sec.style.display = '';
+
+    var html = '<div class="ks-panel-h">Your contribution</div>';
+
+    if (sent > 0) {
+      html += '<div class="ks-imp-stat">' +
+                '<div class="ks-imp-n">' + esc(sent) + '</div>' +
+                '<div class="ks-imp-l">' + (sent === 1 ? 'item' : 'items') +
+                  ' you\u2019ve passed on to another family</div>' +
+              '</div>';
+    }
+
+    if (earned > 0) {
+      html += '<div class="ks-imp-stat">' +
+                '<div class="ks-imp-n">' + esc(earned) + '</div>' +
+                '<div class="ks-imp-l">' + (earned === 1 ? 'credit' : 'credits') +
+                  ' earned to date</div>' +
+              '</div>';
+    }
+
+    // fmtDate returns '' on a missing/bad date. Render nothing rather than "Member since ".
+    var since = fmtDate(lt.member_since);
+    if (since) html += '<div class="ks-imp-since">Member since ' + esc(since) + '</div>';
+
+    panel.innerHTML = html;
   }
 
 // ---------- REVIEW PROMPT ----------
