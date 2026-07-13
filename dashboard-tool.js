@@ -554,6 +554,9 @@ function paintCoins(s) {
     var hero = document.querySelector('.ks-hero-card');
     if (!hero || !hero.parentNode) return null;   // fail closed: no hero, no grid
 
+    var wrap = hero.parentNode;   // ⚠ CAPTURED BEFORE THE MOVE. After main.appendChild(hero)
+                                  // the hero's parent is .ks-main, not the page column.
+
     grid = document.createElement('div');
     grid.className = 'ks-grid';
     var main = document.createElement('div');
@@ -564,7 +567,7 @@ function paintCoins(s) {
     grid.appendChild(rail);
 
     // The grid takes the hero's place in the flow, then swallows it.
-    hero.parentNode.insertBefore(grid, hero);
+    wrap.insertBefore(grid, hero);
     main.appendChild(hero);
 
     // THE PRIMARY ACTION MOVES INTO THE HERO, directly under the payoff.
@@ -573,16 +576,79 @@ function paintCoins(s) {
     var cta = document.querySelector('.ks-greet-cta');
     if (cta) hero.appendChild(cta);
 
-    // MEMBERSHIP LEADS THE RAIL. ⚠ THIS IS A COMPLIANCE PLACEMENT, NOT A LAYOUT
-    // PREFERENCE. CA ARL 17602(d) wants the cancel path "prominently located."
-    // DASH.8 lifted this card out of the account panel to make it VISIBLE - and
-    // "visible" got satisfied by dropping it at the end of the page, which is
-    // arguably the opposite of prominent. Top of the rail fixes that.
-    // ⚠ DO NOT move it back down, and do not put it behind a disclosure.
-    var mem = document.querySelector('.ks-section--membership');
-    if (mem) rail.appendChild(mem);
-
+    buildUtilityRow(wrap, grid);
     return grid;
+  }
+
+  /* ============================================================
+     THE UTILITY ROW — 19th session, 2026-07-13.
+     Account chrome, top-right of the PAGE (not the site navbar - the navbar is a
+     global Webflow element and would need member-gating on every public surface).
+
+         Active · Manage membership          ⚙ Account & Settings ▾
+
+     WHY THE MEMBERSHIP CARD DIED: it was a 420px card holding three short lines,
+     and it had been sitting at the BOTTOM of the page. ⚠ THAT PLACEMENT WAS A
+     COMPLIANCE PROBLEM, NOT A TASTE ONE. CA ARL 17602(d) wants the cancel path
+     "prominently located"; DASH.8 lifted it out of the account panel to make it
+     VISIBLE, and "visible" got satisfied by dropping it at the end of the page -
+     arguably the opposite of prominent. Top-right of the page is prominent.
+     ⚠ THE STATUTE PERMITS A "direct link or button", so a text link is allowed.
+     SHAHIN STILL RULES on link-vs-button; if he wants the button back it is one
+     CSS rule in this same slot, same position, same prominence.
+
+     ⚠⚠ EVERY ELEMENT HERE IS **MOVED**, NEVER REBUILT (§0). This is not style:
+       · .ks-membership-manage CARRIES data-ms-action="customer-portal" AS A WEBFLOW
+         ATTRIBUTE. THAT ATTRIBUTE **IS** THE CANCEL PATH. It is not in this script
+         and not in the CSS, so neither a script audit nor a CSS audit would ever
+         find it. Retype this element and you delete the only way a member can cancel.
+       · .ks-membership-status is a live paint hook (and carries data-tone="off" on
+         cancelled/paused). It is the ONLY place a cancelled member is told so.
+       · .ks-account-toggle owns the accordion's open/close listener.
+     ⚠ THE CARD ITSELF IS HIDDEN, NOT DELETED. .ks-membership-plan still lives inside
+     it, so paint() keeps writing to it and NO HOOK DIES; .ks-section--membership is
+     still named by the data-ks-ready gate AND by setCTA's manage-branch scroll target,
+     and both still resolve. Deleting the card would silently break all three.
+     ============================================================ */
+  function buildUtilityRow(wrap, grid) {
+    if (!wrap || document.querySelector('.ks-util')) return;
+
+    var util = document.createElement('div');
+    util.className = 'ks-util';
+
+    // Anchor above the greeting. Walk up from a PROVEN hook until we are a direct
+    // child of the page column - the greeting's nesting depth is not something to
+    // assume (§0: a querySelector that misses fails silently).
+    var a = document.querySelector('.ks-greet-headline');
+    while (a && a.parentNode && a.parentNode !== wrap) a = a.parentNode;
+    if (a && a.parentNode === wrap) wrap.insertBefore(util, a);
+    else wrap.insertBefore(util, wrap.firstChild);
+
+    var stat = document.querySelector('.ks-membership-status');
+    var mng = document.querySelector('.ks-membership-manage');
+    if (stat && mng) {
+      var grp = document.createElement('span');
+      grp.className = 'ks-util-mem';
+      grp.appendChild(stat);                       // MOVE
+      var sep = document.createElement('span');
+      sep.className = 'ks-util-sep';
+      sep.textContent = '\u00b7';
+      grp.appendChild(sep);
+      grp.appendChild(mng);                        // MOVE - attribute rides along
+      util.appendChild(grp);
+    }
+
+    var tog = document.querySelector('.ks-account-toggle');
+    if (tog) util.appendChild(tog);                // MOVE
+
+    // The panel opens BELOW the greeting and ABOVE the grid, full width. Left where
+    // it was, it would open at the bottom of the page while its toggle sat at the top.
+    var pnl = document.querySelector('.ks-account-panel');
+    if (pnl && grid && grid.parentNode === wrap) wrap.insertBefore(pnl, grid);
+
+    // Gutted, so hide it. NOT removed - see the header comment.
+    var mem = document.querySelector('.ks-section--membership');
+    if (mem) mem.classList.add('ks-mem-hidden');
   }
 
   // which = 'main' | 'rail'. Append order IS call order within a column, so the
