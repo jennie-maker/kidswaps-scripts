@@ -882,11 +882,23 @@
   function renderFailure(failure, note) {
     var title = FAILURE_TITLE[failure] || "Something needs a look";
     var copy = note || FAILURE_COPY[failure] || "Something went wrong. Nothing was charged. Your bag is saved.";
-    // off_plan gets a plan-upgrade CTA (primary -> /pricing), browsing as the ghost fallback
-    var cta = (failure === "off_plan")
-      ? '<a class="act" href="/pricing">See our plans</a>' +
-        '<a class="act ghost" href="/browse" style="margin-top:8px;">Back to browsing</a>'
-      : '<a class="act ghost" href="/browse">Back to browsing</a>';
+    // off_plan gets a plan-upgrade CTA (primary -> /pricing), browsing as the ghost fallback.
+    // item_taken ALSO gets a dashboard CTA (2026-07-12c): its copy tells a member who just
+    // placed an order to CHECK HER DASHBOARD, and the only button on screen said "Back to
+    // browsing." A screen that gives an instruction with no way to follow it is the same
+    // dead end the copy rewrite was meant to remove. Found by LOOKING at the rendered page,
+    // not by reading the string (§0). Both stay GHOST on purpose: a solid pill here would
+    // invent a new primary action on a failure screen (§DASH.2 fourth-coral tripwire).
+    var cta;
+    if (failure === "off_plan") {
+      cta = '<a class="act" href="/pricing">See our plans</a>' +
+        '<a class="act ghost" href="/browse" style="margin-top:8px;">Back to browsing</a>';
+    } else if (failure === "item_taken") {
+      cta = '<a class="act ghost" href="/browse">Back to browsing</a>' +
+        '<a class="act ghost" href="/dashboard" style="margin-top:8px;">Go to my dashboard</a>';
+    } else {
+      cta = '<a class="act ghost" href="/browse">Back to browsing</a>';
+    }
     setHtml('<div class="ksc-screen">' + bigIcon() + "<h2>" + esc(title) + "</h2><p>" + esc(copy) + "</p>" +
       cta + "</div>");
   }
