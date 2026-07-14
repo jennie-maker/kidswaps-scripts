@@ -330,9 +330,15 @@
      last one was dragged out of its container in Navigator and silently deleted.
      ⚠ THE NUMERAL IS BLUE #28498D BECAUSE THAT IS BLUE'S ONE JOB (§DASH.2). Not decorative.
      ⚠ IT HIDES AT ZERO, PER STAT LINE. That rule lives in the JS — do not add a CSS hide. */
-  .ks-imp-stat {
+.ks-imp-stat {
     display: flex;
-    align-items: baseline;
+    align-items: center;   /* ⚠ WAS baseline. A 2-line label HUNG BELOW THE NUMERAL:
+                              baseline pins the 32px numeral's baseline to line ONE, so the
+                              numeral rides above line 1 and line 2 ("family") drops out the
+                              bottom, under the digit. THE RAIL IS ~220px AND THE APPROVED
+                              COPY IS 38 CHARS — IT WILL ALWAYS WRAP THERE. The wrap is not
+                              the bug; the hang was. Do not "fix" this by shortening the copy
+                              (locked, §DASH.13) or shrinking the numeral (it is the payoff). */
     gap: 10px;
     padding: 7px 0;
   }
@@ -342,13 +348,21 @@
      ELEMENTS — .ks-greet-headline and .ks-bank-label — AND NOWHERE ELSE. No footnote, no
      exception anyone has to remember. That is WHY it was reversed: two surviving serifs read
      as a CHOICE, five read as LEFTOVERS. Do not "restore" the serif to any numeral. */
-  .ks-imp-n {
+.ks-imp-n {
     font-family: 'Quicksand', sans-serif;
     font-weight: 600;                /* ceiling 600, NEVER 700 */
     font-size: 32px;
     line-height: 1;
     color: #28498D;
-    flex: none;
+    flex: 0 0 auto;
+    min-width: 30px;                 /* ⚠ "1" IS NARROWER THAN "4", so a shrink-to-fit numeral
+                                        column made the two labels START AT DIFFERENT x. The
+                                        rows didn't share a text margin. min-width + tabular
+                                        figures lock the column. ⚠ Holds to 2 digits; a 3-digit
+                                        count will push again — fine, and named so it isn't a
+                                        mystery later. */
+    text-align: left;
+    font-variant-numeric: tabular-nums;
   }
   .ks-imp-l {
     font-size: 13px;
