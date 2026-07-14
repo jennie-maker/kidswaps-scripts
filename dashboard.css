@@ -727,7 +727,57 @@
     padding: 15px 42px;
     white-space: nowrap;   /* it was breaking to "Browse the / closet" on a phone */
   }
+/* ---------- SEND-A-BAG (§SB step 7a) ----------
+     ⚠ THE ROW EXISTS BECAUSE OF THE AUTO MARGINS. .ks-greet-cta carries `margin:22px auto 0`
+     and those AUTO side-margins EAT THE FREE SPACE — drop a second pill beside it and both
+     get shoved off-centre. It cannot be faked with inline JS styles. Hence a real rule.
+     ⚠ THE ROW DEGRADES SAFELY: with ONE child + justify-content:center a solo CTA centres
+     exactly as it does today. Most members never see the button (cancelled / no bag history /
+     free bag used) and there is NO GAP where it would have been.
+     ⚠ .ks-sb-cta COPIES .ks-rev-cta's LOOK, NOT ITS NAME. Coral OUTLINE — border #F0C9B5,
+     transparent bg, #D65A35 text. PROVEN PALETTE-LEGAL. It is NOT a fourth solid coral
+     (§DASH.2). Do not make it solid. Do not reuse .ks-rev-* — that is the review card's.
+     ⚠ font-family is DELIBERATELY ABSENT, matching .ks-rev-cta: buttons inherit on this site
+     (Webflow's normalize sets button{font-family:inherit}). Proven live, 25th session. */
+  .ks-cta-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    margin-top: 22px;      /* the CTA's own 22px, MOVED here — see below */
+  }
+  .ks-cta-row .ks-greet-cta {
+    margin: 0;             /* ⚠ (0,2,0) — beats BOTH the base rule and the <=600 override.
+                              The row now owns the top margin. Zeroing this is what stops the
+                              auto margins from pushing the pair apart. */
+  }
 
+  .ks-sb-cta {
+    display: inline-block;
+    padding: 15px 36px;
+    border-radius: 99px;
+    border: 1px solid #F0C9B5;
+    background: transparent;
+    color: #D65A35;
+    font-size: 16px;                 /* matches .ks-greet-cta, measured live */
+    font-weight: 600;                /* ceiling 600, NEVER 700 */
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .ks-sb-cta:hover { border-color: #D65A35; }
+  .ks-sb-cta:focus-visible { outline: 2px solid #1E1A19; outline-offset: 3px; }
+  .ks-sb-cta[disabled] { color: #75736E; border-color: #EEEFE3; cursor: default; }
+
+  /* CHECK 1's STOP line. It takes the button's SLOT — two sentences cannot sit in a flex row
+     beside a pill. ⚠ CLAUDE'S CALL ON PLACEMENT, NOT JENNIE'S. Reversible. */
+  .ks-sb-stop {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #75736E;
+    text-align: center;
+    max-width: 38ch;
+    margin: 14px auto 0;
+  }
   /* ---------- IN-CARD SECTION HEADINGS ----------
      ⚠⚠ THIS BASE RULE HAS BEEN LOST TWICE, FROM OPPOSITE DIRECTIONS. It was written a
      session before the JS that emits it (so it matched nothing), and then deleted by a
@@ -979,7 +1029,6 @@
      ⚠ STICKY IS REJECTED, BOTH THE RAIL AND THE UTILITY ROW. The row is tightened IN
      FLOW or not at all.
      ============================================================ */
-  @media (max-width: 600px) {
     /* Instrument Serif ships ONE weight (400) — lightness comes from SIZE, not weight.
        At 56px this was breaking "Good morning," / "Jennie" across two lines. It was then
        40px; 30px is lever 1 of the coins-higher pass. ⚠ IT IS ONE OF THE TWO SURVIVING
@@ -1000,6 +1049,13 @@
     .ks-greet-headline.ks-card-value { font-size: 30px; line-height: 1.12; }
     .ks-greet-sub      { font-size: 17px; }
     .ks-greet-cta      { margin-top: 14px; }   /* lever 2 — was 22 (inherited from the base rule) */
+/* ⚠ THE PILLS STACK ON A PHONE. Both are white-space:nowrap and each measures 200px
+       against ~375px of usable width — they CANNOT share a line, and tightening them enough
+       to fit would gut the ONE ACTION on a 320px screen (13px of padding per side).
+       ⚠ THE ~60px THIS COSTS IS ALREADY PAID FOR: fixing lever 1 (the combo trap) recovered
+       78px. The coins end up HIGHER than before the button existed. Do not "reclaim" this
+       by shrinking .ks-greet-cta. */
+    .ks-cta-row   { margin-top: 14px; flex-direction: column; gap: 10px; }
     .ks-panel-h        { font-size: 20px; }
     .ks-rev-h          { font-size: 20px; }
     .ks-bank-label     { font-size: 26px; }    /* ⚠ NO !important — nothing to fight now */
