@@ -1753,7 +1753,7 @@ function paintCloset(s) {
   })
     .then(function (res) { return res.json(); })
     .then(function (state) {
-if (state && !state.error) { applyFake(state); paint(state); paintGreeting(state); addrBuild(); }
+if (state && !state.error) { applyFake(state); paint(state); paintGreeting(state); paintBagButton(state); addrBuild(); }
 else { console.error('member-state error', state); neutralGreeting(); }
     })
     .catch(function (e) { console.error('member-state paint error', e); neutralGreeting(); });
