@@ -970,7 +970,69 @@ function paintCloset(s) {
 
     panel.innerHTML = html;
   }
+function requestBag(btn, row) {
+    if (btn.disabled) return;               // client double-tap guard.
+                                            // ⚠ NOT the real one — request_free_bag takes an
+                                            // ADVISORY XACT LOCK. This is courtesy; that is safety.
+    btn.disabled = true;
+    btn.textContent = 'Sending\u2026';
 
+    var token = window.$memberstackDom.getMemberCookie();   // bare string, never {data:{token}}
+
+    // ⚠⚠ NO BODY, ON PURPOSE. Identity from the token. Cycle from get_member_state (the ONLY
+    // cycle authority). Decision from the RPC. THERE IS NOTHING A CLIENT CAN SEND THAT CHANGES
+    // THE OUTCOME. Do not add a body to this call.
+    fetch(BAG_URL, {
+      method: 'POST',
+      headers: {
+        'x-ms-token': token,
+        'apikey': ANON,
+        'Authorization': 'Bearer ' + ANON,
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(function (r) { return r.json().then(function (j) { return { http: r.status, body: j }; }); })
+    .then(function (res) {
+      console.log('[ks-dash] bag request ->', res.http, res.body);
+
+      if (res.body && res.body.ok) {
+        var done = document.createElement('div');
+        done.className = 'ks-sb-stop';
+        done.textContent = 'Consider it done. We\u2019ll get a bag packed and sent your way, so watch your mailbox.';
+        row.parentNode.insertBefore(done, row.nextSibling);
+        btn.remove();
+        return;
+      }
+
+      // ⚠ A REFUSAL IS NOT AN ERROR. {ok:false, reason:...} is the system WORKING.
+      bagFail(btn, row, (res.body && res.body.reason) || ('refused:' + res.http));
+    })
+    .catch(function (e) {
+      bagFail(btn, row, e);
+    });
+  }
+
+  // ⚠ ONE LINE FOR BOTH FAILURE PATHS, ON PURPOSE. A member cannot tell a refusal from a
+  // timeout and does not care. A reason-specific string per code would need four more copy
+  // approvals for states nobody has ever hit.
+  // ⚠⚠ "REFRESH" IS LOAD-BEARING, NOT POLITENESS. The likeliest refusal is the SERVER
+  // DISAGREEING WITH WHAT THE PAGE PAINTED — a stale tab, a bag that went out between her
+  // load and her tap. The client's fork is PAINT, NOT PERMISSION; the RPC checks again and is
+  // right to say no. "Try again" would loop her through the same refusal forever. A refresh
+  // re-reads member-state and she then sees the honest STOP line instead.
+  // APPROVED BY JENNIE 2026-07-13. Do not redraft.
+  function bagFail(btn, row, why) {
+    console.log('[ks-dash] bag request NOT COMPLETED:', why);
+    btn.disabled = false;
+    btn.textContent = 'Send my bag now';
+    var msg = document.querySelector('.ks-sb-stop');
+    if (!msg) {
+      msg = document.createElement('div');
+      msg.className = 'ks-sb-stop';
+      row.parentNode.insertBefore(msg, row.nextSibling);
+    }
+    msg.textContent = 'That didn\u2019t go through. Refresh the page and try again, or email us.';
+  }
 // ---------- REVIEW PROMPT ----------
   var REVIEW_URL = "https://g.page/r/CQ6-0phqnjFCEBM/review";
   var REVIEW_MIN_FINDS = 2;   // one find is a transaction; two is a habit
@@ -1593,6 +1655,8 @@ function paintCloset(s) {
     console.log('[ks-dash] FAKE STATE:', _FAKE, s);
     return s;
   }
+
+if (state && !state.error) { applyFake(state); paint(state); paintGreeting(state); paintBagButton(state); addrBuild(); }
   // ---------- RUN ----------
   setTimeout(reveal, 4000);
 
