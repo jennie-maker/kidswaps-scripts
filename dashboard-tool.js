@@ -970,7 +970,86 @@ function paintCloset(s) {
 
     panel.innerHTML = html;
   }
-function requestBag(btn, row) {
+// ---------- SEND A BAG (§SB step 7a) ----------
+  var BAG_URL = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1/member-bag-request";
+
+  function paintBagButton(s) {
+    var cta = document.querySelector('.ks-greet-cta');
+    if (!cta) return;                                  // no CTA, no row. Fail closed.
+
+    // THE ROW ALWAYS EXISTS once the CTA does. A SOLO cta centres in it exactly as before —
+    // most members never see the button and there is NO GAP where it would have been.
+    var row = document.querySelector('.ks-cta-row');
+    if (!row) {
+      row = document.createElement('div');
+      row.className = 'ks-cta-row';
+      cta.parentNode.insertBefore(row, cta);
+      row.appendChild(cta);   // ⚠⚠ MOVE, NEVER CLONE. appendChild relocates the live node with
+                              // its classes and listeners intact. setCTA's onclick rides along.
+                              // Rebuild this element and you delete the greeting CTA's behaviour.
+    }
+
+    var old = row.querySelector('.ks-sb-cta');           if (old) old.remove();
+    var oldLine = document.querySelector('.ks-sb-stop'); if (oldLine) oldLine.remove();
+
+    // ---- CHECK 0 — cancelled / no plan. HIDE. RULED BY JENNIE (25th session).
+    // ⚠⚠ A SERVER GUARD IS NOT A CLIENT FORK. get_member_bag_state returns FACTS, NOT
+    // ELIGIBILITY — it never reads status. A cancelled member comes back bag_out:false /
+    // free_bag_used:false / has_bag_history:true — INDISTINGUISHABLE from a member who is
+    // OWED her bag. Without this the button PAINTS, she TAPS, and the server REFUSES her.
+    var ms = String(s.member_status || '').toLowerCase();
+    if (ms !== 'active' || !s.plan) {
+      console.log('[ks-dash] bag button: check 0 — not active / no plan. Hidden.');
+      return;
+    }
+
+    // ---- FAILS CLOSED ON null. Opposite direction to closet/activity.
+    // null means "WE DON'T KNOW", never "no bag out". A hidden closet is cosmetic;
+    // a button shown on unknown state MAILS A BAG.
+    var b = s.bags;
+    if (!b) {
+      console.log('[ks-dash] bag button: payload.bags is null — hidden (fail closed).');
+      return;
+    }
+
+    // ---- has_bag_history false = a DAY-ONE member awaiting her SIGNUP bag. HIDE.
+    // She reads byte-identical to someone owed a bag. This key exists for exactly that.
+    if (b.has_bag_history === false) {
+      console.log('[ks-dash] bag button: no bag history — hidden.');
+      return;
+    }
+
+    // ---- CHECK 1 — a bag is out. STOP. No fork, no fee.
+    // ⚠ bag_out INCLUDES 'open' — a bag still on the ship desk. "In motion" is true in every
+    // bag-out state, which is why the copy does not say "fill it and send it back".
+    if (b.bag_out) {
+      var stop = document.createElement('div');
+      stop.className = 'ks-sb-stop';
+      stop.textContent = 'You\u2019ve already got a swap bag in motion. Once it finds its way back to us, we\u2019ll get the next one out to you.';
+      row.parentNode.insertBefore(stop, row.nextSibling);
+      console.log('[ks-dash] bag button: check 1 — bag out. STOP line shown.');
+      return;
+    }
+
+    // ---- CHECK 2-YES — free bag already used this cycle. HIDE.
+    // ⚠ THE HIDE IS GATED, NOT SHRUGGED: 7b MUST SHIP BEFORE THE OPERATOR TEST-DOOR DROPS.
+    // This logs so a future session is TOLD about the hole instead of re-deriving it.
+    if (b.free_bag_used) {
+      console.log('[ks-dash] bag button: check 2-YES — free bag used this cycle. ' +
+                  'NO PATH BUILT (7b unbuilt, $15 is step 8). Hidden.');
+      return;
+    }
+
+    // ---- CHECK 2-NO — her free bag ships. Self-serve, no operator, no approval.
+    var btn = document.createElement('button');
+    btn.type = 'button';                    // ⚠ native <button>. Focus/Enter/Space come free.
+    btn.className = 'ks-sb-cta';
+    btn.textContent = 'Send my bag now';
+    btn.onclick = function () { requestBag(btn, row); };
+    row.appendChild(btn);
+    console.log('[ks-dash] bag button: check 2-NO — button shown.');
+  }
+	function requestBag(btn, row) {
     if (btn.disabled) return;               // client double-tap guard.
                                             // ⚠ NOT the real one — request_free_bag takes an
                                             // ADVISORY XACT LOCK. This is courtesy; that is safety.
