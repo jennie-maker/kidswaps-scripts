@@ -970,7 +970,20 @@
        At 56px this was breaking "Good morning," / "Jennie" across two lines. It was then
        40px; 30px is lever 1 of the coins-higher pass. ⚠ IT IS ONE OF THE TWO SURVIVING
        SERIF ELEMENTS (§DASH.2) — the size changes, the family does not. */
-    .ks-greet-headline { font-size: 30px; line-height: 1.12; }
+/* ⚠⚠ COMBO TRAP — THIS RULE SHIPPED AS ONE CLASS AND NEVER FIRED.
+       Webflow wears .ks-card-value on this H2 (a combo-BASE — §DASH.3 names it and
+       says it is not a hook). Webflow compiles that to `.ks-greet-headline.ks-card-value`
+       = specificity (0,2,0). A single-class rule is (0,1,0) and LOSES — at every width,
+       regardless of source order. A MEDIA QUERY ADDS NO SPECIFICITY.
+       MEASURED 2026-07-13, not derived: the live headline is 56px (Webflow's), two lines,
+       not the 30px this line has "set" for sessions. LEVER 1 OF THE COINS-HIGHER PASS HAS
+       NEVER ONCE BEEN LIVE. Fixing it recovers 78px (112 -> 34).
+       ⚠ THE FILE DOES NOT OWN THIS ELEMENT'S SIZE. Nor .ks-greet-cta's background
+       (#E54F25 — off-palette, still unruled). AUDIT THE PAGE, NOT THE FILE.
+       ⚠ .ks-greet-sub is ALSO a combo (.ks-card-sub) and is FINE — a combo only bites
+       when Webflow sets the SAME property. Do not "fix" it. */
+    .ks-greet-headline,
+    .ks-greet-headline.ks-card-value { font-size: 30px; line-height: 1.12; }
     .ks-greet-sub      { font-size: 17px; }
     .ks-greet-cta      { margin-top: 14px; }   /* lever 2 — was 22 (inherited from the base rule) */
     .ks-panel-h        { font-size: 20px; }
