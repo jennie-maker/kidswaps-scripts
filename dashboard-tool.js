@@ -1734,8 +1734,6 @@ function paintCloset(s) {
     console.log('[ks-dash] FAKE STATE:', _FAKE, s);
     return s;
   }
-
-if (state && !state.error) { applyFake(state); paint(state); paintGreeting(state); paintBagButton(state); addrBuild(); }
   // ---------- RUN ----------
   setTimeout(reveal, 4000);
 
