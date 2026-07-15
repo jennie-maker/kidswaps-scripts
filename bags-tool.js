@@ -8,7 +8,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "v2";
+  var BUILD = "v3";
   var FN = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1/bags-manage";
   var MOUNT_ID = "ks-bags-app";
 
@@ -82,6 +82,15 @@
     if (d <= 0) return "Today";
     if (d === 1) return "1 day old";
     return d + " days old";
+  }
+
+  /* Short local-date, e.g. "Jul 12, 2026". Local time is correct here — these are
+     moments (shipped_at / delivered_at), not date-only values. */
+  function fmtDate(iso) {
+    if (!iso) return "—";
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
   }
 
   /* ⚠ ADDRESS IS THE WHOLE POINT OF THIS PANEL — eyeball it before printing.
@@ -199,6 +208,56 @@
       "</article>";
   }
 
+  /* ---------- in transit (the return-stamp queue) ----------------------- */
+
+  /* ⚠ #BAG-TRACKING INTERIM. Marks a shipped bag returned by EXPLICIT bag_id — it
+     does NOT guess the oldest (that trap is stamp_bag_returned's), and it does NOT
+     read the tracking number off the label (the real fix, deferred to its own
+     session). The operator matches the physical bag in her hand to the RETURN
+     TRACKING shown here, then taps. The confirm repeats that number — that is the
+     guard against herself, same species as "two tracking numbers to ship."
+     ⚠ NO ADDRESS BLOCK — the bag is already out; there is no label to print here.
+     ⚠ NO AGE COLOUR — no SLA exists (§BAGS), so "Out N days" is neutral, never
+     amber/red. An in-transit bag waiting on the mail is not the operator's fault. */
+  function transitCard(r) {
+    var outN = daysSince(r.shipped_at);
+    var outLabel = r.shipped_at ? ("Out " + outN + (outN === 1 ? " day" : " days")) : "";
+    return '' +
+      '<article class="ksb-card" data-bag="' + esc(r.id) + '"' +
+        ' data-rt="' + esc(r.return_tracking || "") + '">' +
+        '<div class="ksb-top">' +
+          '<h3 class="ksb-name">' + esc(fullName(r)) + "</h3>" +
+          (outLabel ? '<span class="ksb-age">' + esc(outLabel) + "</span>" : "") +
+        "</div>" +
+
+        '<div class="ksb-chips">' +
+          '<span class="ksb-chip">' + esc(r.plan || "No plan") + "</span>" +
+          '<span class="ksb-chip ksb-chip--type">' + esc(SOURCE_LABEL[r.source] || r.source) + "</span>" +
+        "</div>" +
+
+        '<div class="ksb-transit-meta">' +
+          '<div class="ksb-tl"><span class="ksb-tl-k">Shipped</span>' +
+            '<span class="ksb-tl-v">' + esc(fmtDate(r.shipped_at)) + "</span></div>" +
+          '<div class="ksb-tl"><span class="ksb-tl-k">Delivered</span>' +
+            '<span class="ksb-tl-v">' +
+              (r.delivered_at ? esc(fmtDate(r.delivered_at)) : "<em>not yet</em>") +
+            "</span></div>" +
+          '<div class="ksb-tl"><span class="ksb-tl-k">Return tracking</span>' +
+            '<span class="ksb-tl-v ksb-mono">' + esc(r.return_tracking || "—") + "</span></div>" +
+          '<div class="ksb-tl"><span class="ksb-tl-k">Outbound</span>' +
+            '<span class="ksb-tl-v ksb-mono">' + esc(r.outbound_tracking || "—") + "</span></div>" +
+        "</div>" +
+
+        '<p class="ksb-instr"><span class="ksb-arrow">›</span>' +
+          "Back in your hands? Match the return tracking to the bag, then mark it returned." +
+        "</p>" +
+
+        '<div class="ksb-actions">' +
+          '<button class="ksb-btn ksb-btn--go ksb-btn--wide" data-act="return">Mark returned</button>' +
+        "</div>" +
+      "</article>";
+  }
+
   /* ---------- needs-a-bag ------------------------------------------------ */
 
   function needsCard(m) {
@@ -268,6 +327,9 @@
     var orders = (_panel.orders || []).slice().sort(byAge).reverse();
     var envelopes = (_panel.envelopes || []).slice().sort(byAge).reverse();
     var needs = (_panel.members || []).filter(function (m) { return m.total_bags === 0; });
+    /* ⚠ RPC already orders in_transit oldest-first (by shipped_at). Longest-out at
+       the top is the natural attention order; no reverse, no age float here. */
+    var inTransit = (_panel.in_transit || []).slice();
 
     _root.innerHTML = '' +
       '<div class="ksb">' +
@@ -298,6 +360,13 @@
           (orders.length
             ? orders.map(bagCard).join("")
             : '<p class="ksb-empty">No orders waiting. Checkout puts them here.</p>') +
+        "</section>" +
+
+        '<section class="ksb-sec">' +
+          '<div class="ksb-sech"><h2>In transit</h2><span class="ksb-count">' + inTransit.length + "</span></div>" +
+          (inTransit.length
+            ? inTransit.map(transitCard).join("")
+            : '<p class="ksb-empty">Nothing out. Shipped bags waiting to come back show up here.</p>') +
         "</section>" +
       "</div>";
 
@@ -395,6 +464,21 @@
       if (act === "cancel") {
         if (!confirm("Cancel this bag?\n\nUse this when two rows exist for one physical bag. It won't count against her shipping.")) return;
         withBusy(call({ action: "cancel", bag_id: bagId }), btn, "Cancelling...");
+        return;
+      }
+
+      if (act === "return") {
+        /* ⚠ THE GUARD AGAINST MYSELF: the confirm shows the RETURN TRACKING so the
+           bag in hand can be matched to the right row before stamping. When two bags
+           are out at once, this number is the tiebreaker (§BAG-TRACKING). No undo
+           exists — a rejected mockup Undo toast was ruled out for irreversible acts. */
+        var who = (card.querySelector(".ksb-name") || {}).textContent || "this member";
+        var rt = card.getAttribute("data-rt") || "";
+        var msg = "Mark this bag returned?\n\n" + who +
+          (rt ? "\nReturn tracking: " + rt : "") +
+          "\n\nCheck this matches the bag in your hand. It can't be undone from here.";
+        if (!confirm(msg)) return;
+        withBusy(call({ action: "return", bag_id: bagId }), btn, "Marking...");
       }
     });
   }
@@ -451,6 +535,14 @@
 
       R + " .ksb-instr{margin:14px 0 0;font-size:14px;color:#75736E;line-height:1.4}",
       R + " .ksb-arrow{color:#D65A35;font-weight:600;margin-right:6px}",
+
+      /* in-transit queue — the return-stamp cards (no address, no age colour) */
+      R + " .ksb-transit-meta{margin-top:14px;background:#EEEFE3;border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:9px}",
+      R + " .ksb-tl{display:flex;justify-content:space-between;align-items:baseline;gap:14px;font-size:14px}",
+      R + " .ksb-tl-k{color:#75736E;font-weight:600;white-space:nowrap}",
+      R + " .ksb-tl-v{color:#1E1A19;font-weight:600;text-align:right}",
+      R + " .ksb-tl-v em{font-style:normal;font-weight:500;color:#75736E}",
+      R + " .ksb-mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;letter-spacing:.01em;word-break:break-all}",
 
       /* the job — the heart of the card */
       R + " .ksb-job{margin-top:16px;background:#EEEFE3;border-radius:14px;padding:14px}",
