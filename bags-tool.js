@@ -528,42 +528,6 @@
         return;
       }
 
-      var card = btn.closest("[data-bag]");
-      if (!card) return;
-      var bagId = card.getAttribute("data-bag");
-
-      if (act === "ship") {
-        var out = card.querySelector('[data-tr="out"]').value.trim();
-        var ret = card.querySelector('[data-tr="ret"]').value.trim();
-        if (!out || !ret) return;   /* unreachable — the button is disabled. Belt to the server's braces. */
-        withBusy(call({
-          action: "ship", bag_id: bagId,
-          outbound_tracking: out, return_tracking: ret
-        }), btn, "Shipping...");
-        return;
-      }
-
-      if (act === "cancel") {
-        if (!confirm("Cancel this bag?\n\nUse this when two rows exist for one physical bag. It won't count against her shipping.")) return;
-        withBusy(call({ action: "cancel", bag_id: bagId }), btn, "Cancelling...");
-        return;
-      }
-
-      if (act === "return") {
-        /* ⚠ THE GUARD AGAINST MYSELF: the confirm shows the RETURN TRACKING so the
-           bag in hand can be matched to the right row before stamping. When two bags
-           are out at once, this number is the tiebreaker (§BAG-TRACKING). No undo
-           exists — a rejected mockup Undo toast was ruled out for irreversible acts. */
-        var who = (card.querySelector(".ksb-name") || {}).textContent || "this member";
-        var rt = card.getAttribute("data-rt") || "";
-        var msg = "Mark this bag returned?\n\n" + who +
-          (rt ? "\nReturn tracking: " + rt : "") +
-          "\n\nCheck this matches the bag in your hand. It can't be undone from here.";
-        if (!confirm(msg)) return;
-        withBusy(call({ action: "return", bag_id: bagId }), btn, "Marking...");
-        return;
-      }
-
       /* ---- CASES (make-good desk) ---- */
       var caseCard = btn.closest("[data-case]");
       if (caseCard) {
@@ -624,6 +588,42 @@
         }
         return;
       }
+      var card = btn.closest("[data-bag]");
+      if (!card) return;
+      var bagId = card.getAttribute("data-bag");
+
+      if (act === "ship") {
+        var out = card.querySelector('[data-tr="out"]').value.trim();
+        var ret = card.querySelector('[data-tr="ret"]').value.trim();
+        if (!out || !ret) return;   /* unreachable — the button is disabled. Belt to the server's braces. */
+        withBusy(call({
+          action: "ship", bag_id: bagId,
+          outbound_tracking: out, return_tracking: ret
+        }), btn, "Shipping...");
+        return;
+      }
+
+      if (act === "cancel") {
+        if (!confirm("Cancel this bag?\n\nUse this when two rows exist for one physical bag. It won't count against her shipping.")) return;
+        withBusy(call({ action: "cancel", bag_id: bagId }), btn, "Cancelling...");
+        return;
+      }
+
+      if (act === "return") {
+        /* ⚠ THE GUARD AGAINST MYSELF: the confirm shows the RETURN TRACKING so the
+           bag in hand can be matched to the right row before stamping. When two bags
+           are out at once, this number is the tiebreaker (§BAG-TRACKING). No undo
+           exists — a rejected mockup Undo toast was ruled out for irreversible acts. */
+        var who = (card.querySelector(".ksb-name") || {}).textContent || "this member";
+        var rt = card.getAttribute("data-rt") || "";
+        var msg = "Mark this bag returned?\n\n" + who +
+          (rt ? "\nReturn tracking: " + rt : "") +
+          "\n\nCheck this matches the bag in your hand. It can't be undone from here.";
+        if (!confirm(msg)) return;
+        withBusy(call({ action: "return", bag_id: bagId }), btn, "Marking...");
+        return;
+      }
+
     });
   }
 
