@@ -317,6 +317,79 @@
       "</div>";
   }
 
+
+  /* ---------- a case card (bag_cases — the make-good desk) ---------------- */
+  /* ⚠ A case row is bag_cases JOINed to members, LEFT-joined to swap_bags — so
+     the bag_* fields are null on a hand-opened case with no bag. Reuses fullName,
+     addressBlock and fmtDate verbatim; the row carries the same shipping_* keys
+     addressBlock reads. The credit form is REVEAL-ON-CLICK (same idiom as
+     sendForm's hidden toggle): tapping Credit shows amount/class/tier tiles; Reship
+     and Decline act immediately. ⚠ Reship mints a comp bag server-side; Decline
+     issues nothing (confirm-guarded); Credit needs all three picks. */
+  var REASON_LABEL = {
+    never_arrived: "Never arrived",
+    lost: "Lost",
+    damaged: "Damaged",
+    all_declined: "All items declined"
+  };
+
+  function casesCard(r) {
+    var ageN = daysSince(r.created_at);
+    var ageLabel = r.created_at ? ("Open " + ageN + (ageN === 1 ? " day" : " days")) : "";
+    return '' +
+      '<article class="ksb-card ksb-case" data-case="' + esc(r.id) + '">' +
+        '<div class="ksb-top">' +
+          '<h3 class="ksb-name">' + esc(fullName(r)) + "</h3>" +
+          (ageLabel ? '<span class="ksb-age">' + esc(ageLabel) + "</span>" : "") +
+        "</div>" +
+
+        '<div class="ksb-chips">' +
+          '<span class="ksb-chip">' + esc(r.plan || "No plan") + "</span>" +
+          '<span class="ksb-chip ksb-chip--type">' + esc(REASON_LABEL[r.reason] || r.reason) + "</span>" +
+        "</div>" +
+
+        (r.notes ? '<p class="ksb-case-notes">' + esc(r.notes) + "</p>" : "") +
+
+        /* ⚠ Address shown because RESHIP = a comp bag that needs an address to
+           eyeball before printing (§BAGS). addressBlock SHOUTS on a missing one. */
+        addressBlock(r) +
+
+        '<p class="ksb-instr"><span class="ksb-arrow">›</span>' +
+          "Reship a make-good bag, credit her instead, or decline. Your call is the record." +
+        "</p>" +
+
+        '<div class="ksb-actions">' +
+          '<button class="ksb-btn ksb-btn--go" data-act="resolve-reship">Reship a bag</button>' +
+          '<button class="ksb-btn ksb-btn--ghost" data-act="resolve-credit-toggle">Credit</button>' +
+          '<button class="ksb-btn ksb-btn--ghost" data-act="resolve-decline">Decline</button>' +
+        "</div>" +
+
+        /* Reveal-on-click credit form — hidden until Credit is tapped. */
+        '<div class="ksb-form ksb-cform" data-cform hidden>' +
+          '<div class="ksb-flabel">How many credits</div>' +
+          '<div class="ksb-reasons" data-cf="amount">' +
+            '<button class="ksb-reason is-sel" data-amount="1">1 credit</button>' +
+            '<button class="ksb-reason" data-amount="0.5">Half credit</button>' +
+          "</div>" +
+          '<div class="ksb-flabel">Class</div>' +
+          '<div class="ksb-reasons" data-cf="class">' +
+            '<button class="ksb-reason is-sel" data-class="clothing">Clothing</button>' +
+            '<button class="ksb-reason" data-class="toy">Toy</button>' +
+          "</div>" +
+          '<div class="ksb-flabel">Tier</div>' +
+          '<div class="ksb-reasons" data-cf="tier">' +
+            '<button class="ksb-reason is-sel" data-tier="essentials">Essentials</button>' +
+            '<button class="ksb-reason" data-tier="elevated">Elevated</button>' +
+            '<button class="ksb-reason" data-tier="special">Special</button>' +
+          "</div>" +
+          '<div class="ksb-actions">' +
+            '<button class="ksb-btn ksb-btn--go" data-act="resolve-credit-go">Issue credit</button>' +
+            '<button class="ksb-btn ksb-btn--ghost" data-act="resolve-credit-cancel">Cancel</button>' +
+          "</div>" +
+        "</div>" +
+      "</article>";
+  }
+
   /* ---------- render ----------------------------------------------------- */
 
   function render() {
@@ -330,6 +403,8 @@
     /* ⚠ RPC already orders in_transit oldest-first (by shipped_at). Longest-out at
        the top is the natural attention order; no reverse, no age float here. */
     var inTransit = (_panel.in_transit || []).slice();
+    /* cases: RPC orders oldest-first (created_at). No reverse — oldest case wants attention first. */
+    var cases = (_panel.cases || []).slice();
 
     _root.innerHTML = '' +
       '<div class="ksb">' +
@@ -367,6 +442,13 @@
           (inTransit.length
             ? inTransit.map(transitCard).join("")
             : '<p class="ksb-empty">Nothing out. Shipped bags waiting to come back show up here.</p>') +
+        "</section>" +
+
+        '<section class="ksb-sec">' +
+          '<div class="ksb-sech"><h2>Open cases</h2><span class="ksb-count">' + cases.length + "</span></div>" +
+          (cases.length
+            ? cases.map(casesCard).join("")
+            : '<p class="ksb-empty">No open cases. Lost, damaged and all-declined bags land here.</p>') +
         "</section>" +
       "</div>";
 
@@ -479,6 +561,68 @@
           "\n\nCheck this matches the bag in your hand. It can't be undone from here.";
         if (!confirm(msg)) return;
         withBusy(call({ action: "return", bag_id: bagId }), btn, "Marking...");
+        return;
+      }
+
+      /* ---- CASES (make-good desk) ---- */
+      var caseCard = btn.closest("[data-case]");
+      if (caseCard) {
+        var caseId = caseCard.getAttribute("data-case");
+
+        /* tile selection inside the credit form: flip is-sel among siblings */
+        if (btn.classList.contains("ksb-reason")) {
+          var group = btn.parentNode;
+          var sibs = group.querySelectorAll(".ksb-reason");
+          for (var i = 0; i < sibs.length; i++) sibs[i].classList.remove("is-sel");
+          btn.classList.add("is-sel");
+          return;
+        }
+
+        if (act === "resolve-reship") {
+          if (!confirm("Reship a make-good bag?\n\nThis mints a comp bag in the send queue — check the address, then print. It does not use up her free bag.")) return;
+          withBusy(call({ action: "resolve_case", case_id: caseId, resolution: "reship" }), btn, "Reshipping...");
+          return;
+        }
+
+        if (act === "resolve-decline") {
+          if (!confirm("Decline this case?\n\nNothing is issued — no bag, no credit. The case closes. Use this when the reason doesn't hold up.")) return;
+          withBusy(call({ action: "resolve_case", case_id: caseId, resolution: "decline" }), btn, "Declining...");
+          return;
+        }
+
+        if (act === "resolve-credit-toggle") {
+          var cf = caseCard.querySelector("[data-cform]");
+          if (cf) cf.hidden = !cf.hidden;
+          return;
+        }
+
+        if (act === "resolve-credit-cancel") {
+          var cfc = caseCard.querySelector("[data-cform]");
+          if (cfc) cfc.hidden = true;
+          return;
+        }
+
+        if (act === "resolve-credit-go") {
+          var form = caseCard.querySelector("[data-cform]");
+          var amt = form.querySelector('[data-cf="amount"] .is-sel');
+          var cls = form.querySelector('[data-cf="class"] .is-sel');
+          var tr = form.querySelector('[data-cf="tier"] .is-sel');
+          var amount = amt ? Number(amt.getAttribute("data-amount")) : null;
+          var creditClass = cls ? cls.getAttribute("data-class") : null;
+          var tier = tr ? tr.getAttribute("data-tier") : null;
+          if (amount == null || !creditClass || !tier) {
+            alert("Pick an amount, a class, and a tier before issuing the credit.");
+            return;
+          }
+          var who = (caseCard.querySelector(".ksb-name") || {}).textContent || "this member";
+          if (!confirm("Issue " + amount + " " + tier + " " + creditClass + " credit to " + who + "?\n\nThis closes the case and adds the credit to her bank. It can't be undone from here.")) return;
+          withBusy(call({
+            action: "resolve_case", case_id: caseId, resolution: "credit",
+            amount: amount, "class": creditClass, tier: tier
+          }), btn, "Crediting...");
+          return;
+        }
+        return;
       }
     });
   }
