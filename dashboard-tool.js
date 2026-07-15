@@ -1729,8 +1729,14 @@ function paintCloset(s) {
     } else if (_FAKE === 'cancelled') {        // plan gone, earned credits survive
       s.plan = null;
       s.member_status = 'cancelled';
-      s.caps = { clothing: 0, toy: 0 };
+     s.caps = { clothing: 0, toy: 0 };
     }
+    // BAGS HARNESS (§SB 7a) — display-only, NEVER writes. applyFake touched everything EXCEPT
+    // s.bags, so a faked member kept the operator's real bag_out:true and the button could never
+    // paint. This shape reaches CHECK 2-NO so the button is SEEN. Applies to any ?fake= value:
+    //   ?fake=zero      -> active+plan untouched + bags ok -> button paints (see + tap)
+    //   ?fake=cancelled -> check 0 hides it -> proves the cancelled ruling
+    s.bags = { bag_out: false, free_bag_used: false, has_bag_history: true, in_flight_count: 0 };
     console.log('[ks-dash] FAKE STATE:', _FAKE, s);
     return s;
   }
