@@ -1044,7 +1044,7 @@ function paintCloset(s) {
     var btn = document.createElement('button');
     btn.type = 'button';                    // ⚠ native <button>. Focus/Enter/Space come free.
     btn.className = 'ks-sb-cta';
-    btn.textContent = 'Send my bag now';
+    btn.textContent = 'Swap Bags';
     btn.onclick = function () { requestBag(btn, row); };
     row.appendChild(btn);
     console.log('[ks-dash] bag button: check 2-NO — button shown.');
@@ -1103,7 +1103,7 @@ function paintCloset(s) {
   function bagFail(btn, row, why) {
     console.log('[ks-dash] bag request NOT COMPLETED:', why);
     btn.disabled = false;
-    btn.textContent = 'Send my bag now';
+    btn.textContent = 'Swap Bags';
     var msg = document.querySelector('.ks-sb-stop');
     if (!msg) {
       msg = document.createElement('div');
