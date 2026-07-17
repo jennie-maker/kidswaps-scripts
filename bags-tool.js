@@ -8,7 +8,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "v3";
+  var BUILD = "v4-requests";
   var FN = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1/bags-manage";
   var MOUNT_ID = "ks-bags-app";
 
@@ -390,6 +390,44 @@
       "</article>";
   }
 
+  /* ⚠ THE "WANT ANOTHER BAG" QUEUE (§SB 7b). Distinct from CASES: a case is
+     "something went wrong" (lost/damaged/all-declined); a request is "I'd like
+     another bag this cycle" from a member who has ALREADY used her free bag.
+     Approve mints a COMP bag server-side (goodwill on top — never spends her
+     entitlement, never bills $15). No reveal form, no reason MAP — the reason is
+     free text the member typed, shown verbatim. Address is shown so it can be
+     eyeballed here, but the real address check happens when the comp bag lands
+     in the send queue on approve. */
+  function requestsCard(r) {
+    var ageN = daysSince(r.created_at);
+    var ageLabel = r.created_at ? ("Asked " + ageN + (ageN === 1 ? " day ago" : " days ago")) : "";
+    return '' +
+      '<article class="ksb-card ksb-request" data-request="' + esc(r.id) + '">' +
+        '<div class="ksb-top">' +
+          '<h3 class="ksb-name">' + esc(fullName(r)) + "</h3>" +
+          (ageLabel ? '<span class="ksb-age">' + esc(ageLabel) + "</span>" : "") +
+        "</div>" +
+
+        '<div class="ksb-chips">' +
+          '<span class="ksb-chip">' + esc(r.plan || "No plan") + "</span>" +
+        "</div>" +
+
+        '<p class="ksb-req-reason">' + esc(r.reason || "(no reason given)") + "</p>" +
+        (r.notes ? '<p class="ksb-case-notes">' + esc(r.notes) + "</p>" : "") +
+
+        addressBlock(r) +
+
+        '<p class="ksb-instr"><span class="ksb-arrow">\u203a</span>' +
+          "Approve to mail a make-good bag, or decline. This is goodwill on top of her free bag." +
+        "</p>" +
+
+        '<div class="ksb-actions">' +
+          '<button class="ksb-btn ksb-btn--go" data-act="approve-request">Approve &amp; send</button>' +
+          '<button class="ksb-btn ksb-btn--ghost" data-act="decline-request">Decline</button>' +
+        "</div>" +
+      "</article>";
+  }
+
   /* ---------- render ----------------------------------------------------- */
 
   function render() {
@@ -405,6 +443,8 @@
     var inTransit = (_panel.in_transit || []).slice();
     /* cases: RPC orders oldest-first (created_at). No reverse — oldest case wants attention first. */
     var cases = (_panel.cases || []).slice();
+    /* requests: RPC orders oldest-first (created_at). Same as cases — oldest ask first. */
+    var requests = (_panel.requests || []).slice();
 
     _root.innerHTML = '' +
       '<div class="ksb">' +
@@ -449,6 +489,13 @@
           (cases.length
             ? cases.map(casesCard).join("")
             : '<p class="ksb-empty">No open cases. Lost, damaged and all-declined bags land here.</p>') +
+        "</section>" +
+
+        '<section class="ksb-sec">' +
+          '<div class="ksb-sech"><h2>Bag requests</h2><span class="ksb-count">' + requests.length + "</span></div>" +
+          (requests.length
+            ? requests.map(requestsCard).join("")
+            : '<p class="ksb-empty">No requests. Members asking for another bag this cycle land here.</p>') +
         "</section>" +
       "</div>";
 
@@ -588,6 +635,31 @@
         }
         return;
       }
+
+      /* ---- BAG REQUESTS (§SB 7b) ----
+         ⚠⚠ THIS BRANCH MUST STAY ABOVE THE data-bag EARLY-RETURN BELOW. A request
+         card is data-request, NOT data-bag — dropped below the `if (!card) return`
+         it would be swallowed silently, buttons rendering and doing nothing. This
+         is the EXACT bug that bit the CASES section; do not move it down. */
+      var reqCard = btn.closest("[data-request]");
+      if (reqCard) {
+        var reqId = reqCard.getAttribute("data-request");
+        var reqWho = (reqCard.querySelector(".ksb-name") || {}).textContent || "this member";
+
+        if (act === "approve-request") {
+          if (!confirm("Approve and send a bag to " + reqWho + "?\n\nThis mints a comp bag in the send queue — check the address, then print. It's goodwill on top of her free bag, so it doesn't spend her entitlement or bill her.")) return;
+          withBusy(call({ action: "approve_request", request_id: reqId }), btn, "Approving...");
+          return;
+        }
+
+        if (act === "decline-request") {
+          if (!confirm("Decline this request?\n\nNo bag is sent and the request closes. Use this when it doesn't hold up.")) return;
+          withBusy(call({ action: "decline_request", request_id: reqId }), btn, "Declining...");
+          return;
+        }
+        return;
+      }
+
       var card = btn.closest("[data-bag]");
       if (!card) return;
       var bagId = card.getAttribute("data-bag");
@@ -679,6 +751,9 @@
 
       R + " .ksb-instr{margin:14px 0 0;font-size:14px;color:#75736E;line-height:1.4}",
       R + " .ksb-arrow{color:#D65A35;font-weight:600;margin-right:6px}",
+
+      /* the member's own words on a bag request — the line the operator reads to judge */
+      R + " .ksb-req-reason{margin:12px 0 0;font-size:15px;color:#1E1A19;line-height:1.4}",
 
       /* in-transit queue — the return-stamp cards (no address, no age colour) */
       R + " .ksb-transit-meta{margin-top:14px;background:#EEEFE3;border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:9px}",
