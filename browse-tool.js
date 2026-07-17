@@ -1391,12 +1391,13 @@ function showBagBlock(title, msg, cta) {
   }
 
   function shortageMessage(byClass) {
-    var parts = [];
-    if (byClass.clothing) parts.push(byClass.clothing + ' clothing');
-    if (byClass.toy) parts.push(byClass.toy + ' toy');
-    var total = (byClass.clothing || 0) + (byClass.toy || 0);
-    return 'You don\u2019t have enough credits for everything in your bag. Remove ' +
-           parts.join(' and ') + ' item' + (total > 1 ? 's' : '') + ' to check out the rest.';
+    // STANDING COPY RULE (Jennie, Session 41): a credit-shortage message NEVER says
+    // "remove an item." It points to send-a-bag AND mentions the credit pack, in
+    // every shortage message. byClass is intentionally unused now (the copy no
+    // longer enumerates what to remove); the signature is kept so the call site
+    // in finishCheckout doesn't move.
+    return 'Send in more items to earn more credits and you\u2019ll be ready to go. ' +
+           'If you see something you like and just can\u2019t wait, you can always buy a credit pack.';
   }
 
   // Usable credits per class from the claim-context pool (same source the picker uses).
@@ -1409,18 +1410,19 @@ function showBagBlock(title, msg, cta) {
     return by;
   }
 
-  // Zero usable credits in the shorted class(es): tell them how to GET credits
-  // (earn by sending a bag, or buy a Credit Pack) instead of "remove N items".
+  // Zero usable credits in the shorted class(es): point to send-a-bag (earn) and
+  // mention the credit pack, per the standing copy rule. ONE button (send a bag);
+  // the pack is plain text in the body, not a second CTA.
 function outOfCreditsBlock(zeroClasses) {
     var title = zeroClasses.length > 1 ? 'Out of credits'
               : zeroClasses[0] === 'toy' ? 'Out of toy credits'
               : 'Out of clothing credits';
     return {
       title: title,
-      msg: 'You\u2019re out of credits for this cycle. You\u2019ll earn more when your next bag is accepted, or you can add a Credit Pack to keep swapping now.',
+      msg: 'You\u2019ve picked more than your credits cover right now. Send in a swap bag to earn more. ' +
+           'If you see something you like and just can\u2019t wait, you can always buy a credit pack.',
       ctas: [
-        { label: 'Send in a swap bag', href: '/dashboard' },
-        { label: 'Buy a Credit Pack', href: '/dashboard' }
+        { label: 'Send in a swap bag', href: '/dashboard' }
       ]
     };
   }
@@ -1453,8 +1455,9 @@ function outOfCreditsBlock(zeroClasses) {
   var oc = outOfCreditsBlock(zeroClasses);
           showBagBlock(oc.title, oc.msg, oc.ctas);
         } else {
-          // has some credits, just over-bagged -> trim the bag
-          showBagBlock('A few too many items', shortageMessage(byClass));
+          // has some credits, just over-bagged -> point to send-a-bag + pack (one button)
+          showBagBlock('Almost there', shortageMessage(byClass),
+            { label: 'Send in a swap bag', href: '/dashboard' });
         }
       } else if (res.blocked.type === 'extra_swap_cap') {
         showBagBlock('Past this cycle\u2019s limit', 'You can swap up to 5 extra items per cycle. Edit your bag to check out.');
