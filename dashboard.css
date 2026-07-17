@@ -772,9 +772,9 @@
      beside a pill. ⚠ CLAUDE'S CALL ON PLACEMENT, NOT JENNIE'S. Reversible. */
   .ks-sb-stop {
     font-family: 'Quicksand', sans-serif;
-    font-weight: 500;
-    font-size: 14px;
-    line-height: 1.6;
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 1.4;
     color: #309359;
     text-align: center;
     max-width: 38ch;
@@ -1051,6 +1051,7 @@
     .ks-greet-headline,
     .ks-greet-headline.ks-card-value { font-size: 30px; line-height: 1.12; }
     .ks-greet-sub      { font-size: 17px; }
+    .ks-sb-stop        { font-size: 17px; }
     .ks-greet-cta      { margin-top: 14px; }   /* lever 2 — was 22 (inherited from the base rule) */
 /* ⚠ THE PILLS STACK ON A PHONE. Both are white-space:nowrap and each measures 200px
        against ~375px of usable width — they CANNOT share a line, and tightening them enough
