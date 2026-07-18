@@ -123,7 +123,18 @@
     if (document.getElementById('ks-closet-css')) return;
     var css =
       '@keyframes ks-closet-shimmer{0%{background-position:-450px 0}100%{background-position:450px 0}}' +
-      '#ks-closet-app{font-family:Quicksand,sans-serif;color:#1E1A19;}' +
+      /* THE MOUNT OWNS ITS OWN LAYOUT, ON PURPOSE.
+         Read live 2026-07-17: the embed's only parent is DIV.w-embed and the
+         mount carries no classes, so there is NO local Webflow surface to style.
+         ⚠⚠ DO NOT STYLE .w-embed IN THE DESIGNER — that class is on EVERY embed
+         site-wide and the change would leak to every one of them.
+         ⚠ The page base is #F2F1EB (site-wide Body, no class — global, leave it).
+         White panel on cream is the house treatment (same as the dashboard's
+         paper cards), not a workaround. */
+      '#ks-closet-app{font-family:Quicksand,sans-serif;color:#1E1A19;background:#fff;' +
+        'max-width:1120px;margin:0 auto;padding:28px 20px 34px;border-radius:18px;' +
+        'box-sizing:border-box;}' +
+      '@media (min-width:721px){#ks-closet-app{padding:40px 44px 48px;}}' +
       '#ks-closet-app .ks-closet-count{font-family:"Instrument Serif",Quicksand,serif;' +
         'font-size:30px;line-height:1.15;text-align:center;margin:0 0 22px;}' +
       '#ks-closet-app .ks-closet-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}' +
