@@ -1505,6 +1505,15 @@ function outOfCreditsBlock(zeroClasses) {
         }
 
         var st = ctx.member_status;
+        // get_member_state passes members.status through RAW ('pending', 'active',
+        // 'cancelled' -- the only values any live writer produces). The block and
+        // copy maps below speak the server's NORMALIZED enum, so map raw -> enum
+        // here, mirroring the server, or a pending/cancelled member falls through
+        // to a generic server block instead of her own drawer. ('paused' already
+        // matches literal and nothing writes it yet; 'canceled' is cheap insurance.
+        // Server stays the authoritative gate regardless.)
+        if (st === 'pending') st = 'pending_first_bag';
+        else if (st === 'cancelled' || st === 'canceled') st = 'cancelled_ended';
         if (st === 'paused' || st === 'cancelled_ended' || st === 'pending_first_bag') {
           setCheckoutBusy(btn, false);
           showBagBlock(GATE_TITLE[st], GATE_COPY[st], GATE_CTA[st]);
