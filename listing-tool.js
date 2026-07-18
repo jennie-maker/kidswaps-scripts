@@ -932,15 +932,25 @@
     }
 
     // ---- bin field hint ----
-    function hintEl() {
+    function hintEl(el) {
+      // edit-screen bin field is a bare input with no [data-field] wrapper:
+      // hang the hint on it as a following sibling.
+      if (el && el.id === "ksl-edit-bin") {
+        var eh = el.parentNode && el.parentNode.querySelector(".ksl-bin-hint");
+        if (!eh) {
+          eh = document.createElement("div"); eh.className = "ksl-bin-hint";
+          el.parentNode.insertBefore(eh, el.nextSibling);
+        }
+        return eh;
+      }
       var field = root.querySelector('[data-field="bin_location"]');
       if (!field) return null;
       var h = field.querySelector(".ksl-bin-hint");
       if (!h) { h = document.createElement("div"); h.className = "ksl-bin-hint"; field.appendChild(h); }
       return h;
     }
-    function setHint(html, tone) {
-      var h = hintEl(); if (!h) return;
+    function setHint(html, tone, el) {
+      var h = hintEl(el); if (!h) return;
       h.innerHTML = html || "";
       h.style.color = tone === "warn" ? "#ffcf6b" : tone === "ok" ? "#9be7a0" : "rgba(255,255,255,.65)";
       h.style.display = html ? "block" : "none";
@@ -950,28 +960,28 @@
     function onBinInput(el) {
       var v = (el.value || "").trim();
       pending = null;
-      if (!v) { setHint("", null); return; }
+      if (!v) { setHint("", null, el); return; }
       if (v.length === 1 && bandFor(v, itemType)) {
         var r = resolveBox(itemType, v);
         if (r && r.box) {
           pending = { code: r.box.code };
-          setHint("\u21B5 <b>" + r.box.code + "</b> \u00B7 room for " + r.box.remaining, "ok");
+          setHint("\u21B5 <b>" + r.box.code + "</b> \u00B7 room for " + r.box.remaining, "ok", el);
         } else if (r && r.full) {
-          setHint("All " + bandName(r.boxes[0].code) + " boxes full \u2014 type a full label to override", "warn");
+          setHint("All " + bandName(r.boxes[0].code) + " boxes full \u2014 type a full label to override", "warn", el);
         } else {
-          setHint("No box for that size yet", "warn");
+          setHint("No box for that size yet", "warn", el);
         }
         return;
       }
       var match = binFill.filter(function (b) { return b.code.toLowerCase() === v.toLowerCase(); })[0];
       if (match) {
         el.value = match.code;   // canonicalize case
-        if (match.capacity == null) setHint("<b>" + match.code + "</b> \u00B7 staging", "ok");
+        if (match.capacity == null) setHint("<b>" + match.code + "</b> \u00B7 staging", "ok", el);
         else setHint("<b>" + match.code + "</b> \u00B7 " + match.filled + "/" + match.capacity +
                      (match.is_full ? " (full \u2014 using anyway)" : " \u00B7 room " + match.remaining),
-                     match.is_full ? "warn" : "ok");
+                     match.is_full ? "warn" : "ok", el);
       } else {
-        setHint("Custom location", null);
+        setHint("Custom location", null, el);
       }
     }
     function commitPending(el) {
@@ -979,20 +989,25 @@
       el.value = pending.code; onBinInput(el); return true;
     }
 
-    // delegated wiring (bin field lives in the persistent root; survives re-renders)
+    // delegated wiring (bin field lives in the persistent root; survives re-renders).
+    // Matches BOTH the new-listing bin field ([data-key="bin_location"]) and the
+    // Manage-Item edit bin (#ksl-edit-bin) -> the re-bin twin (#L-bin-twin).
+    function isBinField(t) {
+      return t && t.matches && (t.matches('[data-key="bin_location"]') || t.matches("#ksl-edit-bin"));
+    }
     root.addEventListener("input", function (e) {
-      if (e.target && e.target.matches && e.target.matches('[data-key="bin_location"]')) onBinInput(e.target);
+      if (isBinField(e.target)) onBinInput(e.target);
     });
     root.addEventListener("keydown", function (e) {
-      if (e.key === "Enter" && e.target && e.target.matches && e.target.matches('[data-key="bin_location"]')) {
+      if (e.key === "Enter" && isBinField(e.target)) {
         if (pending) { e.preventDefault(); commitPending(e.target); }
       }
     });
     root.addEventListener("focusin", function (e) {
-      if (loaded && e.target && e.target.matches && e.target.matches('[data-key="bin_location"]')) loadBinFill();
+      if (loaded && isBinField(e.target)) loadBinFill();
     });
     root.addEventListener("focusout", function (e) {
-      if (e.target && e.target.matches && e.target.matches('[data-key="bin_location"]')) {
+      if (isBinField(e.target)) {
         var v = (e.target.value || "").trim();
         if (v.length === 1 && pending) commitPending(e.target);   // lone letter -> auto-commit on leave
       }
