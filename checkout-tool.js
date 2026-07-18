@@ -923,7 +923,11 @@
 
   function route(data, status) {
     if (data && data.ok === true && data.mode === "preview") { renderReceipt(data); return; }
-    if (data && data.ok === true && Array.isArray(data.claim_ids)) { renderSuccess(data); return; }
+    if (data && data.ok === true && Array.isArray(data.claim_ids)) {
+      try { sessionStorage.removeItem('ksBag'); } catch (e) {}  // clear browse bag on confirmed commit (hygiene, §1)
+      renderSuccess(data);
+      return;
+    }
     if (data && data.can_claim === false && data.block_reason) { renderBlock(data.block_reason, data.note); return; }
     if (data && data.failure) { renderFailure(data.failure, data.note); return; }
     if (status === 401 || status === 403) { renderError(friendlyError(data && data.error)); return; }
