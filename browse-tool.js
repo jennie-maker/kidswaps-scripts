@@ -1429,15 +1429,17 @@ function outOfCreditsBlock(zeroClasses) {
   // Runs the credit picker on a resolved item set and hands off to /checkout.
   // Shared by the no-removal path and the fail-open path of goCheckout.
   // Block copy for a bag holding items whose class isn't on the member's plan.
+  // Copy approved by Jennie (Session 43). Signature kept (classes/count unused)
+  // so the finishCheckout call site doesn't move -- same pattern as shortageMessage.
+  // NO CTA on purpose: the two remedies (remove it / switch plans) are named in
+  // prose, and there is no self-serve plan-switch path today (Stripe portal
+  // switching is OFF, #PLAN-UPGRADE-IN-CHECKOUT is unbuilt), so a button would be
+  // a dead end. When the in-checkout upgrade ships, add the button then.
   function offPlanBlock(classes, count) {
-    var word = (classes.indexOf('toy') >= 0 && classes.indexOf('clothing') >= 0) ? 'those items'
-             : (classes.indexOf('toy') >= 0) ? 'toys' : 'clothing';
-    var them = count > 1 ? 'them' : 'it';
     return {
       title: 'Not on your plan',
-      msg: 'Your plan doesn\u2019t include ' + word + '. Remove ' + them +
-           ' from your bag, or upgrade your plan to swap ' + word + '.',
-      cta: { label: 'Upgrade plan', href: '/dashboard' }
+      msg: 'This one\u2019s not covered by your current plan. You can take it ' +
+           'out of your bag, or switch to a plan that includes it.'
     };
   }
 
@@ -1463,7 +1465,7 @@ function outOfCreditsBlock(zeroClasses) {
         showBagBlock('Past this cycle\u2019s limit', 'You can swap up to 5 extra items per cycle. Edit your bag to check out.');
       } else if (res.blocked.type === 'off_plan') {
         var ob = offPlanBlock(res.blocked.classes, res.blocked.count);
-        showBagBlock(ob.title, ob.msg, ob.cta);
+        showBagBlock(ob.title, ob.msg);
       } else {
         showBagBlock('Something\u2019s off', 'Please edit your bag and try again.');
       }
