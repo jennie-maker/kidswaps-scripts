@@ -63,6 +63,9 @@
   // How many cards to paint. The COUNT is always the true total; the GRID is a
   // sample. Full-res originals are served (cost guard, below), so this is also
   // the page-weight control on a phone.
+  // ⚠ 18 divides evenly at BOTH breakpoints (3-up desktop = 6 rows, 2-up mobile
+  // = 9 rows) so there is never an orphaned partial row. Changing this number
+  // means re-checking it against both column counts.
   var GRID_LIMIT = 18;
 
   /* ---- COPY — ⚠ PLACEHOLDER, AWAITING JENNIE'S APPROVAL -------------------
@@ -124,12 +127,16 @@
       '#ks-closet-app .ks-closet-count{font-family:"Instrument Serif",Quicksand,serif;' +
         'font-size:30px;line-height:1.15;text-align:center;margin:0 0 22px;}' +
       '#ks-closet-app .ks-closet-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}' +
-      '@media (min-width:721px){#ks-closet-app .ks-closet-grid{grid-template-columns:repeat(4,1fr);gap:18px;}' +
+      '@media (min-width:721px){#ks-closet-app .ks-closet-grid{grid-template-columns:repeat(3,1fr);gap:18px;}' +
         '#ks-closet-app .ks-closet-count{font-size:34px;}}' +
       '#ks-closet-app .ks-closet-card{display:block;}' +
+      /* CONTAIN, not cover. A swap-bag photo is a whole garment shot on white —
+         cropping it cuts sleeves and hems off. The padding gives each piece the
+         same breathing room /browse has. ⚠ Do NOT "fix" this to object-fit:cover
+         for a tidier grid; the ragged bottoms are the garments being whole. */
       '#ks-closet-app .ks-closet-media{position:relative;aspect-ratio:3 / 4;border-radius:10px;' +
-        'overflow:hidden;background:#fff;}' +
-      '#ks-closet-app .ks-closet-media img{width:100%;height:100%;object-fit:cover;display:block;}' +
+        'overflow:hidden;background:#fff;padding:14px;box-sizing:border-box;}' +
+      '#ks-closet-app .ks-closet-media img{width:100%;height:100%;object-fit:contain;display:block;}' +
       '#ks-closet-app .ks-closet-ph{width:100%;height:100%;display:flex;align-items:center;' +
         'justify-content:center;background:#efe9dd;color:#9a9384;font-size:12px;text-align:center;}' +
       '#ks-closet-app .ks-closet-name{font-size:13.5px;font-weight:500;line-height:1.35;' +
