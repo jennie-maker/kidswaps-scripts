@@ -59,6 +59,58 @@
   .ks-coins-row { gap: 0; align-items: flex-start; }
   .ks-coin-unit + .ks-coin-unit { margin-left: -22px; }
 
+  /* ============================================================
+     THE ENGRAVED NUMERAL — RULED BY JENNIE, SESSION 53. IT REVERSES §DASH.2.
+
+     §DASH.2 rejected gold on the grounds that "the coin gold lives in the PNG art; a gold
+     hex would only ever duplicate it." THAT REJECTION WAS ABOUT DECORATION. Here the
+     fill's whole job is to make the numeral part of the metal instead of an ink label
+     lying on top of it, which is the case the rule never anticipated. Claude recommended
+     the palette-legal option (keep the ink, add one light edge) and JENNIE OVERRULED IT
+     KNOWINGLY. ⚠⚠ THIS IS THE ONLY SANCTIONED GOLD ON THE PAGE. Anywhere else it is
+     still rejected. DO NOT "restore" the ink fill here.
+
+     ⚠⚠ THIS ELEMENT IS AUTHORED IN WEBFLOW, NOT HERE. ks-coin-num is a Designer style,
+     absolutely positioned inside .ks-coin. This file has never owned it until now.
+     ⚠ READ LIVE, SESSION 54, NOT DERIVED: it wears ONE class (no combo base — the trap
+     that killed coins-higher lever 1 does NOT apply here), and it computes to 50px.
+     §DASH.3 records 26px and the Session 53 handoff records 36px. BOTH ARE WRONG; nobody
+     had ever read it. The shadow offsets below are calibrated to 50px — if the Designer
+     size ever changes, RESCALE THEM, they are not constants.
+
+     ⚠ TWO SELECTORS, ON PURPOSE (§0's combo rule). The descendant form is (0,2,0) so it
+     beats any single-class Webflow rule outright; the bare form is the survivor if the
+     coin markup is ever reshaped. KEEP BOTH.
+
+     ⚠⚠ DOING THIS HERE RATHER THAN IN THE DESIGNER CONTAINS THE BLAST RADIUS, AND THAT
+     IS A REASON, NOT A CONVENIENCE. dashboard.css loads on /dashboard ONLY, so the
+     checkout coin chip (#ksc-bank), which may reuse this class, IS NOT TOUCHED. Editing
+     the Designer style WOULD have reached it. If checkout should ever match, that is a
+     separate and deliberate decision, not a side effect of this one.
+
+     ⚠⚠ LIGHT SOURCE = TOP-LEFT. The DARK shadow sits on the light side and the pale one
+     opposite — that inversion is what reads as CUT INTO the metal rather than raised off
+     it. It must match the coin PNG's own lighting or the numeral reads as pasted on.
+     TO FLIP IT: swap the sign on all four offsets (bottom-right light), or zero the
+     horizontals for straight-from-above.
+
+     ⚠ THE NUMERAL FADES IN AT 460ms as part of the tumble (COIN_SPIN cross-fades it at
+     frame 6). A text-shadow rides along with opacity correctly — but JUDGE THE ENTRANCE,
+     not only the resting frame.
+
+     ⚠ THE HONEST COST, FLAGGED NOT HIDDEN: an engraved numeral has LOWER CONTRAST than
+     ink, and this is the single most important number on the page. If it reads as hard
+     to see at a glance on a real phone, darken the fill first (a deeper gold keeps the
+     engraving), and only then reconsider the treatment.
+     ============================================================ */
+  .ks-coin-num,
+  .ks-coin .ks-coin-num {
+    color: #A9761C;
+    text-shadow:
+      -1.5px -1.5px 1px rgba(88, 56, 6, 0.55),
+       1.5px  1.5px 1px rgba(255, 244, 208, 0.8);
+  }
+
   /* Savings line — grouped under the credit bank */
   .ks-savings-block { max-width: 420px; margin: 18px auto 0; }
 
@@ -869,15 +921,72 @@
 
   /* CHECK 1's STOP line. It takes the button's SLOT — two sentences cannot sit in a flex row
      beside a pill. ⚠ CLAUDE'S CALL ON PLACEMENT, NOT JENNIE'S. Reversible. */
+  /* ============================================================
+     THE BAG-IN-MOTION STOP LINE — A CARD, RULED BY JENNIE, SESSION 53.
+
+     WHAT IT IS: the Check-1 branch of the send-a-bag fork (§SB). A member with a bag
+     already out gets this INSTEAD of a button. It is the single most-seen state of that
+     feature, because the normal loop keeps a bag in motion almost all the time.
+
+     ⚠⚠ IT MOVES THE GREEN FROM THE TEXT TO THE RULE — A PARTIAL REVERSAL OF SESSION 42,
+     RULED KNOWINGLY. Session 42 made this line Quicksand 600 / 20px / #309359 to stop it
+     reading as a footnote, and that worked. It still had no SURFACE, so it read as loose
+     text floating under the greeting. The card gives it one; the colour stops having to
+     carry the message alone. THE MESSAGE DOES NOT GET QUIETER — size and weight are
+     unchanged, only the fill goes to ink and the green becomes the rule.
+
+     ⚠ SQUARE ON THE RULED EDGE (radius 0 on the left). A 4px rule inside a rounded corner
+     fights the curve and reads as a printing error.
+     ⚠ WHITE + 1px #EEEFE3, matching .ks-find's card treatment — no new hex, and #309359 is
+     the brand-file green already live on this element since Session 42.
+
+     ⚠⚠ THIS ELEMENT SITS OUTSIDE .ks-hero-card, IN THE GREETING BLOCK, WHERE NOTHING ELSE
+     HAS A SURFACE. That makes it the only card in that zone. JUDGE IT IN PLACE, on the
+     live page — it may read as deliberately singled out, or as a lone box. It was ruled
+     with that named and accepted.
+
+     ⚠ THE ICON IS NEW VOCABULARY FOR THIS AREA — the page carries no icons near the
+     greeting today. IT IS DELIBERATELY ONE SELF-CONTAINED BLOCK so it can be dropped
+     without touching anything else: delete the ::before rule (and its mobile sibling) and
+     set padding-left back to 18px / 14px. The card carries the intent without it.
+     ⚠ INLINE SVG, NOT AN ICON FONT — no new dependency, no network request, and NO JS
+     CHANGE, so this whole edit stays a CSS-only diff with no dashboard-tool.js bump.
+     ⚠ POSITIONED, NOT FLEXED, ON PURPOSE: .ks-sb-stop's contents are written by
+     paintBagButton(). A flex container would turn any future second child into a second
+     flex item and reflow the card silently. Absolute positioning cannot be surprised by
+     the markup.
+     ⚠ THE ICON IS DECORATIVE — the sentence says everything. It is a background image on
+     a pseudo-element, so it is invisible to a screen reader by construction. Correct;
+     do not "fix" it by giving it alt text or a content string.
+
+     ⚠⚠ THE 17px MOBILE OVERRIDE LIVES IN @media (max-width:600px) AND MOVED WITH THIS
+     RULE — the padding and the icon offsets are down there beside it. CHANGE ONE, CHECK
+     THE OTHER.
+     ============================================================ */
   .ks-sb-stop {
+    position: relative;
     font-family: 'Quicksand', sans-serif;
     font-weight: 600;
     font-size: 20px;
     line-height: 1.4;
-    color: #309359;
-    text-align: center;
-    max-width: 38ch;
+    color: #1E1A19;
+    text-align: left;
+    max-width: 42ch;
     margin: 14px auto 0;
+    padding: 14px 18px 14px 47px;
+    background: #FFFFFF;
+    border: 1px solid #EEEFE3;
+    border-left: 4px solid #309359;
+    border-radius: 0 14px 14px 0;
+  }
+  .ks-sb-stop::before {
+    content: "";
+    position: absolute;
+    left: 18px;
+    top: 17px;
+    width: 20px;
+    height: 20px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23309359' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0'/%3E%3Cpath d='M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0'/%3E%3Cpath d='M5 17h-2v-11a1 1 0 0 1 1 -1h9v12m-4 0h6m4 0h2v-6h-8m0 -5h5l3 5'/%3E%3C/svg%3E") center / contain no-repeat;
   }
   /* ---------- IN-CARD SECTION HEADINGS ----------
      ⚠⚠ THIS BASE RULE HAS BEEN LOST TWICE, FROM OPPOSITE DIRECTIONS. It was written a
@@ -1150,7 +1259,10 @@
     .ks-greet-headline,
     .ks-greet-headline.ks-card-value { font-size: 30px; line-height: 1.12; }
     .ks-greet-sub      { font-size: 17px; }
-    .ks-sb-stop        { font-size: 17px; }
+    /* ⚠ THE CARD'S PADDING AND ITS ICON OFFSETS TRAVEL WITH THIS SIZE (Session 54).
+       Dropping the font alone would leave desktop padding around phone-sized text. */
+    .ks-sb-stop        { font-size: 17px; padding: 12px 14px 12px 42px; }
+    .ks-sb-stop::before { left: 14px; top: 14px; width: 18px; height: 18px; }
     .ks-greet-cta      { margin-top: 14px; }   /* lever 2 — was 22 (inherited from the base rule) */
 /* ⚠ THE PILLS STACK ON A PHONE. Both are white-space:nowrap and each measures 200px
        against ~375px of usable width — they CANNOT share a line, and tightening them enough
