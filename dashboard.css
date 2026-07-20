@@ -659,6 +659,105 @@
   .ks-account-panel .ks-addr-status:not(:empty) { margin-top: 10px; }
   .ks-account-panel .ks-addr-saved:not(:empty)  { margin-top: 10px; color: #75736E; }
 
+/* ---------- ADDRESS CHECK: THE CONFIRM STEP (§ADDR-VERIFY, Session 51) ---------- */
+  /* Shown ONLY when the server answers needs_confirm. Three codes share one block:
+     corrected (shows both candidates), flagged and not_found (message only).
+     ⚠⚠ SHE CAN ALWAYS PROCEED. Every variant carries a save-anyway. Shippo flags real
+     occupied addresses as undeliverable and cannot see a missing apartment at all, so a
+     hard block would lock a member out of an address that is perfectly fine.
+     ZERO NEW HEXES. */
+
+  .ks-account-panel .ks-addr-confirm { margin-top: 14px; }
+
+  .ks-account-panel .ks-addr-confirm-msg {
+    font-size: 14px;
+    line-height: 1.5;
+    color: #1E1A19;
+  }
+
+  /* The two candidates, corrected only. Bordered so the pair reads as ONE thing to
+     choose between rather than two loose paragraphs. */
+  .ks-account-panel .ks-addr-choices {
+    margin-top: 12px;
+    border: 1px solid #EEEFE3;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .ks-account-panel .ks-addr-choice { padding: 10px 12px; }
+  .ks-account-panel .ks-addr-choice + .ks-addr-choice { border-top: 1px solid #EEEFE3; }
+
+  .ks-account-panel .ks-addr-choice-label {
+    display: block;
+    font-size: 12px;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: #75736E;
+    margin-bottom: 4px;
+  }
+
+  /* ⚠⚠ THIS RENDERS THE EXACT STRING THAT WILL BE STORED, VERBATIM. Shippo answers in
+     capitals because that is how USPS prints labels; if it does, she sees capitals and
+     chooses knowing that. DO NOT PRETTIFY IT HERE. Showing her one thing and saving
+     another is the single failure this whole block exists to prevent. */
+  .ks-account-panel .ks-addr-choice-value {
+    font-size: 14px;
+    line-height: 1.5;
+    color: #1E1A19;
+  }
+
+  .ks-account-panel .ks-addr-confirm-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+
+  /* Primary = coral OUTLINE pill. Copies .ks-addr-save's LOOK, not its NAME — this
+     button is not "save", it is "use this one". Outline, never solid (§DASH.2). */
+  .ks-account-panel .ks-addr-confirm-go {
+    background: none;
+    appearance: none;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: #D65A35;
+    border: 1px solid #D65A35;
+    border-radius: 999px;
+    padding: 8px 18px;
+    cursor: pointer;
+  }
+  .ks-account-panel .ks-addr-confirm-go:hover { color: #BE4C2E; border-color: #BE4C2E; }
+  .ks-account-panel .ks-addr-confirm-go:focus-visible {
+    outline: 2px solid #D65A35;
+    outline-offset: 2px;
+  }
+  .ks-account-panel .ks-addr-confirm-go:disabled {
+    color: #75736E;
+    border-color: #75736E;
+    cursor: default;
+  }
+
+  /* Secondary = quiet text. It is a REAL choice, not a way out, but it must not
+     compete with the recommended one. */
+  .ks-account-panel .ks-addr-confirm-alt {
+    background: none;
+    border: none;
+    appearance: none;
+    padding: 0;
+    font-family: inherit;
+    font-size: 14px;
+    color: #75736E;
+    cursor: pointer;
+  }
+  .ks-account-panel .ks-addr-confirm-alt:hover { color: #1E1A19; }
+  .ks-account-panel .ks-addr-confirm-alt:focus-visible {
+    outline: 2px solid #D65A35;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  .ks-account-panel .ks-addr-confirm-alt:disabled { color: #75736E; cursor: default; }
+
   /* THE PAGE GRID (§DASH.12). 2/3 MAIN + 1/3 RAIL. MAIN: bank -> closet -> how-credits.
      RAIL: contribution -> activity -> review. ⚠ THE RAIL RETIRED .is-solo — a missing card
      just shortens a column; there is no track to collapse. .ks-split/.ks-2up are GONE. */
