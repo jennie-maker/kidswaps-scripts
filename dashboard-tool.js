@@ -1563,6 +1563,9 @@ function paintCloset(s) {
               '<button type="button" class="ks-addr-save">Save address</button>' +
               '<button type="button" class="ks-addr-cancel">Cancel</button>' +
             '</div>' +
+            // ⚠ EMPTY AND IN THE DOM, never absent. addrShowConfirm fills it,
+            // addrConfirmClear empties it. Nothing creates it mid-flight.
+            '<div class="ks-addr-confirm" style="display:none"></div>' +
             '<div class="ks-addr-status" aria-live="polite" role="status"></div>';
     form.innerHTML = html;
 
@@ -1571,7 +1574,10 @@ function paintCloset(s) {
 
     edit.addEventListener('click', addrOpen);
     form.querySelector('.ks-addr-cancel').addEventListener('click', addrClose);
-    form.querySelector('.ks-addr-save').addEventListener('click', addrSave);
+    // ⚠ WRAPPED, NOT PASSED BY REFERENCE. addEventListener hands the click Event as the
+    // first argument, and addrSave's first argument is now the confirm mode - a bare
+    // reference would send an Event where null/"mine"/"suggested" belongs.
+    form.querySelector('.ks-addr-save').addEventListener('click', function () { addrSave(null); });
   }
 
   function addrDisplayRows(show) {
@@ -1598,6 +1604,7 @@ function paintCloset(s) {
       inp.value = sh[inp.getAttribute('data-addr')] || '';
     });
     addrStatus('', true);
+    addrConfirmClear();
     addrDisplayRows(false);
     card.querySelector('.ks-addr-edit').style.display = 'none';
     card.querySelector('.ks-addr-form').style.display = '';
@@ -1614,29 +1621,183 @@ function paintCloset(s) {
     addrDisplayRows(true);
     renderShipping(_state && _state.shipping);   // restore the true display state
     addrStatus('', true);
+    addrConfirmClear();
     addrResize();
   }
 
-  function addrSave() {
+  // ================= THE CONFIRM STEP (§ADDR-VERIFY, Session 51) =================
+  // The server checks the address against Shippo BEFORE it writes anything. On a first
+  // pass it answers HTTP 200 with {needs_confirm, code, suggestion, typed} and NO ok key.
+  //
+  // ⚠⚠ WE ONLY EVER *ASK*. There is no branch below that refuses her a save. Shippo flags
+  // real, occupied addresses as not receiving deliveries (it does this to the operator's
+  // own business address) and it cannot see a missing apartment number at all. A hard
+  // block would strand a member on an address that is perfectly fine.
+  //
+  // ⚠⚠ THIS IS THE HALF THAT WAS MISSING, AND ITS ABSENCE WAS NOT A GAP - IT WAS A BREAK.
+  // The server half shipped without it, so needs_confirm fell through addrSave's ok test,
+  // found no .error, and landed on "That didn't save. Try again, or email us." A member
+  // whose address was corrected or flagged could not save it at all, and "try again" sent
+  // her round the identical loop. Do not remove this branch.
+
+  // The body from the first pass, held so the confirm call re-sends EXACTLY what she typed.
+  // ⚠ WE NEVER SEND THE SUGGESTION BACK UP. The server re-derives it from Shippo, so a
+  // hand-rolled request cannot write an address Shippo never actually suggested.
+  var ADDR_PENDING = null;
+
+  // ⚠ COPY APPROVED BY JENNIE, SESSION 51. Do not redraft without her.
+  var ADDR_ASK = {
+    corrected: {
+      msg: 'We found a slightly different version of your address. Which one should we use?',
+      go:  'Use this one',
+      alt: 'Keep what I typed',
+      altMode: 'mine'
+    },
+    flagged: {
+      msg: 'The postal service has a note on this address. It may still be fine to mail to.',
+      go:  'Save anyway',
+      alt: 'Let me edit it',
+      altMode: null
+    },
+    not_found: {
+      msg: 'We couldn\u2019t find this address. That can happen with newer homes. Check it over, or save it as is.',
+      go:  'Save anyway',
+      alt: 'Let me edit it',
+      altMode: null
+    }
+  };
+
+  // One address, rendered as the lines that will ACTUALLY BE STORED.
+  // ⚠⚠ line2 IS CARRIED THROUGH BOTH CANDIDATES, UNCHANGED. Shippo never returns a unit
+  // and a correction never touches hers - rendering it in both is how she can SEE that
+  // accepting a suggestion is not going to erase her apartment number. An apartment is a door.
+  // ⚠ NOT PRETTIFIED. Shippo answers in capitals; if it does, she sees capitals and chooses
+  // knowing that. Showing one string and storing another is the failure this exists to stop.
+  function addrFmt(a, line2) {
+    var out = [esc(a.line1)];
+    if (line2) out.push(esc(line2));
+    out.push(esc(a.city + ', ' + a.state + ' ' + a.zip));
+    return out.join('<br>');
+  }
+
+  function addrConfirmClear() {
     var card = addrCard();
     if (!card) return;
-    var saveBtn = card.querySelector('.ks-addr-save');
+    var box  = card.querySelector('.ks-addr-confirm');
+    var acts = card.querySelector('.ks-addr-actions');
+    if (box)  { box.innerHTML = ''; box.style.display = 'none'; }
+    if (acts) acts.style.display = '';
+    ADDR_PENDING = null;
+    addrResize();
+  }
 
-    var body = {};
-    card.querySelectorAll('.ks-addr-input').forEach(function (inp) {
-      body[inp.getAttribute('data-addr')] = (inp.value || '').trim();
-    });
+  function addrShowConfirm(res) {
+    var card = addrCard();
+    if (!card) return;
+    var cfg = ADDR_ASK[res.code];
+    // ⚠ FAIL SAFE ON AN UNKNOWN CODE. A future server code we have no words for must never
+    // paint an empty box with two unlabelled buttons.
+    if (!cfg) { addrStatus('That didn\u2019t save. Try again, or email us.', false); return; }
 
-    // Client guard, so she is not made to wait for a round trip to be told a field is blank.
-    // ⚠ The SERVER is still authoritative and is ALL-OR-NOTHING: a blank required field
-    // writes NOTHING (a half-applied address erases one we could previously mail to).
-    if (!body.line1 || !body.city || !body.state || !body.zip) {
-      addrStatus('We need a street, city, state and ZIP to mail your bag.', false);
-      return;
+    var box  = card.querySelector('.ks-addr-confirm');
+    var acts = card.querySelector('.ks-addr-actions');
+    if (!box) return;
+
+    var typed = res.typed || {};
+    var html  = '<div class="ks-addr-confirm-msg">' + esc(cfg.msg) + '</div>';
+
+    if (res.code === 'corrected' && res.suggestion) {
+      html += '<div class="ks-addr-choices">' +
+                '<div class="ks-addr-choice">' +
+                  '<span class="ks-addr-choice-label">You typed</span>' +
+                  '<div class="ks-addr-choice-value">' + addrFmt(typed, typed.line2) + '</div>' +
+                '</div>' +
+                '<div class="ks-addr-choice">' +
+                  '<span class="ks-addr-choice-label">We found</span>' +
+                  '<div class="ks-addr-choice-value">' + addrFmt(res.suggestion, typed.line2) + '</div>' +
+                '</div>' +
+              '</div>';
     }
 
-    saveBtn.disabled = true;
-    saveBtn.textContent = 'Saving\u2026';
+    html += '<div class="ks-addr-confirm-actions">' +
+              '<button type="button" class="ks-addr-confirm-go">' + esc(cfg.go) + '</button>' +
+              '<button type="button" class="ks-addr-confirm-alt">' + esc(cfg.alt) + '</button>' +
+            '</div>';
+
+    box.innerHTML = html;
+    box.style.display = '';
+    // ⚠ THE FORM'S OWN SAVE ROW HIDES WHILE THIS IS UP. Two live save paths on one card is
+    // how she ends up saving the thing she just declined.
+    if (acts) acts.style.display = 'none';
+
+    box.querySelector('.ks-addr-confirm-go').addEventListener('click', function () {
+      addrSave(res.code === 'corrected' ? 'suggested' : 'mine');
+    });
+    box.querySelector('.ks-addr-confirm-alt').addEventListener('click', function () {
+      if (cfg.altMode) { addrSave(cfg.altMode); return; }
+      addrConfirmClear();                       // "Let me edit it" - back to the fields
+      var first = card.querySelector('.ks-addr-input');
+      if (first) first.focus();
+    });
+
+    // ⚠⚠ RESIZE BEFORE FOCUS. This card lives in an accordion body frozen at the height it
+    // had when it opened, so anything that grows inside it is clipped and renders perfectly
+    // below the visible edge (§DASH.9). Focusing something she cannot see is worse than not
+    // focusing at all.
+    addrResize();
+    box.querySelector('.ks-addr-confirm-go').focus();
+  }
+
+  // Busy state has to cover THREE buttons now, because the save can be fired from the form
+  // row or from the confirm row and only one of them is on screen at a time.
+  function addrBusy(on) {
+    var card = addrCard();
+    if (!card) return;
+    var save = card.querySelector('.ks-addr-save');
+    var go   = card.querySelector('.ks-addr-confirm-go');
+    var alt  = card.querySelector('.ks-addr-confirm-alt');
+    if (save) { save.disabled = on; save.textContent = on ? 'Saving\u2026' : 'Save address'; }
+    if (go) {
+      go.disabled = on;
+      if (on) { go.setAttribute('data-label', go.textContent); go.textContent = 'Saving\u2026'; }
+      else if (go.getAttribute('data-label')) { go.textContent = go.getAttribute('data-label'); }
+    }
+    if (alt) alt.disabled = on;
+  }
+
+  // confirm === null        -> first pass, she has not been asked yet
+  // confirm === 'mine'      -> save exactly what she typed
+  // confirm === 'suggested' -> save Shippo's version (the server re-derives it)
+  function addrSave(confirm) {
+    var card = addrCard();
+    if (!card) return;
+
+    var body;
+    if (confirm) {
+      // ⚠ RE-SEND THE ORIGINAL TYPED VALUES. Never the suggestion.
+      if (!ADDR_PENDING) { addrStatus('That didn\u2019t save. Try again, or email us.', false); return; }
+      body = {};
+      for (var k in ADDR_PENDING) {
+        if (Object.prototype.hasOwnProperty.call(ADDR_PENDING, k)) body[k] = ADDR_PENDING[k];
+      }
+      body.confirm = confirm;
+    } else {
+      body = {};
+      card.querySelectorAll('.ks-addr-input').forEach(function (inp) {
+        body[inp.getAttribute('data-addr')] = (inp.value || '').trim();
+      });
+
+      // Client guard, so she is not made to wait for a round trip to be told a field is blank.
+      // ⚠ The SERVER is still authoritative and is ALL-OR-NOTHING: a blank required field
+      // writes NOTHING (a half-applied address erases one we could previously mail to).
+      if (!body.line1 || !body.city || !body.state || !body.zip) {
+        addrStatus('We need a street, city, state and ZIP to mail your bag.', false);
+        return;
+      }
+      ADDR_PENDING = body;
+    }
+
+    addrBusy(true);
     addrStatus('', true);
 
     var token = window.$memberstackDom.getMemberCookie();   // bare string, never a promise
@@ -1653,10 +1814,17 @@ function paintCloset(s) {
     })
       .then(function (r) { return r.json().then(function (j) { return { status: r.status, body: j }; }); })
       .then(function (res) {
-        saveBtn.disabled = false;
-        saveBtn.textContent = 'Save address';
+        addrBusy(false);
+
+        // ⚠⚠ THIS TEST COMES FIRST AND MUST STAY FIRST. needs_confirm arrives at 200 with
+        // no ok key; below the ok test it falls straight through to the failure line.
+        if (res.status === 200 && res.body && res.body.needs_confirm) {
+          addrShowConfirm(res.body);
+          return;
+        }
 
         if (res.status === 200 && res.body && res.body.ok) {
+          addrConfirmClear();
           // ⚠ RE-RENDER FROM THE FN'S FRESH READ. It returns what the DB HOLDS, not what it
           // was handed. Never re-render from the form's own inputs (§ADDR).
           if (_state) _state.shipping = res.body.shipping || {};
@@ -1672,7 +1840,14 @@ function paintCloset(s) {
         }
 
         var err = (res.body && res.body.error) || '';
-        if (err === 'missing_required') {
+        if (err === 'suggestion_expired') {
+          // Shippo answered on the first pass and failed on the confirm call, so the
+          // suggestion she just accepted is no longer in hand. The server refuses rather
+          // than quietly writing her original typo and reporting success. "Try again" is
+          // literally the right instruction: a retry re-runs the check and re-asks her.
+          addrConfirmClear();
+          addrStatus('That didn\u2019t save. Try again, or email us.', false);
+        } else if (err === 'missing_required') {
           addrStatus('We need a street, city, state and ZIP to mail your bag.', false);
         } else if (err === 'bad_state') {
           addrStatus('State needs to be two letters, like CA.', false);
@@ -1681,8 +1856,7 @@ function paintCloset(s) {
         }
       })
       .catch(function () {
-        saveBtn.disabled = false;
-        saveBtn.textContent = 'Save address';
+        addrBusy(false);
         addrStatus('That didn\u2019t save. Try again, or email us.', false);
       });
   }
