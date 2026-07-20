@@ -271,7 +271,28 @@
       '#ks-detail-root .ks-detail-cond{display:inline-flex;align-items:center;gap:5px;font-weight:400;font-size:15px;}' +
       '#ks-detail-root .ks-detail-cond-ic{display:inline-flex;color:#6a5f57;}' +
       '#ks-detail-root .ks-detail-retail{display:block;margin:7px 0 0;font-size:14px;font-weight:400;color:#7d7268;}' +
-      '#ks-detail-root .ks-detail-extras{margin:7px 0 0;font-size:14px;font-weight:400;color:#7d7268;}';
+      '#ks-detail-root .ks-detail-extras{margin:7px 0 0;font-size:14px;font-weight:400;color:#7d7268;}' +
+
+      /* FILTER RAIL -- a heading and an option were both Quicksand 13px with no
+         tracking, no case change and NO SPACE BENEATH THE HEADING. Separated by
+         weight + case + tracking + breathing room. NO COLOUR CHANGE: rail text
+         computes #270F0B, a near-miss of ink #1E1A19, which is flagged in the
+         build doc and is its own decision -- do not fix it here.
+         Specificity is id + class + class so it beats the per-page head-box
+         rules (bare class) WITHOUT !important. */
+      '#ks-filter-rail .ks-flt-group > .ks-flt-grouplabel{font-size:12px;font-weight:700;' +
+        'letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px;}' +
+      '#ks-filter-rail .ks-flt-group.ks-flt-collapsed > .ks-flt-grouplabel{margin-bottom:0;}' +
+      '#ks-filter-rail .ks-flt-group > .ks-flt-groupbody .ks-flt-rowtext{font-weight:400;}' +
+      '#ks-filter-rail .ks-flt-group{margin-bottom:16px;}' +
+
+      /* COUNT LINE -- centred, and the gap above it closed. Only 16px of the
+         measured 86px was ours; the rest is Webflow layout between two sections,
+         which is why these two Webflow classes are targeted here. TUNE LIVE. */
+      '#ks-search{margin-bottom:10px;}' +
+      '.filter-bar-section{padding-bottom:0;margin-bottom:0;}' +
+      '.inventory-main{padding-top:0;margin-top:0;}' +
+      '#ks-browse-app .ks-browse-count{text-align:center;margin:0 0 14px;}';
     var s = document.createElement('style');
     s.id = 'ks-util-css';
     s.textContent = css;
@@ -401,7 +422,7 @@
     return String(s == null ? '' : s).toLowerCase().replace(/\s+/g, ' ').trim();
   }
   function searchBlob(it) {
-    return [it.brand, it.item_name, it.category].filter(Boolean).join(' ').toLowerCase();
+    return [it.brand, it.item_name, it.category, it.sku].filter(Boolean).join(' ').toLowerCase();   // sku: 'KS-00275' and '275' both hit
   }
   function applySearch(list) {
     var q = normSearch(SEARCH);
@@ -1863,10 +1884,20 @@ function outOfCreditsBlock(zeroClasses) {
   };
 
   var RAIL_CONFIG = {
-    all:      ['brand', 'occasion', 'tier'],
-    clothing: ['brand', 'category', 'color', 'gender', 'size', 'occasion', 'tier'],
-    toy:      ['brand', 'age', 'wash', 'occasion', 'tier']
+    all:      ['brand', 'tier', 'size', 'age', 'category', 'occasion'],
+    clothing: ['brand', 'category', 'color', 'gender', 'size', 'tier', 'occasion'],
+    toy:      ['brand', 'age', 'wash', 'tier', 'occasion']
   };
+
+  /* /browse carries BOTH size (clothing values) and age (toy values). Each facet's
+     `order` array is a WHITELIST -- facetOptions keeps only present values that
+     appear in it -- so SIZE_ORDER can only ever yield clothing sizes and AGE_ORDER
+     can only ever yield toy age bands. The two lists cannot mix, and that is what
+     makes the split free rather than a new facet.
+     THEY ARE MUTUALLY EXCLUSIVE AT SELECTION TIME (see onFacetChange): facets
+     combine with AND, and nothing is both a 2T and a Toddler-aged toy, so holding
+     one from each could only ever return zero rows. */
+  var EXCLUSIVE_PAIRS = { size: 'age', age: 'size' };
   function activeFacetKeys() { return RAIL_CONFIG[BROWSE_TYPE] || RAIL_CONFIG.all; }
 
   // split a stored ", "-delimited value into clean tokens (toy age: "Toddler, Preschool")
@@ -2055,7 +2086,7 @@ function outOfCreditsBlock(zeroClasses) {
 
     activeFacetKeys().forEach(function (key, idx) {
       var def = FACETS[key];
-      buildGroup(rail, key, def.title, facetOptions(key), true, true);
+      buildGroup(rail, key, def.title, facetOptions(key), true, false);   // startOpen=false: EVERY group collapsed on load
     });
 
     var apply = el('button', 'ks-flt-apply', '');   // mobile-only (CSS)
@@ -2074,6 +2105,18 @@ function outOfCreditsBlock(zeroClasses) {
     var idx   = arr.indexOf(cb.value);
     if (cb.checked && idx === -1) arr.push(cb.value);
     else if (!cb.checked && idx !== -1) arr.splice(idx, 1);
+
+    // MUTUALLY EXCLUSIVE FACETS -- ticking one clears the other rather than
+    // letting a member hold a combination that can only return zero rows.
+    // Clears FILTERS *and* the live checkboxes: the rail is built once
+    // (RAIL_BUILT) so an unticked box will not repaint itself.
+    var other = EXCLUSIVE_PAIRS[facet];
+    if (cb.checked && other && FILTERS[other] && FILTERS[other].length) {
+      FILTERS[other].length = 0;
+      var boxes = document.querySelectorAll('.ks-flt-cb[data-facet="' + other + '"]');
+      for (var b = 0; b < boxes.length; b++) boxes[b].checked = false;
+    }
+
     applyAndRender();
   }
 
