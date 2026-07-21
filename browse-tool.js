@@ -285,6 +285,7 @@
       '#ks-filter-rail .ks-flt-group.ks-flt-collapsed > .ks-flt-grouplabel{margin-bottom:0;}' +
       '#ks-filter-rail .ks-flt-group > .ks-flt-groupbody .ks-flt-rowtext{font-weight:400;}' +
       '#ks-filter-rail .ks-flt-group{margin-bottom:16px;}' +
+      '#ks-filter-rail .ks-flt-head > .ks-flt-clear{font-weight:700;text-decoration:underline;}' +
 
       /* COUNT LINE -- centred, and the gap above it closed.
          MEASURED LIVE, NOT DERIVED (Session 55). The 70px above the count is a
@@ -1885,7 +1886,7 @@ function outOfCreditsBlock(zeroClasses) {
 
   var FACETS = {
     tier:     { field: 'tier',            title: 'Tier',        match: 'lower',  order: ['essentials', 'elevated', 'special'], display: tierLabel,   urlLower: true },
-    brand:    { field: 'brand',           title: 'Brand',       match: 'exact',  order: null,       display: ident,       showAll: true, pin: ['Nike', 'Janie and Jack', 'Gap'] },
+    brand:    { field: 'brand',           title: 'Brand',       match: 'exact',  order: null,       display: ident,       showAll: true },   // pin list REMOVED Session 55 -- falls back to the default 4-alphabetical preview + Show all (N). buildGroup's pin branch is still there and fires for any facet that declares one.
     gender:   { field: 'gender_style',    title: 'Gender',      match: 'exact',  order: null,       display: genderLabel },
     color:    { field: 'color',           title: 'Color',       match: 'exact',  order: null,       display: ident,       showAll: true },
     size:     { field: 'size',            title: 'Size',        match: 'exact',  order: SIZE_ORDER, display: ident,       rowFilter: function (it) { return it.category !== 'Shoes'; } },
@@ -1896,9 +1897,9 @@ function outOfCreditsBlock(zeroClasses) {
   };
 
   var RAIL_CONFIG = {
-    all:      ['brand', 'tier', 'size', 'age', 'category', 'occasion'],
-    clothing: ['brand', 'category', 'color', 'gender', 'size', 'tier', 'occasion'],
-    toy:      ['brand', 'age', 'wash', 'tier', 'occasion']
+    all:      ['category', 'brand', 'tier', 'size', 'age', 'occasion'],
+    clothing: ['category', 'brand', 'color', 'gender', 'size', 'tier', 'occasion'],
+    toy:      ['brand', 'age', 'wash', 'tier', 'occasion']   // no category group on toys
   };
 
   /* /browse carries BOTH size (clothing values) and age (toy values). Each facet's
@@ -2262,7 +2263,7 @@ function outOfCreditsBlock(zeroClasses) {
     // (attached in wireMobileToggle); visibility stays governed by its own
     // breakpoint CSS — hidden on desktop (search fills the row), shown on mobile.
     var mft = document.querySelector('.mobile-filter-toggle');
-    if (mft) mount.appendChild(mft);
+    if (mft) mount.insertBefore(mft, box);   // BEFORE the box: Filters sits LEFT of search on mobile. Desktop unaffected -- its own breakpoint CSS hides it there.
 
     mountBagButton(mount);
 
