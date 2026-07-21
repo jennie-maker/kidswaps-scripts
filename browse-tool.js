@@ -286,12 +286,21 @@
       '#ks-filter-rail .ks-flt-group > .ks-flt-groupbody .ks-flt-rowtext{font-weight:400;}' +
       '#ks-filter-rail .ks-flt-group{margin-bottom:16px;}' +
 
-      /* COUNT LINE -- centred, and the gap above it closed. Only 16px of the
-         measured 86px was ours; the rest is Webflow layout between two sections,
-         which is why these two Webflow classes are targeted here. TUNE LIVE. */
+      /* COUNT LINE -- centred, and the gap above it closed.
+         MEASURED LIVE, NOT DERIVED (Session 55). The 70px above the count is a
+         FLEX GAP on .inventory-layout (display:flex, gap:50px). It is not margin
+         or padding on anything: every element in BOTH ancestor chains reports
+         0/0, which is precisely why an earlier pass targeting .filter-bar-section
+         and .inventory-main changed nothing. Those two rules were INERT and have
+         been DELETED rather than left sitting here looking load-bearing.
+         THE FIX SPLITS THE SHORTHAND INSTEAD OF GUESSING A BREAKPOINT: sidebar
+         and main sit side by side on desktop (flex-direction:row, so the COLUMN
+         gap separates them) and stack below it (column, so the ROW gap does).
+         Shrinking row-gap alone therefore closes the stacked gap and CANNOT
+         touch the desktop two-column spacing, at any width, with no media query
+         and no breakpoint to get wrong. */
       '#ks-search{margin-bottom:10px;}' +
-      '.filter-bar-section{padding-bottom:0;margin-bottom:0;}' +
-      '.inventory-main{padding-top:0;margin-top:0;}' +
+      '.inventory-layout{column-gap:50px;row-gap:14px;}' +
       '#ks-browse-app .ks-browse-count{text-align:center;margin:0 0 14px;}';
     var s = document.createElement('style');
     s.id = 'ks-util-css';
@@ -1861,8 +1870,11 @@ function outOfCreditsBlock(zeroClasses) {
    *   showAll     : truncate option list to 6 + "Show all (N)" (long lists only)
    *   rowFilter   : optional (it)->bool, narrows which rows contribute OPTIONS
    *   urlLower    : optional, lowercase the URL param on read (tier back-compat)
-   * NOTE: every group is a collapsible accordion section; on load only the FIRST
-   *       group (Tier) is open, the rest render collapsed (header visible).
+   * NOTE: every group is a collapsible accordion section and EVERY ONE renders
+   *       COLLAPSED on load. This note used to claim only the first group (Tier)
+   *       opened -- that was NEVER true of the code: buildRail passed
+   *       startOpen=true for all of them, so the rail rendered fully expanded.
+   *       Corrected by reading the caller, Session 55.
    * ----------------------------------------------------------------------- */
   var SIZE_ORDER = ['6-9M', '9-12M', '12-18M', '18-24M', '2T', '3T', '4 / XXS', '5 / XS', '6 / XS', '7 / Small'];
   var AGE_ORDER  = ['Baby', 'Toddler', 'Preschool', 'Big Kid'];
@@ -1965,7 +1977,7 @@ function outOfCreditsBlock(zeroClasses) {
   function buildGroup(rail, key, title, options, showAll, startOpen) {
     if (!options.length) return;
     var grp  = el('div', 'ks-flt-group');
-    if (!startOpen) grp.classList.add('ks-flt-collapsed');   // every group is an accordion; only the first opens on load
+    if (!startOpen) grp.classList.add('ks-flt-collapsed');   // every group is an accordion; ALL render collapsed (buildRail passes startOpen=false)
     var lbl  = el('div', 'ks-flt-grouplabel');
     lbl.appendChild(el('span', null, title));
     var chev = el('span', 'ks-flt-chev');
