@@ -33,6 +33,11 @@
      ====================================================================== */
 
   /* TERMS_VERSION bumps with this build. It carries BOTH owed copy
+     ⚠⚠ S64 OVERRIDE, HERS: the plan CARDS now read "$45/month" and the value
+     line drops its tail ("Up to $150 value"). The swaps line keeps "per
+     month". This overrides the S56 always-per-month rule FOR THE CARDS ONLY —
+     the consent sentence still says "per month" and must not be touched,
+     because it is TERMS_VERSION'd and a change means a new row generation.
      corrections at once: "a month" -> "per month", and "when my first whole
      credit lands" -> "when I have my first whole credit". One bump, not two. */
   var TERMS_VERSION = '2026-07-21';
@@ -66,46 +71,50 @@
     /* ---- send-bag-first path: the four 60-day-trial prices ---- */
     'basics-trial': {
       slug:    'basics-trial',
+      cls:     'clothing',
       formId:  'ks-form-basics-trial',
       price:   'prc_basics-monthly-60-day-trial-i4801al',
       path:    'send',
       name:    'The Basics',
       monthly: 30,
       swaps:   'Up to 6 clothing swaps per month',
-      value:   'Up to $150 value per month',
+      value:   'Up to $150 value',
       pack:    null
     },
     'toychest-trial': {
       slug:    'toychest-trial',
+      cls:     'toy',
       formId:  'ks-form-toychest-trial',
       price:   'prc_toy-chest-monthly-60-day-trial-3b6704ox',
       path:    'send',
       name:    'The Toy Chest',
       monthly: 45,
       swaps:   'Up to 5 toy swaps per month',
-      value:   'Up to $100 value per month',
+      value:   'Up to $100 value',
       pack:    null
     },
     'wardrobe-trial': {
       slug:    'wardrobe-trial',
+      cls:     'clothing',
       formId:  'ks-form-wardrobe-trial',
       price:   'prc_full-wardrobe-monthly-60-day-trial-bd6604eg',
       path:    'send',
       name:    'The Full Wardrobe',
       monthly: 45,
       swaps:   'Up to 10 clothing swaps per month',
-      value:   'Up to $250 value per month',
+      value:   'Up to $250 value',
       pack:    null
     },
     'everything-trial': {
       slug:    'everything-trial',
+      cls:     'both',
       formId:  'ks-form-everything-trial',
       price:   'prc_everything-bag-monthly-60-day-trial-dg3t01b8',
       path:    'send',
       name:    'The Everything Bag',
       monthly: 70,
       swaps:   'Up to 10 clothing and 3 toy swaps per month',   /* ⚠ NEEDS-CONFIRM */
-      value:   'Up to $310 value per month',
+      value:   'Up to $310 value',
       pack:    null
     },
 
@@ -114,6 +123,7 @@
        unreachable for someone starting with a pack. RULED AS-IS. */
     'basics-pack': {
       slug:      'basics-pack',
+      cls:       'clothing',
       formId:    'ks-form-basics-pack',
       price:     'prc_the-basics-clothing-starter-pack-zv5r0e59',
       path:      'shop',
@@ -122,7 +132,7 @@
       titleTop:  'The Basics plan',
       titleSub:  'with a Clothing Starter Pack',
       swaps:     'Up to 6 clothing swaps per month',
-      value:     'Up to $150 value per month',
+      value:     'Up to $150 value',
       pack: {
         name:    'Clothing Starter Pack',
         amount:  75,
@@ -133,6 +143,7 @@
     },
     'toychest-pack': {
       slug:      'toychest-pack',
+      cls:       'toy',
       formId:    'ks-form-toychest-pack',
       price:     'prc_the-toy-chest-toy-starter-pack-0k2c0abs',
       path:      'shop',
@@ -141,7 +152,7 @@
       titleTop:  'The Toy Chest plan',
       titleSub:  'with a Toy Starter Pack',
       swaps:     'Up to 5 toy swaps per month',
-      value:     'Up to $100 value per month',
+      value:     'Up to $100 value',
       pack: {
         name:    'Toy Starter Pack',
         amount:  85,
@@ -676,7 +687,8 @@
   /* ---- step 2: pick your plan -------------------------------------------- */
 
   function planCard(p) {
-    var b = el('button', 'ks-wz-plan' + (S.plan === p.slug ? ' is-on' : ''));
+    var b = el('button', 'ks-wz-plan ks-wz-plan--' + (p.cls || 'clothing') +
+                     (S.plan === p.slug ? ' is-on' : ''));
     b.type = 'button';
 
     var top = el('div', 'ks-wz-plan-top');
@@ -690,7 +702,7 @@
       title.appendChild(el('span', 'ks-wz-plan-title-a', p.name));
     }
     /* Price sits TOP RIGHT on every card, no exceptions. */
-    var price = el('div', 'ks-wz-plan-price', '$' + p.monthly + ' per month');
+    var price = el('div', 'ks-wz-plan-price', '$' + p.monthly + '/month');
     top.appendChild(title);
     top.appendChild(price);
     b.appendChild(top);
@@ -1301,7 +1313,7 @@
       '@media (max-width:600px){.ks-wz{padding:0}',
         '.ks-wz-card{max-width:none;min-height:100vh;border:0;border-radius:0;',
         'box-shadow:none;padding:26px 20px 32px;}',
-        '.ks-wz-h{font-size:28px;}}',
+        '.ks-wz-h{font-size:35px;}}',
 
       '.ks-wz-close{position:absolute;top:14px;right:14px;width:32px;height:32px;',
         'border:0;background:none;cursor:pointer;color:#75736E;font-size:22px;',
@@ -1315,7 +1327,7 @@
       '.ks-wz-dot.is-on{background:#E54F25;}',
 
       /* ---- type ---- */
-      '.ks-wz-h{font-family:"Instrument Serif",Georgia,serif;font-size:34px;',
+      '.ks-wz-h{font-family:"Instrument Serif",Georgia,serif;font-size:41px;',
         'font-weight:400;color:#1E1A19;margin:0 0 12px;line-height:1.15;}',
       '.ks-wz-sub{font-size:15px;color:#75736E;margin:0 0 28px;line-height:1.5;}',
       '.ks-wz-headline{font-size:16px;font-weight:600;color:#1E1A19;margin:0 0 16px;}',
@@ -1326,8 +1338,13 @@
       '.ks-wz-fork{display:block;width:100%;text-align:left;cursor:pointer;',
         'background:#FFFFFF;border:1px solid #EEEFE3;border-radius:14px;padding:18px 18px;',
         'font-family:inherit;}',
-      '.ks-wz-fork:hover{border-color:#C9C7BC;}',
-      '.ks-wz-fork.is-on{border-color:#E54F25;background:#FFFFFF;}',
+      /* ⚠ S64 COLOUR SYSTEM. CORAL MEANS CHOSEN, ALWAYS AND ONLY.
+         Blue and green are not decoration: they say what is in the bag —
+         blue clothing, green toys, both on the Everything Bag. Cards sit on
+         cream and the picked one lifts to white. Do not repurpose coral. */
+      '.ks-wz-fork,.ks-wz-plan{background:#EEEFE3;}',
+      '.ks-wz-fork:hover{border-color:#E54F25;}',
+      '.ks-wz-fork.is-on{border-color:#E54F25;border-width:2px;background:#FFFFFF;}',
       '.ks-wz-fork-t{display:block;font-size:17px;font-weight:600;color:#1E1A19;margin-bottom:4px;}',
       '.ks-wz-fork-s{display:block;font-size:14px;color:#75736E;line-height:1.45;}',
 
@@ -1336,8 +1353,15 @@
       '.ks-wz-plan{display:block;width:100%;text-align:left;cursor:pointer;',
         'background:#FFFFFF;border:1px solid #EEEFE3;border-radius:14px;padding:16px 18px;',
         'font-family:inherit;}',
-      '.ks-wz-plan:hover{border-color:#C9C7BC;}',
-      '.ks-wz-plan.is-on{border-color:#E54F25;background:#FFFFFF;}',
+      '.ks-wz-plan{position:relative;overflow:hidden;}',
+      '.ks-wz-plan::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;}',
+      '.ks-wz-plan--clothing::before{background:#28498D;}',
+      '.ks-wz-plan--toy::before{background:#309359;}',
+      '.ks-wz-plan--both::before{background:linear-gradient(#28498D 50%,#309359 50%);}',
+      '.ks-wz-plan--clothing:hover{border-color:#28498D;}',
+      '.ks-wz-plan--toy:hover{border-color:#309359;}',
+      '.ks-wz-plan--both:hover{border-color:#E54F25;}',
+      '.ks-wz-plan.is-on{border-color:#E54F25;border-width:2px;background:#FFFFFF;}',
       '.ks-wz-plan-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}',
       '.ks-wz-plan-title-a{display:block;font-size:17px;font-weight:600;color:#1E1A19;}',
       '.ks-wz-plan-title-b{display:block;font-size:17px;font-weight:600;color:#1E1A19;}',
