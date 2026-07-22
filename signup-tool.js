@@ -222,7 +222,7 @@
     /* ---- step 2 ---- APPROVED */
     s2: {
       head:    'Pick your plan',
-      subSend: 'Nothing is charged today. Billing doesn\u2019t start until you\u2019ve earned your first full credit. Cancel whenever you want from your dashboard.',
+      subSend: 'Nothing is charged today. Billing doesn\u2019t start until you have your first whole credit. Cancel whenever you want from your dashboard.',
       subShop: '1 credit = 1 essentials item',
       includesHead: 'Every plan includes',
       includes: [
@@ -295,7 +295,7 @@
     s5: {
       head: 'One last look',
       headline: function (p) {
-        return 'You\u2019re joining ' + p.name + ', $' + p.monthly + ' per month, billed monthly.';
+        return 'You\u2019re joining ' + p.name + ', $' + p.monthly + ' per month.';
       },
       dueTodayLabel: 'Due today',                      /* line kept, NO NUMBER until the CPA rules */
       consentTrial: function (p) {
@@ -333,6 +333,7 @@
       label:   'Six digit code',
       resend:  'Send a new code',
       resent:  'Sent. Give it a minute.',
+      submitLabel: 'Confirm my code',
       errCode: 'That code didn\u2019t work. Check it over, or send a new one.'
     },
 
@@ -601,6 +602,9 @@
     if (sub) {
       sub.style.display = (mode === 'create' || mode === 'code') ? '' : 'none';
       if (mode === 'create') sub.value = COPY.s5.createLabel;
+      /* S69: the account was already made at step 5, so Memberstack's
+         inherited "Create my account" was a lie on the code screen. */
+      if (mode === 'code')   sub.value = COPY.s6.submitLabel;
     }
     if (code) {
       code.setAttribute('autocomplete', 'one-time-code');
@@ -717,6 +721,8 @@
     lines.appendChild(el('div', 'ks-wz-plan-swaps', p.swaps));
     lines.appendChild(el('div', 'ks-wz-plan-value', p.value));   /* italic, in CSS */
     b.appendChild(lines);
+    /* always built, shown by CSS only when this card is the pick */
+    b.appendChild(el('span', 'ks-wz-plan-check'));
 
     b.addEventListener('click', function () {
       S.plan = p.slug;
@@ -731,7 +737,7 @@
     formSlot.style.display = 'none';
     head(COPY.s2.head, S.path === 'shop' ? COPY.s2.subShop : COPY.s2.subSend);
 
-    var list = el('div', 'ks-wz-plans');
+    var list = el('div', 'ks-wz-plans' + (S.plan ? ' has-pick' : ''));
     PLAN_ORDER[S.path].forEach(function (slug) {
       list.appendChild(planCard(PLANS[slug]));
     });
@@ -912,11 +918,11 @@
     head(COPY.s3.head, COPY.s3.sub);
 
     body.appendChild(field(COPY.s3.labelFirst, 'first',
-      function () { return S.first; }, function (v) { S.first = v; },
+      function () { return S.first; }, function (v) { S.first = v.trim(); },
       { autocomplete: 'given-name' }));
 
     body.appendChild(field(COPY.s3.labelLast, 'last',
-      function () { return S.last; }, function (v) { S.last = v; },
+      function () { return S.last; }, function (v) { S.last = v.trim(); },
       { autocomplete: 'family-name' }));
 
     /* The EMAIL input is the form's own bound field, sitting in the slot below.
@@ -1342,7 +1348,7 @@
          Blue and green are not decoration: they say what is in the bag —
          blue clothing, green toys, both on the Everything Bag. Cards sit on
          cream and the picked one lifts to white. Do not repurpose coral. */
-      '.ks-wz-fork,.ks-wz-plan{background:#EEEFE3;}',
+      '.ks-wz-fork{background:#EEEFE3;}',
       '.ks-wz-fork:hover{border-color:#E54F25;}',
       '.ks-wz-fork.is-on{border-color:#E54F25;border-width:2px;background:#FFFFFF;}',
       '.ks-wz-fork-t{display:block;font-size:17px;font-weight:600;color:#1E1A19;margin-bottom:4px;}',
@@ -1361,18 +1367,44 @@
       '.ks-wz-plan--clothing:hover{border-color:#28498D;}',
       '.ks-wz-plan--toy:hover{border-color:#309359;}',
       '.ks-wz-plan--both:hover{border-color:#E54F25;}',
-      '.ks-wz-plan.is-on{border-color:#E54F25;border-width:2px;background:#FFFFFF;}',
+      /* RULED S68, OPTION B. THE SELECTED CARD CHANGES COLOUR; IT DOES NOT
+         TAKE A CORAL OUTLINE. Selected goes CREAM and KEEPS its blue/green
+         left rule at full strength, plus a small coral check. Unselected go
+         PAPER WHITE with a hairline. Carried by CONTRAST, not by volume — a
+         full coral fill was rejected as a fourth solid coral competing with
+         Create, and it would have erased the left rule that is the only
+         thing saying what is in the bag. CORAL STILL MEANS CHOSEN.
+         ⚠ THE BORDER STAYS 1px IN BOTH STATES, ON PURPOSE. A 1px -> 2px
+         swap moves the card's own box and makes the whole list jump on
+         every tap. */
+      '.ks-wz-plan{border-color:#C9C7BC;color:#1E1A19;}',
+      '.ks-wz-plan.is-on{background:#EEEFE3;border-color:#C9C7BC;}',
+      /* ⚠ THE MUTING IS GATED ON has-pick AND THAT IS DELIBERATE, NOT A
+         HALF-BUILD. With nothing picked yet EVERY card is unselected, so
+         muting on load would grey all six at once and read as DISABLED —
+         §DASH.2's own warning about greying a whole panel. Quiet only
+         starts once there is something for the rest to be quieter than. */
+      '.ks-wz-plans.has-pick .ks-wz-plan{color:#75736E;}',
+      '.ks-wz-plans.has-pick .ks-wz-plan.is-on{color:#1E1A19;}',
+      /* The coral check is DRAWN, not a glyph. Quicksand carries no
+         reliable check character and a font fallback would be visible. */
+      '.ks-wz-plan-check{display:none;position:absolute;right:16px;bottom:16px;',
+        'width:14px;height:14px;}',
+      '.ks-wz-plan.is-on .ks-wz-plan-check{display:block;}',
+      '.ks-wz-plan-check::after{content:"";position:absolute;left:4px;top:0;',
+        'width:5px;height:10px;border:solid #E54F25;border-width:0 2px 2px 0;',
+        'transform:rotate(45deg);}',
       '.ks-wz-plan-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}',
-      '.ks-wz-plan-title-a{display:block;font-size:17px;font-weight:600;color:#1E1A19;}',
-      '.ks-wz-plan-title-b{display:block;font-size:17px;font-weight:600;color:#1E1A19;}',
+      '.ks-wz-plan-title-a{display:block;font-size:17px;font-weight:600;color:inherit;}',
+      '.ks-wz-plan-title-b{display:block;font-size:17px;font-weight:600;color:inherit;}',
       /* price sits TOP RIGHT on every card, no exceptions */
-      '.ks-wz-plan-price{flex:0 0 auto;font-size:14px;font-weight:600;color:#1E1A19;',
+      '.ks-wz-plan-price{flex:0 0 auto;font-size:14px;font-weight:600;color:inherit;',
         'text-align:right;white-space:nowrap;}',
-      '.ks-wz-plan-lines{margin-top:10px;}',
+      '.ks-wz-plan-lines{margin-top:10px;padding-right:26px;}',
       '.ks-wz-plan-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}',
-      '.ks-wz-plan-credits{font-size:16px;font-weight:600;color:#1E1A19;}',
-      '.ks-wz-plan-once{font-size:14px;font-weight:600;color:#1E1A19;white-space:nowrap;}',
-      '.ks-wz-plan-swaps{font-size:14px;color:#1E1A19;margin-top:4px;}',
+      '.ks-wz-plan-credits{font-size:16px;font-weight:600;color:inherit;}',
+      '.ks-wz-plan-once{font-size:14px;font-weight:600;color:inherit;white-space:nowrap;}',
+      '.ks-wz-plan-swaps{font-size:14px;color:inherit;margin-top:4px;}',
       '.ks-wz-plan-value{font-size:14px;font-style:italic;color:#75736E;margin-top:2px;}',
 
       '.ks-wz-includes{margin-top:28px;padding:20px 20px;background:#EEEFE3;border-radius:14px;}',
@@ -1422,6 +1454,13 @@
          Webflow at S62. Hidden here so the Designer stays untouched. */
       '.ks-wz-formslot form h1,.ks-wz-formslot form h2,.ks-wz-formslot form h3,',
         '.ks-wz-formslot form p{display:none !important;}',
+      /* S69: Memberstack's field disclaimer ("We'll email you a code to
+         safely sign up.") is a DIV.disclaimer, so the h1/h2/h3/p rule
+         above never caught it. READ LIVE off all six forms first: one
+         .disclaimer per form, identical shape, nothing else inside a
+         moved form wears the class. SCOPED — this is NOT a widening of
+         the deliberately broad rule above. */
+      '.ks-wz-formslot form .disclaimer{display:none !important;}',
 
       /* ---- the address question ---- */
       '.ks-wz-ask{margin-top:16px;}',
