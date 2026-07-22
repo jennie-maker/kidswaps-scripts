@@ -672,13 +672,14 @@
     formSlot.style.display = 'none';
     head(COPY.s1.head, COPY.s1.sub);
 
-    var wrap = el('div', 'ks-wz-forks');
+    var wrap = el('div', 'ks-wz-forks' + (S.path ? ' has-pick' : ''));
     [['send', COPY.s1.cardA], ['shop', COPY.s1.cardB]].forEach(function (pair) {
       var pathKey = pair[0], c = pair[1];
       var b = el('button', 'ks-wz-fork' + (S.path === pathKey ? ' is-on' : ''));
       b.type = 'button';
       b.appendChild(el('span', 'ks-wz-fork-t', c.title));
       b.appendChild(el('span', 'ks-wz-fork-s', c.sub));
+      b.appendChild(el('span', 'ks-wz-fork-check'));
       b.addEventListener('click', function () {
         /* Changing path invalidates a plan chosen on the other path. */
         if (S.path !== pathKey) { S.path = pathKey; S.plan = null; }
@@ -1142,9 +1143,12 @@
     if (p.pack) sum.appendChild(sumRow(p.pack.name, '$' + p.pack.amount + ' once'));
     sum.appendChild(sumRow(S.first + ' ' + S.last, S.email));
     sum.appendChild(sumRow(addrOneLine(), ''));
-    /* ⚠ THE LINE IS KEPT AND CARRIES NO NUMBER until the CPA rules on
-       taxability. A stated total is a promise we may not be able to keep. */
-    sum.appendChild(sumRow(COPY.s5.dueTodayLabel, ''));
+    /* ⚠⚠ RULED S69: THE DUE TODAY ROW IS HIDDEN ENTIRELY until the CPA
+       rules on taxability. It read as broken with an empty value, and a
+       stated total is a promise we may not be able to keep — so show
+       NEITHER. COPY.s5.dueTodayLabel is kept in the COPY block so the
+       string is ready the moment the number is; this is the only place
+       it rendered. Re-add this one line to bring the row back. */
     body.appendChild(sum);
 
     /* THE GATE. The checkbox and the Create wiring are built together, in one
@@ -1348,17 +1352,28 @@
       /* ---- the fork (step 1) ---- */
       '.ks-wz-forks{display:flex;flex-direction:column;gap:12px;}',
       '.ks-wz-fork{display:block;width:100%;text-align:left;cursor:pointer;',
-        'background:#FFFFFF;border:1px solid #EEEFE3;border-radius:14px;padding:18px 18px;',
-        'font-family:inherit;}',
-      /* ⚠ S64 COLOUR SYSTEM. CORAL MEANS CHOSEN, ALWAYS AND ONLY.
-         Blue and green are not decoration: they say what is in the bag —
-         blue clothing, green toys, both on the Everything Bag. Cards sit on
-         cream and the picked one lifts to white. Do not repurpose coral. */
-      '.ks-wz-fork{background:#EEEFE3;}',
-      '.ks-wz-fork:hover{border-color:#E54F25;}',
-      '.ks-wz-fork.is-on{border-color:#E54F25;border-width:2px;background:#FFFFFF;}',
-      '.ks-wz-fork-t{display:block;font-size:17px;font-weight:600;color:#1E1A19;margin-bottom:4px;}',
-      '.ks-wz-fork-s{display:block;font-size:14px;color:#75736E;line-height:1.45;}',
+        'border:2px solid transparent;border-radius:14px;padding:18px 18px;',
+        'font-family:inherit;position:relative;}',
+      /* ⚠⚠ RULED S69. THE FORK CARDS ARE FILLED WITH PINK — THE RESERVED
+         ACCENT, NOW PLACED. Both forks share pink because it brands them as
+         the two ways in, not two packages; the words tell them apart, not
+         colour. Pink #F491A9 is light, so text is ink. Package colours
+         (blue/green/yellow) stay OFF the forks so a fork never implies a
+         plan, and coral stays off because it is the CTA colour. Selection is
+         the SAME ink-ring + check language as the plan cards, so the whole
+         wizard teaches ONE selection signal. Resting border is 2px
+         transparent (above) so the ring never resizes the box on tap. */
+      '.ks-wz-fork{background:#F491A9;color:#1E1A19;}',
+      '.ks-wz-fork.is-on{border-color:#1E1A19;}',
+      '.ks-wz-forks.has-pick .ks-wz-fork:not(.is-on){opacity:.5;}',
+      '.ks-wz-fork-t{display:block;font-size:17px;font-weight:600;color:inherit;margin-bottom:4px;}',
+      '.ks-wz-fork-s{display:block;font-size:14px;color:inherit;opacity:.82;line-height:1.45;}',
+      /* the drawn check, inheriting ink so it matches the fork text */
+      '.ks-wz-fork-check{display:none;position:absolute;right:16px;bottom:16px;width:15px;height:15px;}',
+      '.ks-wz-fork.is-on .ks-wz-fork-check{display:block;}',
+      '.ks-wz-fork-check::after{content:"";position:absolute;left:5px;top:0;',
+        'width:5px;height:11px;border:solid currentColor;border-width:0 2px 2px 0;',
+        'transform:rotate(45deg);}',
 
       /* ---- plan cards (step 2) ---- */
       '.ks-wz-plans{display:flex;flex-direction:column;gap:12px;}',
