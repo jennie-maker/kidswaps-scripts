@@ -606,7 +606,9 @@
 
   function paintDots() {
     clear(dots);
-    for (var i = 1; i <= MAX_STEP; i++) {
+    /* MAX_STEP + 1: the last dot is Stripe, which this wizard does not own.
+       It never lights. It is there so six screens do not promise "done". */
+    for (var i = 1; i <= MAX_STEP + 1; i++) {
       var d = el('span', 'ks-wz-dot' + (i === S.step ? ' is-on' : (i < S.step ? ' is-done' : '')));
       dots.appendChild(d);
     }
@@ -908,6 +910,13 @@
     /* The EMAIL input is the form's own bound field, sitting in the slot below.
        It is never rebuilt and never mirrored. */
     var emailInput = inForm(SEL.email);
+    /* ⚠ S64: COPY.s3.labelEmail existed and was never applied, so
+       Memberstack's own "Email" was on screen instead of the approved
+       "Email address". Approved copy, applied. Not a rewrite. */
+    if (emailInput && emailInput.parentNode) {
+      var eLab = emailInput.parentNode.querySelector('label');
+      if (eLab) eLab.textContent = COPY.s3.labelEmail;
+    }
     var hint = el('div', 'ks-wz-hint');
     body.appendChild(hint);
 
@@ -1124,6 +1133,7 @@
       S.consent = box.checked;
       S.dirty = true;
       note(body, 'ks-wz-err', '');
+      lockSync();
     });
 
     var text = el('span', 'ks-wz-consent-text');
@@ -1141,6 +1151,16 @@
     body.appendChild(gate);
 
     var sub = inForm(SEL.submit);
+
+    /* ⚠ LOOK ONLY. The block below is the real guard and is untouched. This
+       just stops the button painting live while the box is empty. */
+    function lockSync() {
+      if (!sub) return;
+      var base = sub.className.replace(/\s*is-locked/g, '');
+      sub.className = S.consent ? base : (base + ' is-locked');
+    }
+    lockSync();
+
     paintNav({ hideNext: true });
 
     if (sub) {
@@ -1249,11 +1269,15 @@
      one of the three surface values.
        ink #1E1A19 · coral #E54F25 · green #309359 · blue #28498D
        cream #EEEFE3 · muted #75736E · paper #FFFFFF
-       coral-light #F7E4D9 · coral-light border #F0C9B5 · page base #F2F1EB
+       line #C9C7BC (ghost border + card shadow)
      ⚠ NO OPACITY FOR COLOUR. Every grey is a solid hex. Opacity for motion is
      fine (the card's entrance).
-     ⚠ QUICKSAND ONLY, CEILING 600. Instrument Serif lives on exactly two
-     elements and both are on the dashboard. It does not appear here.
+     ⚠ S64 RULING: the lightened corals #F7E4D9 and #F0C9B5 and the old page
+     base #F2F1EB are GONE. Selection is full coral, every tint is cream.
+     Do not reintroduce a lightened brand colour.
+     ⚠ QUICKSAND EVERYWHERE EXCEPT .ks-wz-h, which is Instrument Serif at
+     weight 400. S64: the serif had been arriving BY ACCIDENT from Webflow's
+     h2 styling, at weight 600 the browser was faking. Now it is deliberate.
      ⚠ 16px MINIMUM ON EVERY INPUT or Safari zooms in and does not zoom back.
      ====================================================================== */
 
@@ -1265,18 +1289,19 @@
       '#' + MOUNT_ID + '{font-family:Quicksand,system-ui,-apple-system,sans-serif;}',
 
       /* ---- overlay + card ---- */
-      '.ks-wz{position:fixed;inset:0;z-index:9000;background:#F2F1EB;',
+      '.ks-wz{position:fixed;inset:0;z-index:9000;background:#EEEFE3;',
         'display:flex;align-items:flex-start;justify-content:center;',
         'overflow-y:auto;padding:32px 16px 48px;}',
       '.ks-wz-card{position:relative;width:100%;max-width:560px;background:#FFFFFF;',
-        'border:1px solid #EEEFE3;border-radius:18px;padding:28px 26px 22px;',
+        'border:1px solid #EEEFE3;border-radius:18px;padding:32px 28px 26px;',
         'box-shadow:0 10px 30px -12px #C9C7BC;',
         'animation:ks-wz-in 240ms ease-out both;}',
       '@keyframes ks-wz-in{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}',
       '@media (prefers-reduced-motion:reduce){.ks-wz-card{animation:none}}',
       '@media (max-width:600px){.ks-wz{padding:0}',
         '.ks-wz-card{max-width:none;min-height:100vh;border:0;border-radius:0;',
-        'box-shadow:none;padding:22px 18px 28px;}}',
+        'box-shadow:none;padding:26px 20px 32px;}',
+        '.ks-wz-h{font-size:28px;}}',
 
       '.ks-wz-close{position:absolute;top:14px;right:14px;width:32px;height:32px;',
         'border:0;background:none;cursor:pointer;color:#75736E;font-size:22px;',
@@ -1284,14 +1309,15 @@
       '.ks-wz-close::before{content:"\\00d7";}',
 
       /* ---- progress ---- */
-      '.ks-wz-dots{display:flex;gap:6px;margin:6px 0 20px;}',
+      '.ks-wz-dots{display:flex;gap:6px;margin:6px 0 28px;}',
       '.ks-wz-dot{width:26px;height:3px;border-radius:2px;background:#EEEFE3;}',
-      '.ks-wz-dot.is-done{background:#F0C9B5;}',
+      '.ks-wz-dot.is-done{background:#E54F25;}',
       '.ks-wz-dot.is-on{background:#E54F25;}',
 
       /* ---- type ---- */
-      '.ks-wz-h{font-size:24px;font-weight:600;color:#1E1A19;margin:0 0 6px;line-height:1.25;}',
-      '.ks-wz-sub{font-size:15px;color:#75736E;margin:0 0 20px;line-height:1.5;}',
+      '.ks-wz-h{font-family:"Instrument Serif",Georgia,serif;font-size:34px;',
+        'font-weight:400;color:#1E1A19;margin:0 0 12px;line-height:1.15;}',
+      '.ks-wz-sub{font-size:15px;color:#75736E;margin:0 0 28px;line-height:1.5;}',
       '.ks-wz-headline{font-size:16px;font-weight:600;color:#1E1A19;margin:0 0 16px;}',
       '.ks-wz-body-text{font-size:16px;color:#1E1A19;line-height:1.6;margin:0 0 22px;}',
 
@@ -1300,8 +1326,8 @@
       '.ks-wz-fork{display:block;width:100%;text-align:left;cursor:pointer;',
         'background:#FFFFFF;border:1px solid #EEEFE3;border-radius:14px;padding:18px 18px;',
         'font-family:inherit;}',
-      '.ks-wz-fork:hover{border-color:#F0C9B5;}',
-      '.ks-wz-fork.is-on{border-color:#E54F25;background:#F7E4D9;}',
+      '.ks-wz-fork:hover{border-color:#C9C7BC;}',
+      '.ks-wz-fork.is-on{border-color:#E54F25;background:#FFFFFF;}',
       '.ks-wz-fork-t{display:block;font-size:17px;font-weight:600;color:#1E1A19;margin-bottom:4px;}',
       '.ks-wz-fork-s{display:block;font-size:14px;color:#75736E;line-height:1.45;}',
 
@@ -1310,8 +1336,8 @@
       '.ks-wz-plan{display:block;width:100%;text-align:left;cursor:pointer;',
         'background:#FFFFFF;border:1px solid #EEEFE3;border-radius:14px;padding:16px 18px;',
         'font-family:inherit;}',
-      '.ks-wz-plan:hover{border-color:#F0C9B5;}',
-      '.ks-wz-plan.is-on{border-color:#E54F25;background:#F7E4D9;}',
+      '.ks-wz-plan:hover{border-color:#C9C7BC;}',
+      '.ks-wz-plan.is-on{border-color:#E54F25;background:#FFFFFF;}',
       '.ks-wz-plan-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}',
       '.ks-wz-plan-title-a{display:block;font-size:17px;font-weight:600;color:#1E1A19;}',
       '.ks-wz-plan-title-b{display:block;font-size:17px;font-weight:600;color:#1E1A19;}',
@@ -1325,7 +1351,7 @@
       '.ks-wz-plan-swaps{font-size:14px;color:#1E1A19;margin-top:4px;}',
       '.ks-wz-plan-value{font-size:14px;font-style:italic;color:#75736E;margin-top:2px;}',
 
-      '.ks-wz-includes{margin-top:20px;padding:16px 18px;background:#EEEFE3;border-radius:14px;}',
+      '.ks-wz-includes{margin-top:28px;padding:20px 20px;background:#EEEFE3;border-radius:14px;}',
       '.ks-wz-includes-h{font-size:13px;font-weight:600;color:#1E1A19;',
         'text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;}',
       '.ks-wz-includes-list{list-style:none;margin:0;padding:0;}',
@@ -1363,6 +1389,15 @@
       '.ks-wz-formslot input[type="submit"]{display:block;width:100%;cursor:pointer;',
         'font-family:inherit;font-size:16px;font-weight:600;color:#EEEFE3;background:#E54F25;',
         'border:1px solid #E54F25;border-radius:999px;padding:14px 20px;margin-top:18px;}',
+      /* ⚠ S64: the consent guard was always correct; the button just PAINTED
+         live because nothing styled a locked form submit. Look only. */
+      '.ks-wz-formslot input[type="submit"].is-locked{background:#EEEFE3;',
+        'border-color:#EEEFE3;color:#75736E;cursor:default;}',
+      /* ⚠ S64: Memberstack's own component copy rode in with the form-move —
+         an H1, an intro P and a field disclaimer, baked into all six forms in
+         Webflow at S62. Hidden here so the Designer stays untouched. */
+      '.ks-wz-formslot form h1,.ks-wz-formslot form h2,.ks-wz-formslot form h3,',
+        '.ks-wz-formslot form p{display:none !important;}',
 
       /* ---- the address question ---- */
       '.ks-wz-ask{margin-top:16px;}',
@@ -1372,27 +1407,28 @@
       '.ks-wz-ask-row{display:flex;gap:10px;flex-wrap:wrap;}',
 
       /* ---- step 5 ---- */
-      '.ks-wz-summary{background:#EEEFE3;border-radius:14px;padding:14px 16px;margin-bottom:18px;}',
+      '.ks-wz-summary{background:#EEEFE3;border-radius:14px;padding:18px 18px;margin-bottom:28px;}',
       '.ks-wz-sum-row{display:flex;justify-content:space-between;gap:12px;',
         'font-size:14px;color:#1E1A19;padding:6px 0;line-height:1.45;}',
       '.ks-wz-sum-row+.ks-wz-sum-row{border-top:1px solid #FFFFFF;}',
       '.ks-wz-sum-b{color:#75736E;text-align:right;white-space:nowrap;}',
       '.ks-wz-consent{display:flex;gap:10px;align-items:flex-start;cursor:pointer;',
-        'background:#F7E4D9;border:1px solid #F0C9B5;border-radius:14px;padding:14px 16px;}',
+        'background:#EEEFE3;border:1px solid #EEEFE3;border-left:3px solid #E54F25;',
+        'border-radius:14px;padding:18px 18px;}',
       '.ks-wz-consent-box{flex:0 0 auto;width:18px;height:18px;margin:2px 0 0;',
         'accent-color:#309359;cursor:pointer;}',
-      '.ks-wz-consent-text{font-size:13px;color:#1E1A19;line-height:1.55;}',
+      '.ks-wz-consent-text{font-size:15px;color:#1E1A19;line-height:1.55;}',
       '.ks-wz-consent-link{color:#1E1A19;font-weight:600;text-decoration:underline;}',
 
       /* ---- nav + buttons ---- */
-      '.ks-wz-nav{display:flex;gap:10px;align-items:center;margin-top:22px;}',
+      '.ks-wz-nav{display:flex;gap:10px;align-items:center;margin-top:28px;}',
       '.ks-wz-btn{font-family:inherit;font-size:16px;font-weight:600;cursor:pointer;',
         'border-radius:999px;padding:13px 22px;border:1px solid transparent;}',
       '.ks-wz-btn-primary{background:#E54F25;border-color:#E54F25;color:#EEEFE3;',
         'margin-left:auto;text-decoration:none;display:inline-block;text-align:center;}',
       '.ks-wz-btn-primary[disabled]{background:#EEEFE3;border-color:#EEEFE3;color:#75736E;',
         'cursor:default;}',
-      '.ks-wz-btn-ghost{background:transparent;border-color:#F0C9B5;color:#1E1A19;}',
+      '.ks-wz-btn-ghost{background:transparent;border-color:#C9C7BC;color:#1E1A19;}',
       '.ks-wz-btn-quiet{background:transparent;border-color:transparent;color:#75736E;}',
 
       /* ---- the tap-out confirm ---- */
