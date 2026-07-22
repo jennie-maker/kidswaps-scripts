@@ -72,7 +72,6 @@
     'basics-trial': {
       slug:    'basics-trial',
       cls:     'clothing',
-      pkg:     'basics',
       formId:  'ks-form-basics-trial',
       price:   'prc_basics-monthly-60-day-trial-i4801al',
       path:    'send',
@@ -85,7 +84,6 @@
     'toychest-trial': {
       slug:    'toychest-trial',
       cls:     'toy',
-      pkg:     'toychest',
       formId:  'ks-form-toychest-trial',
       price:   'prc_toy-chest-monthly-60-day-trial-3b6704ox',
       path:    'send',
@@ -98,7 +96,6 @@
     'wardrobe-trial': {
       slug:    'wardrobe-trial',
       cls:     'clothing',
-      pkg:     'wardrobe',
       formId:  'ks-form-wardrobe-trial',
       price:   'prc_full-wardrobe-monthly-60-day-trial-bd6604eg',
       path:    'send',
@@ -111,7 +108,6 @@
     'everything-trial': {
       slug:    'everything-trial',
       cls:     'both',
-      pkg:     'everything',
       formId:  'ks-form-everything-trial',
       price:   'prc_everything-bag-monthly-60-day-trial-dg3t01b8',
       path:    'send',
@@ -128,7 +124,6 @@
     'basics-pack': {
       slug:      'basics-pack',
       cls:       'clothing',
-      pkg:       'basics',
       formId:    'ks-form-basics-pack',
       price:     'prc_the-basics-clothing-starter-pack-zv5r0e59',
       path:      'shop',
@@ -149,7 +144,6 @@
     'toychest-pack': {
       slug:      'toychest-pack',
       cls:       'toy',
-      pkg:       'toychest',
       formId:    'ks-form-toychest-pack',
       price:     'prc_the-toy-chest-toy-starter-pack-0k2c0abs',
       path:      'shop',
@@ -675,7 +669,8 @@
     var wrap = el('div', 'ks-wz-forks' + (S.path ? ' has-pick' : ''));
     [['send', COPY.s1.cardA], ['shop', COPY.s1.cardB]].forEach(function (pair) {
       var pathKey = pair[0], c = pair[1];
-      var b = el('button', 'ks-wz-fork' + (S.path === pathKey ? ' is-on' : ''));
+      var b = el('button', 'ks-wz-fork ks-wz-fork--' + pathKey +
+                (S.path === pathKey ? ' is-on' : ''));
       b.type = 'button';
       b.appendChild(el('span', 'ks-wz-fork-t', c.title));
       b.appendChild(el('span', 'ks-wz-fork-s', c.sub));
@@ -698,7 +693,7 @@
   /* ---- step 2: pick your plan -------------------------------------------- */
 
   function planCard(p) {
-    var b = el('button', 'ks-wz-plan ks-wz-plan--' + (p.pkg || 'basics') +
+    var b = el('button', 'ks-wz-plan ks-wz-plan--' + (p.cls || 'clothing') +
                      (S.plan === p.slug ? ' is-on' : ''));
     b.type = 'button';
 
@@ -1352,7 +1347,7 @@
       /* ---- the fork (step 1) ---- */
       '.ks-wz-forks{display:flex;flex-direction:column;gap:12px;}',
       '.ks-wz-fork{display:block;width:100%;text-align:left;cursor:pointer;',
-        'border:2px solid transparent;border-radius:14px;padding:18px 18px;',
+        'border:0;border-radius:14px;padding:18px 18px;',
         'font-family:inherit;position:relative;}',
       /* ⚠⚠ RULED S69. THE FORK CARDS ARE FILLED WITH PINK — THE RESERVED
          ACCENT, NOW PLACED. Both forks share pink because it brands them as
@@ -1363,8 +1358,12 @@
          the SAME ink-ring + check language as the plan cards, so the whole
          wizard teaches ONE selection signal. Resting border is 2px
          transparent (above) so the ring never resizes the box on tap. */
-      '.ks-wz-fork{background:#F491A9;color:#1E1A19;}',
-      '.ks-wz-fork.is-on{border-color:#1E1A19;}',
+      /* ⚠ RULED S69: the two forks take DIFFERENT colours so they stop
+         reading as twins. Send = pink #F491A9 (ink text), Shop = blue
+         #28498D (white text). Swap the two lines to flip them. Borders
+         removed; selection is the check + dim, same as the plan cards. */
+      '.ks-wz-fork--send{background:#F491A9;color:#1E1A19;}',
+      '.ks-wz-fork--shop{background:#28498D;color:#FFFFFF;}',
       '.ks-wz-forks.has-pick .ks-wz-fork:not(.is-on){opacity:.5;}',
       '.ks-wz-fork-t{display:block;font-size:17px;font-weight:600;color:inherit;margin-bottom:4px;}',
       '.ks-wz-fork-s{display:block;font-size:14px;color:inherit;opacity:.82;line-height:1.45;}',
@@ -1378,7 +1377,7 @@
       /* ---- plan cards (step 2) ---- */
       '.ks-wz-plans{display:flex;flex-direction:column;gap:12px;}',
       '.ks-wz-plan{display:block;width:100%;text-align:left;cursor:pointer;',
-        'border:2px solid transparent;border-radius:14px;',
+        'border:0;border-radius:14px;',
         'padding:16px 18px;',
         'font-family:inherit;position:relative;overflow:hidden;}',
       /* ⚠⚠ RULED S69. COLOUR IS PACKAGE IDENTITY, NOT what-is-in-the-bag.
@@ -1390,18 +1389,24 @@
          both are gone. Text flips per fill for contrast: ink on the light
          yellow, white on the darker green and blue. Everything Bag is the
          only two-class plan, so its fill is the blue+green split. */
-      '.ks-wz-plan--basics{background:#EDA920;color:#3A2905;}',
-      '.ks-wz-plan--toychest{background:#309359;color:#FFFFFF;}',
-      '.ks-wz-plan--wardrobe{background:#28498D;color:#FFFFFF;}',
-      '.ks-wz-plan--everything{background:linear-gradient(105deg,#28498D 50%,#309359 50%);',
-        'color:#FFFFFF;}',
-      /* ⚠ SELECTION IS AN INK RING PLUS A CHECK — NOT CORAL. Coral is the
-         CTA colour now (her ruling), so it cannot also mean chosen. Ink
-         #1E1A19 reads on all three fills; the ring is 2px and the resting
-         border is a 2px TRANSPARENT so the box never changes size on tap
-         (the S69 no-jump rule, carried forward). Unselected cards recede by
-         dimming ONLY once something is picked (has-pick), same as before. */
-      '.ks-wz-plan.is-on{border-color:#1E1A19;}',
+      /* ⚠⚠ RULED S69 (revised): COLOUR = WHAT IS IN THE BAG, not package.
+         Clothing YELLOW, toys GREEN. So BOTH clothing plans (Basics, Full
+         Wardrobe) are yellow — told apart by name and price, not colour —
+         and the Everything Bag is the yellow+green split because it is both.
+         This freed BLUE, which now joins pink on the fork step. Approved
+         hexes only; the earlier #3A2905 / plum text were INVENTED and are
+         corrected to ink #1E1A19 here. */
+      '.ks-wz-plan--clothing{background:#EDA920;color:#1E1A19;}',
+      '.ks-wz-plan--toy{background:#309359;color:#FFFFFF;}',
+      /* ⚠ EVERYTHING BAG TEXT IS INK, not white: white on the yellow half
+         fails contrast, ink on the yellow half is perfect and on green is
+         acceptable for large/bold text. Ink is the least-bad single choice
+         for a two-colour fill. Watch this one on the render. */
+      '.ks-wz-plan--both{background:linear-gradient(105deg,#EDA920 50%,#309359 50%);',
+        'color:#1E1A19;}',
+      /* ⚠ RULED S69: BORDERS REMOVED. Selection is the drawn check plus
+         the dimming of the others — no ring, no outline. With no border in
+         any state the box never resizes on tap, so no-jump holds for free. */
       '.ks-wz-plans.has-pick .ks-wz-plan:not(.is-on){opacity:.5;}',
       /* The check is DRAWN, not a glyph, and inherits the card's text colour
          so it is ink on yellow and white on green/blue. */
