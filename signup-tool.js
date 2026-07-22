@@ -72,6 +72,7 @@
     'basics-trial': {
       slug:    'basics-trial',
       cls:     'clothing',
+      pkg:     'basics',
       formId:  'ks-form-basics-trial',
       price:   'prc_basics-monthly-60-day-trial-i4801al',
       path:    'send',
@@ -84,6 +85,7 @@
     'toychest-trial': {
       slug:    'toychest-trial',
       cls:     'toy',
+      pkg:     'toychest',
       formId:  'ks-form-toychest-trial',
       price:   'prc_toy-chest-monthly-60-day-trial-3b6704ox',
       path:    'send',
@@ -96,6 +98,7 @@
     'wardrobe-trial': {
       slug:    'wardrobe-trial',
       cls:     'clothing',
+      pkg:     'wardrobe',
       formId:  'ks-form-wardrobe-trial',
       price:   'prc_full-wardrobe-monthly-60-day-trial-bd6604eg',
       path:    'send',
@@ -108,6 +111,7 @@
     'everything-trial': {
       slug:    'everything-trial',
       cls:     'both',
+      pkg:     'everything',
       formId:  'ks-form-everything-trial',
       price:   'prc_everything-bag-monthly-60-day-trial-dg3t01b8',
       path:    'send',
@@ -124,6 +128,7 @@
     'basics-pack': {
       slug:      'basics-pack',
       cls:       'clothing',
+      pkg:       'basics',
       formId:    'ks-form-basics-pack',
       price:     'prc_the-basics-clothing-starter-pack-zv5r0e59',
       path:      'shop',
@@ -144,6 +149,7 @@
     'toychest-pack': {
       slug:      'toychest-pack',
       cls:       'toy',
+      pkg:       'toychest',
       formId:    'ks-form-toychest-pack',
       price:     'prc_the-toy-chest-toy-starter-pack-0k2c0abs',
       path:      'shop',
@@ -691,7 +697,7 @@
   /* ---- step 2: pick your plan -------------------------------------------- */
 
   function planCard(p) {
-    var b = el('button', 'ks-wz-plan ks-wz-plan--' + (p.cls || 'clothing') +
+    var b = el('button', 'ks-wz-plan ks-wz-plan--' + (p.pkg || 'basics') +
                      (S.plan === p.slug ? ' is-on' : ''));
     b.type = 'button';
 
@@ -1357,55 +1363,52 @@
       /* ---- plan cards (step 2) ---- */
       '.ks-wz-plans{display:flex;flex-direction:column;gap:12px;}',
       '.ks-wz-plan{display:block;width:100%;text-align:left;cursor:pointer;',
-        'background:#FFFFFF;border:1px solid #EEEFE3;border-radius:14px;padding:16px 18px;',
-        'font-family:inherit;}',
-      '.ks-wz-plan{position:relative;overflow:hidden;}',
-      '.ks-wz-plan::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;}',
-      '.ks-wz-plan--clothing::before{background:#28498D;}',
-      '.ks-wz-plan--toy::before{background:#309359;}',
-      '.ks-wz-plan--both::before{background:linear-gradient(#28498D 50%,#309359 50%);}',
-      '.ks-wz-plan--clothing:hover{border-color:#28498D;}',
-      '.ks-wz-plan--toy:hover{border-color:#309359;}',
-      '.ks-wz-plan--both:hover{border-color:#E54F25;}',
-      /* RULED S68, OPTION B. THE SELECTED CARD CHANGES COLOUR; IT DOES NOT
-         TAKE A CORAL OUTLINE. Selected goes CREAM and KEEPS its blue/green
-         left rule at full strength, plus a small coral check. Unselected go
-         PAPER WHITE with a hairline. Carried by CONTRAST, not by volume — a
-         full coral fill was rejected as a fourth solid coral competing with
-         Create, and it would have erased the left rule that is the only
-         thing saying what is in the bag. CORAL STILL MEANS CHOSEN.
-         ⚠ THE BORDER STAYS 1px IN BOTH STATES, ON PURPOSE. A 1px -> 2px
-         swap moves the card's own box and makes the whole list jump on
-         every tap. */
-      '.ks-wz-plan{border-color:#C9C7BC;color:#1E1A19;}',
-      '.ks-wz-plan.is-on{background:#EEEFE3;border-color:#C9C7BC;}',
-      /* ⚠ THE MUTING IS GATED ON has-pick AND THAT IS DELIBERATE, NOT A
-         HALF-BUILD. With nothing picked yet EVERY card is unselected, so
-         muting on load would grey all six at once and read as DISABLED —
-         §DASH.2's own warning about greying a whole panel. Quiet only
-         starts once there is something for the rest to be quieter than. */
-      '.ks-wz-plans.has-pick .ks-wz-plan{color:#75736E;}',
-      '.ks-wz-plans.has-pick .ks-wz-plan.is-on{color:#1E1A19;}',
-      /* The coral check is DRAWN, not a glyph. Quicksand carries no
-         reliable check character and a font fallback would be visible. */
-      '.ks-wz-plan-check{display:none;position:absolute;right:16px;bottom:16px;',
-        'width:14px;height:14px;}',
+        'border:2px solid transparent;border-radius:14px;',
+        'padding:16px 18px;',
+        'font-family:inherit;position:relative;overflow:hidden;}',
+      /* ⚠⚠ RULED S69. COLOUR IS PACKAGE IDENTITY, NOT what-is-in-the-bag.
+         The whole card is filled with its package colour and a member learns
+         it once. Packages use BLUE / GREEN / YELLOW only; CORAL/RED IS HELD
+         FOR THE CTAs (Continue, Create) AND NEVER APPEARS ON A CARD; PINK is
+         reserved as an accent, not yet placed. This SUPERSEDES S68 Option B
+         (cream selected card, white unselected) and the S69 8px left rule —
+         both are gone. Text flips per fill for contrast: ink on the light
+         yellow, white on the darker green and blue. Everything Bag is the
+         only two-class plan, so its fill is the blue+green split. */
+      '.ks-wz-plan--basics{background:#EDA920;color:#3A2905;}',
+      '.ks-wz-plan--toychest{background:#309359;color:#FFFFFF;}',
+      '.ks-wz-plan--wardrobe{background:#28498D;color:#FFFFFF;}',
+      '.ks-wz-plan--everything{background:linear-gradient(105deg,#28498D 50%,#309359 50%);',
+        'color:#FFFFFF;}',
+      /* ⚠ SELECTION IS AN INK RING PLUS A CHECK — NOT CORAL. Coral is the
+         CTA colour now (her ruling), so it cannot also mean chosen. Ink
+         #1E1A19 reads on all three fills; the ring is 2px and the resting
+         border is a 2px TRANSPARENT so the box never changes size on tap
+         (the S69 no-jump rule, carried forward). Unselected cards recede by
+         dimming ONLY once something is picked (has-pick), same as before. */
+      '.ks-wz-plan.is-on{border-color:#1E1A19;}',
+      '.ks-wz-plans.has-pick .ks-wz-plan:not(.is-on){opacity:.5;}',
+      /* The check is DRAWN, not a glyph, and inherits the card's text colour
+         so it is ink on yellow and white on green/blue. */
+      '.ks-wz-plan-check{display:none;position:absolute;right:16px;bottom:14px;',
+        'width:15px;height:15px;}',
       '.ks-wz-plan.is-on .ks-wz-plan-check{display:block;}',
-      '.ks-wz-plan-check::after{content:"";position:absolute;left:4px;top:0;',
-        'width:5px;height:10px;border:solid #E54F25;border-width:0 2px 2px 0;',
+      '.ks-wz-plan-check::after{content:"";position:absolute;left:5px;top:0;',
+        'width:5px;height:11px;border:solid currentColor;border-width:0 2px 2px 0;',
         'transform:rotate(45deg);}',
       '.ks-wz-plan-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}',
       '.ks-wz-plan-title-a{display:block;font-size:17px;font-weight:600;color:inherit;}',
-      '.ks-wz-plan-title-b{display:block;font-size:17px;font-weight:600;color:inherit;}',
+      '.ks-wz-plan-title-b{display:block;font-size:14px;font-weight:500;color:inherit;',
+        'opacity:.82;margin-top:2px;}',
       /* price sits TOP RIGHT on every card, no exceptions */
       '.ks-wz-plan-price{flex:0 0 auto;font-size:14px;font-weight:600;color:inherit;',
         'text-align:right;white-space:nowrap;}',
       '.ks-wz-plan-lines{margin-top:10px;padding-right:26px;}',
       '.ks-wz-plan-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}',
-      '.ks-wz-plan-credits{font-size:16px;font-weight:600;color:inherit;}',
-      '.ks-wz-plan-once{font-size:14px;font-weight:600;color:inherit;white-space:nowrap;}',
+      '.ks-wz-plan-credits{font-size:15px;font-weight:600;color:inherit;}',
+      '.ks-wz-plan-once{font-size:14px;font-weight:400;color:inherit;opacity:.85;white-space:nowrap;}',
       '.ks-wz-plan-swaps{font-size:14px;color:inherit;margin-top:4px;}',
-      '.ks-wz-plan-value{font-size:14px;font-style:italic;color:#75736E;margin-top:2px;}',
+      '.ks-wz-plan-value{font-size:14px;font-style:italic;color:inherit;opacity:.82;margin-top:2px;}',
 
       '.ks-wz-includes{margin-top:28px;padding:20px 20px;background:#EEEFE3;border-radius:14px;}',
       '.ks-wz-includes-h{font-size:13px;font-weight:600;color:#1E1A19;',
