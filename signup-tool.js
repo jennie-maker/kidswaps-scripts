@@ -1381,10 +1381,15 @@
 
       /* ---- plan cards (step 2) ---- */
       '.ks-wz-plans{display:flex;flex-direction:column;gap:12px;}',
+      /* NO overflow:hidden ON THIS RULE. It clipped the floating
+         'Best of both' badge (top:-11px) dead along the card's top edge:
+         11px of a 28px pill, measured live S70. The --both sheen pseudos
+         now round themselves with border-radius:inherit, which is the only
+         job the clip was doing. DO NOT RESTORE IT. */
       '.ks-wz-plan{display:block;width:100%;text-align:left;cursor:pointer;',
         'border:0;border-radius:14px;',
         'padding:16px 18px;',
-        'font-family:inherit;position:relative;overflow:hidden;}',
+        'font-family:inherit;position:relative;}',
       /* ⚠⚠ RULED S69. COLOUR IS PACKAGE IDENTITY, NOT what-is-in-the-bag.
          The whole card is filled with its package colour and a member learns
          it once. Packages use BLUE / GREEN / YELLOW only; CORAL/RED IS HELD
@@ -1436,9 +1441,9 @@
          The gold ::after MUST match --gold; the green ::before MUST match
          --toy. Change all three together. */
       '.ks-wz-plan--both{background:transparent;color:#1E1A19;isolation:isolate;}',
-      '.ks-wz-plan--both::before{content:"";position:absolute;inset:0;z-index:-2;',
+      '.ks-wz-plan--both::before{content:"";position:absolute;inset:0;z-index:-2;border-radius:inherit;',
         'background:linear-gradient(160deg,#8AD0A6 0%,#4FAE7A 40%,#309359 100%);}',
-      '.ks-wz-plan--both::after{content:"";position:absolute;inset:0;z-index:-1;',
+      '.ks-wz-plan--both::after{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;',
         'background:linear-gradient(160deg,#F7DE8A 0%,#E0B838 40%,#A67C0A 100%);clip-path:polygon(0 0,52% 0,48% 100%,0 100%);}',
       /* ⚠ RULED S69: the Everything Bag PRICE is white (it sits on the
          green half); the NAME stays ink (gold half). */
