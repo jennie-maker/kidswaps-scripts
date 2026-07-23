@@ -49,6 +49,11 @@
                                              the two rows into one. */
 
   var CANCEL_URL    = '/terms-of-service';
+  /* S72: the general assent line's two destinations. TERMS_URL happens to
+     equal CANCEL_URL today; they are separate names because they answer
+     different questions and either could move. */
+  var PRIVACY_URL   = '/privacy-policy';
+  var TERMS_URL     = '/terms-of-service';
   var IPIFY_URL     = 'https://api.ipify.org?format=json';
 
   /* The check-only address endpoint. Unauthenticated because at step 4 there
@@ -207,7 +212,7 @@
 
     /* ---- step 1 ---- APPROVED */
     s1: {
-      head: 'How do you want to start?',
+      head: 'So glad you\u2019re here, how would you prefer to start?',
       sub:  'Either option is right.',
       cardA: {
         title: 'Send my swap bag first',
@@ -313,6 +318,19 @@
                'my dashboard, effective at the end of the period I\u2019ve paid for. ' + COPY.s5.cancelLink;
       },
       cancelLink: 'How to cancel',
+
+      /* ⚠⚠ S72: the general Privacy/Terms assent, which is SEPARATE from the
+         ARL checkbox above it (§2) and had never come across into the wizard.
+         LIFTED VERBATIM off the published old signup block. DO NOT REDRAFT.
+         Held in parts only so the two links can sit inside the sentence; it
+         reassembles to the approved string exactly. */
+      assent: {
+        pre:     'By creating an account you agree to KidSwaps\u2019 ',
+        privacy: 'Privacy Policy',
+        mid:     ' and ',
+        terms:   'Terms of Service',
+        post:    '.'
+      },
       /* ⚠ INHERITED FROM THE OLD INJECTOR, NEVER APPROVED. Stiff for the house
          voice. Shipping it unchanged rather than redrafting it. */
       errConsent: 'Please confirm you understand your membership renews automatically before continuing.',
@@ -471,8 +489,57 @@
     if (n < 1 || n > MAX_STEP) return;
     S.step = n;
     render();
+    foldFit();   /* belt: the observer covers this too, but not if it is absent */
     track('step_view');
     try { shell.scrollTop = 0; } catch (e) {}
+  }
+
+  /* ---- the fold ----------------------------------------------------------
+     S72, hers: the steps are different heights, so the footer walked up and
+     down the page as she advanced.
+     ⚠ THE MIN-HEIGHT GOES ON THE SECTION, NEVER ON THE CARD. A fixed card
+     leaves short steps with dead space inside a white box; a fixed section
+     holds the footer still and lets the card keep its natural height, centred.
+     It is a SELF-TUNING HIGH-WATER MARK — no magic number to go stale across
+     widths, and if this code never runs the page behaves exactly as it does
+     today. Growing only is also what stops the ResizeObserver looping. */
+  var FOLD_MAX = 0;
+
+  function foldCard() { return shell && shell.querySelector('.ks-wz-card'); }
+
+  function foldFit() {
+    var card = foldCard();
+    if (!card) return;
+    var cs   = getComputedStyle(shell);
+    var need = card.offsetHeight +
+               (parseFloat(cs.paddingTop) || 0) +
+               (parseFloat(cs.paddingBottom) || 0);
+    if (need > FOLD_MAX + 1) {
+      FOLD_MAX = need;
+      shell.style.minHeight = Math.ceil(FOLD_MAX) + 'px';
+    }
+  }
+
+  /* A resize can make every card SHORTER (phone -> desktop), and a high-water
+     mark cannot shrink on its own. Reset, then re-measure. */
+  function foldReset() {
+    FOLD_MAX = 0;
+    if (shell) shell.style.minHeight = '';
+    foldFit();
+  }
+
+  function foldWatch() {
+    var card = foldCard();
+    /* The observer catches EVERY height change, not just step changes — the
+       address ask opening, an error line appearing, a late webfont. */
+    if (card && window.ResizeObserver) {
+      try { new ResizeObserver(foldFit).observe(card); } catch (e) {}
+    }
+    var t;
+    window.addEventListener('resize', function () {
+      clearTimeout(t);
+      t = setTimeout(foldReset, 150);
+    });
   }
 
   function back() {
@@ -1161,6 +1228,19 @@
     gate.appendChild(text);
     body.appendChild(gate);
 
+    /* ⚠⚠ S72: THE GENERAL ASSENT LINE. §2 says the "you agree to our Privacy
+       Policy and Terms" line is SEPARATE from the ARL checkbox and that BOTH
+       must survive the rebuild. It did not — the wizard has never carried it.
+       It sits BELOW the affirmed sentence and ABOVE Create, which is in the
+       form slot directly beneath this body. */
+    var assent = el('p', 'ks-wz-assent');
+    assent.appendChild(document.createTextNode(COPY.s5.assent.pre));
+    assent.appendChild(legalLink(COPY.s5.assent.privacy, PRIVACY_URL));
+    assent.appendChild(document.createTextNode(COPY.s5.assent.mid));
+    assent.appendChild(legalLink(COPY.s5.assent.terms, TERMS_URL));
+    assent.appendChild(document.createTextNode(COPY.s5.assent.post));
+    body.appendChild(assent);
+
     var sub = inForm(SEL.submit);
 
     /* ⚠ LOOK ONLY. The block below is the real guard and is untouched. This
@@ -1193,6 +1273,14 @@
         return true;
       };
     }
+  }
+
+  function legalLink(label, href) {
+    var a = el('a', 'ks-wz-assent-link', label);
+    a.href = href;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    return a;
   }
 
   function sumRow(a, b) {
@@ -1305,7 +1393,11 @@
          them. Until S71 this was position:fixed with an opaque cream sheet at
          z-index 9000, which had been covering the global header since the file
          shipped. Do not restore the overlay. */
-      '.ks-wz{position:static;background:transparent;',
+      /* S72: box-sizing is LOAD-BEARING for the fold. foldFit() sets
+         min-height to card + padding, which is a BORDER-box figure. Under
+         content-box the same number would add the padding a second time and
+         the section would sit one padding too tall. */
+      '.ks-wz{position:static;background:transparent;box-sizing:border-box;',
         'display:flex;align-items:center;justify-content:center;',
         'padding:64px 16px;}',
 
@@ -1596,6 +1688,12 @@
       '.ks-wz-consent-text{font-size:15px;color:#1E1A19;line-height:1.55;}',
       '.ks-wz-consent-link{color:#1E1A19;font-weight:600;text-decoration:underline;}',
 
+      /* S72: the assent line is genuinely secondary text and takes NO
+         meaning-bearing colour — muted grey only. Under the affirmed ARL
+         sentence, which stays 15px ink because it is the one she agrees to. */
+      '.ks-wz-assent{margin:14px 0 0;font-size:13px;line-height:1.55;color:#75736E;}',
+      '.ks-wz-assent-link{color:#75736E;text-decoration:underline;}',
+
       /* ---- nav + buttons ---- */
       '.ks-wz-nav{display:flex;gap:10px;align-items:center;margin-top:28px;}',
       '.ks-wz-btn{font-family:inherit;font-size:16px;font-weight:600;cursor:pointer;',
@@ -1639,6 +1737,7 @@
 
     ensureCss();
     buildShell();
+    foldWatch();
     armRefreshWarning();
 
     /* Best-effort IP, fired early so it is usually in hand before submit.
