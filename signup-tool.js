@@ -164,7 +164,7 @@
   };
 
   var PLAN_ORDER = {
-    send: ['basics-trial', 'toychest-trial', 'wardrobe-trial', 'everything-trial'],
+    send: ['basics-trial', 'wardrobe-trial', 'toychest-trial', 'everything-trial'],
     shop: ['basics-pack', 'toychest-pack']
   };
 
@@ -224,6 +224,7 @@
       head:    'Pick your plan',
       subSend: 'Nothing is charged today. Billing doesn\u2019t start until you have your first whole credit. Cancel whenever you want from your dashboard.',
       subShop: '1 credit = 1 essentials item',
+      badge: 'Best of both',
       includesHead: 'Every plan includes',
       includes: [
         'One free round trip per month',
@@ -725,6 +726,9 @@
     lines.appendChild(el('div', 'ks-wz-plan-value', p.value));   /* italic, in CSS */
     b.appendChild(lines);
     /* always built, shown by CSS only when this card is the pick */
+    if ((p.slug || '').indexOf('everything') === 0) {
+      b.appendChild(el('span', 'ks-wz-plan-badge', COPY.s2.badge));
+    }
     b.appendChild(el('span', 'ks-wz-plan-check'));
 
     b.addEventListener('click', function () {
@@ -740,21 +744,21 @@
     formSlot.style.display = 'none';
     head(COPY.s2.head, S.path === 'shop' ? COPY.s2.subShop : COPY.s2.subSend);
 
-    var list = el('div', 'ks-wz-plans' + (S.plan ? ' has-pick' : ''));
-    PLAN_ORDER[S.path].forEach(function (slug) {
-      list.appendChild(planCard(PLANS[slug]));
-    });
-    body.appendChild(list);
-
-    /* The three shared benefits sit BELOW the plan list, in one block.
-       Identical on every card, they carried no information sitting on any
-       of them. */
+    /* ⚠ RULED S69: the shared benefits FRAME the choice — they render
+       ABOVE the plan list as a subheading, not below it as an afterthought.
+       Blue checks, larger/bolder text, a divider under them. */
     var inc = el('div', 'ks-wz-includes');
     inc.appendChild(el('div', 'ks-wz-includes-h', COPY.s2.includesHead));
     var ul = el('ul', 'ks-wz-includes-list');
     COPY.s2.includes.forEach(function (t) { ul.appendChild(el('li', null, t)); });
     inc.appendChild(ul);
     body.appendChild(inc);
+
+    var list = el('div', 'ks-wz-plans' + (S.plan ? ' has-pick' : ''));
+    PLAN_ORDER[S.path].forEach(function (slug) {
+      list.appendChild(planCard(PLANS[slug]));
+    });
+    body.appendChild(list);
 
     paintNav({
       nextDisabled: !S.plan,
@@ -1397,8 +1401,16 @@
          This freed BLUE, which now joins pink on the fork step. Approved
          hexes only; the earlier #3A2905 / plum text were INVENTED and are
          corrected to ink #1E1A19 here. */
-      '.ks-wz-plan--clothing{background:#EDA920;color:#1E1A19;}',
-      '.ks-wz-plan--toy{background:#309359;color:#FFFFFF;}',
+      /* ⚠ RULED S69 (unified sheen): every card catches light so none
+         sits flat next to the gold. Basics keeps her yellow but gains a
+         subtle sheen (light-gold highlight into #EDA920). Full Wardrobe
+         (--gold) stays the rich gold. No new hexes — same stops as gold. */
+      '.ks-wz-plan--clothing{background:linear-gradient(160deg,#F7DE8A 0%,#EDA920 34%,#EDA920 100%);color:#1E1A19;}',
+      /* ⚠ RULED S69: Toy Chest gets the green sheen too. TEXT SWITCHES
+         WHITE -> INK: white washed out on the sheen's light top #8AD0A6
+         (contrast 1.97); ink reads throughout (8.74 top, 4.47 base) and
+         matches the Everything Bag green half. */
+      '.ks-wz-plan--toy{background:linear-gradient(160deg,#8AD0A6 0%,#4FAE7A 40%,#309359 100%);color:#1E1A19;}',
       /* ⚠ EVERYTHING BAG TEXT IS INK, not white: white on the yellow half
          fails contrast, ink on the yellow half is perfect and on green is
          acceptable for large/bold text. Ink is the least-bad single choice
@@ -1417,9 +1429,24 @@
          the same sheen as the Full Wardrobe and the toy half is solid
          green. The gold half MUST match --gold exactly — change both if you
          change the gold. */
-      '.ks-wz-plan--both{background:linear-gradient(105deg,transparent 0,transparent 50%,#309359 50%,#309359 100%),',
-        'linear-gradient(160deg,#F7DE8A 0%,#E0B838 40%,#A67C0A 100%);',
-        'color:#1E1A19;}',
+      /* ⚠⚠ RULED S69: the WHOLE Everything Bag is metallic — green half
+         AND gold half both shimmer. Two pseudo-layers: ::before is the
+         green sheen (full card), ::after is the gold sheen CLIPPED to the
+         left half. isolation:isolate keeps the -z pseudos inside the card.
+         The gold ::after MUST match --gold; the green ::before MUST match
+         --toy. Change all three together. */
+      '.ks-wz-plan--both{background:transparent;color:#1E1A19;isolation:isolate;}',
+      '.ks-wz-plan--both::before{content:"";position:absolute;inset:0;z-index:-2;',
+        'background:linear-gradient(160deg,#8AD0A6 0%,#4FAE7A 40%,#309359 100%);}',
+      '.ks-wz-plan--both::after{content:"";position:absolute;inset:0;z-index:-1;',
+        'background:linear-gradient(160deg,#F7DE8A 0%,#E0B838 40%,#A67C0A 100%);clip-path:polygon(0 0,52% 0,48% 100%,0 100%);}',
+      /* ⚠ RULED S69: the Everything Bag PRICE is white (it sits on the
+         green half); the NAME stays ink (gold half). */
+      '.ks-wz-plan--both .ks-wz-plan-price{color:#FFFFFF;}',
+      /* ⚠ RULED S69: recommended-tier emphasis — a lift + top separation
+         (also makes room for the floating badge). The ONE rgba in the file,
+         a functional depth shadow, NOT a brand colour. */
+      '.ks-wz-plan--both{margin-top:24px;box-shadow:0 6px 18px rgba(30,26,25,.22);}',
       /* ⚠ RULED S69: BORDERS REMOVED. Selection is the drawn check plus
          the dimming of the others — no ring, no outline. With no border in
          any state the box never resizes on tap, so no-jump holds for free. */
@@ -1440,21 +1467,33 @@
       '.ks-wz-plan-price{flex:0 0 auto;font-size:14px;font-weight:600;color:inherit;',
         'text-align:right;white-space:nowrap;}',
       '.ks-wz-plan-lines{margin-top:10px;padding-right:26px;}',
+      /* the floating best-of-both badge: coral, cream text, matches the CTA */
+      '.ks-wz-plan-badge{position:absolute;top:-11px;left:16px;z-index:3;',
+        'background:#E54F25;color:#EEEFE3;font-size:10px;font-weight:600;',
+        'letter-spacing:.04em;padding:4px 11px;border-radius:999px;}',
       '.ks-wz-plan-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}',
       '.ks-wz-plan-credits{font-size:15px;font-weight:600;color:inherit;}',
       '.ks-wz-plan-once{font-size:14px;font-weight:500;color:inherit;opacity:.85;white-space:nowrap;}',
       '.ks-wz-plan-swaps{font-size:14px;font-weight:500;color:inherit;margin-top:4px;}',
-      '.ks-wz-plan-value{font-size:14px;font-style:italic;font-weight:500;color:inherit;opacity:.82;margin-top:2px;}',
+      /* ⚠ RULED S69: value becomes a CREAM chip (approved #EEEFE3, ink
+         text) so it reads on every card colour. Copy UNCHANGED ('Up to
+         $X value') per her locked-copy rule — dropping 'Up to' is a copy
+         decision, not built. */
+      '.ks-wz-plan-value{display:inline-block;font-size:12px;font-weight:600;color:#1E1A19;',
+        'background:#EEEFE3;padding:3px 9px;border-radius:999px;margin-top:8px;}',
 
-      '.ks-wz-includes{margin-top:28px;padding:20px 20px;background:#EEEFE3;border-radius:14px;}',
-      '.ks-wz-includes-h{font-size:13px;font-weight:600;color:#1E1A19;',
-        'text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;}',
+      /* ⚠ RULED S69: benefits FRAME the choice up top — no filled box,
+         a divider under them, BLUE #28498D checks (which also frees green
+         to mean only toys), text larger (15px) and bolder (600). */
+      '.ks-wz-includes{margin:0 0 20px;padding:0 0 18px;border-bottom:1px solid #C9C7BC;}',
+      '.ks-wz-includes-h{font-size:13px;font-weight:600;color:#75736E;',
+        'text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;}',
       '.ks-wz-includes-list{list-style:none;margin:0;padding:0;}',
-      '.ks-wz-includes-list li{position:relative;padding-left:22px;font-size:14px;',
-        'color:#1E1A19;line-height:1.5;margin-bottom:6px;}',
+      '.ks-wz-includes-list li{position:relative;padding-left:26px;font-size:15px;',
+        'font-weight:600;color:#1E1A19;line-height:1.5;margin-bottom:9px;}',
       '.ks-wz-includes-list li:last-child{margin-bottom:0;}',
-      '.ks-wz-includes-list li::before{content:"";position:absolute;left:2px;top:6px;',
-        'width:9px;height:5px;border-left:2px solid #309359;border-bottom:2px solid #309359;',
+      '.ks-wz-includes-list li::before{content:"";position:absolute;left:3px;top:6px;',
+        'width:11px;height:6px;border-left:2.5px solid #28498D;border-bottom:2.5px solid #28498D;',
         'transform:rotate(-45deg);}',
 
       /* ---- fields ---- */
