@@ -1389,7 +1389,17 @@
       '.ks-wz-plan{display:block;width:100%;text-align:left;cursor:pointer;',
         'border:0;border-radius:14px;',
         'padding:16px 18px;',
-        'font-family:inherit;position:relative;}',
+        'font-family:inherit;position:relative;',
+        'transition:transform .15s ease,box-shadow .15s ease;}',
+      /* S70 HER RULING: a subtle hover on all four plan cards. Gated on
+         (hover:hover) so it can NEVER stick on a phone, and cancelled
+         under prefers-reduced-motion. Depth only, no colour change, so
+         it cannot fight the card fills or the has-pick dimming. */
+      '@media (hover:hover){',
+        '.ks-wz-plan:hover{transform:translateY(-2px);',
+          'box-shadow:0 6px 16px rgba(30,26,25,.16);}',
+        '.ks-wz-plan--both:hover{box-shadow:0 10px 26px rgba(30,26,25,.28);}}',
+      '@media (prefers-reduced-motion:reduce){.ks-wz-plan{transition:none}}',
       /* ⚠⚠ RULED S69. COLOUR IS PACKAGE IDENTITY, NOT what-is-in-the-bag.
          The whole card is filled with its package colour and a member learns
          it once. Packages use BLUE / GREEN / YELLOW only; CORAL/RED IS HELD
@@ -1449,9 +1459,14 @@
          green half); the NAME stays ink (gold half). */
       '.ks-wz-plan--both .ks-wz-plan-price{color:#FFFFFF;}',
       /* ⚠ RULED S69: recommended-tier emphasis — a lift + top separation
-         (also makes room for the floating badge). The ONE rgba in the file,
+         (the badge now sits INSIDE the card, S70). rgba here is functional depth/tint only,
          a functional depth shadow, NOT a brand colour. */
-      '.ks-wz-plan--both{margin-top:24px;box-shadow:0 6px 18px rgba(30,26,25,.22);}',
+      '.ks-wz-plan--both{margin-top:24px;padding-top:52px;',
+        'box-shadow:0 6px 18px rgba(30,26,25,.22);}',
+      /* S70 HER RULING: the Everything Bag title is bigger. Weight stays
+         600 - the standing type rule caps Quicksand at 600 and 700 would
+         risk faux-bold. The size step is doing the work. */
+      '.ks-wz-plan--both .ks-wz-plan-title-a{font-size:21px;}',
       /* ⚠ RULED S69: BORDERS REMOVED. Selection is the drawn check plus
          the dimming of the others — no ring, no outline. With no border in
          any state the box never resizes on tap, so no-jump holds for free. */
@@ -1472,8 +1487,10 @@
       '.ks-wz-plan-price{flex:0 0 auto;font-size:14px;font-weight:600;color:inherit;',
         'text-align:right;white-space:nowrap;}',
       '.ks-wz-plan-lines{margin-top:10px;padding-right:26px;}',
-      /* the floating best-of-both badge: coral, cream text, matches the CTA */
-      '.ks-wz-plan-badge{position:absolute;top:-11px;left:16px;z-index:3;',
+      /* S70 HER RULING: the badge sits ON the card, not straddling its top
+         edge. Aligned to the card's own 18px left padding; --both carries
+         the extra padding-top that makes room for it. */
+      '.ks-wz-plan-badge{position:absolute;top:14px;left:18px;z-index:3;',
         'background:#E54F25;color:#EEEFE3;font-size:10px;font-weight:600;',
         'letter-spacing:.04em;padding:4px 11px;border-radius:999px;}',
       '.ks-wz-plan-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}',
@@ -1485,20 +1502,24 @@
          $X value') per her locked-copy rule — dropping 'Up to' is a copy
          decision, not built. */
       '.ks-wz-plan-value{display:inline-block;font-size:12px;font-weight:600;color:#1E1A19;',
-        'background:#EEEFE3;padding:3px 9px;border-radius:999px;margin-top:8px;}',
+        'background:rgba(30,26,25,.13);padding:3px 9px;border-radius:999px;margin-top:8px;}',
 
       /* ⚠ RULED S69: benefits FRAME the choice up top — no filled box,
-         a divider under them, BLUE #28498D checks (which also frees green
-         to mean only toys), text larger (15px) and bolder (600). */
+         a divider under them, text larger (15px) and bolder (600).
+         S70 HER OVERRIDE: the heading and the checks are now CORAL
+         #E54F25. That reverses the S69 'coral is held for the CTAs and
+         never appears elsewhere' rule - coral now does two jobs on this
+         screen. Green still means only toys, which was the real point of
+         moving the checks off green in the first place. */
       '.ks-wz-includes{margin:0 0 20px;padding:0 0 18px;border-bottom:1px solid #C9C7BC;}',
-      '.ks-wz-includes-h{font-size:13px;font-weight:600;color:#75736E;',
+      '.ks-wz-includes-h{font-size:13px;font-weight:600;color:#E54F25;',
         'text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;}',
       '.ks-wz-includes-list{list-style:none;margin:0;padding:0;}',
       '.ks-wz-includes-list li{position:relative;padding-left:26px;font-size:15px;',
         'font-weight:600;color:#1E1A19;line-height:1.5;margin-bottom:9px;}',
       '.ks-wz-includes-list li:last-child{margin-bottom:0;}',
       '.ks-wz-includes-list li::before{content:"";position:absolute;left:3px;top:6px;',
-        'width:11px;height:6px;border-left:2.5px solid #28498D;border-bottom:2.5px solid #28498D;',
+        'width:11px;height:6px;border-left:2.5px solid #E54F25;border-bottom:2.5px solid #E54F25;',
         'transform:rotate(-45deg);}',
 
       /* ---- fields ---- */
@@ -1572,8 +1593,11 @@
         'border-radius:999px;padding:13px 22px;border:1px solid transparent;}',
       '.ks-wz-btn-primary{background:#E54F25;border-color:#E54F25;color:#EEEFE3;',
         'margin-left:auto;text-decoration:none;display:inline-block;text-align:center;}',
-      '.ks-wz-btn-primary[disabled]{background:#EEEFE3;border-color:#EEEFE3;color:#75736E;',
-        'cursor:default;}',
+      /* S70 HER RULING: the primary button keeps full coral even when
+         disabled. WARNING, NOT A DEFECT: it now LOOKS tappable while
+         nothing is picked. The disabled attribute is still set, so a tap
+         does nothing at all. */
+      '.ks-wz-btn-primary[disabled]{cursor:default;}',
       '.ks-wz-btn-ghost{background:transparent;border-color:#C9C7BC;color:#1E1A19;}',
       '.ks-wz-btn-quiet{background:transparent;border-color:transparent;color:#75736E;}',
 
