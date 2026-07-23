@@ -453,7 +453,7 @@
      MACHINERY
      ====================================================================== */
 
-  var root, shell, body, formSlot, nav, backBtn, nextBtn, dots;
+  var root, shell, body, formSlot, nav, backBtn, nextBtn, dots, topbar;
 
   function el(tag, cls, text) {
     var n = document.createElement(tag);
@@ -648,7 +648,7 @@
        stays right-aligned on its own). backBtn is the SAME ELEMENT and the
        SAME click handler - only its parent changed, so paintNav's
        'steps 2-5 only' line keeps working untouched. */
-    var topbar = el('div', 'ks-wz-top');
+    topbar = el('div', 'ks-wz-top');
     topbar.appendChild(dots);
     topbar.appendChild(backBtn);
 
@@ -1466,7 +1466,19 @@
     var c = (kind === 'pack') ? COPY.endB : COPY.endA;
     clear(body);
     formSlot.style.display = 'none';
-    dots.style.display = 'none';
+    /* ⚠⚠ HIDE THE TOP BAR, NOT THE DOTS. This line read dots.style.display
+       until S77. It was written in S63 when BACK LIVED INSIDE nav, so hiding
+       nav took Back with it. S74 MOVED BACK OUT OF nav INTO THE TOP BAR
+       beside the dots - correct for every path that runs through paintNav,
+       and this is the one path that does not. Back then survived onto the
+       completion screen as a dead pill, and the top bar being
+       justify-content:space-between with its only visible child left put it
+       at the LEFT edge, which is exactly what it looked like.
+       ⚠ NOBODY COULD HAVE SEEN THIS UNTIL NOW - the end screen had never
+       rendered once in four sessions. Found S77 on its first ever paint.
+       ⚠ Hiding the bar also takes its 28px bottom margin, which closes the
+       gap that sat above the headline. DO NOT GO BACK TO HIDING THE DOTS. */
+    topbar.style.display = 'none';
     nav.style.display = 'none';
     body.appendChild(el('h2', 'ks-wz-h', c.head));
     body.appendChild(el('p', 'ks-wz-body-text',
@@ -1495,6 +1507,16 @@
        of the end screen drops her onto STEP 1 of a wizard she has just
        finished - the exact failure the build order exists to avoid. The stash
        dies with the tab, which is the right lifetime. DO NOT ADD removeItem. */
+
+    /* ⚠ THE STATE OBJECT IS SET BEFORE PAINTING SO THE EVENT CARRIES THE
+       PLAN. resumeEnd paints straight from the stash and never runs through
+       the wizard, so without these two lines end_state fires with plan:null
+       and path:null - the single most valuable event in the flow, unable to
+       say which plan converted. §2 rules one event per step from day one
+       because this cannot be reconstructed later. Found S77 by reading a
+       real payload. CLAUDE'S CALL, REVERSIBLE - not a ruling of hers. */
+    S.plan = p.slug;
+    S.path = p.path;
 
     endState(p.pack ? 'pack' : 'plan', p);
     return true;
