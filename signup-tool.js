@@ -811,21 +811,25 @@
       head(COPY.s2.head, COPY.s2.subSend);
     }
 
-    /* ⚠ RULED S69: the shared benefits FRAME the choice — they render
-       ABOVE the plan list as a subheading, not below it as an afterthought.
-       Blue checks, larger/bolder text, a divider under them. */
+    /* ⚠⚠ RULED S74, HERS, AND IT IS A KNOWING REVERSAL OF S69 - NOT A
+       CORRECTION. S69 put this block ABOVE the cards on purpose: sitting
+       below them it read like a fifth option and a skippable afterthought.
+       She was shown that reasoning and moved it back down anyway. DO NOT
+       'RESTORE' IT TO THE TOP. Its divider moved with it - .ks-wz-includes
+       now carries a border-TOP, so the line sits between the cards and the
+       list instead of hanging under nothing. */
+    var list = el('div', 'ks-wz-plans' + (S.plan ? ' has-pick' : ''));
+    PLAN_ORDER[S.path].forEach(function (slug) {
+      list.appendChild(planCard(PLANS[slug]));
+    });
+    body.appendChild(list);
+
     var inc = el('div', 'ks-wz-includes');
     inc.appendChild(el('div', 'ks-wz-includes-h', COPY.s2.includesHead));
     var ul = el('ul', 'ks-wz-includes-list');
     COPY.s2.includes.forEach(function (t) { ul.appendChild(el('li', null, t)); });
     inc.appendChild(ul);
     body.appendChild(inc);
-
-    var list = el('div', 'ks-wz-plans' + (S.plan ? ' has-pick' : ''));
-    PLAN_ORDER[S.path].forEach(function (slug) {
-      list.appendChild(planCard(PLANS[slug]));
-    });
-    body.appendChild(list);
 
     paintNav({
       nextDisabled: !S.plan,
@@ -1520,11 +1524,22 @@
          This freed BLUE, which now joins pink on the fork step. Approved
          hexes only; the earlier #3A2905 / plum text were INVENTED and are
          corrected to ink #1E1A19 here. */
-      /* ⚠ RULED S69 (unified sheen): every card catches light so none
-         sits flat next to the gold. Basics keeps her yellow but gains a
-         subtle sheen (light-gold highlight into #EDA920). Full Wardrobe
-         (--gold) stays the rich gold. No new hexes — same stops as gold. */
-      '.ks-wz-plan--clothing{background:linear-gradient(160deg,#F7DE8A 0%,#EDA920 34%,#EDA920 100%);color:#1E1A19;}',
+      /* ⚠⚠ RULED S74, HERS: ALL THREE GOLDS BECOME ONE GOLD - the Full
+         Wardrobe gradient. She did not like Basics and Full Wardrobe sitting
+         side by side in two slightly different golds. THIS RETIRES #EDA920 AS
+         A PLAN-CARD FILL. It stays a brand colour; it is just not a card any
+         more. NO NEW HEXES - these are the same three she okayed in S69.
+         ⚠ --clothing AND --gold ARE ONE RULE ON PURPOSE, so the gold gradient
+         string exists in one place here rather than two that can drift. The
+         JS still adds ks-wz-plan--gold to the Full Wardrobe card (planCard);
+         left alone deliberately, so the seam survives if they are ever split
+         again. THE OTHER COPY OF THIS GRADIENT IS THE EVERYTHING BAG'S
+         background-image. Change one, change both.
+         ⚠ The shop-first Basics pack card is cls:'clothing', so it follows
+         this rule for free. Both clothing cards change together. */
+      '.ks-wz-plan--clothing,.ks-wz-plan--gold{',
+        'background:linear-gradient(160deg,#F7DE8A 0%,#E0B838 40%,#A67C0A 100%);',
+        'color:#1E1A19;}',
    /* ⚠⚠ RULED S73, HERS: ANY GREEN BACKGROUND TAKES WHITE TEXT. The S69
          green could not carry it — white measured 1.80 / 2.74 / 3.86 against
          its stops #8AD0A6 / #4FAE7A / #309359, failing AA at every one, which
@@ -1544,43 +1559,61 @@
          fails contrast, ink on the yellow half is perfect and on green is
          acceptable for large/bold text. Ink is the least-bad single choice
          for a two-colour fill. Watch this one on the render. */
-      /* ⚠⚠ RULED S69: THE FULL WARDROBE IS A METALLIC GOLD GRADIENT, not a
-         flat yellow — flat gold always reads as yellow on screen; the
-         light-to-dark sheen is what makes it read as GOLD. Option C, her
-         pick. Declared AFTER --clothing so it overrides the yellow on the
-         same specificity (both single-class). Ink text passes AA-normal
-         even at the dark end #A67C0A (4.53). NEW HEXES, deliberately added
-         with her okay: #F7DE8A #E0B838 #A67C0A = the Full Wardrobe gold. */
-      '.ks-wz-plan--gold{background:linear-gradient(160deg,#F7DE8A 0%,#E0B838 40%,#A67C0A 100%);color:#1E1A19;}',
-      /* ⚠ THE EVERYTHING BAG is GOLD (clothing) + GREEN (toys). Two layers:
-         the TOP layer paints green on the right half over transparent left;
-         the BOTTOM layer is the metallic gold. So the clothing half keeps
-         the same sheen as the Full Wardrobe and the toy half is solid
-         green. The gold half MUST match --gold exactly — change both if you
-         change the gold. */
-      /* ⚠⚠ RULED S69: the WHOLE Everything Bag is metallic — green half
-         AND gold half both shimmer. Two pseudo-layers: ::before is the
-         green sheen (full card), ::after is the gold sheen CLIPPED to the
-         left half. isolation:isolate keeps the -z pseudos inside the card.
-        The gold ::after MUST match --gold. ⚠⚠ THE GREEN ::before NO LONGER
-         MATCHES --toy AND MUST NOT BE RESYNCED TO IT (S73): --toy went dark
-         so it could carry white text, but THIS card's text CROSSES BOTH
-         FILLS, so darkening its green half would wreck the ink lines that
-         span onto the gold. The Everything Bag keeps the S69 green, its ink
-         text and its white price, which she confirmed reads well live. */
-      '.ks-wz-plan--both{background:transparent;color:#1E1A19;isolation:isolate;}',
-      '.ks-wz-plan--both::before{content:"";position:absolute;inset:0;z-index:-2;border-radius:inherit;',
-        'background:linear-gradient(160deg,#8AD0A6 0%,#4FAE7A 40%,#309359 100%);}',
-      '.ks-wz-plan--both::after{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;',
-        'background:linear-gradient(160deg,#F7DE8A 0%,#E0B838 40%,#A67C0A 100%);clip-path:polygon(0 0,52% 0,48% 100%,0 100%);}',
-      /* ⚠ RULED S69: the Everything Bag PRICE is white (it sits on the
-         green half); the NAME stays ink (gold half). */
-      '.ks-wz-plan--both .ks-wz-plan-price{color:#FFFFFF;}',
+      /* ⚠⚠ RULED S69, AND STILL THE REASON THIS GRADIENT EXISTS AT ALL: gold
+         reads as GOLD only as a light-to-dark sheen. A flat gold always reads
+         as yellow on screen, which is why reaching for a different flat hex
+         will not fix it. Her pick, and the three hexes #F7DE8A #E0B838
+         #A67C0A were added with her explicit okay. Ink passes AA-normal even
+         at the dark end #A67C0A (4.53).
+         ⚠ THE --gold RULE ITSELF MOVED UP (S74) and now shares one
+         declaration with --clothing. THERE IS NO SEPARATE --gold RULE ANY
+         MORE. Do not re-add one. */
+      /* ⚠⚠ RULED S74, HERS, AND IT SUPERSEDES THE ENTIRE S69/S73 SPLIT-CARD
+         MODEL: THE EVERYTHING BAG IS A GOLD CARD WITH A SHORT DARK-GREEN BAND
+         ACROSS THE TOP. Not a left/right split. ALL TEXT SITS ON GOLD, IN INK,
+         AND NOTHING CROSSES A FILL BOUNDARY - which is the whole point of the
+         shape, not a side effect of it.
+         ⚠⚠ THIS KILLS THE OLD 'THE EVERYTHING BAG IS THE ONE EXCLUSION / DO
+         NOT RESYNC THE GREENS' RULE. That exclusion existed ONLY because text
+         spanned both fills, so darkening the green would have wrecked the ink
+         lines running onto the gold. Nothing spans anything now, so BOTH
+         GREENS ARE THE SAME DARK GRADIENT as --toy and are meant to stay so.
+         ⚠⚠ WHY THE PROPORTION IS RIGHT, so it is not re-opened as taste: the
+         plan is TEN clothing swaps against THREE toy ones. The set now reads
+         no green = no toys · all green = only toys · a band of green = some
+         toys. The amount of green is the amount of toy. A half-and-half card
+         always overstated the toy side.
+         ⚠ TWO BACKGROUND LAYERS ON THE ELEMENT ITSELF, NOT PSEUDOS. The old
+         ::before / ::after split layers are GONE. background-repeat:no-repeat
+         IS LOAD-BEARING - the band layer is sized 100% 34px, so without it the
+         band tiles all the way down the card.
+         ⚠ isolation:isolate STAYS even though the -z pseudos are gone. The
+         shine sits at z-index 2 and the badge at 3, and the card only makes
+         its own stacking context on hover (transform); isolate is what keeps
+         that consistent at rest.
+         ⚠⚠ THE GOLD MUST MATCH .ks-wz-plan--clothing EXACTLY AND THE GREEN
+         MUST MATCH .ks-wz-plan--toy EXACTLY. Two copies of each gradient live
+         in this file and this is one of them. Change one, change both. */
+      '.ks-wz-plan--both{color:#1E1A19;isolation:isolate;',
+        'background-image:linear-gradient(160deg,#2A7F4C 0%,#256F43 40%,#1F5C38 100%),',
+          'linear-gradient(160deg,#F7DE8A 0%,#E0B838 40%,#A67C0A 100%);',
+        'background-size:100% 34px,100% 100%;',
+        'background-position:left top,left top;',
+        'background-repeat:no-repeat;}',
+      /* ⚠⚠ THE WHITE PRICE IS GONE, S74, AND THIS OVERTURNS A RULING SHE
+         MADE TWICE. White was RIGHT while the price sat on the green half
+         (S69, re-confirmed S73). The price now sits on GOLD, where white
+         measures 1.33 / 1.89 / 3.81 and fails at every stop; ink reads
+         12.96 / 9.11 / 4.53 and passes throughout. So the price inherits ink
+         like every other line on this card. DO NOT RESTORE THE WHITE - it
+         would reinstate a ruling whose reason the card no longer has. */
       /* RULED S69: recommended-tier emphasis. S70 HER RULING: the extra top
          separation is REMOVED so all four cards sit an equal 12px apart and
          the shadow alone carries the emphasis. The rgbas in this file are
          functional depth or tint only, never a brand colour. */
-      '.ks-wz-plan--both{padding-top:52px;',
+      /* ⚠ 62px, NOT S70's 52px: the band is 34px and the enlarged badge
+         reaches ~49px down the card. This is the clearance for both. */
+      '.ks-wz-plan--both{padding-top:62px;',
         'box-shadow:0 6px 18px rgba(30,26,25,.22);}',
       /* S70 HER RULING: the Everything Bag title is bigger. Weight stays
          600 - the standing type rule caps Quicksand at 600 and 700 would
@@ -1606,12 +1639,23 @@
       '.ks-wz-plan-price{flex:0 0 auto;font-size:14px;font-weight:600;color:inherit;',
         'text-align:right;white-space:nowrap;}',
       '.ks-wz-plan-lines{margin-top:10px;padding-right:26px;}',
-      /* S70 HER RULING: the badge sits ON the card, not straddling its top
-         edge. Aligned to the card's own 18px left padding; --both carries
-         the extra padding-top that makes room for it. */
-      '.ks-wz-plan-badge{position:absolute;top:14px;left:18px;z-index:3;',
-        'background:#E54F25;color:#EEEFE3;font-size:10px;font-weight:600;',
-        'letter-spacing:.04em;padding:4px 11px;border-radius:999px;}',
+      /* ⚠⚠ RULED S74: the badge is ENLARGED and STRADDLES THE JOIN between
+         the green band and the gold - half on each. THIS IS NOT THE S70 BUG
+         COMING BACK. S70's clipping was the badge against the CARD'S OUTER
+         EDGE under overflow:hidden, and that clip is gone and stays gone (see
+         .ks-wz-plans). THIS join is INSIDE the card, so there is nothing there
+         that can clip it. Same-looking picture, different problem.
+         ⚠ THE BAND IS 34px AND THE BADGE SITS AT top:19px. Those two numbers
+         are what makes it straddle. Move one and re-check the other.
+         ⚠ left:18px keeps it flush with the card's own left padding and with
+         the title beneath it (the S70 alignment, kept).
+         ⚠ ONLY THE EVERYTHING BAG EVER RENDERS A BADGE - planCard appends it
+         for the 'everything' slug only - so this rule is left unscoped. A
+         second badged card would inherit this size. */
+      '.ks-wz-plan-badge{position:absolute;top:19px;left:18px;z-index:3;',
+        'background:#E54F25;color:#EEEFE3;font-size:13px;font-weight:600;',
+        'letter-spacing:.04em;padding:7px 17px;border-radius:999px;',
+        'box-shadow:0 2px 6px rgba(30,26,25,.18);}',
       /* S70 HER RULING: the Everything Bag catches the light when it is
          hovered on desktop or picked on a phone. pointer-events:none so it
          can never eat a tap; ONE pass, never a loop; gone entirely under
@@ -1651,7 +1695,7 @@
          never appears elsewhere' rule - coral now does two jobs on this
          screen. Green still means only toys, which was the real point of
          moving the checks off green in the first place. */
-      '.ks-wz-includes{margin:0 0 20px;padding:0 0 18px;border-bottom:1px solid #C9C7BC;}',
+      '.ks-wz-includes{margin:20px 0 0;padding:18px 0 0;border-top:1px solid #C9C7BC;}',
       '.ks-wz-includes-h{font-size:13px;font-weight:600;color:#E54F25;',
         'text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;}',
       '.ks-wz-includes-list{list-style:none;margin:0;padding:0;}',
