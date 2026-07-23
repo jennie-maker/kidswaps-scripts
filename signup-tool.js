@@ -229,6 +229,13 @@
       head:    'Pick your plan',
       subSend: 'Nothing is charged today. Billing doesn\u2019t start until you have your first whole credit. Cancel whenever you want from your dashboard.',
       subShop: '1 credit = 1 essentials item',
+      /* ⚠ APPROVED VERBATIM S72, HERS. Sits UNDER the credit-unit line, on the
+         SHOP-FIRST path only. ⚠⚠ IT PROMISES THE CREDITS ARE ALREADY HERS AND
+         NOTHING HAS EVER OBSERVED THAT HAPPENING — see #PACK-CREDITS-OBSERVED.
+         Ruled in by her: the promise is true the moment the build is finished,
+         and to a member "as soon as I joined" IS immediately. Do not soften it,
+         and do not let a handoff describe it as proven. */
+      subShopB: 'Your credits are added to your bank immediately, so you can start shopping right away.',
       badge: 'Best of both',
       includesHead: 'Every plan includes',
       includes: [
@@ -792,7 +799,17 @@
 
   function step2() {
     formSlot.style.display = 'none';
-    head(COPY.s2.head, S.path === 'shop' ? COPY.s2.subShop : COPY.s2.subSend);
+    /* TWO subs on the shop-first path, ONE on send-first. head() takes a single
+       sub and EVERY other step calls it, so the shop branch builds its own pair
+       here rather than changing head()'s signature. --lead only closes the gap
+       between the two lines; it carries no colour and no size. */
+    if (S.path === 'shop') {
+      head(COPY.s2.head);
+      body.appendChild(el('p', 'ks-wz-sub ks-wz-sub--lead', COPY.s2.subShop));
+      body.appendChild(el('p', 'ks-wz-sub', COPY.s2.subShopB));
+    } else {
+      head(COPY.s2.head, COPY.s2.subSend);
+    }
 
     /* ⚠ RULED S69: the shared benefits FRAME the choice — they render
        ABOVE the plan list as a subheading, not below it as an afterthought.
@@ -1430,6 +1447,8 @@
       '.ks-wz-h{font-family:"Instrument Serif",Georgia,serif;font-size:41px;',
         'font-weight:400;color:#1E1A19;margin:0 0 12px;line-height:1.15;}',
       '.ks-wz-sub{font-size:15px;color:#75736E;margin:0 0 28px;line-height:1.5;}',
+      /* Two stacked subs on shop-first: the first sits tight above the second. */
+      '.ks-wz-sub--lead{margin-bottom:6px;}',
       '.ks-wz-headline{font-size:16px;font-weight:600;color:#1E1A19;margin:0 0 16px;}',
       '.ks-wz-body-text{font-size:16px;color:#1E1A19;line-height:1.6;margin:0 0 22px;}',
 
