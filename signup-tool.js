@@ -1525,11 +1525,21 @@
          subtle sheen (light-gold highlight into #EDA920). Full Wardrobe
          (--gold) stays the rich gold. No new hexes — same stops as gold. */
       '.ks-wz-plan--clothing{background:linear-gradient(160deg,#F7DE8A 0%,#EDA920 34%,#EDA920 100%);color:#1E1A19;}',
-      /* ⚠ RULED S69: Toy Chest gets the green sheen too. TEXT SWITCHES
-         WHITE -> INK: white washed out on the sheen's light top #8AD0A6
-         (contrast 1.97); ink reads throughout (8.74 top, 4.47 base) and
-         matches the Everything Bag green half. */
-      '.ks-wz-plan--toy{background:linear-gradient(160deg,#8AD0A6 0%,#4FAE7A 40%,#309359 100%);color:#1E1A19;}',
+   /* ⚠⚠ RULED S73, HERS: ANY GREEN BACKGROUND TAKES WHITE TEXT. The S69
+         green could not carry it — white measured 1.80 / 2.74 / 3.86 against
+         its stops #8AD0A6 / #4FAE7A / #309359, failing AA at every one, which
+         is exactly why S69 flipped this card to ink. SO THE GREEN GOT DARKER
+         RATHER THAN THE TEXT GOING WHITE ON THE OLD GREEN: white now reads
+         4.95 / 6.12 / 7.94, AA at every stop. Her own words are the reason
+         this shape works — white renders great "as long as it is over the
+         darker shade of the green gradient."
+         ⚠ THREE NEW HEXES, ADDED WITH HER OKAY, exactly as the Full Wardrobe
+         golds were: #2A7F4C #256F43 #1F5C38. Brand green #309359 tops out at
+         3.86 against white and STRUCTURALLY CANNOT carry white body text, so
+         there was no way to do this inside the existing eight.
+         ⚠⚠ THIS NO LONGER MATCHES THE EVERYTHING BAG'S GREEN ::before AND
+         THAT IS DELIBERATE. Do not resync them; see the --both block. */
+      '.ks-wz-plan--toy{background:linear-gradient(160deg,#2A7F4C 0%,#256F43 40%,#1F5C38 100%);color:#FFFFFF;}',
       /* ⚠ EVERYTHING BAG TEXT IS INK, not white: white on the yellow half
          fails contrast, ink on the yellow half is perfect and on green is
          acceptable for large/bold text. Ink is the least-bad single choice
@@ -1552,8 +1562,12 @@
          AND gold half both shimmer. Two pseudo-layers: ::before is the
          green sheen (full card), ::after is the gold sheen CLIPPED to the
          left half. isolation:isolate keeps the -z pseudos inside the card.
-         The gold ::after MUST match --gold; the green ::before MUST match
-         --toy. Change all three together. */
+        The gold ::after MUST match --gold. ⚠⚠ THE GREEN ::before NO LONGER
+         MATCHES --toy AND MUST NOT BE RESYNCED TO IT (S73): --toy went dark
+         so it could carry white text, but THIS card's text CROSSES BOTH
+         FILLS, so darkening its green half would wreck the ink lines that
+         span onto the gold. The Everything Bag keeps the S69 green, its ink
+         text and its white price, which she confirmed reads well live. */
       '.ks-wz-plan--both{background:transparent;color:#1E1A19;isolation:isolate;}',
       '.ks-wz-plan--both::before{content:"";position:absolute;inset:0;z-index:-2;border-radius:inherit;',
         'background:linear-gradient(160deg,#8AD0A6 0%,#4FAE7A 40%,#309359 100%);}',
@@ -1621,8 +1635,14 @@
          text) so it reads on every card colour. Copy UNCHANGED ('Up to
          $X value') per her locked-copy rule — dropping 'Up to' is a copy
          decision, not built. */
-      '.ks-wz-plan-value{display:inline-block;font-size:12px;font-weight:600;color:#1E1A19;',
+   '.ks-wz-plan-value{display:inline-block;font-size:12px;font-weight:600;color:#1E1A19;',
         'background:rgba(30,26,25,.13);padding:3px 9px;border-radius:999px;margin-top:8px;}',
+      /* ⚠⚠ S73: THE CHIP HARDCODES INK AND DOES NOT INHERIT, so the darkened
+         green card would have kept BLACK TEXT ON A DARK TINT — unreadable,
+         and invisible to anyone auditing only the card's own color rule. On
+         green it flips to white on a light tint. The rgba is a tint of the
+         fill underneath, which is one of the three jobs rgba is allowed. */
+      '.ks-wz-plan--toy .ks-wz-plan-value{color:#FFFFFF;background:rgba(255,255,255,.18);}',
 
       /* ⚠ RULED S69: benefits FRAME the choice up top — no filled box,
          a divider under them, text larger (15px) and bolder (600).
