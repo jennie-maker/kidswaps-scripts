@@ -694,6 +694,7 @@
 
   function planCard(p) {
     var b = el('button', 'ks-wz-plan ks-wz-plan--' + (p.cls || 'clothing') +
+                     ((p.slug || '').indexOf('wardrobe') === 0 ? ' ks-wz-plan--gold' : '') +
                      (S.plan === p.slug ? ' is-on' : ''));
     b.type = 'button';
 
@@ -1366,7 +1367,7 @@
       '.ks-wz-fork--shop{background:#28498D;color:#FFFFFF;}',
       '.ks-wz-forks.has-pick .ks-wz-fork:not(.is-on){opacity:.5;}',
       '.ks-wz-fork-t{display:block;font-size:17px;font-weight:600;color:inherit;margin-bottom:4px;}',
-      '.ks-wz-fork-s{display:block;font-size:14px;color:inherit;opacity:.82;line-height:1.45;}',
+      '.ks-wz-fork-s{display:block;font-size:14px;font-weight:500;color:inherit;opacity:.82;line-height:1.45;}',
       /* the drawn check, inheriting ink so it matches the fork text */
       '.ks-wz-fork-check{display:none;position:absolute;right:16px;bottom:16px;width:15px;height:15px;}',
       '.ks-wz-fork.is-on .ks-wz-fork-check{display:block;}',
@@ -1402,7 +1403,22 @@
          fails contrast, ink on the yellow half is perfect and on green is
          acceptable for large/bold text. Ink is the least-bad single choice
          for a two-colour fill. Watch this one on the render. */
-      '.ks-wz-plan--both{background:linear-gradient(105deg,#EDA920 50%,#309359 50%);',
+      /* ⚠⚠ RULED S69: THE FULL WARDROBE IS A METALLIC GOLD GRADIENT, not a
+         flat yellow — flat gold always reads as yellow on screen; the
+         light-to-dark sheen is what makes it read as GOLD. Option C, her
+         pick. Declared AFTER --clothing so it overrides the yellow on the
+         same specificity (both single-class). Ink text passes AA-normal
+         even at the dark end #A67C0A (4.53). NEW HEXES, deliberately added
+         with her okay: #F7DE8A #E0B838 #A67C0A = the Full Wardrobe gold. */
+      '.ks-wz-plan--gold{background:linear-gradient(160deg,#F7DE8A 0%,#E0B838 40%,#A67C0A 100%);color:#1E1A19;}',
+      /* ⚠ THE EVERYTHING BAG is GOLD (clothing) + GREEN (toys). Two layers:
+         the TOP layer paints green on the right half over transparent left;
+         the BOTTOM layer is the metallic gold. So the clothing half keeps
+         the same sheen as the Full Wardrobe and the toy half is solid
+         green. The gold half MUST match --gold exactly — change both if you
+         change the gold. */
+      '.ks-wz-plan--both{background:linear-gradient(105deg,transparent 0,transparent 50%,#309359 50%,#309359 100%),',
+        'linear-gradient(160deg,#F7DE8A 0%,#E0B838 40%,#A67C0A 100%);',
         'color:#1E1A19;}',
       /* ⚠ RULED S69: BORDERS REMOVED. Selection is the drawn check plus
          the dimming of the others — no ring, no outline. With no border in
@@ -1426,9 +1442,9 @@
       '.ks-wz-plan-lines{margin-top:10px;padding-right:26px;}',
       '.ks-wz-plan-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}',
       '.ks-wz-plan-credits{font-size:15px;font-weight:600;color:inherit;}',
-      '.ks-wz-plan-once{font-size:14px;font-weight:400;color:inherit;opacity:.85;white-space:nowrap;}',
-      '.ks-wz-plan-swaps{font-size:14px;color:inherit;margin-top:4px;}',
-      '.ks-wz-plan-value{font-size:14px;font-style:italic;color:inherit;opacity:.82;margin-top:2px;}',
+      '.ks-wz-plan-once{font-size:14px;font-weight:500;color:inherit;opacity:.85;white-space:nowrap;}',
+      '.ks-wz-plan-swaps{font-size:14px;font-weight:500;color:inherit;margin-top:4px;}',
+      '.ks-wz-plan-value{font-size:14px;font-style:italic;font-weight:500;color:inherit;opacity:.82;margin-top:2px;}',
 
       '.ks-wz-includes{margin-top:28px;padding:20px 20px;background:#EEEFE3;border-radius:14px;}',
       '.ks-wz-includes-h{font-size:13px;font-weight:600;color:#1E1A19;',
