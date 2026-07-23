@@ -728,6 +728,9 @@
     /* always built, shown by CSS only when this card is the pick */
     if ((p.slug || '').indexOf('everything') === 0) {
       b.appendChild(el('span', 'ks-wz-plan-badge', COPY.s2.badge));
+      /* S70: the light sweep. Its OWN layer, so its overflow clip can never
+         reach the badge the way the card's old clip did. */
+      b.appendChild(el('span', 'ks-wz-plan-shine'));
     }
     b.appendChild(el('span', 'ks-wz-plan-check'));
 
@@ -1363,11 +1366,12 @@
          the SAME ink-ring + check language as the plan cards, so the whole
          wizard teaches ONE selection signal. Resting border is 2px
          transparent (above) so the ring never resizes the box on tap. */
-      /* ⚠ RULED S69: the two forks take DIFFERENT colours so they stop
-         reading as twins. Send = pink #F491A9 (ink text), Shop = blue
-         #28498D (white text). Swap the two lines to flip them. Borders
+      /* RULED S69: the two forks take DIFFERENT colours so they stop reading
+         as twins. S70 HER RULING: Send = CORAL #E54F25 (white text), Shop =
+         blue #28498D (white text). Pink #F491A9 is UNUSED again - it was
+         'the reserved accent, placed' and it is unplaced once more. Borders
          removed; selection is the check + dim, same as the plan cards. */
-      '.ks-wz-fork--send{background:#F491A9;color:#1E1A19;}',
+      '.ks-wz-fork--send{background:#E54F25;color:#FFFFFF;}',
       '.ks-wz-fork--shop{background:#28498D;color:#FFFFFF;}',
       '.ks-wz-forks.has-pick .ks-wz-fork:not(.is-on){opacity:.5;}',
       '.ks-wz-fork-t{display:block;font-size:17px;font-weight:600;color:inherit;margin-bottom:4px;}',
@@ -1458,10 +1462,11 @@
       /* ⚠ RULED S69: the Everything Bag PRICE is white (it sits on the
          green half); the NAME stays ink (gold half). */
       '.ks-wz-plan--both .ks-wz-plan-price{color:#FFFFFF;}',
-      /* ⚠ RULED S69: recommended-tier emphasis — a lift + top separation
-         (the badge now sits INSIDE the card, S70). rgba here is functional depth/tint only,
-         a functional depth shadow, NOT a brand colour. */
-      '.ks-wz-plan--both{margin-top:24px;padding-top:52px;',
+      /* RULED S69: recommended-tier emphasis. S70 HER RULING: the extra top
+         separation is REMOVED so all four cards sit an equal 12px apart and
+         the shadow alone carries the emphasis. The rgbas in this file are
+         functional depth or tint only, never a brand colour. */
+      '.ks-wz-plan--both{padding-top:52px;',
         'box-shadow:0 6px 18px rgba(30,26,25,.22);}',
       /* S70 HER RULING: the Everything Bag title is bigger. Weight stays
          600 - the standing type rule caps Quicksand at 600 and 700 would
@@ -1493,6 +1498,21 @@
       '.ks-wz-plan-badge{position:absolute;top:14px;left:18px;z-index:3;',
         'background:#E54F25;color:#EEEFE3;font-size:10px;font-weight:600;',
         'letter-spacing:.04em;padding:4px 11px;border-radius:999px;}',
+      /* S70 HER RULING: the Everything Bag catches the light when it is
+         hovered on desktop or picked on a phone. pointer-events:none so it
+         can never eat a tap; ONE pass, never a loop; gone entirely under
+         prefers-reduced-motion. The badge sits at z-index 3, above it. */
+      '.ks-wz-plan-shine{position:absolute;inset:0;border-radius:inherit;',
+        'overflow:hidden;pointer-events:none;z-index:2;}',
+      '.ks-wz-plan-shine::after{content:"";position:absolute;top:-20%;bottom:-20%;',
+        'width:38%;left:-60%;transform:skewX(-14deg);',
+        'background:linear-gradient(100deg,rgba(255,255,255,0) 0%,',
+          'rgba(255,255,255,.42) 50%,rgba(255,255,255,0) 100%);}',
+      '@keyframes ks-wz-shine{from{left:-60%}to{left:130%}}',
+      '.ks-wz-plan--both.is-on .ks-wz-plan-shine::after{animation:ks-wz-shine .9s ease-out 1;}',
+      '@media (hover:hover){',
+        '.ks-wz-plan--both:hover .ks-wz-plan-shine::after{animation:ks-wz-shine .9s ease-out 1;}}',
+      '@media (prefers-reduced-motion:reduce){.ks-wz-plan-shine{display:none}}',
       '.ks-wz-plan-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}',
       '.ks-wz-plan-credits{font-size:15px;font-weight:600;color:inherit;}',
       '.ks-wz-plan-once{font-size:14px;font-weight:500;color:inherit;opacity:.85;white-space:nowrap;}',
@@ -1591,8 +1611,17 @@
       '.ks-wz-nav{display:flex;gap:10px;align-items:center;margin-top:28px;}',
       '.ks-wz-btn{font-family:inherit;font-size:16px;font-weight:600;cursor:pointer;',
         'border-radius:999px;padding:13px 22px;border:1px solid transparent;}',
-      '.ks-wz-btn-primary{background:#E54F25;border-color:#E54F25;color:#EEEFE3;',
-        'margin-left:auto;text-decoration:none;display:inline-block;text-align:center;}',
+      '.ks-wz-btn-primary{background:#E54F25;border-color:#E54F25;color:#FFFFFF;',
+        'margin-left:auto;text-decoration:none;display:inline-block;text-align:center;',
+        'transition:transform .15s ease,box-shadow .15s ease;}',
+      /* S70 HER RULING: white text and a hover on the primary button. The
+         hover is gated on :not([disabled]) so the LIVE button answers and
+         the dead one does not - on desktop that is the only cue a member
+         gets that a plan is still needed. Depth only, NO darker coral: a
+         hover hex would be an invented colour. */
+      '@media (hover:hover){',
+        '.ks-wz-btn-primary:not([disabled]):hover{transform:translateY(-1px);',
+          'box-shadow:0 5px 14px rgba(229,79,37,.34);}}',
       /* S70 HER RULING: the primary button keeps full coral even when
          disabled. WARNING, NOT A DEFECT: it now LOOKS tappable while
          nothing is picked. The disabled attribute is still set, so a tap
