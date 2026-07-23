@@ -375,6 +375,9 @@
     nav: {
       back:     'Back',
       next:     'Continue',
+      /* S71: tapOut / tapStay / tapLeave are APPROVED COPY, RETAINED, AND NO
+         LONGER RENDERED. The dialog they belonged to went with the overlay.
+         Kept so the words survive if an exit is ever ruled back in. */
       tapOut:   'Leave without finishing? You\u2019ll lose what you\u2019ve filled in so far and will need to start again.',
       tapStay:  'Keep going',
       tapLeave: 'Leave'
@@ -496,9 +499,9 @@
 
 
   /* ---- leaving ----------------------------------------------------------
-     Two different exits, two different owners. The tap-out is OURS and gets
-     our words. The refresh dialog is the BROWSER'S and its wording is not
-     ours to write (ruled). */
+     ONE exit now. The refresh dialog is the BROWSER'S and its wording is not
+     ours to write (ruled). The tap-out dialog was OURS and was retired in S71
+     with the overlay it belonged to. */
 
   function armRefreshWarning() {
     window.addEventListener('beforeunload', function (e) {
@@ -508,27 +511,8 @@
     });
   }
 
-  function confirmLeave(onLeave) {
-    if (!S.dirty) { onLeave(); return; }
-    var back = el('div', 'ks-wz-scrim');
-    var box  = el('div', 'ks-wz-confirm');
-    box.appendChild(el('p', 'ks-wz-confirm-text', COPY.nav.tapOut));
-    var row  = el('div', 'ks-wz-confirm-row');
-    var stay = el('button', 'ks-wz-btn ks-wz-btn-ghost', COPY.nav.tapStay);
-    var leave= el('button', 'ks-wz-btn ks-wz-btn-quiet', COPY.nav.tapLeave);
-    stay.type = leave.type = 'button';
-    stay.addEventListener('click', function () {
-      back.parentNode && back.parentNode.removeChild(back);
-      track('tapout_stay');
-    });
-    leave.addEventListener('click', function () {
-      track('tapout_leave');
-      onLeave();
-    });
-    row.appendChild(stay); row.appendChild(leave);
-    box.appendChild(row); back.appendChild(box);
-    root.appendChild(back);
-  }
+  /* S71: confirmLeave() REMOVED with the close X — it was that button's only
+     caller, and in the page flow there is no backdrop to tap out of. */
 
 
   /* ---- the shell ---------------------------------------------------------
@@ -544,12 +528,9 @@
     shell = el('div', 'ks-wz');
     var card = el('div', 'ks-wz-card');
 
-    var close = el('button', 'ks-wz-close');
-    close.type = 'button';
-    close.setAttribute('aria-label', 'Close');
-    close.addEventListener('click', function () {
-      confirmLeave(function () { window.location.href = '/'; });
-    });
+    /* S71: NO CLOSE X. The wizard is in the page flow, so there is nothing to
+       close, and there is no ruled destination to send her to. Recoverable at
+       @3696638 along with confirmLeave(). */
 
     body     = el('div', 'ks-wz-body');
     formSlot = el('div', 'ks-wz-formslot');
@@ -563,7 +544,6 @@
     nav.appendChild(backBtn);
     nav.appendChild(nextBtn);
 
-    card.appendChild(close);
     card.appendChild(dots);
     card.appendChild(body);
     card.appendChild(formSlot);
@@ -1320,24 +1300,33 @@
       '#' + MOUNT_ID + '{font-family:Quicksand,system-ui,-apple-system,sans-serif;}',
 
       /* ---- overlay + card ---- */
-      '.ks-wz{position:fixed;inset:0;z-index:9000;background:#EEEFE3;',
-        'display:flex;align-items:flex-start;justify-content:center;',
-        'overflow-y:auto;padding:32px 16px 48px;}',
+      /* S71: IN THE PAGE FLOW, NOT AN OVERLAY. Ruled by Jennie: the global
+         header and footer STAY on /signup and the wizard sits centred between
+         them. Until S71 this was position:fixed with an opaque cream sheet at
+         z-index 9000, which had been covering the global header since the file
+         shipped. Do not restore the overlay. */
+      '.ks-wz{position:static;background:transparent;',
+        'display:flex;align-items:center;justify-content:center;',
+        'padding:64px 16px;}',
+
+      /* S71: the six Memberstack form-blocks live in the page flow. mountForm()
+         hides them, but only once a form is needed, so on step 1 they would all
+         be visible under the wizard. Hidden structurally here instead. The
+         chosen form ESCAPES this selector when it is moved into .ks-wz-formslot,
+         because it is no longer a child of the mount. */
+      '#' + MOUNT_ID + ' > .w-form{display:none;}',
       '.ks-wz-card{position:relative;width:100%;max-width:560px;background:#FFFFFF;',
         'border:1px solid #EEEFE3;border-radius:18px;padding:32px 28px 26px;',
         'box-shadow:0 10px 30px -12px #C9C7BC;',
         'animation:ks-wz-in 240ms ease-out both;}',
       '@keyframes ks-wz-in{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}',
       '@media (prefers-reduced-motion:reduce){.ks-wz-card{animation:none}}',
-      '@media (max-width:600px){.ks-wz{padding:0}',
-        '.ks-wz-card{max-width:none;min-height:100vh;border:0;border-radius:0;',
-        'box-shadow:none;padding:26px 20px 32px;}',
+      /* S71: no min-height:100vh. In the flow that made a full-screen card sit
+         inside the page; the card is content-height now and keeps its border,
+         radius and shadow at every width. */
+      '@media (max-width:600px){.ks-wz{padding:28px 12px 40px;}',
+        '.ks-wz-card{max-width:none;padding:26px 20px 32px;}',
         '.ks-wz-h{font-size:35px;}}',
-
-      '.ks-wz-close{position:absolute;top:14px;right:14px;width:32px;height:32px;',
-        'border:0;background:none;cursor:pointer;color:#75736E;font-size:22px;',
-        'line-height:1;padding:0;}',
-      '.ks-wz-close::before{content:"\\00d7";}',
 
       /* ---- progress ---- */
       '.ks-wz-dots{display:flex;gap:6px;margin:6px 0 28px;}',
@@ -1630,13 +1619,8 @@
       '.ks-wz-btn-ghost{background:transparent;border-color:#C9C7BC;color:#1E1A19;}',
       '.ks-wz-btn-quiet{background:transparent;border-color:transparent;color:#75736E;}',
 
-      /* ---- the tap-out confirm ---- */
-      '.ks-wz-scrim{position:fixed;inset:0;z-index:9100;background:#1E1A19;',
-        'display:flex;align-items:center;justify-content:center;padding:24px;}',
-      '.ks-wz-confirm{width:100%;max-width:380px;background:#FFFFFF;border-radius:16px;',
-        'padding:22px 20px;box-shadow:0 10px 30px -12px #C9C7BC;}',
-      '.ks-wz-confirm-text{font-size:16px;color:#1E1A19;line-height:1.5;margin:0 0 18px;}',
-      '.ks-wz-confirm-row{display:flex;gap:10px;justify-content:flex-end;}',
+      /* S71: the tap-out confirm CSS was deleted with its markup. An inert rule
+         sitting beside working ones is the CSS version of a comment that lies. */
 
       /* ---- focus, everywhere, visible ---- */
       '#' + MOUNT_ID + ' :focus-visible{outline:2px solid #28498D;outline-offset:2px;}'
