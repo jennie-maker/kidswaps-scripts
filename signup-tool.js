@@ -325,6 +325,10 @@
                'my dashboard, effective at the end of the period I\u2019ve paid for. ' + COPY.s5.cancelLink;
       },
       cancelLink: 'How to cancel',
+      /* ⚠⚠ APPROVED VERBATIM S74. DO NOT REDRAFT. Rendered at step 5, its
+         own line, outside the ARL sentence. */
+      preframe: 'Stripe handles your card next. The date on their page is how '
+              + 'long we hold it. Nothing is charged until your first whole credit.',
 
       /* ⚠⚠ S72: the general Privacy/Terms assent, which is SEPARATE from the
          ARL checkbox above it (§2) and had never come across into the wizard.
@@ -498,7 +502,24 @@
     render();
     foldFit();   /* belt: the observer covers this too, but not if it is absent */
     track('step_view');
-    try { shell.scrollTop = 0; } catch (e) {}
+    /* ⚠⚠ S74 FAULT, FIXED HERE. This line used to read shell.scrollTop = 0,
+       which is THE CARD'S INTERNAL SCROLL AND NOT THE WINDOW'S. Nothing
+       scrolled the page on a step change, so advancing from a tall step to a
+       short one left the window where it was and the card landed mid-page,
+       which reads exactly like a broken load. Seen on step 6.
+       ⚠ THE GLOBAL HEADER IS ON THIS PAGE SINCE S71, so the offset has to
+       clear it or the top of the card hides underneath. .w-nav is Webflow's
+       navbar class; if it is absent the offset is 0 and this still works.
+       ⚠ render() runs on FIRST PAINT, go() does not - so this never fires on
+       page load and cannot yank a fresh visitor down the page. */
+    try {
+      var hdr = document.querySelector('.w-nav');
+      var off = hdr ? hdr.getBoundingClientRect().height : 0;
+      var rm  = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)');
+      var y   = shell.getBoundingClientRect().top + window.pageYOffset - off - 14;
+      window.scrollTo({ top: y < 0 ? 0 : y,
+                        behavior: (rm && rm.matches) ? 'auto' : 'smooth' });
+    } catch (e) {}
   }
 
   /* ---- the fold ----------------------------------------------------------
@@ -615,10 +636,18 @@
     nextBtn  = el('button', 'ks-wz-btn ks-wz-btn-primary', COPY.nav.next);
     backBtn.type = nextBtn.type = 'button';
     backBtn.addEventListener('click', back);
-    nav.appendChild(backBtn);
     nav.appendChild(nextBtn);
 
-    card.appendChild(dots);
+    /* ⚠⚠ RULED S74: BACK SITS TOP RIGHT, beside the dots. The bottom nav
+       row now carries Continue alone (it already had margin-left:auto, so it
+       stays right-aligned on its own). backBtn is the SAME ELEMENT and the
+       SAME click handler - only its parent changed, so paintNav's
+       'steps 2-5 only' line keeps working untouched. */
+    var topbar = el('div', 'ks-wz-top');
+    topbar.appendChild(dots);
+    topbar.appendChild(backBtn);
+
+    card.appendChild(topbar);
     card.appendChild(body);
     card.appendChild(formSlot);
     card.appendChild(nav);
@@ -863,7 +892,23 @@
     } else {
       input = el('input', 'ks-wz-input');
       input.type = opts.type || 'text';
-      if (opts.autocomplete) input.setAttribute('autocomplete', opts.autocomplete);
+      if (opts.autocomplete) {
+        input.setAttribute('autocomplete', opts.autocomplete);
+        /* ⚠⚠ RULED S74, HERS: ADDRESS CASING IS FIXED AT ENTRY, NOT AFTER.
+           The phone capitalises AS SHE TYPES and she can override it. NO
+           transformation at display, NONE at save.
+           ⚠ REASONING, so it is not re-litigated: any automatic capitalising
+           breaks Mc, Mac, O', hyphens and directionals. If it happens as she
+           types she SEES it and fixes it; afterwards she never knows. And the
+           confirmation screen's job is letting her catch her own typo, which
+           showing exactly what will be stored serves and prettifying defeats.
+           ⚠ DRIVEN OFF THE AUTOCOMPLETE TOKEN so no address field can be
+           missed and no NON-address field can be caught by accident. Name
+           fields are deliberately NOT included - she ruled address. */
+        if (/^address-line|^address-level2$/.test(opts.autocomplete)) {
+          input.setAttribute('autocapitalize', 'words');
+        }
+      }
       if (opts.inputmode)    input.setAttribute('inputmode', opts.inputmode);
       if (opts.maxlength)    input.setAttribute('maxlength', opts.maxlength);
     }
@@ -1212,7 +1257,9 @@
     sum.appendChild(sumRow(p.pack ? p.titleTop + ' ' + p.titleSub : p.name,
                            '$' + p.monthly + ' per month'));
     if (p.pack) sum.appendChild(sumRow(p.pack.name, '$' + p.pack.amount + ' once'));
-    sum.appendChild(sumRow(S.first + ' ' + S.last, S.email));
+    /* ⚠ RULED S74: one value per row. See .ks-wz-sum-a. */
+    sum.appendChild(sumRow(S.first + ' ' + S.last, ''));
+    sum.appendChild(sumRow(S.email, ''));
     sum.appendChild(sumRow(addrOneLine(), ''));
     /* ⚠⚠ RULED S69: THE DUE TODAY ROW IS HIDDEN ENTIRELY until the CPA
        rules on taxability. It read as broken with an empty value, and a
@@ -1261,6 +1308,18 @@
     assent.appendChild(legalLink(COPY.s5.assent.terms, TERMS_URL));
     assent.appendChild(document.createTextNode(COPY.s5.assent.post));
     body.appendChild(assent);
+
+    /* ⚠⚠ APPROVED VERBATIM S74, HERS - she picked this of three. DO NOT
+       REDRAFT. It exists because STRIPE'S HOSTED PAGE SAYS '60 days free'
+       and that contradicts the sentence she affirms one screen earlier. The
+       heading is DERIVED from the price's trial, is in no Stripe setting,
+       and everything Stripe does allow is set at Checkout Session creation,
+       which MEMBERSTACK owns. So saying it FIRST, here, is the whole fix.
+       ⚠⚠ IT SITS OUTSIDE THE ARL SENTENCE. Nothing versioned is touched.
+       ⚠ §17602(a)(1) proximity: the price, the checkbox and Create stay on
+       one step. This line sits BETWEEN the consent text and Create, so it is
+       the only thing separating them - keep it to one line. */
+    body.appendChild(el('p', 'ks-wz-preframe', COPY.s5.preframe));
 
     var sub = inForm(SEL.submit);
 
@@ -1454,6 +1513,10 @@
       /* Two stacked subs on shop-first: the first sits tight above the second. */
       '.ks-wz-sub--lead{margin-bottom:6px;}',
       '.ks-wz-headline{font-size:16px;font-weight:600;color:#1E1A19;margin:0 0 16px;}',
+      /* The step 5 pre-frame line. Secondary weight and muted grey: it is
+         context for the NEXT screen, and it must not compete with the ARL
+         sentence above it, which is the one she actually agrees to. */
+      '.ks-wz-preframe{font-size:13px;color:#75736E;line-height:1.5;margin:14px 0 0;}',
       '.ks-wz-body-text{font-size:16px;color:#1E1A19;line-height:1.6;margin:0 0 22px;}',
 
       /* ---- the fork (step 1) ---- */
@@ -1769,7 +1832,13 @@
       '.ks-wz-consent-box{flex:0 0 auto;width:18px;height:18px;margin:2px 0 0;',
         'accent-color:#309359;cursor:pointer;}',
       '.ks-wz-consent-text{font-size:15px;color:#1E1A19;line-height:1.55;}',
-      '.ks-wz-consent-link{color:#1E1A19;font-weight:600;text-decoration:underline;}',
+      /* ⚠⚠ RULED S74, HERS: BOLD, NO UNDERLINE. Nothing in ARL requires an
+         underline, and weight is a NON-COLOUR cue, so this still satisfies
+         the accessibility rule against signalling a link with colour alone.
+         The surrounding .ks-wz-consent-text sets no weight, so 600 here is a
+         real contrast against it. THE WORDS DO NOT CHANGE - NO TERMS_VERSION
+         BUMP. ⚠ 600 is the cap on purpose: Quicksand faux-bolds above it. */
+      '.ks-wz-consent-link{color:#1E1A19;font-weight:600;text-decoration:none;}',
 
       /* S72: the assent line is genuinely secondary text and takes NO
          meaning-bearing colour — muted grey only. Under the affirmed ARL
@@ -1779,6 +1848,30 @@
 
       /* ---- nav + buttons ---- */
       '.ks-wz-nav{display:flex;gap:10px;align-items:center;margin-top:28px;}',
+      /* ⚠⚠ RULED S74, HERS: BACK MOVES TO THE TOP RIGHT, beside the progress
+         dots. It is no longer in the bottom nav row with Continue.
+         ⚠ THE STEPS 2-5 / GONE AT 6 RULE IS UNTOUCHED. paintNav still owns
+         backBtn.style.display and that line did not change - the button only
+         moved house. Do not re-implement the hide rule up here.
+         ⚠ The dots' old bottom margin moved onto this row, so the spacing
+         under the header is unchanged. */
+      '.ks-wz-top{display:flex;align-items:center;justify-content:space-between;',
+        'gap:12px;margin:6px 0 28px;}',
+      '.ks-wz-top .ks-wz-dots{margin:0;}',
+      '.ks-wz-top .ks-wz-btn{padding:7px 14px;font-size:14px;flex:0 0 auto;}',
+      /* ⚠ RULED S74: the name and the email STOP SHARING A ROW - the name
+         wrapped to two lines beside the email and read as broken. They are
+         now one value per row, which is the shape the address row already
+         used. overflow-wrap lets a long email break rather than overflow. */
+      '.ks-wz-sum-a{min-width:0;overflow-wrap:anywhere;}',
+      /* ⚠ RULED S74: step 6 gets intentional styling. The code field is
+         MEMBERSTACK'S OWN INPUT inside the moved form, reached through the
+         same seam the script uses (SEL.codeWrap). This is the ONE change in
+         this commit that is a proposal rather than a ruling - look at it.
+         ⚠ It is CSS only. Nothing about the binding is touched. */
+      '.ks-wz-formslot [data-ms-passwordless="step-2"] input{',
+        'font-size:24px;font-weight:600;letter-spacing:.32em;text-align:center;',
+        'font-family:inherit;color:#1E1A19;}',
       '.ks-wz-btn{font-family:inherit;font-size:16px;font-weight:600;cursor:pointer;',
         'border-radius:999px;padding:13px 22px;border:1px solid transparent;}',
       '.ks-wz-btn-primary{background:#E54F25;border-color:#E54F25;color:#FFFFFF;',
