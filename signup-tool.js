@@ -67,6 +67,11 @@
   var MOUNT_ID      = 'ks-signup';
   var READY_ATTR    = 'data-ks-signup-ready';
 
+  /* THE POST-STRIPE HANDOFF KEY. Written at step 5 beside ks_consent_pending,
+     read on the next load of /signup. See the stash in syncHidden() and the
+     call site in resumeEnd(). */
+  var END_KEY       = 'ks_end_pending';
+
   /* ONE PLANS CONSTANT. Step 2's cards, the disclosure interpolation and the
      form selection ALL read from here. A price lives in exactly one place.
      ⚠ PRICE IDs ARE PASTED, NEVER TYPED. Pack prices carry `the-` after
@@ -996,6 +1001,27 @@
       }));
     } catch (e) {}
 
+    /* ---- THE END-STATE HANDOFF ------------------------------------------
+       A SIBLING OF THE STASH ABOVE, WRITTEN AT THE SAME MOMENT AND FOR THE
+       SAME REASON: the wizard cannot survive the Stripe round trip, so
+       anything the return page needs has to be left behind here. THIS IS THE
+       ONLY MOMENT WE OWN - step 6's submit belongs to Memberstack and there
+       is no hook of ours between the code and Stripe.
+
+       ⚠⚠ THIS IS NOT THE sessionStorage THE `S` OBJECT FORBIDS, AND A FUTURE
+       SESSION WILL THINK IT IS. The rule at `S` protects the RULED refresh /
+       tap-out behaviour MID-WIZARD: a refresh at step 3 must lose her answers,
+       deliberately. This writes nothing the wizard reads while it is running.
+       It is a one-shot handoff to the page she lands on AFTER she has left.
+       Different job, opposite direction. DO NOT CORRECT IT BACK.
+
+       ⚠ THE SLUG, NOT THE COUNT. PLANS is the one place a pack size lives.
+       Stashing the number would put a second copy of it in storage and let
+       the two drift. */
+    try {
+      sessionStorage.setItem(END_KEY, JSON.stringify({ plan: p.slug }));
+    } catch (e) {}
+
     return true;
   }
 
@@ -1418,10 +1444,23 @@
 
 
   /* ---- the end states ---------------------------------------------------
-     ⚠⚠ THESE RENDER AFTER STRIPE, AND WHERE SHE LANDS IS NOT DECIDED.
-     Memberstack currently sends her to /verify-email. Until a return
-     destination is ruled, this only fires on an explicit ?done= flag, so the
-     approved copy is built and waiting rather than written twice. */
+     THESE RENDER AFTER STRIPE, ON THE NEXT LOAD OF /signup, off the END_KEY
+     stash written at step 5. resumeEnd() below is the call site.
+
+     ⚠⚠ NOTHING ROUTES HERE YET, AND THAT IS DELIBERATE. Memberstack still
+     sends her to /verify-email (§5 REDIRECT CONFIG), so this whole path is
+     INERT on the live site. The trigger ships BEFORE the redirect moves,
+     never after: a member landing on /signup with no call site would be shown
+     step 1 and invited to sign up again, seconds after signing up.
+
+     ⚠⚠⚠ DO NOT MOVE THE REDIRECT UNTIL THE BANK READ SHIPS (§NEXT 2c).
+     The stash is written at step 5 - BEFORE the code step and BEFORE payment.
+     So a member who reaches step 5 and abandons at step 6 has a stash sitting
+     in her tab, and once /signup is the post-Stripe destination she can be
+     told she is in without having paid. THE BANK READ IS WHAT CLOSES THAT,
+     AND IT CLOSES IT STRUCTURALLY: no confirmed code means no member session,
+     no token, no answer from member-state, and nothing for this screen to
+     say. A timestamp or an expiry does NOT close it. */
 
   function endState(kind, p) {
     var c = (kind === 'pack') ? COPY.endB : COPY.endA;
@@ -1436,6 +1475,29 @@
     a.href = c.href;
     body.appendChild(a);
     track('end_state', { kind: kind });
+  }
+
+
+  /* THE CALL SITE. Returns true when it has painted, so boot() knows not to
+     render a step on top of it. */
+
+  function resumeEnd() {
+    var raw, p;
+    try { raw = sessionStorage.getItem(END_KEY); } catch (e) { return false; }
+    if (!raw) return false;
+
+    try { p = PLANS[(JSON.parse(raw) || {}).plan]; } catch (e) { return false; }
+    if (!p) return false;   /* unknown or stale slug: fall through to the
+                               wizard rather than paint a screen with a hole
+                               in it. */
+
+    /* ⚠ THE KEY IS NOT CLEARED, ON PURPOSE. Clearing on read means a refresh
+       of the end screen drops her onto STEP 1 of a wizard she has just
+       finished - the exact failure the build order exists to avoid. The stash
+       dies with the tab, which is the right lifetime. DO NOT ADD removeItem. */
+
+    endState(p.pack ? 'pack' : 'plan', p);
+    return true;
   }
 
 
@@ -1925,8 +1987,12 @@
         .catch(function () {});
     } catch (e) {}
 
-    render();
-    track('open');
+    /* THE HANDOFF IS CHECKED BEFORE THE WIZARD PAINTS. Coming back from
+       Stripe there is no step to render. */
+    if (!resumeEnd()) {
+      render();
+      track('open');
+    }
 
     /* LAST LINE. Only now does the gate lift. Everything above must be ready
        before a member can see any of it. */
