@@ -1402,22 +1402,38 @@
     .ks-panel     { padding: 20px 18px; border-radius: 18px; }
     .ks-hero-card { padding: 16px 18px 18px; border-radius: 18px; }
 
-    /* The utility row: one tidy centred cluster, and the dropdown owns its own line.
-       ⚠⚠ IT STAYS TWO LINES ON A PHONE AND THAT IS STRUCTURAL, NOT LAZY. .ks-util-acct is
-       flex:1 0 100% BECAUSE the account panel is position:static inside it below 940 — the
-       cell's full width IS the panel's width. Narrow the cell to pull the toggle up onto
-       line one and the ENTIRE ACCOUNT PANEL collapses to the width of its own button.
-       (The only escape is floating the panel on mobile, which §DASH.12 rejected.)
-       ⚠ TIGHTENING IT WAS OFFERED AS A FIFTH COINS-HIGHER LEVER (~14px) AND JENNIE DECLINED
-       — the row keeps its breathing room. Do not re-propose it. */
-    .ks-util { justify-content: center; flex-wrap: wrap; gap: 10px 18px; margin-bottom: 12px; }
-    .ks-util-acct {
-      flex: 1 0 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .ks-account-panel { width: 100%; }
+    /* The utility row: PLAN CHIP CENTRED ALONE ON LINE ONE, the two links side by side
+       beneath it. HER RULING, S89. Built S91.
+       ⚠⚠ THIS WAS RECORDED IN TWO PLACES AS "STRUCTURALLY IMPOSSIBLE" AND IT WAS A
+       FLEXBOX LIMIT, NOT A STRUCTURAL ONE. The old reading was right about the mechanism
+       and wrong about the conclusion: in FLEX the only way to give the chip a line of its
+       own is flex-basis:100%, WHICH ALSO STRETCHES IT — a coral pill becomes a full-width
+       band. So the panel was handed the full-width cell instead and the toggle was dragged
+       down with it. THE TWO-LINE LAYOUT WAS NEVER A DECISION.
+       ✅ GRID SPANS A ROW WITHOUT STRETCHING THE ITEM. That is the entire fix.
+       ⚠⚠ display:contents REMOVES .ks-util-acct's BOX, NOT THE ELEMENT. The toggle and the
+       panel become grid items of .ks-util WHILE STAYING SIBLINGS IN THE DOM — not a DOM
+       move, not a float (floating on mobile is still rejected, §DASH.12). The panel then
+       spans the full container, so it ends up WIDER than it was, not narrower. The old
+       collapse warning is DEFUSED, not worked around.
+       ⚠ THIS BLOCK IS <=939px, NOT <=600px, AND THAT IS WHERE THESE RULES HAVE ALWAYS
+       LIVED. The doc recorded them as <=600 for several sessions; the line number was
+       right and the block was wrong. 601-939px ran the identical two-line layout and was
+       logged as a separate suspected defect. IT WAS THE SAME RULES. Observed at 700px
+       S91, not derived.
+       ⚠ .ks-util-acct's position:relative is authored at TOP LEVEL (not in the 940 block),
+       so display:contents makes it inert HERE — and it does not need to bite, because
+       below 940 the panel is already position:static. THE >=940 DROPDOWN ANCHOR CANNOT BE
+       REACHED BY THIS BLOCK AT ALL.
+       ⚠ TIGHTENING THE ROW WAS OFFERED AS A FIFTH COINS-HIGHER LEVER (~14px) AND JENNIE
+       DECLINED — the row keeps its breathing room. Do not re-propose it. */
+    .ks-util { display: grid; grid-template-columns: 1fr 1fr; align-items: center;
+               gap: 10px 18px; margin-bottom: 12px; }
+    .ks-util-acct      { display: contents; }
+    .ks-plan-chip      { grid-column: 1 / -1; justify-self: center; }
+    .ks-util-mem       { grid-column: 1; justify-self: end; }
+    .ks-account-toggle { grid-column: 2; justify-self: start; }
+    .ks-account-panel  { grid-column: 1 / -1; width: 100%; }
 
     .ks-greet-cta { padding: 15px 36px; }
   }
@@ -1430,8 +1446,10 @@
        2. CTA top margin 22 -> 14px              (here)
        3. .ks-grid margin-top 22 -> 14px         (in the 939 block above)
        4. hero padding-top 22 -> 16px            (in the 939 block above)
-     ⚠ A FIFTH LEVER — tightening the utility row — WAS OFFERED AND DECLINED. The row
-     cannot collapse to one line anyway (see the .ks-util-acct note above).
+     ⚠ A FIFTH LEVER — tightening the utility row — WAS OFFERED AND DECLINED. It STAYS
+     declined. ⚠ ITS OLD JUSTIFICATION IS DEAD AS OF S91: "the row cannot collapse to one
+     line anyway" was the flexbox limit talking. The row is TWO LINES BY HER RULING now,
+     not by a constraint — see the .ks-util note above.
      ⚠ STICKY IS REJECTED, BOTH THE RAIL AND THE UTILITY ROW. The row is tightened IN
      FLOW or not at all.
      ============================================================ */
