@@ -19,11 +19,34 @@
 
   /* Greeting — headline + sub grouped, sub bigger + ink */
   .ks-greet-headline { margin-bottom: 4px; }
-  .ks-greet-sub {
-    color: #1E1A19;
+  /* ============================================================
+     THE CONDITIONAL MESSAGE AS A BANNER — HER S78 EDIT, BUILT S85.
+     White text on brand blue #1C4A91 (HER hex, confirmed S85 — not the doc's #28498D).
+
+     ⚠⚠ THE CTA IS NOT IN THE BLUE AND NEEDS NO WORK TO STAY OUT. .ks-greet-cta is a
+     SIBLING of this element, never a child, so a background here cannot reach it. Do not
+     "fix" this by wrapping them — wrapping is what would put the button inside the banner.
+     ⚠ SCOPE: this paints on EVERY greeting state, because .ks-greet-sub IS the conditional
+     message (§DASH.1 — pickState swaps its text). Scoping the banner to the zero state alone
+     would need a class emitted by dashboard-tool.js, i.e. a JS bump. NOT DONE, ON PURPOSE.
+     ⚠ THE COMBO IS MATCHED DEFENSIVELY. .ks-greet-sub also wears .ks-card-sub. The doc says
+     that combo is harmless because Webflow sets no colliding property — but that was read
+     about FONT, not BACKGROUND, and nobody has read background on it. Matching both costs
+     nothing and cannot lose. §0: AUDIT THE PAGE, NEVER THE FILE.
+     ⚠ CONTRAST MEASURED, NOT ASSUMED: white on #1C4A91 = 8.6:1, AA and AAA at this size.
+     The S73 rule (DARKEN THE FILL, NEVER WHITEN THE TEXT) is satisfied with room to spare.
+     ⚠ PADDING TRAVELS WITH FONT-SIZE — the mobile override below carries its own.
+     ============================================================ */
+  .ks-greet-sub,
+  .ks-greet-sub.ks-card-sub {
+    color: #FFFFFF;
+    background: #1C4A91;
     font-size: 20px;
     line-height: 1.4;
-    margin-top: 4px;
+    max-width: 34ch;
+    margin: 14px auto 0;
+    padding: 14px 20px;
+    border-radius: 14px;
   }
 
   /* ============================================================
@@ -414,7 +437,11 @@
 
   /* YOUR CONTRIBUTION (§DASH.13). SCRIPT-INJECTED — DO NOT REBUILD IT AS A CODE EMBED; the
      last one was dragged out of its container in Navigator and silently deleted.
-     ⚠ THE NUMERAL IS BLUE #28498D BECAUSE THAT IS BLUE'S ONE JOB (§DASH.2). Not decorative.
+     ⚠ THE NUMERAL IS BLUE #1C4A91 BECAUSE THAT IS BLUE'S ONE JOB (§DASH.2). Not decorative.
+     ⚠⚠ S85: THE HEX WAS CORRECTED FROM #28498D. #28498D WAS AN EYEDROPPED NEAR-MISS off a
+     PNG, from the same list that carried the wrong coral (#D65A35) and the wrong green
+     (#4E9360). JENNIE CONFIRMED HER BRAND BLUE IS #1C4A91. /signup still paints #28498D on
+     the shop-first fork — DIFFERENT FILE, OWN PIN BUMP, NOT SWEPT HERE.
      ⚠ IT HIDES AT ZERO, PER STAT LINE. That rule lives in the JS — do not add a CSS hide. */
 .ks-imp-stat {
     display: flex;
@@ -439,7 +466,7 @@
     font-weight: 600;                /* ceiling 600, NEVER 700 */
     font-size: 32px;
     line-height: 1;
-    color: #28498D;
+    color: #1C4A91;
     flex: 0 0 auto;
     min-width: 30px;                 /* ⚠ "1" IS NARROWER THAN "4", so a shrink-to-fit numeral
                                         column made the two labels START AT DIFFERENT x. The
@@ -865,15 +892,27 @@
       flex-direction: column;
       gap: 20px;
     }
-    /* ⚠⚠ THE RAIL IS NO LONGER STICKY, AND THIS IS NOT A STYLE PREFERENCE.
-       Sticky was fine when the rail held two short cards. It now holds the ACTIVITY FEED
-       (10 rows, stacked vertically). A STICKY ELEMENT TALLER THAN THE VIEWPORT PINS AT
-       ITS TOP AND ITS BOTTOM BECOMES UNREACHABLE — the last activity rows could never be
-       scrolled to. Do not "restore" the sticky.
-       ⚠ A SAFE STICKY WAS OFFERED (max-height:calc(100vh - 40px) + overflow-y:auto, which
-       pins AND scrolls internally so nothing is unreachable) AND JENNIE DECLINED IT ANYWAY,
-       2026-07-13. THE REJECTION IS A CHOICE, NOT A GAP. Do not "discover" the fix and
-       re-propose it. A STICKY UTILITY ROW IS ALSO REJECTED ("nothing sticky on heading"). */
+    /* ⚠⚠ THE RAIL IS STICKY AGAIN — THE SAFE VERSION ONLY, RULED BY JENNIE S73, BUILT S85.
+       THE COMMENT THAT STOOD HERE SAID SHE DECLINED IT (2026-07-13). THAT WAS TRUE AND IS
+       NOW STALE — S73 REVERSED IT. The stale text was removed rather than left beside the
+       new rule: an orphaned comment lying confidently is the worst artifact this project
+       produces.
+
+       WHY THE NAIVE VERSION IS STILL FORBIDDEN, because the reason has not changed: the
+       rail holds the ACTIVITY FEED (10 rows). A PLAIN position:sticky ELEMENT TALLER THAN
+       THE VIEWPORT PINS AT ITS TOP AND ITS BOTTOM BECOMES UNREACHABLE — the last activity
+       rows could never be scrolled to. max-height + overflow-y:auto is what dissolves that:
+       it pins AND scrolls internally, so nothing is ever out of reach. DO NOT "SIMPLIFY"
+       THIS BY DROPPING EITHER LINE — they are one mechanism, not a rule plus a precaution.
+       ⚠ IT DEPENDS ON THE GRID'S align-items:start ABOVE. Under the default (stretch) the
+       rail is inflated to the row's full height and sticky has nothing to travel through.
+       ⚠ A STICKY UTILITY ROW IS STILL REJECTED ("nothing sticky on heading"). Unchanged. */
+    .ks-rail {
+      position: sticky;
+      top: 20px;
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+    }
 
     /* ⚠⚠ THIS OVERRIDE IS SCOPED TO >=940 ON PURPOSE, 21st session. IT USED TO SIT AT THE
        TOP LEVEL, AND THAT WAS A LATENT BUG THE MOBILE REORDER WOULD HAVE DETONATED:
@@ -1003,15 +1042,14 @@
     font-weight: 600;
     font-size: 20px;
     line-height: 1.4;
-    color: #1E1A19;
+    color: #FFFFFF;
     text-align: left;
     max-width: 42ch;
     margin: 14px auto 0;
     padding: 14px 18px 14px 47px;
-    background: #FFFFFF;
-    border: 1px solid #EEEFE3;
-    border-left: 4px solid #309359;
-    border-radius: 0 14px 14px 0;
+    background: #256F43;
+    border: 1px solid #256F43;
+    border-radius: 14px;
   }
   .ks-sb-stop::before {
     content: "";
@@ -1020,7 +1058,7 @@
     top: 17px;
     width: 20px;
     height: 20px;
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23309359' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0'/%3E%3Cpath d='M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0'/%3E%3Cpath d='M5 17h-2v-11a1 1 0 0 1 1 -1h9v12m-4 0h6m4 0h2v-6h-8m0 -5h5l3 5'/%3E%3C/svg%3E") center / contain no-repeat;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FFFFFF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0'/%3E%3Cpath d='M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0'/%3E%3Cpath d='M5 17h-2v-11a1 1 0 0 1 1 -1h9v12m-4 0h6m4 0h2v-6h-8m0 -5h5l3 5'/%3E%3C/svg%3E") center / contain no-repeat;
   }
   /* ---------- IN-CARD SECTION HEADINGS ----------
      ⚠⚠ THIS BASE RULE HAS BEEN LOST TWICE, FROM OPPOSITE DIRECTIONS. It was written a
@@ -1229,12 +1267,19 @@
        ============================================================ */
     .ks-col { display: contents; }
 
+    /* ⚠ REORDERED S85, HER RULING: recent activity and my closet go to the BOTTOM. Both
+       are empty for a member's first weeks and were holding prime slots. ⚠ THIS IS THE
+       MOBILE ORDER ONLY. Above 940px the columns are real and order is DOM order, which is
+       paint()'s CALL ORDER in dashboard-tool.js — A SEPARATE FILE AND A SEPARATE PIN BUMP.
+       ⚠⚠ paintImpact MUST STAY ABOVE paintActivity (it is the SUMMARY of that feed) and it
+       still does — but they are NO LONGER ADJACENT. Two cards now sit between the summary
+       and its detail. That is a KNOWN COST OF THIS RULING, not an oversight. */
     .ks-hero-card    { order: 1; }   /* credit bank */
     .ks-sec-impact   { order: 2; }   /* your contribution */
-    .ks-sec-activity { order: 3; }   /* recent activity */
-    .ks-sec-review   { order: 4; }   /* review prompt */
-    .ks-sec-closet   { order: 5; }   /* my closet */
-    .ks-sec-hcw      { order: 6; }   /* how credits work */
+    .ks-sec-review   { order: 3; }   /* review prompt */
+    .ks-sec-hcw      { order: 4; }   /* how credits work */
+    .ks-sec-activity { order: 5; }   /* recent activity — moved down S85 */
+    .ks-sec-closet   { order: 6; }   /* my closet — moved down S85 */
 
     /* ⚠ hero padding-top was 22 — tightened to 16, a coins-higher lever. */
     .ks-panel     { padding: 20px 18px; border-radius: 18px; }
@@ -1292,7 +1337,8 @@
        when Webflow sets the SAME property. Do not "fix" it. */
     .ks-greet-headline,
     .ks-greet-headline.ks-card-value { font-size: 30px; line-height: 1.12; }
-    .ks-greet-sub      { font-size: 17px; }
+    .ks-greet-sub,
+    .ks-greet-sub.ks-card-sub { font-size: 17px; padding: 12px 16px; }
     /* ⚠ THE CARD'S PADDING AND ITS ICON OFFSETS TRAVEL WITH THIS SIZE (Session 54).
        Dropping the font alone would leave desktop padding around phone-sized text. */
     .ks-sb-stop        { font-size: 17px; padding: 12px 14px 12px 42px; }
