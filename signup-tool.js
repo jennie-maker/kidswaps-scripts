@@ -65,11 +65,27 @@
   var ADDR_CHECK_URL = 'https://ajsobivqxexcniwifxzz.supabase.co/functions/v1/address-check';
 
   /* THE BANK READ SEAM (§NEXT 2c). member-state reads identity FROM THE
-     TOKEN and ignores any member_id in a body, so there is nothing to send
-     but the header.
+     TOKEN and ignores any member_id in a body.
+     ⚠⚠ IT IS A **POST**, AND IT WANTS THREE HEADERS. THIS WAS SHIPPED AS A
+     BARE GET WITH ONLY x-ms-token AND IT RETURNED 405 (Method Not Allowed)
+     EVERY SINGLE TIME - so the bank read NEVER ONCE SUCCEEDED between S82 and
+     S83, and could not have. The fail-safe hid it perfectly: she just kept
+     the credit-free sentence, which is a true sentence, so nothing looked
+     broken on the screen. Found S83 by reading the console on the end
+     screen's first ever paint with a real session.
+     ⚠ THE SHAPE BELOW IS COPIED FROM dashboard-tool.js, WHICH HAS BEEN
+     CALLING THIS FUNCTION SUCCESSFULLY EVERY DAY. It is not derived. Do not
+     "simplify" it back to one header: there is NO body and NO Content-Type on
+     the working call either, and that is deliberate, not an omission.
      ⚠ FAIL-SAFE, NOT FAIL-OPEN, and that is the opposite of ADDR_CHECK_URL
      above: a failure here DROPS a sentence rather than proceeding with one. */
   var MEMBER_STATE_URL = 'https://ajsobivqxexcniwifxzz.supabase.co/functions/v1/member-state';
+
+  /* The Supabase ANON key. PUBLIC-SAFE (it is the anon role, ~208 chars, and
+     it already ships inside dashboard-tool.js on a public CDN). NEVER put a
+     service_role or sk_ key here. Every table this reaches is RLS-sealed and
+     the real identity check is x-ms-token. */
+  var ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqc29iaXZxeGV4Y25pd2lmeHp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNzI4MjIsImV4cCI6MjA5MTk0ODgyMn0.IFtzADITLHrEhnc8oHfjzyulcxWySp0o3s6v8XTZ5VM';
 
   var MOUNT_ID      = 'ks-signup';
   var READY_ATTR    = 'data-ks-signup-ready';
@@ -231,7 +247,7 @@
     /* ---- step 1 ---- APPROVED */
     s1: {
       head: 'So glad you\u2019re here.',
-      sub:  'Either option is right.',
+      sub:  'How would you like to start? Either option is right.',
       cardA: {
         title: 'Send my swap bag first',
         sub:   'I\u2019d rather send my items first, then shop.'
@@ -1557,17 +1573,22 @@
      ⚠⚠ NEEDS-CONFIRM: the live field name has never been read back off a
      real 200. Until it is, the strong line may simply never fire. That is the
      correct direction to be wrong in, but it is NOT the finished state. */
+  /* ⚠ THE SHAPE IS NO LONGER A GUESS. Read off a real 200 in S83: member-state
+     answers FLAT at the top level - there is no data/ or payload/ envelope -
+     and the count lives at bank.total, a number. by_tier, by_class and
+     by_class_tier sit beside it and are not used here.
+     ⚠⚠ DO NOT REACH FOR signals.has_credits INSTEAD. It exists, and it reads
+     true, and it is WRONG FOR THIS JOB: it belongs to the DASHBOARD'S GREETING
+     ROUTING and is defined as credit_amount >= 1.0, so a lone half-credit
+     routes to the Zero greeting. Hanging this screen off a boolean owned by
+     another surface is how it breaks silently the day that surface is tuned.
+     ⚠⚠ DO NOT REACH FOR available_this_cycle.total EITHER. It is CAP-LIMITED
+     - it answers "how many can she spend this cycle", not "are they in her
+     bank". It equals the pack size today only because 6 clothing on The Basics
+     and 5 toy on The Toy Chest happen to sit exactly at their caps. */
   function bankHasCredits(j) {
-    if (!j || typeof j !== 'object') return false;
-    var keys = ['credits_total', 'credit_total', 'credits', 'bank_total',
-                'total_credits', 'bank'];
-    for (var i = 0; i < keys.length; i++) {
-      var v = j[keys[i]];
-      if (v == null) continue;
-      if (typeof v === 'object') v = (v.total != null) ? v.total : v.count;
-      if (Number(v) > 0) return true;
-    }
-    return false;
+    if (!j || typeof j !== 'object' || !j.bank) return false;
+    return Number(j.bank.total) > 0;
   }
 
   /* PAINT THE WEAKER TRUE VERSION FIRST, THEN STRENGTHEN. The screen renders
@@ -1589,7 +1610,14 @@
       track('end_bank', { code: 'timeout' });
     }, 6000);
 
-    fetch(MEMBER_STATE_URL, { headers: { 'x-ms-token': tok } })
+    fetch(MEMBER_STATE_URL, {
+      method: 'POST',
+      headers: {
+        'x-ms-token': tok,
+        'apikey': ANON,
+        'Authorization': 'Bearer ' + ANON
+      }
+    })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (j) {
         if (done) return;
