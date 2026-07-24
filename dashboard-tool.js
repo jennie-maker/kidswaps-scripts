@@ -149,15 +149,15 @@ function paintHeadline(member) {
 
   // Returns '' when no bag sentence is owed. THE ORDER OF THESE CHECKS IS THE RULING.
   function bagSentence(s, state) {
-    // ⚠ HERS, S89: to a member who has LEFT, \"we'll get the next one out to you\" is a
+    // ⚠ HERS, S89: to a member who has LEFT, "we'll get the next one out to you" is a
     // promise to someone who is gone. DROPPED ENTIRELY on cancelled.
     if (state === 'cancelled') return '';
     // ⚠ PAUSED IS CLAUDE'S CALL, REVERSIBLE — she ruled cancelled, not paused. Dropped for
     // the same reason. It cannot reach a member today: PAUSE IS NOT BUILT (§DASH.5).
     if (state === 'paused') return '';
     var b = s && s.bags;
-    // ⚠⚠ FAILS CLOSED, same direction as paintBagButton. null means \"WE DON'T KNOW\",
-    // never \"no bag out\". Never assert a bag is in motion on an unknown state.
+    // ⚠⚠ FAILS CLOSED, same direction as paintBagButton. null means "WE DON'T KNOW",
+    // never "no bag out". Never assert a bag is in motion on an unknown state.
     if (!b) return '';
     // ⚠ CHECKED BEFORE bag_out, ON PURPOSE (hers): a true day-one member waiting on her
     // SIGNUP bag gets NO bag sentence at all. Do not add one.
@@ -174,11 +174,17 @@ function paintHeadline(member) {
       // cfg.sub may be a STRING or a FUNCTION of the state (capped builds its numbers live).
       var base = (typeof cfg.sub === 'function') ? cfg.sub(s) : cfg.sub;
       var bag = bagSentence(s, state);
-      // ⚠⚠ THE REPLACE IS PER-STATE, NOT GLOBAL (hers, S89). On `zero` the bag sentence
-      // REPLACES the base — telling a member who already has a bag out to \"send in a bag\"
-      // is the exact fault this fixes. On EVERY OTHER STATE IT FOLLOWS.
-      // DO NOT \"simplify\" this into \"the bag sentence always wins\".
-      sub.textContent = bag ? (state === 'zero' ? bag : base + ' ' + bag) : base;
+      // ⚠⚠ THE BAG SENTENCE LEADS, AND THE ORDER IS THE RULING (hers, S90).
+      // On `zero` it REPLACES the base outright — telling a member who already has a bag
+      // out to "send in a bag" is the exact fault this fixes.
+      // On EVERY OTHER STATE IT LEADS and the base FOLLOWS as the closing beat, which is
+      // what puts the credits line directly above the CTA.
+      // ⚠⚠ IT RAN base-THEN-bag FOR EXACTLY ONE COMMIT (@ad891f0) AND SHE REVERSED IT ON
+      // READING IT LIVE: "Your credits are ready to spend. You’ve already got a swap bag
+      // in motion" reads as a contradiction, because "already" answers an objection nobody
+      // raised. NOT ONE WORD OF EITHER STRING CHANGED — ONLY THE ORDER.
+      // DO NOT "simplify" this back to base-then-bag.
+      sub.textContent = bag ? (state === 'zero' ? bag : bag + ' ' + base) : base;
       sub.classList.toggle('ks-greet-accent', cfg.accent === true);
     }
     setCTA(cfg.cta, cfg.mode, cfg.href);
