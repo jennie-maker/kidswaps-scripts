@@ -18,6 +18,26 @@
   .ks-savings-block code { font-family: inherit; }
 
   /* Greeting — headline + sub grouped, sub bigger + ink */
+  /* ⚠⚠ S89 — THIS FILE NOW OWNS THE HEADLINE'S FAMILY, AND IT DID NOT BEFORE.
+     Read live S89: the headline computed "Instrument Serif", SANS-SERIF while the
+     subheading computed "Instrument Serif", SERIF — two different stacks on what is now
+     ONE visual block. The headline's family was WEBFLOW'S, so "the subheading is the same
+     font as the headline" was true BY AGREEMENT, NOT BY CONSTRUCTION: a family change in
+     the Designer would have silently split the block. IT IS NOW TRUE BY CONSTRUCTION.
+     ⚠ THE WEIGHT WAS ALSO A LIE THAT HAPPENED TO RENDER RIGHT. Webflow asked for 300;
+     Instrument Serif ships ONE weight (400), so 300 rendered as 400 and nothing looked
+     wrong. Pinned at 400 deliberately — DO NOT read 400 as "someone bolded it", and do
+     not raise it: >=600 here is FAUX-BOLD, which is what S21's rule exists to stop.
+     ⚠⚠ THE (0,2,0) FORM IS WHAT MAKES THIS FIRE AT ALL. Webflow wears .ks-card-value on
+     this h2 as a combo base. A bare .ks-greet-headline rule is (0,1,0) and LOSES at every
+     width — that is exactly how lever 1 of the coins-higher pass sat dead for 33 sessions.
+     ⚠ SIZE IS STILL NOT SET HERE AT DESKTOP WIDTHS — Webflow owns it and nobody has ever
+     read it. The mobile size is ours (30px, in the 600px block). */
+  .ks-greet-headline,
+  .ks-greet-headline.ks-card-value {
+    font-family: 'Instrument Serif', serif;
+    font-weight: 400;
+  }
   .ks-greet-headline { margin-bottom: 4px; }
   /* ============================================================
      THE CONDITIONAL MESSAGE — HER S78 EDIT, BUILT S85, QUIETED BY HER S88.
@@ -81,20 +101,29 @@
      rendered width has moved without the rule moving. It cannot bite while the string is
      fixed and short; read it live before assuming the S86 widths still line up.
      ============================================================ */
+  /* S89 — THE SUBHEADING IS SERIF ON EVERY STATE, NOT JUST `zero`. Hers.
+     The declarations below are the S88 .ks-greet-accent block, moved up onto the base
+     rule verbatim — same family, weight, size, line-height and ink. NOTHING WAS RETUNED.
+     ⚠⚠ .ks-greet-accent NOW STYLES NOTHING AND ITS RULES ARE DELETED, not left inert.
+     paintGreeting STILL EMITS THE CLASS on `zero` (js ~147). That is deliberate: the
+     class survives as a hook so a future state can be differentiated again without a
+     dashboard-tool.js bump. DO NOT "restore" a rule for it to make the doc tidy.
+     ⚠⚠ THE (0,2,0) FORM IS LOAD-BEARING, NOT BELT-AND-BRACES. Webflow wears .ks-card-sub
+     on this element as a combo base and compiles the pair at (0,2,0). A single-class
+     font-family here would LOSE at every width if Webflow ever sets one. Keep both
+     selectors on any rule added to this element.
+     ⚠ THIS BLOCK NOW CARRIES UP TO FOUR SENTENCES (capped + a bag in motion), where the
+     accent only ever held one. line-height 1.25 was chosen by eye in S88 against a
+     ONE-LINE string. READ IT LIVE on the capped case before assuming it still reads. */
   .ks-greet-sub,
   .ks-greet-sub.ks-card-sub {
-    font-size: 20px;
-    line-height: 1.4;
-    max-width: 42ch;
-    margin: 8px auto 0;
-  }
-  .ks-greet-accent,
-  .ks-greet-sub.ks-greet-accent {
     font-family: 'Instrument Serif', serif;
     font-weight: 400;
+    color: #1E1A19;
     font-size: 26px;
     line-height: 1.25;
-    color: #1E1A19;
+    max-width: 42ch;
+    margin: 8px auto 0;
   }
 
   /* ============================================================
@@ -1426,15 +1455,15 @@
     .ks-greet-headline,
     .ks-greet-headline.ks-card-value { font-size: 30px; line-height: 1.12; }
     .ks-greet-sub,
-    .ks-greet-sub.ks-card-sub { font-size: 17px; margin-top: 8px; }
+    .ks-greet-sub.ks-card-sub { font-size: 22px; margin-top: 8px; }
     /* ⚠ THE SUBHEADING TAKES ITS OWN SIZE HERE, exactly as the base sub does two lines
        up. 22px against a 30px headline — the same subheading STEP the desktop pair has at
        26px, not a second decision. The family, weight and colour ride down from the base
        rule untouched. ⚠ THE CLASS IS STILL NAMED ks-greet-accent AND THAT NAME IS NOW
        HISTORICAL — it was a blue banner for one day. Renaming it costs a dashboard-tool.js
        bump (paintGreeting emits it), so it stays. DO NOT read "accent" as "coloured". */
-    .ks-greet-accent,
-    .ks-greet-sub.ks-greet-accent { font-size: 22px; }
+    /* S89 — the 22px moved onto .ks-greet-sub two lines up (serif on every state now).
+       The .ks-greet-accent override that lived here is DELETED, not commented out. */
     /* ⚠ THE CARD'S PADDING AND ITS ICON OFFSETS TRAVEL WITH THIS SIZE (Session 54).
        Dropping the font alone would leave desktop padding around phone-sized text. */
     .ks-sb-stop        { font-size: 17px; padding: 12px 14px 12px 42px; }
