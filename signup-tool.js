@@ -64,6 +64,13 @@
      never cost her a signup, and it never blocks her even when it works. */
   var ADDR_CHECK_URL = 'https://ajsobivqxexcniwifxzz.supabase.co/functions/v1/address-check';
 
+  /* THE BANK READ SEAM (§NEXT 2c). member-state reads identity FROM THE
+     TOKEN and ignores any member_id in a body, so there is nothing to send
+     but the header.
+     ⚠ FAIL-SAFE, NOT FAIL-OPEN, and that is the opposite of ADDR_CHECK_URL
+     above: a failure here DROPS a sentence rather than proceeding with one. */
+  var MEMBER_STATE_URL = 'https://ajsobivqxexcniwifxzz.supabase.co/functions/v1/member-state';
+
   var MOUNT_ID      = 'ks-signup';
   var READY_ATTR    = 'data-ks-signup-ready';
 
@@ -378,35 +385,79 @@
       errCode: 'That code didn\u2019t work. Check it over, or send a new one.'
     },
 
-    /* ---- end states ---- APPROVED Session 63, Jennie's own wording. */
+    /* ---- end states ---- HER OWN WORDING, REWRITTEN AND APPROVED S81.
+       SUPERSEDES THE SESSION 63 STRINGS, WHICH WERE RETIRED DELIBERATELY.
+       ⚠⚠ DO NOT REDRAFT. Both screens are HEAD + ONE PARAGRAPH. Only
+       "Welcome to KidSwaps!" stands alone; "So glad you joined." is the FIRST
+       SENTENCE of the body, NOT its own line. RULED S81, both screens. */
     endA: {
-      head: 'You\u2019re in.',
+      head: 'Welcome to KidSwaps!',
       /* ⚠⚠ "shortly" IS A TIMING WORD AND THERE IS NO SHIPPING SLA BEHIND IT
          (§BAGS). FLAGGED AND OVERRULED BY JENNIE, Session 63, IN HER WORDS:
          "a bag will never take 9 days, shortly is perfect here." HERS, NOT A
-         DEFAULT. Do not quietly remove it; do not re-flag it. */
-      body: 'Your first swap bag will be on its way shortly, so watch your mailbox. ' +
-            'Fill it with what your kids have outgrown and send it back with the prepaid ' +
-            'label that\u2019s already stuck to it. You can start shopping once you earn ' +
-            'your first credits.',
+         DEFAULT. Do not quietly remove it; do not re-flag it. SURVIVED S81
+         through two rewrites.
+         ⚠ THE BODY IS THE SESSION 63 BODY UNCHANGED - only the greeting
+         sentence is prepended. S81: she did NOT take the S74 ending, so the
+         two email promises (bag-arrived, credits-ready) are OFF this screen,
+         and two launch-blocker email dependencies come off with them. This
+         screen now promises nothing the system cannot keep.
+         ⚠⚠ DO NOT "RESTORE" THE S74 ENDING. */
+      body: 'So glad you joined. Your first swap bag will be on its way shortly, so watch ' +
+            'your mailbox. Fill it with what your kids have outgrown and send it back with ' +
+            'the prepaid label that\u2019s already stuck to it. You can start shopping once ' +
+            'you earn your first credits.',
       cta:  'Go to my dashboard',
       href: '/dashboard'
     },
     endB: {
-      head: 'You\u2019re in.',
-      /* ⚠ "added to your bank", NEVER "ready to spend" (§DASH.7 standing rule).
-         ⚠ "essential" singular is JENNIE'S WORDING, ruled Session 63 — the tier
-         is "essentials" everywhere else in the product. Do not "correct" it.
-         ⚠ The count swaps with the pack: 6 clothing, 5 toy. The line does NOT
-         say clothing or toy. Raised and ruled as-is. */
+      head: 'Welcome to KidSwaps!',
+      /* ⚠ "ready to spend" IS APPROVED ON THIS PATH AND ONLY THIS PATH.
+         §DASH.7's "added to your bank, NEVER ready to spend" lock exists to
+         protect against a lone 0.5 credit. A STARTER PACK ONLY EVER ISSUES
+         WHOLE CREDITS, so the phrase is true here. Narrowed S74, CONFIRMED
+         S81 IN HER WORDS: "if someone bought a starter package their credits
+         are 'ready to spend' so we can use it there." THE LOCK IS UNCHANGED
+         EVERYWHERE A FRACTIONAL CREDIT COULD BE WHAT SHE HOLDS.
+         ⚠ "essential credits" CARRIES NO CLASS - hers, ruled S63, kept
+         again S81. ONE STRING SERVES BOTH PACKS; only the number changes.
+         ⚠ THE COUNT COMES FROM PLANS (6 clothing, 5 toy) AND NEVER FROM THE
+         BANK READ. See bankRead().
+         ⚠ THE COMMA SPLICE before "shipping is covered both ways" IS HERS.
+         Flagged to her S81, not silently fixed. LEAVE IT. */
       body: function (p) {
-        return 'Your ' + p.pack.count + ' essential credits have been added to your bank, ' +
-               'and your membership has started. Your empty swap bag will come tucked inside ' +
-               'of your first order, prepaid label already attached. Fill it up and send it ' +
-               'back to earn more credits.';
+        return 'So glad you joined. Your membership has started, and ' + p.pack.count +
+               ' essential credits are in your bank, ready to spend. Your empty swap bag ' +
+               'will come along with your first order, prepaid label already attached. ' +
+               'Fill it up and send it back to earn more credits, shipping is covered ' +
+               'both ways.';
       },
-      cta:  'Browse the closet',
-      href: '/browse'
+      /* ⚠⚠ THE FALLBACK BODY - HERS, WRITTEN S81, VERBATIM. Painted
+         whenever the bank has not been read. HER RULING: DROP JUST THE CREDIT
+         CLAUSE. Show the greeting, the membership line, the swap-bag line and
+         the button, and NEVER STATE A NUMBER WE DID NOT READ.
+         ⚠ SHE REJECTED THE FULL-STOP VERSION. Her "and" bridges
+         membership-started -> swap bag, so the credit clause lifts out
+         cleanly with no orphaned punctuation. DO NOT "SIMPLIFY" IT BACK TO
+         TWO SENTENCES.
+         ⚠ THIS AND body() DIFFER ONLY IN THE CREDIT CLAUSE. */
+      bodyNoBank: 'So glad you joined. Your membership has started, and your empty swap ' +
+                  'bag will come along with your first order, prepaid label already ' +
+                  'attached. Fill it up and send it back to earn more credits, shipping ' +
+                  'is covered both ways.',
+      /* ⚠ "Shop Now" IS TITLE CASE and it is the ONLY title-case button in
+         this file. Flagged to her S81; she kept it. DO NOT SENTENCE-CASE IT. */
+      cta:  'Shop Now',
+      /* ⚠ THE BUTTON MATCHES HER PACK. RULED S81, reason from S74: a
+         clothing-pack member has a toy cap of 0, so a page full of toys is
+         all doors she cannot walk through. KEYED OFF PLANS.cls - the field
+         exists, so this does not key off the slug. /browse is the safe
+         default and should never fire; only two pack slugs exist today. */
+      href: function (p) {
+        return p.cls === 'clothing' ? '/clothing'
+             : p.cls === 'toy'      ? '/toys'
+             : '/browse';
+      }
     },
 
     /* ---- chrome ---- APPROVED Session 63.
@@ -1090,6 +1141,23 @@
     if (emailInput && emailInput.parentNode) {
       var eLab = emailInput.parentNode.querySelector('label');
       if (eLab) eLab.textContent = COPY.s3.labelEmail;
+      /* ⚠⚠ DO NOT TOUCH THE IDs TO FIX THIS. All six forms share
+         id="Email-2", so the label's for= resolves to the FIRST form's input
+         - a tap focuses nothing, or something hidden. Renumbering the ids is
+         the obvious fix and it is NOT worth the risk on the money path:
+         Memberstack binds on data-ms-member rather than on id, but this is
+         the one form that takes the signup.
+         ⚠⚠ THE DOC'S CLAIM THAT "THE SCRIPT RENUMBERS AT INIT" IS FALSE.
+         Grep found no such code, S81.
+         So: name the input for screen readers, and let the label focus it
+         directly instead of relying on for=. */
+      emailInput.setAttribute('aria-label', COPY.s3.labelEmail);
+      if (eLab) {
+        eLab.addEventListener('click', function (ev) {
+          ev.preventDefault();
+          emailInput.focus();
+        });
+      }
     }
     var hint = el('div', 'ks-wz-hint');
     body.appendChild(hint);
@@ -1469,6 +1537,76 @@
      no token, no answer from member-state, and nothing for this screen to
      say. A timestamp or an expiry does NOT close it. */
 
+  /* ⚠⚠ THE BANK READ IS A GATE, NOT A SOURCE. It answers exactly one
+     question: does this browser hold a real member session? THE NUMBER ON
+     SCREEN STILL COMES FROM PLANS. DO NOT RENDER THE BANK TOTAL.
+     ⚠⚠ getMemberCookie() RETURNS A BARE STRING (§3). Destructuring it is
+     a TypeError, which is why this is a typeof check, not a property read. */
+  function memberToken() {
+    try {
+      var d = window.$memberstackDom;
+      if (!d || typeof d.getMemberCookie !== 'function') return null;
+      var t = d.getMemberCookie();
+      return (typeof t === 'string' && t) ? t : null;
+    } catch (e) { return null; }
+  }
+
+  /* ⚠ THE ONE PLACE member-state's RESPONSE SHAPE IS KNOWN. If the payload
+     carries no field this recognises, the answer is NO and she keeps the
+     weaker sentence - which is true either way. FAIL-SAFE BY DESIGN.
+     ⚠⚠ NEEDS-CONFIRM: the live field name has never been read back off a
+     real 200. Until it is, the strong line may simply never fire. That is the
+     correct direction to be wrong in, but it is NOT the finished state. */
+  function bankHasCredits(j) {
+    if (!j || typeof j !== 'object') return false;
+    var keys = ['credits_total', 'credit_total', 'credits', 'bank_total',
+                'total_credits', 'bank'];
+    for (var i = 0; i < keys.length; i++) {
+      var v = j[keys[i]];
+      if (v == null) continue;
+      if (typeof v === 'object') v = (v.total != null) ? v.total : v.count;
+      if (Number(v) > 0) return true;
+    }
+    return false;
+  }
+
+  /* PAINT THE WEAKER TRUE VERSION FIRST, THEN STRENGTHEN. The screen renders
+     immediately with the credit clause ABSENT, and the clause is added only
+     once the bank actually answers. No blank state, no flicker of a claim
+     that turns out to be wrong, and if the fetch never returns she is left
+     holding a sentence that is still true.
+     ⚠ CLAUDE'S CALL, REVERSIBLE - not a ruling of hers.
+     ⚠ SHORT TIMEOUT ON PURPOSE. The old consent injector's 10-second
+     fail-open is named in §2 as a hazard. 6s, then stay weak. */
+  function bankRead(para, p) {
+    var tok = memberToken();
+    if (!tok) return;   /* unreachable: resumeEnd gated on this already. */
+
+    var done = false;
+    var timer = setTimeout(function () {
+      if (done) return;
+      done = true;
+      track('end_bank', { code: 'timeout' });
+    }, 6000);
+
+    fetch(MEMBER_STATE_URL, { headers: { 'x-ms-token': tok } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        if (done) return;
+        done = true; clearTimeout(timer);
+        if (!bankHasCredits(j)) { track('end_bank', { code: 'empty' }); return; }
+        /* PLANS supplies the number. The bank only supplied permission. */
+        para.textContent = COPY.endB.body(p);
+        track('end_bank', { code: 'ok' });
+      })
+      .catch(function () {
+        if (done) return;
+        done = true; clearTimeout(timer);
+        track('end_bank', { code: 'error' });
+      });
+  }
+
+
   function endState(kind, p) {
     var c = (kind === 'pack') ? COPY.endB : COPY.endA;
     clear(body);
@@ -1488,12 +1626,23 @@
     topbar.style.display = 'none';
     nav.style.display = 'none';
     body.appendChild(el('h2', 'ks-wz-h', c.head));
-    body.appendChild(el('p', 'ks-wz-body-text',
-      typeof c.body === 'function' ? c.body(p) : c.body));
+
+    /* THE OPENING PAINT IS ALWAYS THE VERSION THAT NEEDS NO BANK DATA. */
+    var para = el('p', 'ks-wz-body-text',
+      c.bodyNoBank ? c.bodyNoBank
+                   : (typeof c.body === 'function' ? c.body(p) : c.body));
+    body.appendChild(para);
+
     var a = el('a', 'ks-wz-btn ks-wz-btn-primary', c.cta);
-    a.href = c.href;
+    a.href = (typeof c.href === 'function') ? c.href(p) : c.href;
     body.appendChild(a);
+
+    /* ⚠ FIRES ONCE, AT THE INITIAL PAINT, and still carries S.plan (set in
+       resumeEnd since S77) so it can say WHICH PLAN CONVERTED. The later
+       upgrade fires end_bank, NOT a second end_state. */
     track('end_state', { kind: kind });
+
+    if (kind === 'pack') bankRead(para, p);
   }
 
 
@@ -1522,6 +1671,24 @@
        say which plan converted. §2 rules one event per step from day one
        because this cannot be reconstructed later. Found S77 by reading a
        real payload. CLAUDE'S CALL, REVERSIBLE - not a ruling of hers. */
+    /* ⚠⚠ THE TOKEN GATE. THIS IS THE HOLE 2c EXISTS TO CLOSE, AND IT
+       CLOSES IT STRUCTURALLY. The stash is written at STEP 5 - before the
+       code step and before payment - so a member who reaches step 5 and
+       abandons at step 6 has a stash sitting in her tab. The moment /signup
+       becomes the post-Stripe destination she would be told her membership
+       has started without having paid. No confirmed code means no member
+       session, means no token, means nothing for this screen to say: fall
+       through to the wizard instead. A TIMESTAMP OR AN EXPIRY DOES NOT CLOSE
+       THIS.
+       ⚠ SCREEN A IS GATED TOO, on the token alone. It says nothing about
+       credits so it needs no bank data, but an abandon-at-step-6 member must
+       not be told her bag is on its way either.
+       ⚠⚠ THE CHECK IS SYNCHRONOUS, AND THAT IS WHAT KEEPS resumeEnd's
+       CONTRACT INTACT: it still returns true or false before boot() decides
+       whether to draw a step. ONLY THE CREDIT CLAUSE IS ALLOWED TO ARRIVE
+       LATE. DO NOT MAKE THIS FUNCTION ASYNC. */
+    if (!memberToken()) return false;
+
     S.plan = p.slug;
     S.path = p.path;
 
