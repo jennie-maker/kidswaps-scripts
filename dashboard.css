@@ -26,25 +26,37 @@
      ⚠⚠ THE CTA IS NOT IN THE BLUE AND NEEDS NO WORK TO STAY OUT. .ks-greet-cta is a
      SIBLING of this element, never a child, so a background here cannot reach it. Do not
      "fix" this by wrapping them — wrapping is what would put the button inside the banner.
-     ⚠ SCOPE: this paints on EVERY greeting state, because .ks-greet-sub IS the conditional
-     message (§DASH.1 — pickState swaps its text). Scoping the banner to the zero state alone
-     would need a class emitted by dashboard-tool.js, i.e. a JS bump. NOT DONE, ON PURPOSE.
-     ⚠ THE COMBO IS MATCHED DEFENSIVELY. .ks-greet-sub also wears .ks-card-sub. The doc says
-     that combo is harmless because Webflow sets no colliding property — but that was read
-     about FONT, not BACKGROUND, and nobody has read background on it. Matching both costs
-     nothing and cannot lose. §0: AUDIT THE PAGE, NEVER THE FILE.
+     ⚠⚠ SCOPE, CORRECTED S88 — IT NOW PAINTS ON THE ZERO STATE ONLY. The old note here
+     said "this paints on EVERY greeting state." That was true until dashboard-tool.js
+     @ff42b66 shipped: `zero` is the ONLY state carrying accent:true, and paintGreeting()
+     toggles .ks-greet-accent ON .ks-greet-sub ITSELF (js line 147; line 153 removes it on
+     the fallback path). READ THE JS, NOT THIS COMMENT, IF THEY EVER DISAGREE AGAIN.
+     ⚠⚠ ONLY COLOUR / BACKGROUND / PADDING / BORDER-RADIUS LIVE ON THE ACCENT RULE.
+     max-width: 42ch, the margin, font-size and line-height STAY on .ks-greet-sub — they
+     are what hold the S86 width alignment (all three greeting-zone elements measure ONE
+     width at <=600px) on every state that gets NO banner. Move them up here and every
+     non-zero greeting silently loses its width.
+     ⚠ THE COMBO IS MATCHED DEFENSIVELY, AND THE ELEMENT NOW WEARS THREE CLASSES:
+     ks-greet-sub ks-card-sub ks-greet-accent. The doc says the .ks-card-sub combo is
+     harmless because Webflow sets no colliding property — but that was read about FONT,
+     not BACKGROUND, and nobody has read background on it. The two-class variant
+     .ks-greet-sub.ks-greet-accent (0,2,0) costs nothing and cannot lose to a Webflow
+     combo. §0: AUDIT THE PAGE, NEVER THE FILE.
      ⚠ CONTRAST MEASURED, NOT ASSUMED: white on #1C4A91 = 8.6:1, AA and AAA at this size.
      The S73 rule (DARKEN THE FILL, NEVER WHITEN THE TEXT) is satisfied with room to spare.
      ⚠ PADDING TRAVELS WITH FONT-SIZE — the mobile override below carries its own.
      ============================================================ */
   .ks-greet-sub,
   .ks-greet-sub.ks-card-sub {
-    color: #FFFFFF;
-    background: #1C4A91;
     font-size: 20px;
     line-height: 1.4;
     max-width: 42ch;
     margin: 8px auto 0;
+  }
+  .ks-greet-accent,
+  .ks-greet-sub.ks-greet-accent {
+    color: #FFFFFF;
+    background: #1C4A91;
     padding: 14px 20px;
     border-radius: 14px;
   }
@@ -80,7 +92,31 @@
 
   /* Coins hero */
   .ks-coins-row { gap: 0; align-items: flex-start; }
-  .ks-coin-unit + .ks-coin-unit { margin-left: -22px; }
+  /* ⚠⚠ THREE NUMBERS MOVE TOGETHER OR THE COINS BREAK (S88, coins 1/3 smaller — HERS):
+     the box below (130 -> 87), .ks-coin-num's font-size (44 -> 29), and this overlap.
+     ⚠ -22px WAS SIZED FOR A 130px COIN. Left alone it eats a third of an 87px one.
+     ⚠ THE MARGIN SITS ON THE UNIT, NOT ON THE COIN (§DASH.3) — it shifts coin + label +
+     tiers together so they stay aligned as a column. Do not move it onto .ks-coin. */
+  .ks-coin-unit + .ks-coin-unit { margin-left: -15px; }
+
+  /* ============================================================
+     THE COIN BOX — TAKEN OVER FROM THE DESIGNER, S88.
+     ⚠⚠ .ks-coin IS A WEBFLOW DESIGNER STYLE AND HAS NEVER BEEN IN THIS FILE. Same
+     situation .ks-coin-num was in for thirty-three sessions before S53. This commit takes
+     ownership of it, so the size stops living in a place nothing here can read.
+     ⚠ TWO SELECTORS ON PURPOSE (§0's combo rule): the descendant form is (0,2,0) so it
+     beats a single-class Webflow rule outright and ties a Webflow combo (our <link> sits
+     above the head box, so a tie goes to us); the bare form survives a markup reshape.
+     ⚠⚠ THE IMAGE IS EXPLICITLY SIZED 130x130 IN THE DESIGNER — position:static,
+     object-fit:fill, NOT a percentage. Shrink the box alone and a 130px image spills out
+     of an 87px hole. The img rule is not optional and does not travel separately.
+     ⚠ SIZE CHANGES HERE ARE SIZE CHANGES TO THE TUMBLE TOO — the drop+bounce animates
+     the box, so it scales with it. Watch the ENTRANCE, not only the resting frame.
+     ============================================================ */
+  .ks-coin,
+  .ks-coins-row .ks-coin { width: 87px; height: 87px; }
+  .ks-coin img,
+  .ks-coins-row .ks-coin img { width: 100%; height: 100%; }
 
   /* ============================================================
      THE ENGRAVED NUMERAL — RULED BY JENNIE, SESSION 53. IT REVERSES §DASH.2.
@@ -157,11 +193,27 @@
      to read at a glance, THE ANSWER IS NOT A DARKER GOLD — it is a larger numeral, a
      heavier weight, or abandoning the treatment. Ruled with that named and accepted.
      ============================================================ */
+  /* ⚠⚠ S88 — 44px -> 29px, BECAUSE THE COIN WENT 130 -> 87 (1/3 smaller, HERS). The
+     numeral is not independently sized; it is sized TO THE COIN. If the coin ever moves
+     again, this moves with it.
+     ⚠⚠ THE NUMERAL WILL NOT RE-CENTRE ON ITS OWN. It is position:absolute with inset:0
+     and the Designer gave it a HARD-CODED 50px line-height that does not scale with
+     font-size — so a smaller numeral would sit low in the new box. The flex block below
+     is what re-centres it, and line-height:1 is what kills the 50px.
+     ⚠ THIS CENTRING IS THE ONE PART OF THIS COMMIT THAT WAS REASONED, NOT MEASURED.
+     LOOK AT THE NUMERAL FIRST after this ships.
+     ⚠ THE SHADOW OFFSETS BELOW ARE UNCHANGED AT 1px — they were calibrated to a 44px
+     numeral, so the groove is now proportionally heavier. If the engraving reads muddy at
+     29px the answer is A LARGER OR HEAVIER NUMERAL, NEVER A DEEPER GOLD (see below). */
   .ks-coin-num,
   .ks-coin .ks-coin-num {
     font-family: 'Quicksand', sans-serif;
     font-weight: 600;
-    font-size: 44px;
+    font-size: 29px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: #D9AF4A;
     text-shadow:
       0 -1px 0 rgba(120, 84, 16, 0.55),
@@ -1338,7 +1390,11 @@
     .ks-greet-headline,
     .ks-greet-headline.ks-card-value { font-size: 30px; line-height: 1.12; }
     .ks-greet-sub,
-    .ks-greet-sub.ks-card-sub { font-size: 17px; padding: 12px 14px; margin-top: 8px; }
+    .ks-greet-sub.ks-card-sub { font-size: 17px; margin-top: 8px; }
+    /* ⚠ THE PADDING TRAVELS WITH THE BANNER, NOT WITH THE MESSAGE (S88). Size and margin
+       stay above so the S86 one-width alignment holds on every state. */
+    .ks-greet-accent,
+    .ks-greet-sub.ks-greet-accent { padding: 12px 14px; }
     /* ⚠ THE CARD'S PADDING AND ITS ICON OFFSETS TRAVEL WITH THIS SIZE (Session 54).
        Dropping the font alone would leave desktop padding around phone-sized text. */
     .ks-sb-stop        { font-size: 17px; padding: 12px 14px 12px 42px; }
