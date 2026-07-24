@@ -73,7 +73,7 @@ var ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI
 
   function fallbackHeadline() {
     var h = document.querySelector('.ks-greet-headline');
-    if (h) h.textContent = 'Welcome back';
+    if (h) h.textContent = 'Welcome back.';
   }
 
 function paintHeadline(member) {
@@ -87,10 +87,10 @@ function paintHeadline(member) {
     fname = (typeof fname === 'string') ? fname.trim() : '';
     var h = document.querySelector('.ks-greet-headline');
     if (!h) return;
-    if (!fname) { h.textContent = 'Welcome back'; return; }
+    if (!fname) { h.textContent = 'Welcome back.'; return; }
     var hr = new Date().getHours();
     var t = hr < 12 ? 'Good morning' : (hr < 18 ? 'Good afternoon' : 'Good evening');
-    h.textContent = t + ', ' + fname;
+    h.textContent = t + ', ' + fname + '.';
     paintReviewPrompt();       // whichever promise lands second is the one that paints
   }
   
@@ -138,12 +138,47 @@ function paintHeadline(member) {
       cta.setAttribute('href', href || '/browse');
     }
   }
+  // ⚠⚠ THE BAG-IN-MOTION SENTENCE LIVES HERE NOW, NOT IN A CARD (Jennie, S89/S90).
+  // Headline + subheading + this line read as ONE serif block at the top of the page.
+  // ⚠ VERBATIM, MOVED NOT REDRAFTED — byte-identical to the string paintBagButton's
+  // check 1 used to emit as .ks-sb-stop. DO NOT REWRITE IT.
+  // ⚠⚠ .ks-sb-stop CARRIED THREE MESSAGES AND ONLY THIS ONE MOVED. The other two answer
+  // a BUTTON PRESS and still live by the button (request success / request failure).
+  // GREP THE CLASS BEFORE MOVING ANYTHING THAT WEARS IT.
+  var BAG_IN_MOTION = 'You\u2019ve already got a swap bag in motion. Once it finds its way back to us, we\u2019ll get the next one out to you.';
+
+  // Returns '' when no bag sentence is owed. THE ORDER OF THESE CHECKS IS THE RULING.
+  function bagSentence(s, state) {
+    // ⚠ HERS, S89: to a member who has LEFT, \"we'll get the next one out to you\" is a
+    // promise to someone who is gone. DROPPED ENTIRELY on cancelled.
+    if (state === 'cancelled') return '';
+    // ⚠ PAUSED IS CLAUDE'S CALL, REVERSIBLE — she ruled cancelled, not paused. Dropped for
+    // the same reason. It cannot reach a member today: PAUSE IS NOT BUILT (§DASH.5).
+    if (state === 'paused') return '';
+    var b = s && s.bags;
+    // ⚠⚠ FAILS CLOSED, same direction as paintBagButton. null means \"WE DON'T KNOW\",
+    // never \"no bag out\". Never assert a bag is in motion on an unknown state.
+    if (!b) return '';
+    // ⚠ CHECKED BEFORE bag_out, ON PURPOSE (hers): a true day-one member waiting on her
+    // SIGNUP bag gets NO bag sentence at all. Do not add one.
+    if (b.has_bag_history === false) return '';
+    if (!b.bag_out) return '';
+    return BAG_IN_MOTION;
+  }
+
   function paintGreeting(s) {
-    var cfg = GREET[pickState(s)] || GREET.active;
+    var state = pickState(s);
+    var cfg = GREET[state] || GREET.active;
     var sub = document.querySelector('.ks-greet-sub');
     if (sub) {
       // cfg.sub may be a STRING or a FUNCTION of the state (capped builds its numbers live).
-      sub.textContent = (typeof cfg.sub === 'function') ? cfg.sub(s) : cfg.sub;
+      var base = (typeof cfg.sub === 'function') ? cfg.sub(s) : cfg.sub;
+      var bag = bagSentence(s, state);
+      // ⚠⚠ THE REPLACE IS PER-STATE, NOT GLOBAL (hers, S89). On `zero` the bag sentence
+      // REPLACES the base — telling a member who already has a bag out to \"send in a bag\"
+      // is the exact fault this fixes. On EVERY OTHER STATE IT FOLLOWS.
+      // DO NOT \"simplify\" this into \"the bag sentence always wins\".
+      sub.textContent = bag ? (state === 'zero' ? bag : base + ' ' + bag) : base;
       sub.classList.toggle('ks-greet-accent', cfg.accent === true);
     }
     setCTA(cfg.cta, cfg.mode, cfg.href);
@@ -1037,7 +1072,9 @@ function paintCloset(s) {
     }
 
     var old = row.querySelector('.ks-sb-cta');           if (old) old.remove();
-    var oldLine = document.querySelector('.ks-sb-stop'); if (oldLine) oldLine.remove();
+    // ⚠ SCOPED TO THE ROW'S CONTAINER (S90). A page-wide sweep for a class that used to
+    // carry three different messages is a wider blast radius than this job needs.
+    var oldLine = row.parentNode.querySelector('.ks-sb-stop'); if (oldLine) oldLine.remove();
 
     // ---- CHECK 0 — cancelled / no plan. HIDE. RULED BY JENNIE (25th session).
     // ⚠⚠ A SERVER GUARD IS NOT A CLIENT FORK. get_member_bag_state returns FACTS, NOT
@@ -1070,11 +1107,11 @@ function paintCloset(s) {
     // ⚠ bag_out INCLUDES 'open' — a bag still on the ship desk. "In motion" is true in every
     // bag-out state, which is why the copy does not say "fill it and send it back".
     if (b.bag_out) {
-      var stop = document.createElement('div');
-      stop.className = 'ks-sb-stop';
-      stop.textContent = 'You\u2019ve already got a swap bag in motion. Once it finds its way back to us, we\u2019ll get the next one out to you.';
-      row.parentNode.insertBefore(stop, row.nextSibling);
-      console.log('[ks-dash] bag button: check 1 — bag out. STOP line shown.');
+      // ⚠⚠ THE MESSAGE MOVED (S90). THE CHECK DID NOT. This return is what stops the
+      // button being built while a bag is out — it is load-bearing and it stays.
+      // The sentence is now painted into .ks-greet-sub by bagSentence(). Nothing is emitted
+      // here any more. DO NOT re-add a card: that is the composition she reversed.
+      console.log('[ks-dash] bag button: check 1 — bag out. Message is in the greeting.');
       return;
     }
 
@@ -1151,7 +1188,7 @@ function paintCloset(s) {
     console.log('[ks-dash] bag request NOT COMPLETED:', why);
     btn.disabled = false;
     btn.textContent = 'Swap Bags';
-    var msg = document.querySelector('.ks-sb-stop');
+    var msg = row.parentNode.querySelector('.ks-sb-stop');
     if (!msg) {
       msg = document.createElement('div');
       msg.className = 'ks-sb-stop';
