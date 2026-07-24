@@ -20,31 +20,48 @@
   /* Greeting — headline + sub grouped, sub bigger + ink */
   .ks-greet-headline { margin-bottom: 4px; }
   /* ============================================================
-     THE CONDITIONAL MESSAGE AS A BANNER — HER S78 EDIT, BUILT S85.
-     White text on brand blue #1C4A91 (HER hex, confirmed S85 — not the doc's #28498D).
+     THE CONDITIONAL MESSAGE — HER S78 EDIT, BUILT S85, QUIETED BY HER S88.
 
-     ⚠⚠ THE CTA IS NOT IN THE BLUE AND NEEDS NO WORK TO STAY OUT. .ks-greet-cta is a
-     SIBLING of this element, never a child, so a background here cannot reach it. Do not
-     "fix" this by wrapping them — wrapping is what would put the button inside the banner.
+     ⚠⚠ THE FILL IS GONE AND THAT IS HER RULING, NOT A REGRESSION. She saw the blue
+     banner live at ?fake=zero the hour it shipped and called it "too in your face, and
+     too close to the heading." It is now BOLD BLUE TEXT on the page base, no background,
+     no padding, no radius — SAME SPECIES AS S85 KNOWINGLY REVERSING HER OWN S52 WHITE
+     CARD. DO NOT "RESTORE" THE FILL, and do not read §DASH.2's "both loud fills are
+     hers" as covering this one any more: THE GREEN STOP CARD IS THE ONLY LOUD FILL LEFT
+     IN THE GREETING ZONE.
+     ⚠ BLUE'S SECOND JOB SURVIVES THE CHANGE, QUIETER. §DASH.2 gave #1C4A91 one job (the
+     savings/impact NUMBER); the zero-state message is still a second. A THIRD JOB IS THE
+     SIGNAL THE RULE HAS STOPPED MEANING ANYTHING — same tripwire as coral.
      ⚠⚠ SCOPE, CORRECTED S88 — IT NOW PAINTS ON THE ZERO STATE ONLY. The old note here
      said "this paints on EVERY greeting state." That was true until dashboard-tool.js
      @ff42b66 shipped: `zero` is the ONLY state carrying accent:true, and paintGreeting()
      toggles .ks-greet-accent ON .ks-greet-sub ITSELF (js line 147; line 153 removes it on
      the fallback path). READ THE JS, NOT THIS COMMENT, IF THEY EVER DISAGREE AGAIN.
-     ⚠⚠ ONLY COLOUR / BACKGROUND / PADDING / BORDER-RADIUS LIVE ON THE ACCENT RULE.
-     max-width: 42ch, the margin, font-size and line-height STAY on .ks-greet-sub — they
-     are what hold the S86 width alignment (all three greeting-zone elements measure ONE
-     width at <=600px) on every state that gets NO banner. Move them up here and every
-     non-zero greeting silently loses its width.
+     ⚠⚠ ONLY COLOUR / WEIGHT / TOP MARGIN LIVE ON THE ACCENT RULE.
+     max-width: 42ch, font-size and line-height STAY on .ks-greet-sub — they are what hold
+     the S86 width alignment (all three greeting-zone elements measure ONE width at
+     <=600px) on every state that gets NO accent. Move them up here and every non-zero
+     greeting silently loses its width.
+     ⚠⚠ THE TOP MARGIN IS OVERRIDDEN HERE, NOT RAISED ON THE BASE RULE, ON PURPOSE.
+     Removing the fill took 14px of padding out from between the headline and the WORDS,
+     so the accent line moved 14px CLOSER to the headline even though no margin changed —
+     which is the second half of what she reported. The base 8px is the S86-tuned gap for
+     a PLAIN sub and those states did not change; raising it there would silently re-tune
+     four greetings she has not complained about, and cost mobile height on all of them.
+     ⚠ IT WINS ON SOURCE ORDER, NOT SPECIFICITY. Both this rule and the base's
+     `.ks-greet-sub.ks-card-sub` are (0,2,0); this block sits BELOW it, so it wins the tie.
+     KEEP IT BELOW. Moving it above the base rule silently restores the 8px.
      ⚠ THE COMBO IS MATCHED DEFENSIVELY, AND THE ELEMENT NOW WEARS THREE CLASSES:
      ks-greet-sub ks-card-sub ks-greet-accent. The doc says the .ks-card-sub combo is
      harmless because Webflow sets no colliding property — but that was read about FONT,
      not BACKGROUND, and nobody has read background on it. The two-class variant
      .ks-greet-sub.ks-greet-accent (0,2,0) costs nothing and cannot lose to a Webflow
      combo. §0: AUDIT THE PAGE, NEVER THE FILE.
-     ⚠ CONTRAST MEASURED, NOT ASSUMED: white on #1C4A91 = 8.6:1, AA and AAA at this size.
-     The S73 rule (DARKEN THE FILL, NEVER WHITEN THE TEXT) is satisfied with room to spare.
-     ⚠ PADDING TRAVELS WITH FONT-SIZE — the mobile override below carries its own.
+     ⚠ CONTRAST MEASURED, NOT ASSUMED: #1C4A91 on the page base #F2F1EB = 7.61:1, AA and
+     AAA at this size. (It was 8.6:1 as white-on-blue. The quieter version is still AAA.)
+     ⚠ WEIGHT 600 IS THE CEILING, NEVER 700 (§DASH.2). "Bold" in this type system is 600.
+     ⚠ THE MOBILE OVERRIDE BELOW CARRIES ITS OWN TOP MARGIN — the desktop figure would
+     eat coin height on the one state where the page is shortest.
      ============================================================ */
   .ks-greet-sub,
   .ks-greet-sub.ks-card-sub {
@@ -55,10 +72,9 @@
   }
   .ks-greet-accent,
   .ks-greet-sub.ks-greet-accent {
-    color: #FFFFFF;
-    background: #1C4A91;
-    padding: 14px 20px;
-    border-radius: 14px;
+    color: #1C4A91;
+    font-weight: 600;
+    margin-top: 16px;
   }
 
   /* ============================================================
@@ -1391,10 +1407,11 @@
     .ks-greet-headline.ks-card-value { font-size: 30px; line-height: 1.12; }
     .ks-greet-sub,
     .ks-greet-sub.ks-card-sub { font-size: 17px; margin-top: 8px; }
-    /* ⚠ THE PADDING TRAVELS WITH THE BANNER, NOT WITH THE MESSAGE (S88). Size and margin
-       stay above so the S86 one-width alignment holds on every state. */
+    /* ⚠ THE EXTRA AIR TRAVELS WITH THE ACCENT, NOT WITH THE MESSAGE (S88). Size stays
+       above so the S86 one-width alignment holds on every state. 12px here, not the
+       desktop 16 — this is the day-one member's page and it is the shortest one there is. */
     .ks-greet-accent,
-    .ks-greet-sub.ks-greet-accent { padding: 12px 14px; }
+    .ks-greet-sub.ks-greet-accent { margin-top: 12px; }
     /* ⚠ THE CARD'S PADDING AND ITS ICON OFFSETS TRAVEL WITH THIS SIZE (Session 54).
        Dropping the font alone would leave desktop padding around phone-sized text. */
     .ks-sb-stop        { font-size: 17px; padding: 12px 14px 12px 42px; }
