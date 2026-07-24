@@ -32,13 +32,43 @@ var ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI
   }
 
  // ---------- GREETING ----------
+  // THE CAPPED LINE IS BUILT, NOT STORED — because "6 swaps" is only true on The Basics.
+  // Toy Chest 5 toy - Full Wardrobe 10 clothing - Everything Bag 10 clothing AND 3 toy.
+  // Approved copy (Jennie, S87): the allowance is named from s.caps and the rest is verbatim.
+  // ⚠ THE FALLBACK IS THE PREVIOUS LIVE STRING, UNCHANGED. If caps are missing we must never
+  // render "Your plan includes 0 swaps", and inventing a new sentence here would be
+  // unapproved member-facing copy. Falling back to the string that already shipped is free.
+  function cappedSub(s) {
+    var caps = (s && s.caps) || {};
+    var c = Number(caps.clothing) || 0;
+    var t = Number(caps.toy) || 0;
+    var allowance;
+    if (c > 0 && t > 0)  allowance = c + ' clothing and ' + t + ' toy swaps';
+    else if (c > 0)      allowance = c + (c === 1 ? ' swap' : ' swaps');
+    else if (t > 0)      allowance = t + (t === 1 ? ' swap' : ' swaps');
+    else return "You've used this cycle's swaps \u2014 your credits are safe for next cycle.";
+    return 'Your plan includes ' + allowance + " per cycle, and you've used them all. " +
+           "Don't worry, your credits are safe for next month.";
+  }
+
   var GREET = {
     cancelled: { sub: "Your membership won't renew. Reactivate anytime to pick up where you left off.", cta: "Reactivate",        mode: "manage",                  accent: false },
     paused:    { sub: "Your membership is paused. Your credits are safe and waiting.",                  cta: "Resume membership", mode: "manage",                  accent: false },
-    capped:    { sub: "You've used this cycle's swaps \u2014 your credits are safe for next cycle.",      cta: "See what's new",    mode: "closet", href: "/browse", accent: false },
-    expiring:  { sub: "Some credits are expiring soon. Don't let them slip away.",                       cta: "Browse the closet", mode: "closet", href: "/browse", accent: true  },
-    active:    { sub: "Your closet's ready when you are.",                                               cta: "Browse the closet", mode: "closet", href: "/browse", accent: false },
-    zero:      { sub: "Send in a bag to earn credits and start swapping.",                               cta: "Browse the closet", mode: "closet", href: "/browse", accent: false }
+    capped:    { sub: cappedSub,                                                                        cta: "See what's new",    mode: "closet", href: "/browse", accent: false },
+    expiring:  { sub: "Some credits are expiring soon. Don't let them slip away.",                       cta: "Browse the closet", mode: "closet", href: "/browse", accent: false },
+    // ⚠⚠ "ready to spend" IS A DELIBERATE, NARROW EXCEPTION TO THE "ADDED TO YOUR BANK,
+    // NEVER READY TO SPEND" LOCK, AND IT IS SAFE FOR A STRUCTURAL REASON. DO NOT "CORRECT" IT.
+    // pickState routes on signals.has_credits = bool_or(credit_amount >= 1.0), so A LONE 0.5
+    // ROUTES TO `zero`, NOT HERE. Any member who reads this line provably holds a whole
+    // credit. Same narrowing Jennie already allowed on /signup END STATE B (S81).
+    // ⚠ THE LOCK IS UNCHANGED EVERYWHERE ELSE — §DASH.7 and every earned-credit surface.
+    // ⚠ It also fixes a real error: the old line said "Your closet's ready", but on
+    // /dashboard "closet" means HER KEEPS GALLERY, so it pointed at the wrong thing.
+    active:    { sub: "Your credits are ready to spend.",                                               cta: "Browse the closet", mode: "closet", href: "/browse", accent: false },
+    // ⚠⚠ `zero` IS THE ONLY STATE THAT GETS THE BLUE BANNER (Jennie, S78). accent:true is
+    // what emits .ks-greet-accent; the CSS rule keyed to it ships in the NEXT commit.
+    // ⚠ DEPLOY ORDER INVERTS HERE: this flag is INERT until the CSS moves. Ship JS first.
+    zero:      { sub: "Send in a bag to earn credits and start swapping.",                               cta: "Browse the closet", mode: "closet", href: "/browse", accent: true  }
   };
 
   function fallbackHeadline() {
@@ -112,7 +142,8 @@ function paintHeadline(member) {
     var cfg = GREET[pickState(s)] || GREET.active;
     var sub = document.querySelector('.ks-greet-sub');
     if (sub) {
-      sub.textContent = cfg.sub;
+      // cfg.sub may be a STRING or a FUNCTION of the state (capped builds its numbers live).
+      sub.textContent = (typeof cfg.sub === 'function') ? cfg.sub(s) : cfg.sub;
       sub.classList.toggle('ks-greet-accent', cfg.accent === true);
     }
     setCTA(cfg.cta, cfg.mode, cfg.href);
@@ -454,13 +485,25 @@ function paintCoins(s) {
 	paintCycleLine(s);
     paintCycleBar(s);
 	paintSavings(s);
-    paintCloset(s);
+    // ⚠⚠ COLUMN ORDER IS CALL ORDER (§DASH.12) AND IT WAS REORDERED S87 SO DESKTOP
+    // MATCHES THE MOBILE ORDER SHE ALREADY RULED IN S85 (hero → contribution → review →
+    // how credits → activity → closet). Mobile is driven by `order:` values keyed to
+    // class inside @media, NOT by this order, so the two are set independently — which
+    // is exactly how they drifted apart. Change one, check the other.
     paintHowCredits();
-    // ⚠ RAIL ORDER IS CALL ORDER (§DASH.12). paintImpact MUST stay above paintActivity
-    // or the summary lands underneath the detail it summarises.
+    paintCloset(s);
+    // ⚠ paintImpact MUST stay above paintActivity or the summary lands underneath the
+    // detail it summarises.
     paintImpact(s);
-    paintActivity(s);
     _state = s;
+    // ⚠⚠ THE REVIEW SLOT IS RESERVED HERE AND THAT IS NOT COSMETIC. paintReviewPrompt()
+    // runs from TWO callers (here and paintHeadline) and only paints once it holds BOTH
+    // _state and _member — which land on separate promises, in either order. sectionIn()
+    // APPENDS on first creation, so whichever caller wins decides where the card sits.
+    // That was invisible while review was LAST in the rail; the moment it moved ABOVE
+    // activity the rail order became a RACE. Reserving the slot makes it deterministic.
+    reserveReviewSlot();
+    paintActivity(s);
     paintReviewPrompt();
    paintChildren(s);
     paintEmailPrefs(s);
@@ -546,8 +589,12 @@ function paintCoins(s) {
      THE FIX: one 2/3 MAIN column + one 1/3 RAIL. A grid a new section can slot
      into, instead of a stack it gets appended to the bottom of.
 
-       MAIN: credit bank -> my closet -> how credits work
-       RAIL: your contribution -> recent activity -> review / referral slot
+       MAIN: credit bank -> how credits work -> my closet
+       RAIL: your contribution -> review / referral slot -> recent activity
+
+     ⚠ REORDERED S87 so desktop matches the mobile order ruled in S85. The old order
+     (closet second in main, activity second in the rail) was never a decision — it was
+     the order the sections got built, which is the same fault this grid was created to fix.
 
      ⚠ THIS BLOCK ONCE DESCRIBED AN ABANDONED FIRST DRAFT and had the columns BACKWARDS
      (activity in main; membership + how-credits in the rail). It was wrong for a full
@@ -1122,6 +1169,14 @@ function paintCloset(s) {
     var v = '';
     try { v = (m && m.data && m.data.customFields && m.data.customFields['reviewed-google']) || ''; } catch (e) {}
     return String(v).toLowerCase() === 'true';
+  }
+
+  // Creates the rail slot in the right position and leaves it hidden. paintReviewPrompt()
+  // is the only thing that ever un-hides it. The innerHTML guard means that if the prompt
+  // has ALREADY painted (the other caller won the race), this cannot hide a live card.
+  function reserveReviewSlot() {
+    var panel = sectionIn('rail', 'ks-sec-review');
+    if (panel && !panel.innerHTML && panel.parentNode) panel.parentNode.style.display = 'none';
   }
 
   function paintReviewPrompt() {
