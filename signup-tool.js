@@ -88,6 +88,7 @@
       name:    'The Basics',
       monthly: 30,
       swaps:   'Up to 6 clothing swaps per month',
+      pitch:   'Start here if you\u2019re swapping for one kid.',
       value:   'Up to $150 value',
       pack:    null
     },
@@ -100,6 +101,7 @@
       name:    'The Toy Chest',
       monthly: 45,
       swaps:   'Up to 5 toy swaps per month',
+      pitch:   'Keep toys moving so they never pile up.',
       value:   'Up to $100 value',
       pack:    null
     },
@@ -112,6 +114,7 @@
       name:    'The Full Wardrobe',
       monthly: 45,
       swaps:   'Up to 10 clothing swaps per month',
+      pitch:   'For more than one kid, a fast grower, or a toddler with taste.',
       value:   'Up to $250 value',
       pack:    null
     },
@@ -124,6 +127,7 @@
       name:    'The Everything Bag',
       monthly: 70,
       swaps:   'Up to 10 clothing and 3 toy swaps per month',   /* ⚠ NEEDS-CONFIRM */
+      pitch:   'For families who want variety.',
       value:   'Up to $310 value',
       pack:    null
     },
@@ -142,6 +146,7 @@
       titleTop:  'The Basics plan',
       titleSub:  'with a Clothing Starter Pack',
       swaps:     'Up to 6 clothing swaps per month',
+      pitch:     'Start here if you\u2019re swapping for one kid.',
       value:     'Up to $150 value',
       pack: {
         name:    'Clothing Starter Pack',
@@ -162,6 +167,7 @@
       titleTop:  'The Toy Chest plan',
       titleSub:  'with a Toy Starter Pack',
       swaps:     'Up to 5 toy swaps per month',
+      pitch:     'Keep toys moving so they never pile up.',
       value:     'Up to $100 value',
       pack: {
         name:    'Toy Starter Pack',
@@ -217,7 +223,7 @@
 
     /* ---- step 1 ---- APPROVED */
     s1: {
-      head: 'So glad you\u2019re here, how would you prefer to start?',
+      head: 'So glad you\u2019re here.',
       sub:  'Either option is right.',
       cardA: {
         title: 'Send my swap bag first',
@@ -811,6 +817,7 @@
       lines.appendChild(creditRow);
     }
     lines.appendChild(el('div', 'ks-wz-plan-swaps', p.swaps));
+    lines.appendChild(el('div', 'ks-wz-plan-pitch', p.pitch));
     lines.appendChild(el('div', 'ks-wz-plan-value', p.value));   /* italic, in CSS */
     b.appendChild(lines);
     /* always built, shown by CSS only when this card is the pick */
@@ -1607,7 +1614,16 @@
       '.ks-wz-forks{display:flex;flex-direction:column;gap:12px;}',
       '.ks-wz-fork{display:block;width:100%;text-align:left;cursor:pointer;',
         'border:0;border-radius:14px;padding:18px 18px;',
-        'font-family:inherit;position:relative;}',
+        'font-family:inherit;position:relative;',
+        'transition:transform .15s ease,box-shadow .15s ease;}',
+      /* HER RULING S80: the two forks get the SAME hover the four plan
+         cards got in S70. Depth only, no colour change, so it cannot
+         fight the fills or the has-pick dimming. Gated on (hover:hover)
+         so it can never stick on a phone. */
+      '@media (hover:hover){',
+        '.ks-wz-fork:hover{transform:translateY(-2px);',
+          'box-shadow:0 6px 16px rgba(30,26,25,.16);}}',
+      '@media (prefers-reduced-motion:reduce){.ks-wz-fork{transition:none}}',
       /* ⚠⚠ RULED S69. THE FORK CARDS ARE FILLED WITH PINK — THE RESERVED
          ACCENT, NOW PLACED. Both forks share pink because it brands them as
          the two ways in, not two packages; the words tell them apart, not
@@ -1822,6 +1838,13 @@
       '.ks-wz-plan-credits{font-size:15px;font-weight:600;color:inherit;}',
       '.ks-wz-plan-once{font-size:14px;font-weight:500;color:inherit;opacity:.85;white-space:nowrap;}',
       '.ks-wz-plan-swaps{font-size:14px;font-weight:500;color:inherit;margin-top:4px;}',
+      /* APPROVED S78, BUILT S80. One pitch line per plan, UNDER the swaps
+         line and ABOVE the value chip. color:inherit is load-bearing - it
+         takes the card's own text colour, so it is ink on the golds and
+         white on the dark green without a second rule. DO NOT hardcode a
+         colour here or it repeats the value-chip trap. */
+      '.ks-wz-plan-pitch{font-size:13px;font-weight:400;color:inherit;',
+        'margin-top:4px;line-height:1.4;}',
       /* ⚠ RULED S69: value becomes a CREAM chip (approved #EEEFE3, ink
          text) so it reads on every card colour. Copy UNCHANGED ('Up to
          $X value') per her locked-copy rule — dropping 'Up to' is a copy
@@ -1973,7 +1996,13 @@
          disabled. WARNING, NOT A DEFECT: it now LOOKS tappable while
          nothing is picked. The disabled attribute is still set, so a tap
          does nothing at all. */
-      '.ks-wz-btn-primary[disabled]{cursor:default;}',
+      /* HER RULING S80: the primary button now LOOKS dead when it is dead.
+         It was full coral while disabled, so on a phone - which has no
+         hover - nothing said a plan was still needed. Same cream/line/muted
+         treatment as the step 5 .is-locked submit. All three are palette
+         hexes; no new colour, and no JS change - [disabled] is already set. */
+      '.ks-wz-btn-primary[disabled]{background:#EEEFE3;border-color:#C9C7BC;',
+        'color:#75736E;cursor:default;}',
       '.ks-wz-btn-ghost{background:transparent;border-color:#C9C7BC;color:#1E1A19;}',
       '.ks-wz-btn-quiet{background:transparent;border-color:transparent;color:#75736E;}',
 
