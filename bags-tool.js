@@ -8,15 +8,35 @@
 (function () {
   "use strict";
 
-  var BUILD = "v4-requests";
+  /* ⚠ THE STAMP PARSES ITS OWN SHA OUT OF THE SCRIPT SRC — the pattern lifted from
+     browse-tool.js / signup-tool.js. It CANNOT go stale and needs no edit before a
+     commit: a new commit stamps itself. The old hardcoded "v4-requests" label was a
+     hand-typed string, so this page's stamp could never say which commit was live and
+     every verification needed a server-side fetch instead. Falls back to the label if
+     currentScript is unavailable. */
+  var _src = (document.currentScript && document.currentScript.src) || "";
+  var _sha = (_src.match(/scripts@([0-9a-f]+)\//) || [])[1];
+  var BUILD = _sha || "v5-age-unpinned";
+
+  /* ⚠ STAMPED HERE, NOT INSIDE THE READ'S SUCCESS BRANCH. It used to print only after
+     the panel loaded, so a failed read printed an error and NO stamp — exactly the
+     moment you most need to know which file is running. */
+  console.log("[ks-bags] build " + BUILD);
+
   var FN = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1/bags-manage";
   var MOUNT_ID = "ks-bags-app";
 
-  /* ⚠ AGING — GUARD 3. Deliberately constants, not a migration. No SLA exists yet
-     (nothing member-facing promises a handling time), so these are honest-for-now,
-     not derived. Change the numbers; nothing else moves. */
-  var AGE_AMBER_DAYS = 2;
-  var AGE_RED_DAYS = 4;
+  /* ⚠ AGING — GUARD 3. Deliberately constants, not a migration. Change the numbers;
+     nothing else moves.
+     ⚠⚠ HOURS, NOT DAYS, AND THE UNIT IS THE POINT. Her target is "all orders shipped
+     within 24 hours" (S94) — OPERATOR-ONLY, nothing member-facing promises it. A ladder
+     counting in days cannot express a 24-hour bar: "1 day old" could be 25 hours or 47.
+     ⚠ GREEN-FOR-ON-TIME IS HERS. Claude argued for a neutral grey so that ANY colour
+     meant "look at me"; she ruled for an affirming green. The float-to-top sort is what
+     makes that safe, because POSITION carries the urgency, not colour. Do NOT "correct"
+     green back to grey. */
+  var AGE_AMBER_HOURS = 24;
+  var AGE_RED_HOURS = 48;
 
   /* ⚠ #C0392B IS A 9th VALUE AND IT IS DELIBERATE — ADMIN SURFACES ONLY.
      The 8-hex palette is a BRAND system; it exists so MEMBERS see a coherent product.
@@ -72,15 +92,30 @@
     return Math.floor((Date.now() - then) / 86400000);
   }
 
-  function ageClass(d) {
-    if (d >= AGE_RED_DAYS) return "ksb-red";
-    if (d >= AGE_AMBER_DAYS) return "ksb-amber";
+  /* ⚠ hoursSince IS A SIBLING OF daysSince, NOT A REPLACEMENT. daysSince still serves
+     THREE other call sites that must not change unit: "Out N days" (in transit),
+     "Open N days" (cases) and "Asked N days ago" (requests). Only the send-queue
+     ladder and its sort read hours, and both key on opened_at. */
+  function hoursSince(iso) {
+    if (!iso) return 0;
+    var then = new Date(iso).getTime();
+    if (isNaN(then)) return 0;
+    return Math.floor((Date.now() - then) / 3600000);
+  }
+
+  function ageClass(h) {
+    if (h >= AGE_RED_HOURS) return "ksb-red";
+    if (h >= AGE_AMBER_HOURS) return "ksb-amber";
     return "ksb-fresh";
   }
 
-  function ageText(d) {
-    if (d <= 0) return "Today";
-    if (d === 1) return "1 day old";
+  /* Hours below 48, days at and above it. Continuous at the handover: 48 hours reads
+     "2 days old", so there is no gap and no double-naming of the same moment. */
+  function ageText(h) {
+    if (h < 1) return "Under an hour";
+    if (h === 1) return "1 hour old";
+    if (h < AGE_RED_HOURS) return h + " hours old";
+    var d = Math.floor(h / 24);
     return d + " days old";
   }
 
@@ -152,15 +187,15 @@
   /* ---------- a bag card (BOTH queues end the same way) ------------------ */
 
   function bagCard(r) {
-    var d = daysSince(r.opened_at);
+    var h = hoursSince(r.opened_at);
     var isOrder = r.source === "order";
     var paid = r.source === "requested_paid";
 
     return '' +
-      '<article class="ksb-card ' + ageClass(d) + '" data-bag="' + esc(r.id) + '">' +
+      '<article class="ksb-card ' + ageClass(h) + '" data-bag="' + esc(r.id) + '">' +
         '<div class="ksb-top">' +
           '<h3 class="ksb-name">' + esc(fullName(r)) + "</h3>" +
-          '<span class="ksb-age">' + esc(ageText(d)) + "</span>" +
+          '<span class="ksb-age">' + esc(ageText(h)) + "</span>" +
         "</div>" +
 
         '<div class="ksb-chips">' +
@@ -434,7 +469,7 @@
     /* ⚠ GUARD 3, THE HALF THAT ACTUALLY WORKS: OVERDUE FLOATS TO THE TOP.
        A red border 400px down the page is a color a tired person learns to scroll
        past. Position is the loudest signal there is, and it costs one sort. */
-    function byAge(a, b) { return daysSince(a.opened_at) - daysSince(b.opened_at); }
+    function byAge(a, b) { return hoursSince(a.opened_at) - hoursSince(b.opened_at); }
     var orders = (_panel.orders || []).slice().sort(byAge).reverse();
     var envelopes = (_panel.envelopes || []).slice().sort(byAge).reverse();
     var needs = (_panel.members || []).filter(function (m) { return m.total_bags === 0; });
@@ -726,6 +761,16 @@
 
       /* cards — phone first */
       R + " .ksb-card{background:#FFF;border-radius:18px;box-shadow:0 10px 30px -12px #C9C7BC;padding:16px;margin:0 0 16px;border-left:6px solid #75736E}",
+      /* ⚠ .ksb-fresh WAS EMITTED BY ageClass() WITH NO RULE BEHIND IT — an inert class,
+         which is why an on-time card read grey. This is the whole green build.
+         ⚠⚠ #256F43 IS A DARK STOP AND BRAND GREEN WOULD BE WRONG HERE. Contrast is
+         symmetric, so the measured 3.86 for white-on-#309359 is ALSO #309359 text on a
+         white card: it FAILS AA either way. #256F43 reads 6.12 against white.
+         ⚠ GREEN IS COLOURED TEXT, NOT A FILLED BADGE — CLAUDE'S CALL, REVERSIBLE. It
+         matches AMBER's shape on purpose. RED is the only filled badge, and the fill is
+         what makes red escalate; filling green too would flatten the ladder and teach
+         the operator to ignore all three. */
+      R + " .ksb-fresh{border-left-color:#256F43}",
       R + " .ksb-amber{border-left-color:#E5AD43}",
       R + " .ksb-red{border-left-color:" + RED + "}",
       R + " .ksb-first{border-left-color:#28498D}",
@@ -733,6 +778,7 @@
       R + " .ksb-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}",
       R + " .ksb-name{font-family:Quicksand,sans-serif!important;font-size:20px!important;font-weight:600!important;margin:0!important;color:#1E1A19!important;letter-spacing:-.01em}",
       R + " .ksb-age{font-size:13px;color:#75736E;font-weight:600;white-space:nowrap;padding-top:3px}",
+      R + " .ksb-fresh .ksb-age{color:#256F43}",
       R + " .ksb-amber .ksb-age{color:#E5AD43}",
       /* the overdue badge is FILLED — colour + shape + size, not just a hairline */
       R + " .ksb-red .ksb-age{color:#FFF;background:" + RED + ";padding:5px 10px;border-radius:11px;font-size:12.5px;padding-top:5px}",
@@ -832,7 +878,9 @@
     call({ action: "read" }).then(function (res) {
       _panel = res.panel;
       render();
-      console.log("[ks-bags] build " + BUILD);
+      /* ⚠ THE STAMP MOVED TO THE TOP OF THE FILE. Do not restore a second one here —
+         TWO [ks-bags] LINES IS THIS PROJECT'S TELL FOR A DUPLICATE SCRIPT TAG, and one
+         file printing twice would be a false alarm on the page's only instrument. */
     }).catch(function (e) {
       _root.innerHTML = '<p style="font-family:Quicksand,sans-serif;color:#D65A35;padding:16px">' +
         esc(e.message || "Couldn't load the ship desk.") + "</p>";
