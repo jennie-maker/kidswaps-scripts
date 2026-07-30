@@ -70,6 +70,16 @@
   var _busy = false;
   var _root = null;
   var _formSource = "signup";
+  /* one-shot confirmation line, consumed and cleared by render() */
+  var _flash = null;
+
+  /* ---------- short id — the handle SQL uses ----------------------------- */
+
+  /* ⚠ TEXT, NEVER COLOUR. Colour on this page already means AGE (the ladder) plus blue
+     for first-bag cards; a second colour language would fight it. Two cards for one
+     member at one address are otherwise identical apart from a small source chip, and
+     S104 cancelled the wrong bag three times in twenty minutes because of it. */
+  function shortId(id) { return String(id == null ? "" : id).slice(0, 8); }
 
   /* ---------- utils ---------------------------------------------------- */
 
@@ -170,13 +180,18 @@
     });
   }
 
-  function withBusy(p, btn, busyText) {
+  /* ⚠ THE FOURTH ARGUMENT IS OPTIONAL AND EVERY EXISTING CALL PASSES THREE. It carries
+     a one-line confirmation to print WHERE THE CARD LEFT ({q:'orders'|'envelopes', t:'...'}).
+     It has to be set HERE, on the success branch, because render() runs inside this
+     function — setting it after withBusy resolves would need a second render. It is
+     cleared by render() itself, so a failed call cannot leave a stale message behind. */
+  function withBusy(p, btn, busyText, flash) {
     if (_busy) return Promise.resolve(null);
     _busy = true;
     var old = btn ? btn.textContent : null;
     if (btn) { btn.disabled = true; btn.textContent = busyText || "Working..."; }
     return p.then(function (res) {
-      if (res && res.panel) { _panel = res.panel; render(); }
+      if (res && res.panel) { _flash = flash || null; _panel = res.panel; render(); }
       return res;
     }).catch(function (e) {
       alert(e.message + (e.detail ? "\n\n" + e.detail : ""));
@@ -192,7 +207,14 @@
     var paid = r.source === "requested_paid";
 
     return '' +
-      '<article class="ksb-card ' + ageClass(h) + '" data-bag="' + esc(r.id) + '">' +
+      /* ⚠ data-bagsrc IS READ BY TWO THINGS, AND IT IS **NOT** data-src — that attribute
+         already means "reason tile" on the send form and the tile handler climbs to the
+         nearest [data-src]. Two meanings for one attribute name is a trap, not a saving.
+         The two readers: Cancel's confirm (to name the bag TYPE from
+         SOURCE_LABEL rather than scraping chip text) and the ship confirmation line
+         (to know which of the two send queues the card left). */
+      '<article class="ksb-card ' + ageClass(h) + '" data-bag="' + esc(r.id) + '"' +
+        ' data-bagsrc="' + esc(r.source) + '">' +
         '<div class="ksb-top">' +
           '<h3 class="ksb-name">' + esc(fullName(r)) + "</h3>" +
           '<span class="ksb-age">' + esc(ageText(h)) + "</span>" +
@@ -201,6 +223,7 @@
         '<div class="ksb-chips">' +
           '<span class="ksb-chip">' + esc(r.plan || "No plan") + "</span>" +
           '<span class="ksb-chip ksb-chip--type">' + esc(SOURCE_LABEL[r.source] || r.source) + "</span>" +
+          '<span class="ksb-chip ksb-chip--id">' + esc(shortId(r.id)) + "</span>" +
           (paid ? '<span class="ksb-chip ksb-chip--paid">$15 · not charged here</span>' : "") +
         "</div>" +
 
@@ -268,6 +291,7 @@
         '<div class="ksb-chips">' +
           '<span class="ksb-chip">' + esc(r.plan || "No plan") + "</span>" +
           '<span class="ksb-chip ksb-chip--type">' + esc(SOURCE_LABEL[r.source] || r.source) + "</span>" +
+          '<span class="ksb-chip ksb-chip--id">' + esc(shortId(r.id)) + "</span>" +
         "</div>" +
 
         '<div class="ksb-transit-meta">' +
@@ -313,15 +337,34 @@
 
   /* ---------- the send-a-bag form ---------------------------------------- */
 
-  function sendForm() {
+  /* ⚠⚠ THE EMAIL IS DISPLAYED, NOT THE PLAN, AND THAT IS THE WHOLE POINT. Every member
+     on this list reads "The Basics", so plan disambiguates NOTHING while two names both
+     begin "Jenni". The email is the only unique handle — and on /admin/grading it is
+     also what tells the real member list apart from iOS's AutoFill Contact chip.
+     ⚠ SEARCH IS BY NAME **OR** EMAIL. Name, because the SHIPPING LABEL carries a name
+     and never an email, so name is the handle at the moment the bag is in her hands.
+     ⚠ IF THE PAYLOAD CARRIES NO EMAIL this degrades to the plan rather than showing a
+     bare name. That is a fail-soft, NOT evidence the email is there — get_bags_panel's
+     members key is the thing to read if the emails do not render. */
+  function memberOptions(q) {
+    var needle = String(q || "").trim().toLowerCase();
     var members = (_panel.members || []).slice().sort(function (a, b) {
       return fullName(a).localeCompare(fullName(b));
     });
 
-    var opts = members.map(function (m) {
+    return members.filter(function (m) {
+      if (!needle) return true;
+      var hay = (fullName(m) + " " + (m.email || "")).toLowerCase();
+      return hay.indexOf(needle) > -1;
+    }).map(function (m) {
+      var tail = m.email || m.plan || "no plan";
       return '<option value="' + esc(m.member_id) + '" data-open="' + m.open_bags + '">' +
-             esc(fullName(m)) + " — " + esc(m.plan || "no plan") + "</option>";
+             esc(fullName(m)) + " · " + esc(tail) + "</option>";
     }).join("");
+  }
+
+  function sendForm() {
+    var opts = memberOptions("");
 
     /* Reason as TAP TILES, not a dropdown — far better with a thumb. */
     var tiles = SOURCES.map(function (s, i) {
@@ -334,6 +377,8 @@
     return '' +
       '<div class="ksb-form" id="ksb-form" hidden>' +
         '<div class="ksb-flabel">Member</div>' +
+        '<input class="ksb-filter" id="ksb-f-filter" type="search" autocomplete="off" ' +
+          'spellcheck="false" placeholder="Filter by name or email">' +
         '<select id="ksb-f-member"><option value="">Pick a member...</option>' + opts + "</select>" +
         /* ⚠ GUARD 4 — warn, never block (§6 override-with-warning; she may have a reason). */
         '<div class="ksb-dup" id="ksb-f-warn" hidden>' +
@@ -481,6 +526,14 @@
     /* requests: RPC orders oldest-first (created_at). Same as cases — oldest ask first. */
     var requests = (_panel.requests || []).slice();
 
+    /* ⚠ ONE-SHOT. _flash is read here and cleared below, so the line survives exactly
+       the render that follows the action and never reappears on a Refresh. */
+    function flashFor(q) {
+      return (_flash && _flash.q === q)
+        ? '<p class="ksb-flash">' + esc(_flash.t) + "</p>"
+        : "";
+    }
+
     _root.innerHTML = '' +
       '<div class="ksb">' +
         '<header class="ksb-head">' +
@@ -498,6 +551,7 @@
 
         '<section class="ksb-sec">' +
           '<div class="ksb-sech"><h2>Bags to send</h2><span class="ksb-count">' + envelopes.length + "</span></div>" +
+          flashFor("envelopes") +
           (envelopes.length
             ? envelopes.map(bagCard).join("")
             : '<p class="ksb-empty">Nothing to send. Bag-only jobs show up here.</p>') +
@@ -507,6 +561,7 @@
 
         '<section class="ksb-sec">' +
           '<div class="ksb-sech"><h2>Orders to send</h2><span class="ksb-count">' + orders.length + "</span></div>" +
+          flashFor("orders") +
           (orders.length
             ? orders.map(bagCard).join("")
             : '<p class="ksb-empty">No orders waiting. Checkout puts them here.</p>') +
@@ -534,6 +589,7 @@
         "</section>" +
       "</div>";
 
+    _flash = null;
     wire();
   }
 
@@ -579,6 +635,23 @@
       var o = mSel.options[mSel.selectedIndex];
       warn.hidden = !(o && Number(o.getAttribute("data-open") || 0) > 0);
     });
+
+    /* ⚠ THE FILTER REBUILDS THE OPTIONS AND KEEPS A STILL-VISIBLE SELECTION. If the
+       filtered list no longer holds the picked member, the selection is CLEARED and the
+       duplicate warning goes with it — a stale member_id sitting behind a narrowed list
+       is exactly how you mail a bag to the wrong person. */
+    var filt = el("ksb-f-filter");
+    if (filt) {
+      filt.addEventListener("input", function () {
+        var was = mSel.value;
+        mSel.innerHTML = '<option value="">Pick a member...</option>' + memberOptions(filt.value);
+        var kept = false;
+        for (var i = 0; i < mSel.options.length; i++) {
+          if (mSel.options[i].value === was && was) { mSel.selectedIndex = i; kept = true; break; }
+        }
+        if (!kept) { mSel.value = ""; warn.hidden = true; }
+      });
+    }
 
     el("ksb-f-reasons").addEventListener("click", function (e) {
       var t = e.target.closest ? e.target.closest("[data-src]") : null;
@@ -703,15 +776,35 @@
         var out = card.querySelector('[data-tr="out"]').value.trim();
         var ret = card.querySelector('[data-tr="ret"]').value.trim();
         if (!out || !ret) return;   /* unreachable — the button is disabled. Belt to the server's braces. */
+        /* ⚠ A SHIPPED BAG CORRECTLY VANISHES FROM THIS QUEUE AND NOTHING SAID WHERE IT
+           WENT. The line prints in the queue it left — In transit IS the destination,
+           and a second home for one row is the drift this panel keeps paying for. */
         withBusy(call({
           action: "ship", bag_id: bagId,
           outbound_tracking: out, return_tracking: ret
-        }), btn, "Shipping...");
+        }), btn, "Shipping...", {
+          q: card.getAttribute("data-bagsrc") === "order" ? "orders" : "envelopes",
+          t: "Shipped. Moved to In transit."
+        });
         return;
       }
 
       if (act === "cancel") {
-        if (!confirm("Cancel this bag?\n\nUse this when two rows exist for one physical bag. It won't count against her shipping.")) return;
+        /* ⚠⚠ THE CONFIRM MUST NAME THE BAG — the guard-against-myself pattern "Mark
+           returned" already had. This dialog used to be byte-identical for every bag on
+           the page, and two cards for one member at one address are visually identical
+           apart from a small chip. S104 cancelled the wrong bag three times in twenty
+           minutes and every mistake was invisible until the database was read.
+           ⚠ READ OFF THE CLICKED CARD, never from panel state — it cannot then describe
+           a different row than the one under her thumb. */
+        var cWho = (card.querySelector(".ksb-name") || {}).textContent || "this member";
+        var cSrc = card.getAttribute("data-bagsrc") || "";
+        var cType = SOURCE_LABEL[cSrc] || cSrc || "Bag";
+        var cAge = (card.querySelector(".ksb-age") || {}).textContent || "";
+        var cMsg = "Cancel this bag?\n\n" + cWho + "\n" +
+          cType + " · " + shortId(bagId) + (cAge ? " · " + cAge : "") +
+          "\n\nUse this when two rows exist for one physical bag. It won't count against her shipping.";
+        if (!confirm(cMsg)) return;
         withBusy(call({ action: "cancel", bag_id: bagId }), btn, "Cancelling...");
         return;
       }
@@ -786,6 +879,11 @@
       R + " .ksb-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px}",
       R + " .ksb-chip{font-size:13px;font-weight:600;padding:5px 11px;border-radius:20px;background:#EEEFE3;color:#1E1A19}",
       R + " .ksb-chip--type{background:#F7E4D9;color:#BE4C2E}",
+      /* ⚠ THE ID CHIP IS DELIBERATELY THE QUIETEST THING ON THE CARD — monospace so it
+         reads as a serial number, muted grey so it takes NO meaning-bearing colour.
+         Colour on this page means AGE. Do not give this a fill. */
+      R + " .ksb-chip--id{background:transparent;border:1px solid #C9C7BC;color:#75736E;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;letter-spacing:.02em}",
+      R + " .ksb-flash{margin:0 0 12px;padding:10px 13px;border-radius:11px;background:#EEEFE3;color:#1E1A19;font-size:13.5px;font-weight:600}",
       R + " .ksb-chip--paid{background:#F7E4D9;color:#BE4C2E}",
       R + " .ksb-chip--free{background:#EEEFE3;color:#4E9360}",
 
@@ -841,6 +939,9 @@
       R + " .ksb-flabel{font-size:13px;font-weight:600;margin:12px 0 6px}",
       R + " .ksb-flabel:first-child{margin-top:0}",
       R + " .ksb-form select{width:100%;height:52px;border-radius:11px;border:2px solid #EEEFE3;background:#FFF;padding:0 14px;font-family:Quicksand,sans-serif;font-weight:600;font-size:16px;color:#1E1A19}",
+      /* ⚠ 16px MINIMUM ON AN INPUT or iOS Safari zooms in and does not zoom back out. */
+      R + " .ksb-filter{width:100%;height:46px;border-radius:11px;border:2px solid #EEEFE3;background:#FFF;padding:0 14px;margin-bottom:8px;font-family:Quicksand,sans-serif;font-weight:600;font-size:16px;color:#1E1A19}",
+      R + " .ksb-filter:focus{outline:none;border-color:#D65A35}",
       R + " .ksb-reasons{display:grid;grid-template-columns:1fr 1fr;gap:8px}",
       R + " .ksb-reason{border:2px solid #EEEFE3;border-radius:11px;padding:11px 10px;cursor:pointer;font-size:14px;font-weight:600;text-align:center;background:#FFF;color:#1E1A19;font-family:Quicksand,sans-serif;min-height:56px}",
       R + " .ksb-reason.is-sel{border-color:#D65A35;background:#F7E4D9}",
