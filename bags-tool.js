@@ -608,8 +608,14 @@
      Memberstack-gated and CANNOT be opened in incognito, and its only user is the
      operator, signed in, with that badge present on every single load. So the badge is
      not a hazard to clear here, it is a permanent resident. Top-center never meets it.
-     ⚠ TEXT, NEVER COLOUR. Colour on this page means AGE (the ladder). Cream and ink,
-     the same values the old in-flow line used. Do not give this a coral or a green. */
+     ⚠⚠ IT IS INK, AND IT IS DELIBERATELY **NOT** GREEN. She read the first cream
+     version live — "the cream almost disappeared in the background" — and asked for green
+     and larger, then delegated the choice. GREEN WAS DECLINED BECAUSE GREEN ALREADY MEANS
+     ON-TIME IN THE AGE LADDER, seconds apart on the same screen, and red is the only
+     FILLED badge precisely so that a fill escalates. Ink sits outside the age language
+     entirely, so it can be loud without borrowing a meaning. CLAUDE'S CALL, REVERSIBLE —
+     if it ever goes green it must be a DARK stop (#1F5C38); white on brand green measures
+     3.86 and fails AA. DO NOT give this a coral. */
   var _toastEl = null, _toastT = null;
 
   function toast(msg) {
@@ -625,7 +631,7 @@
       if (d.parentNode) d.parentNode.removeChild(d);
       if (_toastEl === d) _toastEl = null;
       _toastT = null;
-    }, 3600);
+    }, 4200);   /* 4.2s — 3.6 was survivable but she had to be looking. */
   }
 
   /* ---------- wiring ----------------------------------------------------- */
@@ -901,7 +907,7 @@
          prefixed rule would match nothing and the toast would paint unstyled.
          ⚠ The layout properties carry !important because this element sits in Webflow's
          page, not in our mount, where global styles reach it. */
-      ".ksb-toast{position:fixed!important;top:16px;left:50%;transform:translateX(-50%);z-index:99999;max-width:min(420px,calc(100vw - 32px));margin:0;padding:11px 16px;border-radius:11px;background:#EEEFE3;color:#1E1A19;border:1px solid #C9C7BC;box-shadow:0 6px 20px rgba(30,26,25,.14);font-family:Quicksand,sans-serif;font-size:14px;font-weight:600;line-height:1.35;text-align:center;pointer-events:none}",
+      ".ksb-toast{position:fixed!important;top:20px;left:50%;transform:translateX(-50%);z-index:99999;max-width:min(460px,calc(100vw - 24px));margin:0;padding:16px 24px;border-radius:14px;background:#1E1A19;color:#EEEFE3;box-shadow:0 10px 30px rgba(30,26,25,.30);font-family:Quicksand,sans-serif;font-size:18px;font-weight:700;line-height:1.3;text-align:center;pointer-events:none}",
       R + " *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}",
       R + " .ksb{font-family:Quicksand,sans-serif;font-weight:500;color:#1E1A19;max-width:460px;margin:0 auto;padding:8px 16px 80px;line-height:1.45}",
 
