@@ -181,17 +181,21 @@
   }
 
   /* ⚠ THE FOURTH ARGUMENT IS OPTIONAL AND EVERY EXISTING CALL PASSES THREE. It carries
-     a one-line confirmation to print WHERE THE CARD LEFT ({q:'orders'|'envelopes', t:'...'}).
-     It has to be set HERE, on the success branch, because render() runs inside this
-     function — setting it after withBusy resolves would need a second render. It is
-     cleared by render() itself, so a failed call cannot leave a stale message behind. */
+     a one-line confirmation, now A PLAIN STRING. It has to be set HERE, on the success
+     branch, because render() runs inside this function — setting it after withBusy
+     resolves would need a second render. render() consumes and clears it, so a failed
+     call cannot leave a stale message behind.
+     ⚠⚠ IT USED TO BE {q,t} AND PRINT INSIDE THE SECTION THE CARD LEFT. HER RULING S111:
+     "the page jumps around and its not a noticeable sentence." The jump is structural —
+     a card leaves the queue while a line is inserted above it — so the fix is to stop
+     tying the message to a place on the page. DO NOT RESTORE THE q KEY. */
   function withBusy(p, btn, busyText, flash) {
     if (_busy) return Promise.resolve(null);
     _busy = true;
     var old = btn ? btn.textContent : null;
     if (btn) { btn.disabled = true; btn.textContent = busyText || "Working..."; }
     return p.then(function (res) {
-      if (res && res.panel) { _flash = flash || null; _panel = res.panel; render(); }
+      if (res && res.panel) { _flash = flash || null; _panel = res.panel; render(); }  /* flash: a string */
       return res;
     }).catch(function (e) {
       alert(e.message + (e.detail ? "\n\n" + e.detail : ""));
@@ -417,7 +421,17 @@
     var ageN = daysSince(r.created_at);
     var ageLabel = r.created_at ? ("Open " + ageN + (ageN === 1 ? " day" : " days")) : "";
     return '' +
-      '<article class="ksb-card ksb-case" data-case="' + esc(r.id) + '">' +
+      /* ⚠⚠ THESE FOUR ATTRIBUTES EXIST ONLY SO THE RESOLVE CONFIRM CAN NAME THE CASE.
+         Nothing renders them — the card looks identical. They are here rather than read
+         from panel state because a confirm built from panel state can describe a
+         different row than the one under her thumb (the S110 Cancel ruling).
+         ⚠ swap_bag_id IS NULL ON MOST CASES — three of the four ever written read null.
+         The empty string is expected; the dialog degrades to "No bag linked". */
+      '<article class="ksb-card ksb-case" data-case="' + esc(r.id) + '"' +
+        ' data-case-bag="' + esc(r.swap_bag_id || "") + '"' +
+        ' data-case-bagsrc="' + esc(r.bag_source || "") + '"' +
+        ' data-case-rt="' + esc(r.return_tracking || "") + '"' +
+        ' data-case-reason="' + esc(REASON_LABEL[r.reason] || r.reason || "") + '">' +
         '<div class="ksb-top">' +
           '<h3 class="ksb-name">' + esc(fullName(r)) + "</h3>" +
           (ageLabel ? '<span class="ksb-age">' + esc(ageLabel) + "</span>" : "") +
@@ -526,14 +540,6 @@
     /* requests: RPC orders oldest-first (created_at). Same as cases — oldest ask first. */
     var requests = (_panel.requests || []).slice();
 
-    /* ⚠ ONE-SHOT. _flash is read here and cleared below, so the line survives exactly
-       the render that follows the action and never reappears on a Refresh. */
-    function flashFor(q) {
-      return (_flash && _flash.q === q)
-        ? '<p class="ksb-flash">' + esc(_flash.t) + "</p>"
-        : "";
-    }
-
     _root.innerHTML = '' +
       '<div class="ksb">' +
         '<header class="ksb-head">' +
@@ -551,7 +557,6 @@
 
         '<section class="ksb-sec">' +
           '<div class="ksb-sech"><h2>Bags to send</h2><span class="ksb-count">' + envelopes.length + "</span></div>" +
-          flashFor("envelopes") +
           (envelopes.length
             ? envelopes.map(bagCard).join("")
             : '<p class="ksb-empty">Nothing to send. Bag-only jobs show up here.</p>') +
@@ -561,7 +566,6 @@
 
         '<section class="ksb-sec">' +
           '<div class="ksb-sech"><h2>Orders to send</h2><span class="ksb-count">' + orders.length + "</span></div>" +
-          flashFor("orders") +
           (orders.length
             ? orders.map(bagCard).join("")
             : '<p class="ksb-empty">No orders waiting. Checkout puts them here.</p>') +
@@ -589,8 +593,39 @@
         "</section>" +
       "</div>";
 
+    /* ⚠ ONE-SHOT, and it must fire AFTER innerHTML: the toast lives on document.body,
+       not inside _root, precisely so this rewrite cannot delete it mid-life. */
+    if (_flash) toast(_flash);
     _flash = null;
     wire();
+  }
+
+  /* ---------- the toast -------------------------------------------------- */
+
+  /* ⚠⚠ ANCHORED TO THE TOP OF THE VIEWPORT, NOT THE BOTTOM, AND THAT IS DELIBERATE.
+     The Memberstack test-mode badge is fixed bottom-center with a huge z-index. The
+     doc's usual answer is "unverified until seen in incognito" — but /admin/bags is
+     Memberstack-gated and CANNOT be opened in incognito, and its only user is the
+     operator, signed in, with that badge present on every single load. So the badge is
+     not a hazard to clear here, it is a permanent resident. Top-center never meets it.
+     ⚠ TEXT, NEVER COLOUR. Colour on this page means AGE (the ladder). Cream and ink,
+     the same values the old in-flow line used. Do not give this a coral or a green. */
+  var _toastEl = null, _toastT = null;
+
+  function toast(msg) {
+    if (_toastT) { clearTimeout(_toastT); _toastT = null; }
+    if (_toastEl && _toastEl.parentNode) _toastEl.parentNode.removeChild(_toastEl);
+    var d = document.createElement("div");
+    d.className = "ksb-toast";
+    d.setAttribute("role", "status");
+    d.textContent = msg;
+    document.body.appendChild(d);
+    _toastEl = d;
+    _toastT = setTimeout(function () {
+      if (d.parentNode) d.parentNode.removeChild(d);
+      if (_toastEl === d) _toastEl = null;
+      _toastT = null;
+    }, 3600);
   }
 
   /* ---------- wiring ----------------------------------------------------- */
@@ -688,6 +723,28 @@
       if (caseCard) {
         var caseId = caseCard.getAttribute("data-case");
 
+        /* ⚠⚠ THE CONFIRM MUST NAME THE CASE — the same guard Cancel got at S110, for the
+           same reason: resolving is irreversible, and one case card is visually identical
+           to another apart from a name. Harmless while exactly one case exists; dangerous
+           the first time there are two. READ OFF THE CLICKED CARD, never panel state.
+           ⚠ var-assigned, not a function declaration: this file is strict mode and a
+           declaration inside a block would not hoist the way it reads. */
+        var caseIdent = function () {
+          var cWho  = (caseCard.querySelector(".ksb-name") || {}).textContent || "this member";
+          var cAge  = (caseCard.querySelector(".ksb-age") || {}).textContent || "";
+          var cRsn  = caseCard.getAttribute("data-case-reason") || "";
+          var cBag  = caseCard.getAttribute("data-case-bag") || "";
+          var cBSrc = caseCard.getAttribute("data-case-bagsrc") || "";
+          var cRt   = caseCard.getAttribute("data-case-rt") || "";
+          return cWho + "\n" +
+            "Case " + shortId(caseId) + (cRsn ? " \u00b7 " + cRsn : "") + (cAge ? " \u00b7 " + cAge : "") + "\n" +
+            (cBag
+              ? "Bag " + shortId(cBag) +
+                (SOURCE_LABEL[cBSrc] ? " \u00b7 " + SOURCE_LABEL[cBSrc] : "") +
+                (cRt ? " \u00b7 " + cRt : "")
+              : "No bag linked to this case");
+        };
+
         /* tile selection inside the credit form: flip is-sel among siblings */
         if (btn.classList.contains("ksb-reason")) {
           var group = btn.parentNode;
@@ -698,13 +755,15 @@
         }
 
         if (act === "resolve-reship") {
-          if (!confirm("Reship a make-good bag?\n\nThis mints a comp bag in the send queue — check the address, then print. It does not use up her free bag.")) return;
+          if (!confirm("Reship a make-good bag?\n\n" + caseIdent() +
+            "\n\nThis mints a comp bag in the send queue — check the address, then print. It does not use up her free bag.")) return;
           withBusy(call({ action: "resolve_case", case_id: caseId, resolution: "reship" }), btn, "Reshipping...");
           return;
         }
 
         if (act === "resolve-decline") {
-          if (!confirm("Decline this case?\n\nNothing is issued — no bag, no credit. The case closes. Use this when the reason doesn't hold up.")) return;
+          if (!confirm("Decline this case?\n\n" + caseIdent() +
+            "\n\nNothing is issued — no bag, no credit. The case closes. Use this when the reason doesn't hold up.")) return;
           withBusy(call({ action: "resolve_case", case_id: caseId, resolution: "decline" }), btn, "Declining...");
           return;
         }
@@ -733,8 +792,8 @@
             alert("Pick an amount, a class, and a tier before issuing the credit.");
             return;
           }
-          var who = (caseCard.querySelector(".ksb-name") || {}).textContent || "this member";
-          if (!confirm("Issue " + amount + " " + tier + " " + creditClass + " credit to " + who + "?\n\nThis closes the case and adds the credit to her bank. It can't be undone from here.")) return;
+          if (!confirm("Issue " + amount + " " + tier + " " + creditClass + " credit?\n\n" + caseIdent() +
+            "\n\nThis closes the case and adds the credit to her bank. It can't be undone from here.")) return;
           withBusy(call({
             action: "resolve_case", case_id: caseId, resolution: "credit",
             amount: amount, "class": creditClass, tier: tier
@@ -777,15 +836,13 @@
         var ret = card.querySelector('[data-tr="ret"]').value.trim();
         if (!out || !ret) return;   /* unreachable — the button is disabled. Belt to the server's braces. */
         /* ⚠ A SHIPPED BAG CORRECTLY VANISHES FROM THIS QUEUE AND NOTHING SAID WHERE IT
-           WENT. The line prints in the queue it left — In transit IS the destination,
-           and a second home for one row is the drift this panel keeps paying for. */
+           WENT. The line now prints as a toast at the top of the viewport, so it lands
+           where her eyes are whatever the scroll position — HER RULING S111. In transit
+           IS the destination; do not give this a section of its own. */
         withBusy(call({
           action: "ship", bag_id: bagId,
           outbound_tracking: out, return_tracking: ret
-        }), btn, "Shipping...", {
-          q: card.getAttribute("data-bagsrc") === "order" ? "orders" : "envelopes",
-          t: "Shipped. Moved to In transit."
-        });
+        }), btn, "Shipping...", "Shipped. Moved to In transit.");
         return;
       }
 
@@ -838,6 +895,13 @@
        Webflow's global heading styles beat them — the section headings rendered as
        invisible text and only the count chips showed. Specificity, not magic. */
     s.textContent = [
+      /* ⚠⚠ THE ONE RULE IN THIS FILE THAT IS **NOT** PREFIXED WITH THE MOUNT ID, AND IT
+         HAS TO BE: the toast is appended to document.body so that render()'s innerHTML
+         rewrite cannot destroy it, which puts it outside #ks-bags-app entirely. A
+         prefixed rule would match nothing and the toast would paint unstyled.
+         ⚠ The layout properties carry !important because this element sits in Webflow's
+         page, not in our mount, where global styles reach it. */
+      ".ksb-toast{position:fixed!important;top:16px;left:50%;transform:translateX(-50%);z-index:99999;max-width:min(420px,calc(100vw - 32px));margin:0;padding:11px 16px;border-radius:11px;background:#EEEFE3;color:#1E1A19;border:1px solid #C9C7BC;box-shadow:0 6px 20px rgba(30,26,25,.14);font-family:Quicksand,sans-serif;font-size:14px;font-weight:600;line-height:1.35;text-align:center;pointer-events:none}",
       R + " *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}",
       R + " .ksb{font-family:Quicksand,sans-serif;font-weight:500;color:#1E1A19;max-width:460px;margin:0 auto;padding:8px 16px 80px;line-height:1.45}",
 
@@ -883,7 +947,6 @@
          reads as a serial number, muted grey so it takes NO meaning-bearing colour.
          Colour on this page means AGE. Do not give this a fill. */
       R + " .ksb-chip--id{background:transparent;border:1px solid #C9C7BC;color:#75736E;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;letter-spacing:.02em}",
-      R + " .ksb-flash{margin:0 0 12px;padding:10px 13px;border-radius:11px;background:#EEEFE3;color:#1E1A19;font-size:13.5px;font-weight:600}",
       R + " .ksb-chip--paid{background:#F7E4D9;color:#BE4C2E}",
       R + " .ksb-chip--free{background:#EEEFE3;color:#4E9360}",
 
