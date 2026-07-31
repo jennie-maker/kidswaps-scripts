@@ -706,7 +706,7 @@
 
     el("ksb-f-create").addEventListener("click", function (e) {
       if (!mSel.value) { alert("Pick a member first."); return; }
-      withBusy(call({ action: "create", member_id: mSel.value, source: _formSource }), e.target, "Creating...");
+      withBusy(call({ action: "create", member_id: mSel.value, source: _formSource }), e.target, "Creating...", "Bag created. It's in Bags to send.");
     });
 
     _root.addEventListener("input", function (e) {
@@ -720,7 +720,7 @@
 
       if (act === "create-signup") {
         var n = btn.closest("[data-needs]");
-        withBusy(call({ action: "create", member_id: n.getAttribute("data-needs"), source: "signup" }), btn, "Creating...");
+        withBusy(call({ action: "create", member_id: n.getAttribute("data-needs"), source: "signup" }), btn, "Creating...", "Bag created. It's in Bags to send.");
         return;
       }
 
@@ -868,7 +868,7 @@
           cType + " · " + shortId(bagId) + (cAge ? " · " + cAge : "") +
           "\n\nUse this when two rows exist for one physical bag. It won't count against her shipping.";
         if (!confirm(cMsg)) return;
-        withBusy(call({ action: "cancel", bag_id: bagId }), btn, "Cancelling...");
+        withBusy(call({ action: "cancel", bag_id: bagId }), btn, "Cancelling...", "Cancelled. This bag is off the queue.");
         return;
       }
 
@@ -883,7 +883,7 @@
           (rt ? "\nReturn tracking: " + rt : "") +
           "\n\nCheck this matches the bag in your hand. It can't be undone from here.";
         if (!confirm(msg)) return;
-        withBusy(call({ action: "return", bag_id: bagId }), btn, "Marking...");
+        withBusy(call({ action: "return", bag_id: bagId }), btn, "Marking...", "Marked returned. Off the In transit list.");
         return;
       }
 
