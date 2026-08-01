@@ -254,6 +254,24 @@
             '<input type="text" inputmode="text" autocomplete="off" spellcheck="false" data-tr="ret" placeholder="Paste from Shippo">' +
             '<span class="ksb-tick">✓</span>' +
           "</div>" +
+
+          /* ⚠⚠ CARRIER — CAPTURED HERE, NEVER DERIVED. The shipped email builds its
+             tracking link from this, and a wrong carrier is a link that renders
+             perfectly and goes nowhere. Sniffing the barcode prefix (92/94 vs 1Z)
+             was REJECTED — it is the barcode-parser argument in a hat, already
+             turned down on #BAG-TRACKING for encoding one label read once.
+             ⚠ NOTHING IS PRE-SELECTED, ON PURPOSE. A default here is the same shape
+             as swap_bags.source defaulting to 'order' and silently billing $15.
+             ⚠ REUSES .ksb-reasons/.ksb-reason/.is-sel so this needs NO new CSS —
+             the head box on /admin/bags is unversioned and has no rollback.
+             ⚠ data-act IS REQUIRED. The root click handler opens with
+             closest("[data-act]") and returns on null, so a chip without it is
+             inert and looks fine. */
+          '<div class="ksb-flabel">Carrier</div>' +
+          '<div class="ksb-reasons" data-cf="carrier">' +
+            '<button class="ksb-reason" data-act="carrier" data-carrier="usps">USPS</button>' +
+            '<button class="ksb-reason" data-act="carrier" data-carrier="ups">UPS</button>' +
+          "</div>" +
         "</div>" +
 
         '<div class="ksb-actions">' +
@@ -266,7 +284,7 @@
           '<button class="ksb-btn ksb-btn--go" data-act="ship" disabled>Mark shipped</button>' +
           '<button class="ksb-btn ksb-btn--ghost" data-act="cancel">Cancel</button>' +
         "</div>" +
-        '<div class="ksb-lock">Both tracking numbers needed to ship</div>' +
+        '<div class="ksb-lock">Both tracking numbers and the carrier needed to ship</div>' +
       "</article>";
   }
 
@@ -636,27 +654,43 @@
 
   /* ---------- wiring ----------------------------------------------------- */
 
-  function checkJob(input) {
-    var field = input.parentNode;
-    var has = input.value.trim().length > 0;
-    if (has) field.classList.add("is-done"); else field.classList.remove("is-done");
-
-    var card = input.closest("[data-bag]");
+  /* ⚠⚠ GUARD 1, EXTENDED S127 — THREE THINGS NOW, NOT TWO: both tracking numbers
+     AND a carrier. Split out of checkJob because the carrier chips have no input
+     event to ride; both the typing path and the tapping path call this.
+     ⚠ The two tracking numbers still carry the guard's original weight: a tracking
+     number cannot be invented, so holding two is proof the labels were really
+     printed. The carrier is one more thing to COPY off the Shippo row she is
+     already looking at, not one more thing to know. */
+  function gateShip(card) {
+    if (!card) return;
     var ins = card.querySelectorAll("[data-tr]");
     var both = true;
     for (var i = 0; i < ins.length; i++) {
       if (!ins[i].value.trim()) { both = false; break; }
     }
+    var carrier = card.querySelector("[data-carrier].is-sel");
+    var ready = both && !!carrier;
+
     var btn = card.querySelector('[data-act="ship"]');
     var lock = card.querySelector(".ksb-lock");
-    btn.disabled = !both;
-    if (both) {
+    btn.disabled = !ready;
+    if (ready) {
       lock.textContent = "✓ Both labels captured — safe to ship";
       lock.classList.add("is-ready");
+    } else if (both) {
+      lock.textContent = "Pick the carrier to ship";
+      lock.classList.remove("is-ready");
     } else {
-      lock.textContent = "Both tracking numbers needed to ship";
+      lock.textContent = "Both tracking numbers and the carrier needed to ship";
       lock.classList.remove("is-ready");
     }
+  }
+
+  function checkJob(input) {
+    var field = input.parentNode;
+    var has = input.value.trim().length > 0;
+    if (has) field.classList.add("is-done"); else field.classList.remove("is-done");
+    gateShip(input.closest("[data-bag]"));
   }
 
   function wire() {
@@ -837,17 +871,31 @@
       if (!card) return;
       var bagId = card.getAttribute("data-bag");
 
+      /* Carrier chip: flip is-sel among its siblings, then re-run the gate.
+         ⚠ SCOPED TO THE CLICKED CARD's OWN GROUP (btn.parentNode), never the page —
+         several send cards render at once and each holds its own carrier. */
+      if (act === "carrier") {
+        var cGroup = btn.parentNode;
+        var cSibs = cGroup.querySelectorAll("[data-carrier]");
+        for (var ci = 0; ci < cSibs.length; ci++) cSibs[ci].classList.remove("is-sel");
+        btn.classList.add("is-sel");
+        gateShip(card);
+        return;
+      }
+
       if (act === "ship") {
         var out = card.querySelector('[data-tr="out"]').value.trim();
         var ret = card.querySelector('[data-tr="ret"]').value.trim();
-        if (!out || !ret) return;   /* unreachable — the button is disabled. Belt to the server's braces. */
+        var carEl = card.querySelector("[data-carrier].is-sel");
+        var car = carEl ? carEl.getAttribute("data-carrier") : "";
+        if (!out || !ret || !car) return;   /* unreachable — the button is disabled. Belt to the server's braces. */
         /* ⚠ A SHIPPED BAG CORRECTLY VANISHES FROM THIS QUEUE AND NOTHING SAID WHERE IT
            WENT. The line now prints as a toast at the top of the viewport, so it lands
            where her eyes are whatever the scroll position — HER RULING S111. In transit
            IS the destination; do not give this a section of its own. */
         withBusy(call({
           action: "ship", bag_id: bagId,
-          outbound_tracking: out, return_tracking: ret
+          outbound_tracking: out, return_tracking: ret, carrier: car
         }), btn, "Shipping...", "Shipped. Moved to In transit.");
         return;
       }
