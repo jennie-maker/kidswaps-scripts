@@ -921,11 +921,21 @@
     }
   }
 
+  // ---- celebration burst (decorative only; never load-bearing) --------------
+  function ksConfetti() {
+    if (typeof window.confetti !== "function") return;   // library absent -> silent no-op
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    var KS = ["#E54F25", "#EDA920", "#309359", "#1C4A91", "#F491A9"];
+    window.confetti({ particleCount: 70, angle: 60,  spread: 60, startVelocity: 55, origin: { x: 0, y: 0.9 }, colors: KS, zIndex: 9999 });
+    window.confetti({ particleCount: 70, angle: 120, spread: 60, startVelocity: 55, origin: { x: 1, y: 0.9 }, colors: KS, zIndex: 9999 });
+  }
+
   function route(data, status) {
     if (data && data.ok === true && data.mode === "preview") { renderReceipt(data); return; }
     if (data && data.ok === true && Array.isArray(data.claim_ids)) {
       try { sessionStorage.removeItem('ksBag'); } catch (e) {}  // clear browse bag on confirmed commit (hygiene, §1)
       renderSuccess(data);
+      try { ksConfetti(); } catch (e) {}                        // celebration burst; decorative, never blocks the screen
       return;
     }
     if (data && data.can_claim === false && data.block_reason) { renderBlock(data.block_reason, data.note); return; }
