@@ -2626,6 +2626,36 @@
     // 2. carry-forward fields (overwrite; the label is the source of truth).
     //    Re-cue from scratch so a fresh lookup never inherits a stale tag.
     clearAllCues();
+    // NAME + DESCRIPTION carry forward from grading (S155 ruling, hers): when the
+    // photo app gave this item a name, THAT IS THE FINAL LISTING NAME and the
+    // Color+Brand+Category generator stays out of the way. This REVERSES the S142
+    // "generated name always wins" ruling. Both boxes stay editable.
+    // ⚠ SET-OR-CLEAR, UNCONDITIONALLY. applyRecord does NOT wipe the form between
+    //   lookups, so a bare `if (rec.x) setField(x)` lets the PREVIOUS item's name
+    //   and description ride onto this one — box full, looks right, wrong item.
+    // ⚠ ORDER IS LOAD-BEARING TWICE OVER:
+    //   (a) this block sits ABOVE the brand/category writes. Those dispatch a
+    //       bubbling 'input', which fires autoName(). Placed below them, the
+    //       no-app-name branch would blank a name autoName had just composed.
+    //   (b) nameTouched is assigned AFTER setField, never before. setField fires
+    //       'input' and the name listener latches nameTouched = true with no
+    //       isTrusted check, so setField itself sets the flag — assigning first
+    //       would be silently overwritten a line later.
+    if (rec.graded_item_name) {
+      setField("item_name", rec.graded_item_name);
+      nameTouched = true;            // app name is final -> autoName() returns early
+      cueField("item_name");
+    } else {
+      setField("item_name", "");
+      nameTouched = false;           // no app name -> the generator does its job
+    }
+    if (rec.graded_item_description) {
+      setField("description", rec.graded_item_description);
+      cueField("description");
+    } else {
+      setField("description", "");
+    }
+
     setField("brand", rec.brand);
     if (rec.brand) cueField("brand");
     setField("tier", rec.tier);
