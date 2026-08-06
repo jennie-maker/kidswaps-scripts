@@ -656,8 +656,21 @@
     align-items: center;
     gap: 10px;
     min-width: 0;
+    /* ⚠⚠ EQUAL HALVES, S163, AFTER SEEING IT RENDER. space-between alone left the gap
+       as a LEFTOVER: fine in a mockup frame and fine at 607px, but on a ~1000px card the two
+       stats sat at opposite edges with a lake between them and read as two separate facts
+       rather than a pair. flex:1 1 0 gives each stat exactly half the row, so the second one
+       always starts at the midpoint whatever the numerals measure.
+       ⚠ IT ALSO FIXES SOMETHING NOBODY HAD HIT YET: with shrink-to-fit, a wide numeral
+       moved where its own label started, so $12,480 and $101 would not align across states.
+       ⚠ space-between above is now inert but HARMLESS — left as the fallback if these
+       flex values are ever removed. Do not read it as the thing doing the spacing. */
+    flex: 1 1 0;
   }
-  .ks-look-stat:only-child { margin: 0 auto; }
+  /* ⚠ A LONE STAT CENTRES, and it has to be justify-content now, NOT margin:0 auto.
+     Under flex:1 1 0 the only child already FILLS the row, so auto margins have nothing left
+     to distribute and the stat would sit hard left. The common half state is savings-only. */
+  .ks-look-stat:only-child { justify-content: center; }
   .ks-look-n {
     font-family: 'Instrument Serif', serif;
     font-weight: 400;
@@ -1273,8 +1286,11 @@
      style-box rebuild that sliced at the wrong marker (so the headings silently fell back
      to Quicksand at body size). Both times it rendered "fine" and both times it was wrong.
      A THIRD LOSS IS A PATTERN, NOT AN ACCIDENT.
-     .ks-panel-h IS EMITTED BY dashboard-tool.js — 6 sites as of the 20th session:
-     My closet, Recent activity (x3 branches), How credits work, and Your contribution.
+     .ks-panel-h IS EMITTED BY dashboard-tool.js — 5 sites as of S163:
+     My closet, Recent activity (x3 branches), and How credits work.
+     (⚠ IT WAS 6. "Your contribution" carried the sixth and its heading was RETIRED at
+     S163 when the sent-in number moved to .ks-look-h in the main column. The rail card it
+     left behind is deliberately HEADLESS — a replacement heading is HER copy, not ours.)
      (The review card and the empty states carry .ks-rev-h / .ks-empty-h, NOT this class.)
      A CSS RULE AND THE JS THAT EMITS ITS CLASS ARE ONE ARTIFACT SPLIT ACROSS TWO FIELDS.
 
