@@ -1170,6 +1170,7 @@
     margin: 22px auto 0;
     padding: 15px 42px;
     white-space: nowrap;   /* it was breaking to "Browse the / closet" on a phone */
+    max-width: none;       /* S166 - see the note on the row rule below */
   }
 /* ---------- SEND-A-BAG (§SB step 7a) ----------
      ⚠ THE ROW EXISTS BECAUSE OF THE AUTO MARGINS. .ks-greet-cta carries `margin:22px auto 0`
@@ -1191,6 +1192,20 @@
     margin-top: 22px;      /* the CTA's own 22px, MOVED here — see below */
   }
   .ks-cta-row .ks-greet-cta {
+    /* ⚠⚠ max-width:none IS THE #DASH-CTA-CLIP FIX (S166) AND IT IS NOT COSMETIC.
+       WEBFLOW SETS max-width:200px ON .ks-greet-cta — read off the live cascade, sheet 1,
+       no media query, so it applies at EVERY width. "See The Closet Standard" needs 221px,
+       and white-space:nowrap above means it cannot wrap, so 21px of the label rendered
+       OUTSIDE the coral pill. Nothing clips it (every ancestor is overflow:visible), so it
+       was white text on cream — invisible, and it reads exactly like a clipped button.
+       ⚠ THE <=600 BLOCK ALREADY BEAT THIS CAP (42ch, S86) AND THAT IS WHY THE FAULT ONLY
+       EVER SHOWED ABOVE 600px. This is that same fix, extended to the band it missed.
+       ⚠ (0,2,0) BEATS WEBFLOW'S (0,1,0) ON SPECIFICITY, not on source order. Do not
+       "simplify" it down to a bare .ks-greet-cta — that ties Webflow and wins only because
+       our <link> happens to come later. AUDIT THE PAGE, NOT THE FILE (§0).
+       ⚠ THE <=600 OVERRIDE STILL WINS ON A PHONE: same (0,2,0), later in the file, so
+       max-width:42ch survives there. Measured 257px at 602px viewport; do not re-cap it. */
+    max-width: none;
     margin: 0;             /* ⚠ (0,2,0) — beats BOTH the base rule and the <=600 override.
                               The row now owns the top margin. Zeroing this is what stops the
                               auto margins from pushing the pair apart. */
