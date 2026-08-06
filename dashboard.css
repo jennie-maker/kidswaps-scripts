@@ -610,6 +610,96 @@
     text-align: left;
   }
 
+  /* ============================================================
+     "LOOK WHAT YOU'VE DONE" - THE TWO NUMBERS. S163, HER RULING.
+     Main column, directly under the credit bank card. It REPLACES the savings inset
+     (deleted from the Webflow hero) and takes the sent-in count OUT of the rail, so
+     items_received no longer appears anywhere on this page.
+
+     ⚠⚠⚠ THE SERIF RULE IS RETIRED HERE, KNOWINGLY, HER CALL S163. The July ruling
+     above .ks-imp-n ("Instrument Serif lives on EXACTLY TWO ELEMENTS ... do not restore
+     the serif to any numeral") was put back to her with its own reasoning quoted, and she
+     chose the serif design she had already seen rendered. So this block carries serif on
+     FOUR elements. DO NOT "CORRECT" IT BACK TO QUICKSAND. .ks-imp-n itself is UNCHANGED -
+     the rail numeral stays Quicksand 600 and that comment still governs THAT rule.
+
+     ⚠⚠ min-width:0 IS LOAD-BEARING, ON BOTH THE STAT AND THE LABEL. A flex item
+     defaults to min-width:auto, so a label that cannot shrink OVERFLOWS THE CARD instead
+     of wrapping - "kept in circul..." ran off the right edge at $12,480 / 248. And
+     white-space:nowrap made it WORSE, not better. Do not add nowrap, do not remove either
+     min-width.
+
+     ⚠⚠ align-items:center, NEVER baseline. The same trap .ks-imp-stat already carries:
+     a two-line label baseline-aligned to a 40px numeral hangs off the bottom of it.
+
+     ⚠ SPACE-BETWEEN pushes both stats to the card edges - hers. A LONE stat CENTRES
+     instead, via :only-child, so a half state is not a number stranded on the left. Half
+     states DO render: the hide is PER STAT LINE and it lives in the JS, not here.
+     ============================================================ */
+  .ks-look-h {
+    font-family: 'Instrument Serif', serif;
+    font-weight: 400;
+    font-size: 27px;
+    line-height: 1.15;
+    color: #1E1A19;
+    margin-bottom: 18px;
+    text-align: left;
+  }
+  .ks-look-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 18px;
+  }
+  .ks-look-stat {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .ks-look-stat:only-child { margin: 0 auto; }
+  .ks-look-n {
+    font-family: 'Instrument Serif', serif;
+    font-weight: 400;
+    font-size: 40px;
+    line-height: 1;
+    color: #1E1A19;
+    flex: 0 0 auto;
+    font-variant-numeric: tabular-nums;
+  }
+  .ks-look-l {
+    font-size: 13px;
+    line-height: 1.35;
+    color: #75736E;
+    min-width: 0;
+    text-align: left;
+  }
+  .ks-look-note {
+    font-family: 'Instrument Serif', serif;
+    font-weight: 400;
+    font-style: italic;
+    font-size: 18px;
+    line-height: 1.4;
+    color: #1E1A19;
+    margin-top: 20px;
+    text-align: left;
+  }
+
+  /* THE COUNT-UP'S FINISHING GESTURE. CSS owns the animation, JS only adds the class -
+     the same split .ks-greet-accent already uses. INERT UNTIL THE JS HALF SHIPS, which is
+     what makes it safe to ride this commit.
+     ⚠ prefers-reduced-motion kills the pop, and the JS kills the count-up on the same
+     query, so the two die together and the member sees the real number sitting still. */
+  @keyframes ks-look-pop {
+    0%   { transform: scale(0.94); }
+    55%  { transform: scale(1.03); }
+    100% { transform: scale(1); }
+  }
+  .ks-look-n.is-pop { animation: ks-look-pop 400ms cubic-bezier(.34,1.4,.64,1) both; }
+  @media (prefers-reduced-motion: reduce) {
+    .ks-look-n.is-pop { animation: none; }
+  }
+
   /* ⚠ .ks-empty-h GOES QUICKSAND 600, 21st session (§DASH.2 / §DASH.13). It is NOT one of
      the two elements that keep the serif. ⚠ 18px, DELIBERATELY SMALLER THAN .ks-panel-h's
      22px — it sits INSIDE the closet panel, BENEATH that panel's own heading. Sizing it
@@ -1388,15 +1478,22 @@
        are empty for a member's first weeks and were holding prime slots. ⚠ THIS IS THE
        MOBILE ORDER ONLY. Above 940px the columns are real and order is DOM order, which is
        paint()'s CALL ORDER in dashboard-tool.js — A SEPARATE FILE AND A SEPARATE PIN BUMP.
-       ⚠⚠ paintImpact MUST STAY ABOVE paintActivity (it is the SUMMARY of that feed) and it
-       still does — but they are NO LONGER ADJACENT. Two cards now sit between the summary
-       and its detail. That is a KNOWN COST OF THIS RULING, not an oversight. */
+       ⚠⚠ THE OLD "paintImpact MUST STAY ABOVE paintActivity" RULE IS DEAD AS OF S163 AND
+       ITS REASON WENT WITH IT. It was the SUMMARY of that feed, and the line it summarised
+       — the sent-in count — has LEFT for .ks-sec-look. What is left in that card is
+       credits earned and Member since, which summarise nothing, so it now sits LAST. */
     .ks-hero-card    { order: 1; }   /* credit bank */
-    .ks-sec-impact   { order: 2; }   /* your contribution */
+    .ks-sec-look     { order: 2; }   /* look what you've done — S163. It takes the slot
+                                        contribution used to hold, because the two numbers
+                                        a member came to read now live in it. */
     .ks-sec-review   { order: 3; }   /* review prompt */
     .ks-sec-hcw      { order: 4; }   /* how credits work */
     .ks-sec-activity { order: 5; }   /* recent activity — moved down S85 */
     .ks-sec-closet   { order: 6; }   /* my closet — moved down S85 */
+    .ks-sec-impact   { order: 7; }   /* credits earned + Member since — S163. Her ruling
+                                        put it at the BOTTOM OF THE RAIL, and there is no
+                                        rail below 940, so it goes last here too.
+                                        CLAUDE'S CALL, REVERSIBLE. */
 
     /* ⚠ hero padding-top was 22 — tightened to 16, a coins-higher lever. */
     .ks-panel     { padding: 20px 18px; border-radius: 18px; }
@@ -1508,4 +1605,10 @@
     .ks-rev-h          { font-size: 20px; }
     .ks-bank-label     { font-size: 26px; }    /* ⚠ NO !important — nothing to fight now */
     .ks-imp-n          { font-size: 30px; }
+    /* HER PHONE SPEC, S163: 24 / 32 / 12 / 16. Side by side at BOTH widths — the
+       stacked-on-mobile version was built and REJECTED. Do not restack it. */
+    .ks-look-h         { font-size: 24px; }
+    .ks-look-n         { font-size: 32px; }
+    .ks-look-l         { font-size: 12px; }
+    .ks-look-note      { font-size: 16px; }
   }
