@@ -15,7 +15,6 @@
   html[data-ks-ready="1"] .ks-greet-cta,
   html[data-ks-ready="1"] .ks-account-toggle { visibility: visible; }
   .ks-partial-note { display: none; }
-  .ks-savings-block code { font-family: inherit; }
 
   /* Greeting — headline + sub grouped, sub bigger + ink */
   /* ⚠⚠ S89 — THIS FILE NOW OWNS THE HEADLINE'S FAMILY, AND IT DID NOT BEFORE.
@@ -285,24 +284,14 @@
       0  1px 0 rgba(255, 250, 222, 0.95);
   }
 
-  /* Savings line — grouped under the credit bank */
-  .ks-savings-block { max-width: 420px; margin: 18px auto 0; }
-
-  /* ⚠ THE DESKTOP-ONLY LINE BREAK (21st session). The sentence was wrapping badly on a wide
-     card and leaving "far." orphaned on its own line. The break belongs AFTER the period in
-     "…clothes." — and that period is the first character of a RAW TEXT NODE authored in
-     Webflow, which CSS cannot address. A ::after break would orphan the period onto line two.
-     SO THE <br> IS CREATED IN JS (paintSavings) AND GATED HERE. ⚠ DEFAULT IS display:none —
-     the element is INERT until this media query turns it on, so mobile keeps one flowing
-     sentence and DESKTOP-ONLY survives a window resize (a JS width check would freeze at
-     load width). ⚠ THE SPACE IN " That's " IS KEPT IN THE JS ON PURPOSE: with the <br>
-     hidden, that space is the ONLY thing between "clothes." and "That's". Strip it and mobile
-     reads "clothes.That's". When the break IS on, CSS collapses it at the start of the line.
-     ⚠ DO NOT "FIX" THIS IN THE WEBFLOW TEXT BLOCK — .ks-savings-class is the span whose class
-     once landed on the PARENT, and cls.textContent then WIPED THE WHOLE SENTENCE to one word,
-     live (§DASH.3). That block is not a surface to visit for a line break. */
-  .ks-sv-br { display: none; }
-  @media (min-width: 940px) { .ks-sv-br { display: inline; } }
+  /* ⚠ .ks-savings-block AND .ks-sv-br WERE DELETED HERE AT S166 — SIX RULES, NOT FIVE.
+     The Webflow element was removed from /dashboard in the Designer (verified 0 in the
+     SERVED markup, not just the DOM), so every rule that styled it became inert. Two of
+     the six were .ks-sv-br, a <br> created by paintSavings() — RETIRED AT S163 — so no
+     search for "savings" would ever have found them. DO NOT RESTORE ANY OF IT: the block
+     carried HARDCODED PLACEHOLDER NUMBERS ("$487 worth of clothes and toys. That's 23 so
+     far.") and "Look what you've done" replaced it. dashboard-tool.js still hides it on
+     paintLook's first line, null-guarded, now a harmless no-op — keep that line. */
 
   /* Account panel — column + open/close */
   .ks-account-panel { display: none; }
@@ -415,12 +404,6 @@
     background: #FFFFFF;
     border-radius: 22px;
     box-shadow: 0 10px 30px -12px #C9C7BC;
-  }
-  /* Savings becomes the inset payoff beat, on cream, inside the card */
-  .ks-hero-card .ks-savings-block {
-    background: #EEEFE3;
-    border-radius: 14px;
-    max-width: none;
   }
   /* Tightened inside the card. ⚠ NO !important — see the .ks-bank-label block above. */
   .ks-hero-card .ks-bank-label { margin: 0 0 16px; }
@@ -1158,7 +1141,6 @@
   .ks-hero-card .ks-swaps-ready    { margin: 0 0 16px; }
   .ks-hero-card .ks-cycle-bar-wrap { margin: 18px 0 8px; }
   .ks-hero-card .ks-cycle-line     { margin-top: 8px !important; }
-  .ks-hero-card .ks-savings-block  { padding: 14px; margin: 16px 0 0; }
 
   /* THE ONE ACTION. Centred under the greeting, not inside the credit card.
      Inside the hero it read as a left-aligned pill hanging off the savings inset — it is
