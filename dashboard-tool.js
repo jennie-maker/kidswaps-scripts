@@ -437,13 +437,38 @@ function paintCoins(s) {
     }, delay || 0);
   }
 
+  /* THE COIN ENTRANCE NOW REPORTS WHEN IT IS FINISHED. S163.
+     ⚠⚠ ADDED SO THE TWO NUMBERS CAN CHAIN OFF IT WITHOUT A HARDCODED DELAY. A fixed
+     wait drifts out of sync on a slow phone and stutters where nobody is testing, so the
+     landing time is computed FROM THE SAME TWO CONSTANTS THE TUMBLE ITSELF USES.
+     ⚠ COIN_SETTLE is the drop + spin + the 200ms number fade that starts at 460ms.
+     If tumbleCoin's timings ever change, CHANGE THESE TOO — they are one artifact.
+     ⚠⚠ markTumblesDone IS ALSO CALLED BY THE WATCHDOG AND ON AN EMPTY LIST, so a
+     member with no coins, a backgrounded tab or a dropped rAF still releases the waiters.
+     Nothing downstream may ever be left waiting forever on a coin that never spun. */
+  var COIN_STAGGER = 120;
+  var COIN_SETTLE  = 660;
+  var _tumblesDone = false;
+  var _tumbleWaiters = [];
+  function onTumblesDone(fn) {
+    if (_tumblesDone) { fn(); return; }
+    _tumbleWaiters.push(fn);
+  }
+  function markTumblesDone() {
+    if (_tumblesDone) return;
+    _tumblesDone = true;
+    var w = _tumbleWaiters; _tumbleWaiters = [];
+    w.forEach(function (fn) { try { fn(); } catch (e) {} });
+  }
+
   function runTumbles() {
-    if (!_coinToTumble.length) return;
+    if (!_coinToTumble.length) { markTumblesDone(); return; }
     var list = _coinToTumble.slice();
     _coinToTumble = [];
    requestAnimationFrame(function () {
-      list.forEach(function (unit, idx) { tumbleCoin(unit, idx * 120); });  // 120ms stagger
+      list.forEach(function (unit, idx) { tumbleCoin(unit, idx * COIN_STAGGER); });
     });
+    setTimeout(markTumblesDone, (list.length - 1) * COIN_STAGGER + COIN_SETTLE);
     // WATCHDOG: a coin must never sit blank. If a number is still hidden after the
     // longest tumble could have landed, just show it. Covers a dropped rAF, a
     // backgrounded tab, or any future path that arms a coin and forgets to spin it.
@@ -453,6 +478,7 @@ function paintCoins(s) {
         var n = unit.querySelector('.ks-coin-num');
         if (n && n.style.opacity === '0') n.style.opacity = '1';
       });
+      markTumblesDone();
     }, 1500);
   }
 
@@ -525,7 +551,7 @@ function paintCoins(s) {
     paintCoins(s);
 	paintCycleLine(s);
     paintCycleBar(s);
-	paintSavings(s);
+	paintLook(s);   // ⚠ MUST STAY ABOVE paintHowCredits: column order is call order
     // ⚠⚠ COLUMN ORDER IS CALL ORDER (§DASH.12) AND IT WAS REORDERED S87 SO DESKTOP
     // MATCHES THE MOBILE ORDER SHE ALREADY RULED IN S85 (hero → contribution → review →
     // how credits → activity → closet). Mobile is driven by `order:` values keyed to
@@ -533,9 +559,12 @@ function paintCoins(s) {
     // is exactly how they drifted apart. Change one, check the other.
     paintHowCredits();
     paintCloset(s);
-    // ⚠ paintImpact MUST stay above paintActivity or the summary lands underneath the
-    // detail it summarises.
-    paintImpact(s);
+    // ⚠⚠ THE OLD RULE HERE IS DEAD AS OF S163 AND ITS REASON WENT WITH IT. It read
+    // "paintImpact MUST stay above paintActivity, it is the SUMMARY of that feed" — and the
+    // line it summarised, the sent-in count, HAS LEFT for paintLook(). What is left in that
+    // card summarises nothing, so paintImpact now runs LAST and sits at the BOTTOM of the rail.
+    // ⚠ COLUMN ORDER IS CALL ORDER. Moving this call moves the card. Its MOBILE order is a
+    // SEPARATE decision in dashboard.css (.ks-sec-impact { order: 7 }). Change one, check the other.
     _state = s;
     // ⚠⚠ THE REVIEW SLOT IS RESERVED HERE AND THAT IS NOT COSMETIC. paintReviewPrompt()
     // runs from TWO callers (here and paintHeadline) and only paints once it holds BOTH
@@ -546,6 +575,7 @@ function paintCoins(s) {
     reserveReviewSlot();
     paintActivity(s);
     paintReviewPrompt();
+    paintImpact(s);   // LAST in the rail — S163
    paintChildren(s);
     paintEmailPrefs(s);
 
@@ -555,54 +585,144 @@ function paintCoins(s) {
     if (_revealed) runTumbles();
   }
 
-  // ---------- SAVINGS BLOCK (lifetime brought-home) ----------
-  function paintSavings(s) {
-    var lt = s.lifetime || {};
-    var block = document.querySelector('.ks-savings-block');
-    if (!block) return;
-    var items = parseFloat(lt.items_received); if (isNaN(items)) items = 0;
-    var val   = parseFloat(lt.value_received); if (isNaN(val))   val = 0;
-    // Nothing brought home yet: hide the block rather than lead a day-one member with "$0".
-    // It is a payoff beat and it has no payoff to report until the first swap lands.
-    if (items <= 0) { block.style.display = 'none'; return; }
-    block.style.display = '';
-    var valEl = block.querySelector('.ks-savings-value');
-    var cntEl = block.querySelector('.ks-savings-count');
-    if (valEl) valEl.textContent = '$' + Math.round(val).toLocaleString();
-    if (cntEl) cntEl.textContent = items + (items === 1 ? ' find' : ' finds');
-    var cls = document.querySelector('.ks-savings-class');
-    if (cls) {
-      var kinds = {};
-      (s.closet || []).forEach(function (it) { kinds[it.item_class] = true; });
-      var hasC = !!kinds.clothing, hasT = !!kinds.toy;
-      cls.textContent = (hasC && hasT) ? 'clothes and toys'
-                      : hasT ? 'toys'
-                      : 'clothes';
+  /* ============================================================
+     "LOOK WHAT YOU'VE DONE" — THE TWO NUMBERS. S163, HER RULING.
+     Main column, directly under the credit bank card. sectionIn('main', ...) appends, and
+     ensureGrid() puts .ks-hero-card in as main's FIRST child, so THIS CALL MUST STAY ABOVE
+     paintHowCredits() in paint() or the block lands under How credits work instead.
+
+     ⚠⚠⚠ IT REPLACES THE SAVINGS INSET, WHICH IS WEBFLOW MARKUP, NOT OURS.
+     paintSavings() is RETIRED and the inset is hidden HERE, on line one, deliberately:
+     .ks-savings-block is authored in the Designer with PLACEHOLDER NUMBERS in it, and this
+     project has already shipped Webflow placeholder numbers to every member on every load
+     once. Hiding it in CSS would show those placeholders on any load where the stylesheet
+     is slow or 404s. Hiding it in JS cannot, because no script means the page never reveals
+     at all. WHEN THE DESIGNER DELETION LANDS this line becomes a harmless no-op — keep it.
+     ⚠ items_received IS NOW OFF THIS PAGE ENTIRELY except as the review prompt's gate.
+     Two item counts meaning OPPOSITE things (received vs sent in) is arithmetic a member
+     should not have to do — her ruling. Do not reinstate the "N finds" line anywhere.
+
+     ⚠ IT HIDES AT ZERO, PER STAT LINE, and both zero hides the card. Her S20 ruling,
+     carried over from "Your contribution": a zero here is a REPORT OF NOTHING, not a promise,
+     and a new member sits in that state for WEEKS. The note only ever renders beside at least
+     one real number — nobody meets a high five under an empty block.
+     ⚠ THE COMMON HALF STATE IS SAVINGS-ONLY: savings arrive when she claims something,
+     the accepted count only after a bag comes back and is graded. A lone stat CENTRES, and
+     that is CSS (.ks-look-stat:only-child), not a branch here.
+
+     ⚠⚠ THE DONATION TRIPWIRE MOVED HERE WITH THE NUMBER. items_kept_from_landfill
+     counts donated = true AS WELL AS accepted at grading, and A DONATED ITEM WAS NOT KEPT IN
+     CIRCULATION BY A SWAP. The donated flag has NO WRITER today, so this number is exactly
+     her ruling right now. THE DAY DONATION GETS A WRITER, EXCLUDE IT FROM THE DERIVATION —
+     the copy does not become false, the NUMBER does.
+
+     COPY IS APPROVED AND LOCKED, HERS, S162, VERBATIM. Four strings, curly apostrophes.
+     DO NOT REDRAFT, DO NOT SHORTEN, DO NOT "IMPROVE".
+     ⚠ "kept in circulation" retires the singular problem — it reads the same at 1 and
+     at 248, so there is NO PLURAL BRANCH TO BUILD. Do not add one.
+     ⚠⚠ THE NOTE IS THE FIRST "I" ON THIS PAGE; every other string here is "we". She was
+     shown that and took it anyway. It is a decision, not a slip.
+     ============================================================ */
+  var LOOK_HEAD    = 'Look what you’ve done';
+  var LOOK_NOTE    = 'I hope you’re proud of this, because I am.';
+  var LOOK_L_SAVED = 'saved vs new';
+  var LOOK_L_KEPT  = 'kept in circulation';
+
+  function paintLook(s) {
+    var inset = document.querySelector('.ks-savings-block');
+    if (inset) inset.style.display = 'none';     // see the block comment above
+
+    var panel = sectionIn('main', 'ks-sec-look');
+    if (!panel) return;
+    var sec = panel.parentNode;
+
+    var lt = (s && s.lifetime) || {};
+    var saved = Math.round(parseFloat(lt.value_received));
+    if (isNaN(saved)) saved = 0;
+    var kept = Number(lt.items_kept_from_landfill) || 0;
+
+    if (saved <= 0 && kept <= 0) { sec.style.display = 'none'; return; }
+    sec.style.display = '';
+
+    var html = '<div class="ks-look-h">' + esc(LOOK_HEAD) + '</div>' +
+               '<div class="ks-look-row">';
+    if (saved > 0) {
+      html += '<div class="ks-look-stat">' +
+                '<div class="ks-look-n" data-ks-look="saved">$' + saved.toLocaleString() + '</div>' +
+                '<div class="ks-look-l">' + esc(LOOK_L_SAVED) + '</div>' +
+              '</div>';
     }
-	  // DESKTOP LINE BREAK after "…clothes." — the sentence was leaving "far." orphaned.
-    // ⚠ CSS CANNOT DO THIS. The break belongs AFTER the period, and that period is the first
-    // character of a raw TEXT NODE (". That's ") authored in Webflow. CSS cannot address a
-    // text node, so a ::after break would orphan the period onto line two.
-    // ⚠ THE <br> IS INERT BY DEFAULT: .ks-sv-br is display:none and only becomes a break at
-    // >=940px. DESKTOP-ONLY therefore lives in the CSS, and it survives a window resize —
-    // a JS width check would freeze at whatever width the page happened to load at.
-    // ⚠⚠ THE LEADING SPACE IN " That's " IS KEPT ON PURPOSE. With the <br> hidden, that space
-    // is the ONLY thing between "clothes." and "That's". Strip it and mobile reads
-    // "clothes.That's". When the break IS on, CSS collapses it at the start of the line.
-    // ⚠ Guarded + idempotent: it will not stack a second <br> if paint() ever runs twice.
-    if (cls && cls.parentNode && !block.querySelector('.ks-sv-br')) {
-      var t = cls.nextSibling;
-      if (t && t.nodeType === 3 && t.nodeValue.charAt(0) === '.') {
-        var rest = t.nodeValue.slice(1);        // " That's " — KEEP THE SPACE
-        var br = document.createElement('br');
-        br.className = 'ks-sv-br';
-        t.nodeValue = '.';
-        var p = t.parentNode;
-        p.insertBefore(br, t.nextSibling);
-        p.insertBefore(document.createTextNode(rest), br.nextSibling);
-      }
+    if (kept > 0) {
+      html += '<div class="ks-look-stat">' +
+                '<div class="ks-look-n" data-ks-look="kept">' + esc(kept) + '</div>' +
+                '<div class="ks-look-l">' + esc(LOOK_L_KEPT) + '</div>' +
+              '</div>';
     }
+    html += '</div><div class="ks-look-note">' + esc(LOOK_NOTE) + '</div>';
+    panel.innerHTML = html;
+
+    armLookEntrance(sec, [
+      { el: panel.querySelector('[data-ks-look="saved"]'), to: saved, prefix: '$' },
+      { el: panel.querySelector('[data-ks-look="kept"]'),  to: kept,  prefix: '' }
+    ]);
   }
+
+  /* THE ENTRANCE. HER RULING S163: the numbers count up on WHICHEVER HAPPENS LAST — the
+     coins have finished tumbling AND the block is on screen. On a phone this block is below
+     the fold, so waiting on the coins alone spends the moment somewhere she is not looking.
+     On a wide screen the block is often already in view, the scroll condition satisfies
+     immediately, and it waits on the coins only. SAME CODE, NO BRANCH.
+
+     ⚠⚠⚠ THE FAILURE DIRECTION IS LOAD-BEARING AND IT IS WHY THE REAL VALUE IS PAINTED
+     FIRST, ABOVE, BEFORE ANY OF THIS RUNS. Old browser, no IntersectionObserver, reduced
+     motion, backgrounded tab, a coin that never spun — every one of those ends with the
+     CORRECT NUMBER SITTING STILL. Failure lands on "no animation", NEVER on "$0 saved".
+     Do not restructure this so the count-up is what writes the value.
+
+     ⚠ ONE SHOT PER PAGE LOAD: the observer disconnects on the first intersection and
+     _lookFired latches. Scrolling back up must not replay it.
+     ⚠ reduced motion kills the count-up here and the CSS kills the pop on the same
+     query, so the two die together. */
+  var _lookFired = false;
+
+  function armLookEntrance(sec, stats) {
+    if (_lookFired) return;
+    stats = stats.filter(function (t) { return t.el && t.to > 0; });
+    if (!stats.length) return;
+    if (COIN_REDUCE) return;
+    if (typeof IntersectionObserver !== 'function') return;
+
+    var seen = false, coins = false;
+    function go() {
+      if (_lookFired || !seen || !coins) return;
+      _lookFired = true;
+      stats.forEach(countUpStat);
+    }
+    onTumblesDone(function () { coins = true; go(); });
+
+    var io = new IntersectionObserver(function (entries) {
+      for (var i = 0; i < entries.length; i++) {
+        if (entries[i].isIntersecting) { seen = true; io.disconnect(); go(); return; }
+      }
+    }, { threshold: 0.35 });
+    io.observe(sec);
+  }
+
+  function countUpStat(t) {
+    var start = null, DUR = 900;
+    function frame(ts) {
+      if (start === null) start = ts;
+      var p = Math.min(1, (ts - start) / DUR);
+      var eased = 1 - Math.pow(1 - p, 3);
+      t.el.textContent = t.prefix + Math.round(t.to * eased).toLocaleString();
+      if (p < 1) { requestAnimationFrame(frame); return; }
+      t.el.textContent = t.prefix + t.to.toLocaleString();
+      // THE WIGGLE IS CSS. JS only adds the class — the same split .ks-greet-accent uses.
+      t.el.className = t.el.className + ' is-pop';
+    }
+    requestAnimationFrame(frame);
+  }
+
 // ---------- CLOSET / ACTIVITY / HOW CREDITS ----------
   function fmtShort(iso) {
     if (!iso) return '';
@@ -1001,56 +1121,42 @@ function paintCloset(s) {
   // data-ks-ready gate), and sidesteps the ACC_LABELS positional-index trap entirely.
   // DO NOT REBUILD THIS AS A CODE EMBED.
   //
-  // ⚠ IT HIDES AT ZERO, PER LINE — RULED BY JENNIE 2026-07-13.
-  // A zero here is a REPORT OF NOTHING, not a promise. "0 items you've passed on to another
-  // family" is exactly the failure the savings inset was fixed to avoid, on the state every
-  // new member sits in for WEEKS (§DASH.7: the empty state is the primary state). The COINS
-  // are the deliberate exception — a zero coin is the shape of a thing about to be filled.
-  // Both stats zero -> the whole card is hidden. Per-line, because a member who buys a
-  // STARTER PACK has credits_earned > 0 while items_sent is still 0, and hiding the card
-  // would erase a real number she really earned.
+  // ⚠⚠⚠ GUTTED S163, HER RULING. "Your contribution" IS RETIRED AS A CARD. Its heading
+  // and its sent-in stat line ("N items you’ve passed on to another family") ARE GONE — that
+  // number now lives in paintLook() in the MAIN column, in her approved words. What is left
+  // here is credits earned and Member since, and the card sits at the BOTTOM of the rail.
   //
-  // ⚠⚠ THE DONATION TRIPWIRE. items_kept_from_landfill counts donated = true AS WELL AS
-  // accepted at grading. A DONATED ITEM DID NOT GO TO ANOTHER FAMILY. The donated flag has
-  // NO WRITER today, so this sentence is TRUE right now. THE DAY DONATION GETS A WRITER,
-  // THIS COPY BECOMES FALSE. Whoever builds the donation checkbox must come back here.
+  // ⚠⚠ DO NOT RESTORE THE SENT-IN LINE HERE. Two counts of items in two columns is
+  // exactly what she retired. And DO NOT re-add a .ks-panel-h heading on a guess: the heading
+  // was approved copy and its retirement was her call, so a replacement is HER words, not ours.
+  // (This drops .ks-panel-h from 6 emit sites to 5. dashboard.css still says 6 in a comment
+  // near .ks-panel-h — fold that correction into the next CSS commit.)
+  //
+  // ⚠ IT HIDES AT ZERO — RULED BY JENNIE 2026-07-13. A zero is a REPORT OF NOTHING, not
+  // a promise, and hiding the card takes Member since with it. That is right: an account fact
+  // alone in a card is not a payoff. The COINS are the deliberate exception to the zero rule.
   //
   // ⚠ credits_earned has NO status filter in get_member_state -> it will DOUBLE-COUNT a
   // merged half once anything ever merges (a real 1.0 would read 1.5). LATENT, not bleeding:
   // zero merged rows have ever existed. Banked for the get_member_state session.
   //
-  // COPY IS APPROVED AND LOCKED. Heading "Your contribution" (Jennie, 2026-07-13 — the
-  // four-session rename question, finally ruled). The two stat lines replaced the unprovable
-  // "kept out of a landfill" claim. DO NOT RE-LITIGATE ANY OF IT.
+  // ⚠ THE DONATION TRIPWIRE MOVED WITH THE NUMBER — it is in paintLook() now, not here.
   function paintImpact(s) {
     var panel = sectionIn('rail', 'ks-sec-impact');
     if (!panel) return;
     var sec = panel.parentNode;
 
     var lt     = (s && s.lifetime) || {};
-    var sent   = Number(lt.items_kept_from_landfill) || 0;
     var earned = Number(lt.credits_earned) || 0;
 
-    if (sent <= 0 && earned <= 0) { sec.style.display = 'none'; return; }
+    if (earned <= 0) { sec.style.display = 'none'; return; }
     sec.style.display = '';
 
-    var html = '<div class="ks-panel-h">Your contribution</div>';
-
-    if (sent > 0) {
-      html += '<div class="ks-imp-stat">' +
-                '<div class="ks-imp-n">' + esc(sent) + '</div>' +
-                '<div class="ks-imp-l">' + (sent === 1 ? 'item' : 'items') +
-                  ' you\u2019ve passed on to another family</div>' +
-              '</div>';
-    }
-
-    if (earned > 0) {
-      html += '<div class="ks-imp-stat">' +
-                '<div class="ks-imp-n">' + esc(earned) + '</div>' +
-                '<div class="ks-imp-l">' + (earned === 1 ? 'credit' : 'credits') +
-                  ' earned to date</div>' +
-              '</div>';
-    }
+    var html = '<div class="ks-imp-stat">' +
+                 '<div class="ks-imp-n">' + esc(earned) + '</div>' +
+                 '<div class="ks-imp-l">' + (earned === 1 ? 'credit' : 'credits') +
+                   ' earned to date</div>' +
+               '</div>';
 
     // fmtDate returns '' on a missing/bad date. Render nothing rather than "Member since ".
     var since = fmtDate(lt.member_since);
