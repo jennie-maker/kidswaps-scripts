@@ -166,9 +166,66 @@ function paintHeadline(member) {
     return BAG_IN_MOTION;
   }
 
+  // ---------- #DASH-PRECREDIT ----------
+  // THE THREE PRE-CREDIT STATES. Approved copy, hers, S164 — VERBATIM, DO NOT REDRAFT.
+  // ⚠⚠ THESE REPLACE .ks-greet-sub AND ITS CTA ON `zero` ONLY (no whole credit yet).
+  // Her ruling S165. The S90 BAG_IN_MOTION line is UNCHANGED and still renders on
+  // active / capped / expiring — she rejected that wording for THIS moment and ruled it
+  // stays everywhere else. One state stops reaching for it; nothing was rewritten.
+  // ⚠ They also retire GREET.zero's "Send in a bag to earn credits" for these members,
+  // which is the wrong-member copy this item exists to fix.
+  var PRECREDIT = {
+    prebag: {
+      sub: 'We\u2019re getting your first swap bag ready. It will arrive already prelabeled, so all you have to do is fill it up and send it back. Outgrowing things is about to get a lot more fun.',
+      cta: 'See The Closet Standard', href: '/the-closet-standard'
+    },
+    bagout: {
+      sub: 'You\u2019ve got a swap bag out right now, it\u2019s already prelabeled so you can fill it up and send it back whenever you\u2019re ready.',
+      cta: 'See The Closet Standard', href: '/the-closet-standard'
+    },
+    processing: {
+      sub: 'Your bag made it back to us. After processing it, we\u2019ll email you a full breakdown of what was accepted, and how many credits you earned.',
+      cta: 'Browse the closet', href: null   // href routed by plan — see precredit()
+    }
+  };
+
+  // PROCESSING routes to her own half of the closet, the way the signup end screens route
+  // "Shop Now". Read off CAPS, not the plan NAME — a renamed plan would silently misroute.
+  function closetHref(s) {
+    var caps = (s && s.caps) || {};
+    var c = Number(caps.clothing) || 0;
+    var t = Number(caps.toy) || 0;
+    if (c > 0 && t === 0) return '/clothing';
+    if (t > 0 && c === 0) return '/toys';
+    return '/browse';
+  }
+
+  // Returns a PRECREDIT config, or null to leave today's behaviour untouched.
+  // ⚠⚠⚠ THE ORDER IS MECHANICAL, NOT A PREFERENCE. A bag whose return has landed still
+  // reads status 'shipped' with returned_at null, so it satisfies bag_shipped AND
+  // return_delivered AT ONCE. TEST return_delivered FIRST OR PROCESSING NEVER RENDERS.
+  // ⚠⚠ FAILS CLOSED on a null payload.bags, same direction as bagSentence and
+  // paintBagButton: null means "WE DON'T KNOW", never "no bag". Falling through leaves the
+  // member on the line she sees today, which is never a lie — only less specific.
+  // ⚠ THE FOURTH CASE IS DELIBERATE AND IS NOT A GAP: a member whose bag came back and
+  // graded all-declined has returned_at set, so no bag is out and none of these three fit.
+  // She falls through to GREET.zero's "Send in a bag to earn credits and start swapping.",
+  // which is exactly right for her. DO NOT invent a fourth string without asking Jennie.
+  function precredit(s) {
+    var b = s && s.bags;
+    if (!b) return null;
+    if (b.return_delivered) return PRECREDIT.processing;
+    if (b.bag_shipped)      return PRECREDIT.bagout;
+    if (b.bag_out || b.has_bag_history === false) return PRECREDIT.prebag;
+    return null;
+  }
+
   function paintGreeting(s) {
     var state = pickState(s);
     var cfg = GREET[state] || GREET.active;
+    // ⚠ PRE-CREDIT ONLY. Any other state and this is null, so every line below behaves
+    // exactly as it did before this commit.
+    var pre = (state === 'zero') ? precredit(s) : null;
     var sub = document.querySelector('.ks-greet-sub');
     if (sub) {
       // cfg.sub may be a STRING or a FUNCTION of the state (capped builds its numbers live).
@@ -184,10 +241,12 @@ function paintHeadline(member) {
       // in motion" reads as a contradiction, because "already" answers an objection nobody
       // raised. NOT ONE WORD OF EITHER STRING CHANGED — ONLY THE ORDER.
       // DO NOT "simplify" this back to base-then-bag.
-      sub.textContent = bag ? (state === 'zero' ? bag : bag + ' ' + base) : base;
+      sub.textContent = pre ? pre.sub
+                            : (bag ? (state === 'zero' ? bag : bag + ' ' + base) : base);
       sub.classList.toggle('ks-greet-accent', cfg.accent === true);
     }
-    setCTA(cfg.cta, cfg.mode, cfg.href);
+    if (pre) setCTA(pre.cta, 'closet', pre.href || closetHref(s));
+    else     setCTA(cfg.cta, cfg.mode, cfg.href);
   }
   function neutralGreeting() {
     var sub = document.querySelector('.ks-greet-sub');
