@@ -76,6 +76,35 @@ var ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI
     if (h) h.textContent = 'Welcome back.';
   }
 
+/* ---- NAME CASING -------------------------------------------------------
+     §2 COPY RULES, HER RULING S125: capitalize AT DISPLAY, never the stored
+     row - the same call as the all-caps address ruling, for the same reason.
+     Her scope is every surface: "any time names are used, they should be
+     shown with proper casing."
+     ⚠⚠ CAPITALIZE ONLY A UNIFORMLY CASED NAME. A BARE title-case IS FORBIDDEN
+     HERE: it lowercases first, which destroys internal capitals, so a
+     correctly typed McAllister comes back Mcallister. It would BREAK NAMES
+     THAT ARRIVED RIGHT, which is worse than the fault it fixes.
+     ⚠ AND FIRST-LETTER-ONLY IS NOT ENOUGH ALONE - it leaves mary-jane as
+     Mary-jane, which is why the separators are in the pattern.
+     ⚠ TWO FLOORS, ACCEPTED KNOWINGLY BY HER: an all-lowercase name carrying an
+     internal capital stays wrong (mcallister -> Mcallister), and an
+     INTENTIONALLY lowercase name gets capitalized (bell hooks). Nothing short
+     of a name dictionary tells either from a typo. Both close the day a member
+     can edit her own name.
+     ⚠ A THIRD COPY OF THIS RULE NOW EXISTS - bags-manage and shippo-track each
+     carry their own. Different runtimes, so they cannot share; worth a diff if
+     one is ever changed. */
+  function displayName(v) {
+    var str = String(v == null ? '' : v).trim();
+    if (!str) return str;
+    var hasUpper = /[A-Z]/.test(str), hasLower = /[a-z]/.test(str);
+    if (hasUpper && hasLower) return str;   /* mixed = she meant it. Leave it alone. */
+    return str.toLowerCase().replace(/(^|[\s\-'\u2019])([a-z])/g, function (m, sep, ch) {
+      return sep + ch.toUpperCase();
+    });
+  }
+
 function paintHeadline(member) {
     _member = member;          // the review prompt needs this; it lands on its own promise
     paintProfile(member);      // ⚠ MUST BE CALLED HERE, ABOVE THE EARLY RETURNS. Two of them
@@ -90,7 +119,7 @@ function paintHeadline(member) {
     if (!fname) { h.textContent = 'Welcome back.'; return; }
     var hr = new Date().getHours();
     var t = hr < 12 ? 'Good morning' : (hr < 18 ? 'Good afternoon' : 'Good evening');
-    h.textContent = t + ', ' + fname + '.';
+    h.textContent = t + ', ' + displayName(fname) + '.';
     paintReviewPrompt();       // whichever promise lands second is the one that paints
   }
   
@@ -1442,8 +1471,8 @@ function paintCloset(s) {
     try { cf    = (member && member.data && member.data.customFields) || {}; } catch (e) {}
     try { email = (member && member.data && member.data.auth && member.data.auth.email) || ''; } catch (e) {}
 
-    var first = String(cf['first-name'] || '').trim();
-    var last  = String(cf['last-name']  || '').trim();
+    var first = displayName(cf['first-name']);
+    var last  = displayName(cf['last-name']);
     var name  = [first, last].filter(Boolean).join(' ');
 
     var nEl = document.querySelector('[data-profile-name]');
@@ -2147,9 +2176,24 @@ function paintCloset(s) {
 
   // ---------- TEST: ?fake= payload override (display-only, never writes) ----------
   var _FAKE = new URLSearchParams(window.location.search).get('fake');
+  /* ⚠ EACH SHAPE IS COMPLETE ON PURPOSE - every key paintBagButton, bagSentence and
+     precredit read, with nothing left to inherit from a real payload. A partial object
+     here is how the old harness went blind in the first place. */
+  var FAKE_BAGS = {
+    /* her signup bag exists but has not left the ship desk */
+    prebag:     { bag_out: true,  free_bag_used: false, has_bag_history: true, in_flight_count: 1,
+                  bag_shipped: false, return_delivered: false },
+    /* it is with the carrier or sitting in her hallway */
+    bagout:     { bag_out: true,  free_bag_used: false, has_bag_history: true, in_flight_count: 1,
+                  bag_shipped: true,  return_delivered: false },
+    /* the carrier says it reached us; grading has not closed, so returned_at is still null */
+    processing: { bag_out: true,  free_bag_used: false, has_bag_history: true, in_flight_count: 1,
+                  bag_shipped: true,  return_delivered: true }
+  };
+
   function applyFake(s) {
     if (!_FAKE || !s) return s;
-    if (_FAKE === 'zero') {                    // day-one member: has a plan, no credits, nothing yet
+    if (_FAKE === 'zero' || FAKE_BAGS[_FAKE]) { // day-one member: has a plan, no credits, nothing yet
       s.bank = { total: 0, by_tier: {}, by_class: { clothing: 0, toy: 0 },
                  by_class_tier: { clothing: {}, toy: {} } };
       s.available_this_cycle = { total: 0, clothing: 0, toy: 0 };
@@ -2173,7 +2217,22 @@ function paintCloset(s) {
     // paint. This shape reaches CHECK 2-NO so the button is SEEN. Applies to any ?fake= value:
     //   ?fake=zero      -> active+plan untouched + bags ok -> button paints (see + tap)
     //   ?fake=cancelled -> check 0 hides it -> proves the cancelled ruling
-    s.bags = { bag_out: false, free_bag_used: false, has_bag_history: true, in_flight_count: 0 };
+    // ⚠⚠ S186: THE SHAPE ABOVE PREDATED @e911f72 AND WENT BLIND. #DASH-PRECREDIT added
+    // bag_shipped and return_delivered to payload.bags; this object carried neither, so
+    // precredit() ALWAYS fell through to null and ?fake= could not show the three
+    // pre-credit states at all. PRE-BAG and PROCESSING have never rendered for anyone.
+    // ✅ THE THREE SHAPES BELOW ARE THE ONLY WAY TO SEE THEM before a real member exists.
+    // Reached through the EXISTING ?fake= param rather than a new one (§2 SAMENESS), and
+    // each one also runs the `zero` mutations above so pickState lands on zero - which is
+    // the only state that calls precredit() at all.
+    // ⚠⚠ PROCESSING SETS **BOTH** bag_shipped AND return_delivered, deliberately, because
+    // that is the true shape on a real row: a returned bag still reads status 'shipped'
+    // with returned_at NULL. It is what makes the harness exercise precredit's mechanical
+    // ordering rather than dodging it. Set only return_delivered and the test is a lie.
+    // ⚠ DISPLAY-ONLY, NEVER WRITES - unchanged from the S28 harness this extends.
+    s.bags = FAKE_BAGS[_FAKE] ||
+      { bag_out: false, free_bag_used: false, has_bag_history: true, in_flight_count: 0,
+        bag_shipped: false, return_delivered: false };
     console.log('[ks-dash] FAKE STATE:', _FAKE, s);
     return s;
   }
