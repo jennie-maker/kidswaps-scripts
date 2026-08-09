@@ -620,6 +620,25 @@
     var need = card.offsetHeight +
                (parseFloat(cs.paddingTop) || 0) +
                (parseFloat(cs.paddingBottom) || 0);
+    /* S186: THE VIEWPORT FLOOR, hers. Without it the section was only ever as
+       tall as its own card, so on a desktop the page rendered half empty and
+       the footer arrived at the halfway mark - measured 406 + 64 + 64 = 534
+       exactly, in an 1167px viewport.
+       ⚠ IT MEASURES THE HEADER RATHER THAN HARDCODING A FRACTION, so there is
+       no magic number to go stale across widths: the section fills to the
+       bottom of the first screen and no further.
+       ⚠ IT IS A FLOOR, NOT A REPLACEMENT. The card still wins whenever it is
+       taller, which is the phone case, so nothing below 600px changes and the
+       high-water mark keeps doing its own job.
+       ⚠ DOCUMENT OFFSET, NEVER A BARE rect.top - foldFit runs from a
+       ResizeObserver and can fire after a scroll, where rect.top alone would
+       shrink the floor as the page moved.
+       ⚠ THIS DOES NOT REVERSE THE S71 no-min-height:100vh RULING. That one is
+       about the CARD, which lost its border and shadow at full height. The
+       card stays content-height here. */
+    var shellTop = shell.getBoundingClientRect().top + (window.pageYOffset || 0);
+    var floor    = (window.innerHeight || 0) - shellTop;
+    if (floor > need) need = floor;
     if (need > FOLD_MAX + 1) {
       FOLD_MAX = need;
       shell.style.minHeight = Math.ceil(FOLD_MAX) + 'px';
@@ -1176,7 +1195,25 @@
       }
     }
     var hint = el('div', 'ks-wz-hint');
-    body.appendChild(hint);
+    /* S186: THE HINT GOES UNDER THE EMAIL FIELD, NOT INTO THE CARD BODY. It
+       used to be appended here, while the email input arrives later inside the
+       moved Memberstack form - so the nudge rendered BETWEEN the last name
+       field and the "Email address" label, above the field it is talking about.
+       ⚠⚠ THE FORM IS A LIVE NODE AND IS NEVER REBUILT (mountForm only moves it
+       once), so a hint inserted into it SURVIVES A STEP CHANGE. Without the
+       sweep below, coming back to step 3 from step 4 stacks a second copy, and
+       a third, silently.
+       ✅ It also hides for free: formView() hides this wrapper on steps 5 and 6. */
+    var eWrap = emailInput && (emailInput.closest('.field-wrapper') || emailInput.parentNode);
+    if (eWrap) {
+      var stale = eWrap.querySelectorAll('.ks-wz-hint');
+      for (var si = 0; si < stale.length; si++) {
+        if (stale[si].parentNode) stale[si].parentNode.removeChild(stale[si]);
+      }
+      eWrap.appendChild(hint);
+    } else {
+      body.appendChild(hint);
+    }
 
     if (emailInput) {
       emailInput.value = S.email || emailInput.value || '';
@@ -2079,8 +2116,18 @@
         'border-radius:10px;padding:12px 12px;}',
       '.ks-wz-input:focus{outline:none;border-color:#E54F25;}',
       '.ks-wz-hint{margin:-4px 0 12px;}',
+      /* S186: THE NUDGE IS A MESSAGE, NOT A STRAY LINK. Her ask, "i almost
+         missed it myself" - and on a passwordless system a missed typo is an
+         account nobody can enter and an inbox nobody can reach.
+         ⚠ IT CAME OFF #28498D, WHICH IS THE SHOP-FIRST FORK COLOUR. Colour
+         means something in this flow, and a blue nudge on the details step was
+         pointing at a path it has nothing to do with. It takes ink instead of
+         coral ON PURPOSE: coral already does four jobs here and a fifth ends
+         the rule. The prominence comes from the box, not from a new hex. */
+      '.ks-wz-nudge{margin-top:8px;background:#EEEFE3;border:1px solid #C9C7BC;',
+        'border-radius:10px;padding:10px 12px;}',
       '.ks-wz-nudge-btn{background:none;border:0;padding:0;cursor:pointer;font-family:inherit;',
-        'font-size:14px;font-weight:600;color:#28498D;text-decoration:underline;}',
+        'text-align:left;font-size:15px;font-weight:700;color:#1E1A19;text-decoration:underline;}',
       '.ks-wz-err{font-size:14px;color:#1E1A19;font-weight:600;margin:10px 0 0;}',
       '.ks-wz-link{background:none;border:0;padding:0;cursor:pointer;font-family:inherit;',
         'font-size:14px;font-weight:600;color:#1E1A19;text-decoration:underline;margin-top:14px;}',
