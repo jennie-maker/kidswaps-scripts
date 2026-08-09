@@ -2208,6 +2208,29 @@
         'gap:12px;margin:6px 0 28px;}',
       '.ks-wz-top .ks-wz-dots{margin:0;}',
       '.ks-wz-top .ks-wz-btn{padding:7px 14px;font-size:14px;flex:0 0 auto;}',
+      /* S186: BACK WAS BEING MISSED, HERS - "i've even missed it a few times
+         and accidentally clicked back in the browser which makes me start over
+         again." That is the S55 accepted cost arriving in practice: browser
+         back leaves /signup entirely now that the wizard is IN THE PAGE FLOW
+         rather than an overlay, and the S59 ruling keeps wizard state out of
+         sessionStorage, so the trip back is a fresh step 1.
+         ⚠ THIS IS THE CHEAP HALF ONLY. It makes the real Back easier to find;
+         it does NOT make the browser's Back safe. The two candidate fixes for
+         that - intercepting history, or persisting state - are both already on
+         record as deliberately deferred (S55, S59). HERS TO RULE, NOT A BUILD.
+         ⚠⚠ THE ARROW IS A PSEUDO-ELEMENT SO THE APPROVED "Back" STRING IS NOT
+         TOUCHED, and it is written \u2190 in the escape style this file uses for
+         every non-ASCII character in output.
+         ⚠⚠ THIS RULE MUST STAY BELOW '.ks-wz-top .ks-wz-btn'. Both are (0,2,0),
+         so SOURCE ORDER is the only thing deciding the padding. Move it above
+         and the bigger tap target silently stops applying.
+         ⚠ SCOPED TO .ks-wz-top ON PURPOSE - .ks-wz-btn-ghost is also worn by
+         the confirm dialog's "no" button, which must not grow an arrow.
+         ⚠ Ink border rather than coral: coral already does four jobs on this
+         page and a fifth ends the rule, and Back must not compete with
+         Continue. It stays TOP RIGHT - the S74 ruling is untouched. */
+      '.ks-wz-top .ks-wz-btn-ghost{border-color:#1E1A19;font-weight:600;padding:9px 16px;}',
+      '.ks-wz-top .ks-wz-btn-ghost::before{content:"\u2190";margin-right:6px;font-weight:400;}',
       /* ⚠ RULED S74: the name and the email STOP SHARING A ROW - the name
          wrapped to two lines beside the email and read as broken. They are
          now one value per row, which is the shape the address row already
