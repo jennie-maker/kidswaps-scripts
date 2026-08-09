@@ -175,9 +175,33 @@
     var v = MS_FIELDS && MS_FIELDS[k];
     return (typeof v === "string") ? v.trim() : "";
   }
-  function titleCase(s) {
-    return String(s || "").toLowerCase().replace(/\b([a-z])/g, function (_, c) { return c.toUpperCase(); });
+  /* §2 COPY RULES — CAPITALIZE A NAME AT DISPLAY, NEVER THE STORED ROW.
+     Capitalize ONLY a uniformly cased name: jennifer -> Jennifer, MARY -> Mary.
+     ANY mix of upper and lower is LEFT ALONE — McAllister, JoAnne, de la Cruz
+     and DeAngelo must come back untouched, and that is the half nobody can
+     notice afterwards, because it only ever shows on a name that arrived right.
+     ⚠ DO NOT REPLACE THIS WITH A BARE title-case. Lowercasing first destroys
+     internal capitals and BREAKS NAMES THAT ARRIVED CORRECT.
+     ⚠ A FOURTH COPY OF THIS RULE NOW EXISTS - bags-manage, shippo-track and
+     dashboard-tool.js each carry their own. Different runtimes, so they cannot
+     share; worth a diff if one is ever changed. Byte-identical to the
+     dashboard-tool.js @2de9c4b version, which was unit-tested over 13 cases. */
+  function displayName(v) {
+    var str = String(v == null ? '' : v).trim();
+    if (!str) return str;
+    var hasUpper = /[A-Z]/.test(str), hasLower = /[a-z]/.test(str);
+    if (hasUpper && hasLower) return str;   /* mixed = she meant it. Leave it alone. */
+    return str.toLowerCase().replace(/(^|[\s\-'\u2019])([a-z])/g, function (m, sep, ch) {
+      return sep + ch.toUpperCase();
+    });
   }
+  /* ⚠⚠ titleCase() WAS REMOVED AT S187, HER RULING, AND MUST NOT COME BACK.
+     It was lowercase-everything-then-uppercase-word-starts — the damaging
+     variant — and it ran on the shipping STREET and CITY on the confirmation
+     screen, so a stored "1234 MCALLISTER ST" rendered "1234 Mcallister St".
+     THE ADDRESS NOW PRINTS EXACTLY AS STORED, which is also what prints on the
+     label. A Shippo-corrected address therefore shows in capitals: that is
+     honest and it is her decision, not a regression. */
   function getMount() { return document.getElementById(MOUNT_ID); }
   function qp(name) {
     try { return new URLSearchParams(window.location.search).get(name); }
@@ -810,7 +834,7 @@
       "</div>";
 
     // greet by name when present; count-neutral, drops cleanly to "You're all set." with no fallback word
-    var firstName = msField("first-name");
+    var firstName = displayName(msField("first-name"));
     var headline = firstName ? ("You\u2019re all set, " + esc(firstName) + ".") : "You\u2019re all set.";
 
     // order number = first 8 hex of the idempotency key (per-checkout identity; exact-match lookup on claim_idempotency PK)
@@ -825,10 +849,10 @@
     var shCity   = msField("shipping-city");
     var shState  = msField("shipping-state");
     var shZip    = msField("shipping-zip");
-    var shName   = [msField("first-name"), msField("last-name")].filter(Boolean).join(" ");
+    var shName   = [displayName(msField("first-name")), displayName(msField("last-name"))].filter(Boolean).join(" ");
     var cityStateZip = "";
     if (shCity || shState || shZip) {
-      cityStateZip = titleCase(shCity);
+      cityStateZip = shCity;
       if (shState) cityStateZip += (cityStateZip ? ", " : "") + shState.toUpperCase();
       if (shZip)   cityStateZip += (cityStateZip ? " " : "") + shZip;
     }
@@ -837,7 +861,7 @@
           '<div style="font-weight:700; font-size:1rem; color:var(--ks-ink); margin-bottom:6px;">Shipping to</div>' +
           '<div style="font-size:.9rem; color:var(--ks-muted); line-height:1.6;">' +
             (shName ? esc(shName) + "<br>" : "") +
-            esc(titleCase(shStreet)) + "<br>" +
+            esc(shStreet) + "<br>" +
             (shApt ? esc(shApt) + "<br>" : "") +
             (cityStateZip ? esc(cityStateZip) : "") +
           "</div>" +
