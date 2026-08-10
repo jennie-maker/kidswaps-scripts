@@ -267,10 +267,15 @@
       '#ks-detail-root .ks-detail-meta{display:flex;flex-wrap:wrap;align-items:baseline;gap:7px;margin:9px 0 0;}' +
       '#ks-detail-root .ks-meta-brand{font-size:16px;font-weight:500;color:#1E1A19;}' +
       '#ks-detail-root .ks-meta-size{font-size:16px;font-weight:500;color:#1E1A19;}' +
-      /* A LINKED LABEL IS UNDERLINED and keeps the colour it already had, so the
-         facts row does not gain a second colour. The tier pill is excluded on
-         purpose -- it is a filled pill and already reads as tappable. */
-      '#ks-detail-root a.ks-meta-link{text-decoration:underline;text-underline-offset:2px;color:inherit;cursor:pointer;}' +
+      /* NO UNDERLINE -- HER RULING S198, off the live render. A linked label reads
+         like the rest of the row and the ONLY affordance is that it sits at ink
+         while the un-linkable SKU stays muted. Brand and size were already ink so
+         they do not move; the fit label darkens from #a99e92 to ink, which is what
+         makes the rule visible as a rule.
+         ACCEPTED COST, NAMED BEFORE SHE RULED: on a phone a linked label and a
+         plain one look identical until she taps. DO NOT ADD AN UNDERLINE BACK.
+         The tier pill is excluded -- it is a filled pill and already reads tappable. */
+      '#ks-detail-root a.ks-meta-link{text-decoration:none;color:#1E1A19;cursor:pointer;}' +
       '#ks-detail-root .ks-meta-fit{font-size:13.5px;color:#a99e92;}' +
       '#ks-detail-root .ks-meta-sku{font-size:13px;letter-spacing:.03em;color:#b3a99d;}' +
       '#ks-detail-root .ks-meta-sep{color:#cfc4b4;}' +
@@ -322,18 +327,26 @@
          NO MARK ON ESSENTIALS, blue on elevated, gold on special. The WORD is the
          information and the dot is only a fast-scan aid, which is what makes
          colour safe here at all.
-         MEASURED, NOT EYEBALLED: against this pill's rgba(255,255,255,.92) fill the
-         blue reads 8.65 and the gold 3.81, both over the 3.0 bar for a mark. Amber
-         #E5AD43 (1.79) and mid gold #E0B838 (1.67) were REJECTED as too faint --
-         do not swap the dark gold back toward the brighter end of the family.
+         THE SPECIAL DOT IS HER BRAND YELLOW #EDA920 AND IT IS BELOW THE CONTRAST
+         BAR ON PURPOSE -- HER RULING S198, TAKEN WITH THE NUMBERS IN FRONT OF HER
+         TWICE. Measured against this pill's rgba(255,255,255,.92) fill: blue 8.65,
+         dark gold #A67C0A 3.81, HER YELLOW 2.04 against a 3.0 bar for a mark. The
+         first build shipped #A67C0A and she could not see it on a real card at 6px,
+         because the catalogue is pale garments on white -- so SIZE was the larger
+         half of that problem and the dot went 6px -> 9px in the same commit.
+         DO NOT "CORRECT" THE YELLOW BACK TO #A67C0A ON THE STRENGTH OF THE RATIO.
+         She was shown dark gold, a larger yellow and a dark-rimmed yellow side by
+         side and chose the flat brand yellow knowingly. THE WORD IS STILL THE
+         INFORMATION; the dot is only a fast-scan aid, which is what makes a
+         below-bar mark acceptable HERE and nowhere that carries meaning alone.
          :has() SCOPES THE FLEX TO PILLS THAT ACTUALLY CARRY A DOT, so the essentials
          pill is not touched at all. If :has ever fails the dot still paints, just
          without the gap -- ugly, not broken. Accepted consequence: with no dot on
          essentials the three pills are no longer the same width. */
       '#ks-browse-app .ks-browse-tier:has(.ks-tier-dot){display:inline-flex;align-items:center;gap:5px;}' +
-      '#ks-browse-app .ks-browse-tier .ks-tier-dot{width:6px;height:6px;border-radius:50%;flex:none;display:inline-block;}' +
+      '#ks-browse-app .ks-browse-tier .ks-tier-dot{width:9px;height:9px;border-radius:50%;flex:none;display:inline-block;}' +
       '#ks-browse-app .ks-browse-tier .ks-tier-dot.ks-tier-elevated{background:#28498D;}' +
-      '#ks-browse-app .ks-browse-tier .ks-tier-dot.ks-tier-special{background:#A67C0A;}';
+      '#ks-browse-app .ks-browse-tier .ks-tier-dot.ks-tier-special{background:#EDA920;}';
     var s = document.createElement('style');
     s.id = 'ks-util-css';
     s.textContent = css;
@@ -1728,7 +1741,7 @@ function outOfCreditsBlock(zeroClasses) {
          WORD beside it anyway, so nothing is lost. */
       '.ks-bag-dot.ks-tier-essentials{display:none;}' +
       '.ks-bag-dot.ks-tier-elevated{background:#28498D;}' +
-      '.ks-bag-dot.ks-tier-special{background:#A67C0A;}' +
+      '.ks-bag-dot.ks-tier-special{background:#EDA920;}' +
       '.ks-bag-x{width:40px;height:40px;border:0;background:transparent;color:#9a9384;cursor:pointer;' +
         'flex:none;display:flex;align-items:center;justify-content:center;}' +
       '.ks-bag-x svg{width:16px;height:16px;}' +
