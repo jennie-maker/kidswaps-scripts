@@ -2039,7 +2039,10 @@
       /* S70 HER RULING: the Everything Bag title is bigger. Weight stays
          600 - the standing type rule caps Quicksand at 600 and 700 would
          risk faux-bold. The size step is doing the work. */
-      '.ks-wz-plan--both .ks-wz-plan-title-a{font-size:26px;}',
+      /* S196 HER RULING: EDITORIAL LARGE, 34/22 base with this card keeping
+         its S70 step up. THE SIZE DOES ALL THE WORK - Instrument Serif is
+         loaded at 400 only, so a heavier weight would be faked. */
+      '.ks-wz-plan--both .ks-wz-plan-title-a{font-size:38px;}',
       /* ⚠ RULED S69: BORDERS REMOVED. Selection is the drawn check plus
          the dimming of the others — no ring, no outline. With no border in
          any state the box never resizes on tap, so no-jump holds for free. */
@@ -2062,9 +2065,9 @@
          same read. That is what makes this line safe and the value chip's
          Quicksand italic unsafe. */
       '.ks-wz-plan-title-a{display:block;font-family:"Instrument Serif",Georgia,serif;',
-        'font-size:22px;font-weight:400;line-height:1.1;color:inherit;}',
+        'font-size:34px;font-weight:400;line-height:1.05;color:inherit;}',
       '.ks-wz-plan-title-b{display:block;font-family:"Instrument Serif",Georgia,serif;',
-        'font-style:italic;font-size:16px;font-weight:400;color:inherit;',
+        'font-style:italic;font-size:22px;font-weight:400;color:inherit;',
         'opacity:.82;margin-top:2px;}',
       /* price sits TOP RIGHT on every card, no exceptions */
       '.ks-wz-plan-price{flex:0 0 auto;font-size:14px;font-weight:600;color:inherit;',
@@ -2132,7 +2135,16 @@
          line up. Only pack cards render a row, so nothing else can move. */
       '.ks-wz-plan-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;',
         'margin-right:-26px;}',
-      '.ks-wz-plan-credits{font-size:15px;font-weight:600;color:inherit;}',
+      /* ⚠⚠ S196 HER RULING: THE THREE QUICKSAND LINES CARRY THREE DISTINCT
+         WEIGHTS - 700 / 500 / 400 - because none of them can be italic
+         (Quicksand is roman-only, read live off /signup). The italic is the
+         serif sub-line's job and cannot be borrowed down here.
+         ⚠⚠⚠ 700 BREAKS THIS FILE'S OWN "cap Quicksand at 600" NOTE, AND THE
+         REASON THAT NOTE GAVE IS FALSIFIED: it says 700 risks a faux-bold,
+         but document.fonts on the live page lists Quicksand normal 700 as a
+         LOADED FACE. 700 here is real, not synthesised. The cap survives as a
+         TASTE rule if she wants it; it is no longer a technical one. */
+      '.ks-wz-plan-credits{font-size:15px;font-weight:700;color:inherit;}',
       '.ks-wz-plan-once{font-size:14px;font-weight:500;color:inherit;opacity:.85;white-space:nowrap;}',
       '.ks-wz-plan-swaps{font-size:14px;font-weight:500;color:inherit;margin-top:4px;}',
       /* APPROVED S78, BUILT S80. One pitch line per plan, UNDER the swaps
