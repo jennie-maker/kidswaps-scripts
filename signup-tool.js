@@ -166,7 +166,7 @@
       path:      'shop',
       name:      'The Basics',
       monthly:   30,
-      titleTop:  'The Basics plan',
+      titleTop:  'The Basics',
       titleSub:  'with a Clothing Starter Pack',
       swaps:     'Up to 6 clothing swaps per month',
       pitch:     'Start here if you\u2019re swapping for one kid.',
@@ -187,7 +187,7 @@
       path:      'shop',
       name:      'The Toy Chest',
       monthly:   45,
-      titleTop:  'The Toy Chest plan',
+      titleTop:  'The Toy Chest',
       titleSub:  'with a Toy Starter Pack',
       swaps:     'Up to 5 toy swaps per month',
       pitch:     'Keep toys moving so they never pile up.',
@@ -270,7 +270,7 @@
          and to a member "as soon as I joined" IS immediately. Do not soften it,
          and do not let a handoff describe it as proven. */
       subShopB: 'Your credits are added to your bank immediately, so you can start shopping right away.',
-      badge: 'Best of both',
+      badge: 'Best of both worlds',
       includesHead: 'Every plan includes',
       includes: [
         'One free round trip per month',
@@ -904,7 +904,7 @@
     }
     lines.appendChild(el('div', 'ks-wz-plan-swaps', p.swaps));
     lines.appendChild(el('div', 'ks-wz-plan-pitch', p.pitch));
-    lines.appendChild(el('div', 'ks-wz-plan-value', p.value));   /* italic, in CSS */
+    lines.appendChild(el('div', 'ks-wz-plan-value', p.value));   /* upright - S196 */
     b.appendChild(lines);
     /* always built, shown by CSS only when this card is the pick */
     if ((p.slug || '').indexOf('everything') === 0) {
@@ -1871,7 +1871,13 @@
          'the reserved accent, placed' and it is unplaced once more. Borders
          removed; selection is the check + dim, same as the plan cards. */
       '.ks-wz-fork--send{background:#E54F25;color:#FFFFFF;}',
-      '.ks-wz-fork--shop{background:#28498D;color:#FFFFFF;}',
+      /* ⚠⚠ S196: INK, NOT BLUE - and it exists to VACATE blue for the plan
+         cards. The freed gold could not come here (this fork leads to BOTH
+         pack plans, so a clothing colour would say something false) and
+         green means toys. Ink carries weight without carrying meaning.
+         ⚠ IT STAYS A SOLID FILL. Step 1's own sub line says "Either option
+         is right"; an outline against a solid would rank the two paths. */
+      '.ks-wz-fork--shop{background:#1E1A19;color:#EEEFE3;}',
       '.ks-wz-forks.has-pick .ks-wz-fork:not(.is-on){opacity:.5;}',
       '.ks-wz-fork-t{display:block;font-size:17px;font-weight:600;color:inherit;margin-bottom:4px;}',
       '.ks-wz-fork-s{display:block;font-size:14px;font-weight:500;color:inherit;opacity:.82;line-height:1.45;}',
@@ -1932,9 +1938,17 @@
          background-image. Change one, change both.
          ⚠ The shop-first Basics pack card is cls:'clothing', so it follows
          this rule for free. Both clothing cards change together. */
+      /* S196 HER RULING: FLAT BLUE #28498D, WHITE TEXT. The gold is retired
+         from the cards entirely. FLAT, NOT A GRADIENT - gold needed the
+         light-to-dark sheen because a flat gold reads as yellow; blue has no
+         such problem, so a gradient here would only rank the two clothing
+         plans against each other, which is the same move as the badge S56
+         cut. White on #28498D measures 8.65, AA at normal size.
+         ⚠⚠ THE OTHER COPY OF THIS FILL IS THE EVERYTHING BAG'S
+         background-image. Change one, change both. */
       '.ks-wz-plan--clothing,.ks-wz-plan--gold{',
-        'background:linear-gradient(160deg,#F7DE8A 0%,#E0B838 40%,#A67C0A 100%);',
-        'color:#1E1A19;}',
+        'background:#28498D;',
+        'color:#FFFFFF;}',
    /* ⚠⚠ RULED S73, HERS: ANY GREEN BACKGROUND TAKES WHITE TEXT. The S69
          green could not carry it — white measured 1.80 / 2.74 / 3.86 against
          its stops #8AD0A6 / #4FAE7A / #309359, failing AA at every one, which
@@ -1954,7 +1968,11 @@
          fails contrast, ink on the yellow half is perfect and on green is
          acceptable for large/bold text. Ink is the least-bad single choice
          for a two-colour fill. Watch this one on the render. */
-      /* ⚠⚠ RULED S69, AND STILL THE REASON THIS GRADIENT EXISTS AT ALL: gold
+      /* ⚠⚠ RETIRED S196 - HISTORY ONLY. THE GOLD IS OFF THE CARDS AND THESE
+         THREE HEXES ARE LIVE NOWHERE IN THIS FILE. Kept because the REASONING
+         is what made flat blue available: gold had to be a gradient, blue does
+         not, so a blue gradient would be decoration rather than legibility.
+         ⚠⚠ RULED S69, AND WHY THAT GRADIENT EXISTED AT ALL: gold
          reads as GOLD only as a light-to-dark sheen. A flat gold always reads
          as yellow on screen, which is why reaching for a different flat hex
          will not fix it. Her pick, and the three hexes #F7DE8A #E0B838
@@ -1989,19 +2007,27 @@
          ⚠⚠ THE GOLD MUST MATCH .ks-wz-plan--clothing EXACTLY AND THE GREEN
          MUST MATCH .ks-wz-plan--toy EXACTLY. Two copies of each gradient live
          in this file and this is one of them. Change one, change both. */
-      '.ks-wz-plan--both{color:#1E1A19;isolation:isolate;',
+      /* ⚠⚠⚠ S196: THIS color: IS THE SECOND HARDCODED INK ON THIS CARD AND
+         IT SETS EVERY LINE ON IT. Left at ink it would have shipped black on
+         navy - perfect in the Designer, unreadable on the page. The lower
+         fill is now blue, so white is correct here and on the green band. */
+      '.ks-wz-plan--both{color:#FFFFFF;isolation:isolate;',
         'background-image:linear-gradient(160deg,#2A7F4C 0%,#256F43 40%,#1F5C38 100%),',
-          'linear-gradient(160deg,#F7DE8A 0%,#E0B838 40%,#A67C0A 100%);',
+          'linear-gradient(#28498D,#28498D);',
         'background-size:100% 34px,100% 100%;',
         'background-position:left top,left top;',
         'background-repeat:no-repeat;}',
-      /* ⚠⚠ THE WHITE PRICE IS GONE, S74, AND THIS OVERTURNS A RULING SHE
-         MADE TWICE. White was RIGHT while the price sat on the green half
-         (S69, re-confirmed S73). The price now sits on GOLD, where white
-         measures 1.33 / 1.89 / 3.81 and fails at every stop; ink reads
-         12.96 / 9.11 / 4.53 and passes throughout. So the price inherits ink
-         like every other line on this card. DO NOT RESTORE THE WHITE - it
-         would reinstate a ruling whose reason the card no longer has. */
+      /* ⚠⚠ THE PRICE IS WHITE AGAIN AS OF S196, AND THAT IS THE THIRD TIME
+         THIS ONE LINE HAS TURNED OVER. White was right on the green half
+         (S69, S73); ink was right once the price sat on GOLD (S74), where
+         white measured 1.33 / 1.89 / 3.81 and failed at every stop. The gold
+         is now GONE and the fill under this price is #28498D, where white
+         reads 8.65. So it inherits white with every other line on the card.
+         ▶ THE S74 COMMENT THAT STOOD HERE SAID "DO NOT RESTORE THE WHITE"
+         AND WAS TRUE FOR AS LONG AS THE CARD WAS GOLD. It is kept in this
+         note rather than deleted, because the RULE it encodes still holds:
+         THE PRICE FOLLOWS THE FILL, and whoever changes the fill next owes
+         this line a contrast reading before they ship. */
       /* RULED S69: recommended-tier emphasis. S70 HER RULING: the extra top
          separation is REMOVED so all four cards sit an equal 12px apart and
          the shadow alone carries the emphasis. The rgbas in this file are
@@ -2013,7 +2039,7 @@
       /* S70 HER RULING: the Everything Bag title is bigger. Weight stays
          600 - the standing type rule caps Quicksand at 600 and 700 would
          risk faux-bold. The size step is doing the work. */
-      '.ks-wz-plan--both .ks-wz-plan-title-a{font-size:21px;}',
+      '.ks-wz-plan--both .ks-wz-plan-title-a{font-size:26px;}',
       /* ⚠ RULED S69: BORDERS REMOVED. Selection is the drawn check plus
          the dimming of the others — no ring, no outline. With no border in
          any state the box never resizes on tap, so no-jump holds for free. */
@@ -2027,8 +2053,18 @@
         'width:5px;height:11px;border:solid currentColor;border-width:0 2px 2px 0;',
         'transform:rotate(45deg);}',
       '.ks-wz-plan-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}',
-      '.ks-wz-plan-title-a{display:block;font-size:17px;font-weight:600;color:inherit;}',
-      '.ks-wz-plan-title-b{display:block;font-size:14px;font-weight:500;color:inherit;',
+      /* ⚠⚠ S196: WEIGHT 400, NOT 600, AND THE SIZE DOES THE WORK. Instrument
+         Serif is loaded at 400 ONLY - read live off /signup's document.fonts
+         - so anything heavier is FAKED by the browser. Same reason .ks-wz-h
+         is pinned at 400. DO NOT REACH FOR A WEIGHT HERE.
+         ✅ THE ITALIC ON title-b IS A REAL FACE, NOT A SYNTHESISED ONE:
+         Instrument Serif italic 400 is loaded on this page, confirmed in the
+         same read. That is what makes this line safe and the value chip's
+         Quicksand italic unsafe. */
+      '.ks-wz-plan-title-a{display:block;font-family:"Instrument Serif",Georgia,serif;',
+        'font-size:22px;font-weight:400;line-height:1.1;color:inherit;}',
+      '.ks-wz-plan-title-b{display:block;font-family:"Instrument Serif",Georgia,serif;',
+        'font-style:italic;font-size:16px;font-weight:400;color:inherit;',
         'opacity:.82;margin-top:2px;}',
       /* price sits TOP RIGHT on every card, no exceptions */
       '.ks-wz-plan-price{flex:0 0 auto;font-size:14px;font-weight:600;color:inherit;',
@@ -2047,10 +2083,31 @@
          ⚠ ONLY THE EVERYTHING BAG EVER RENDERS A BADGE - planCard appends it
          for the 'everything' slug only - so this rule is left unscoped. A
          second badged card would inherit this size. */
+      /* ⚠⚠ S196 HER RULING: AMBER PILL, INK TEXT, A DRAWN STAR INSIDE IT,
+         SPINNING, reading "Best of both worlds". It REPLACES the coral pill
+         that stood here, which also takes this page back from FIVE coral
+         jobs to four (the S56 ceiling).
+         ⚠ MEASURED, NOT EYEBALLED: ink on amber 8.54 - amber can only ever
+         be a fill with DARK text (white on it reads 2.02, cream 1.74). The
+         pill itself reads 4.28 on the blue and 3.93 on the green band, both
+         over the 3.0 bar for a graphical mark.
+         ⚠⚠ THE STAR IS A CLIP-PATH, NEVER A TEXT GLYPH. A character depends
+         on whatever font is available and renders differently on a phone.
+         ⚠ CSS ONLY, NO JS: the rule that draws the star also places it, so
+         if the animation never runs the star is still there, sitting still.
+         Failure lands on "no movement", never on "no star".
+         ⚠ currentColor is deliberate - one ink source for text and star. */
       '.ks-wz-plan-badge{position:absolute;top:19px;left:18px;z-index:3;',
-        'background:#E54F25;color:#EEEFE3;font-size:13px;font-weight:600;',
+        'display:inline-flex;align-items:center;gap:7px;',
+        'background:#E5AD43;color:#1E1A19;font-size:13px;font-weight:600;',
         'letter-spacing:.04em;padding:7px 17px;border-radius:999px;',
         'box-shadow:0 2px 6px rgba(30,26,25,.18);}',
+      '.ks-wz-plan-badge::before{content:"";flex:0 0 auto;width:14px;height:14px;',
+        'background:currentColor;',
+        'clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);',
+        'animation:ks-wz-star 14s linear infinite;}',
+      '@keyframes ks-wz-star{to{transform:rotate(360deg)}}',
+      '@media (prefers-reduced-motion:reduce){.ks-wz-plan-badge::before{animation:none}}',
       /* S70 HER RULING: the Everything Bag catches the light when it is
          hovered on desktop or picked on a phone. pointer-events:none so it
          can never eat a tap; ONE pass, never a loop; gone entirely under
@@ -2066,7 +2123,15 @@
       '@media (hover:hover){',
         '.ks-wz-plan--both:hover .ks-wz-plan-shine::after{animation:ks-wz-shine .9s ease-out 1;}}',
       '@media (prefers-reduced-motion:reduce){.ks-wz-plan-shine{display:none}}',
-      '.ks-wz-plan-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}',
+      /* ⚠⚠ S196 HER RULING: BOTH CHARGES SHARE ONE RIGHT MARGIN. The price
+         sits in .ks-wz-plan-top, which has no right padding, while this row
+         lives inside .ks-wz-plan-lines and its padding-right:26px was
+         stopping "plus $75 once" 26px short of the price above it. The
+         negative margin pulls THIS ROW ONLY back to the card's own padding
+         edge, so the text lines keep their clearance and the two charges
+         line up. Only pack cards render a row, so nothing else can move. */
+      '.ks-wz-plan-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;',
+        'margin-right:-26px;}',
       '.ks-wz-plan-credits{font-size:15px;font-weight:600;color:inherit;}',
       '.ks-wz-plan-once{font-size:14px;font-weight:500;color:inherit;opacity:.85;white-space:nowrap;}',
       '.ks-wz-plan-swaps{font-size:14px;font-weight:500;color:inherit;margin-top:4px;}',
@@ -2081,14 +2146,23 @@
          text) so it reads on every card colour. Copy UNCHANGED ('Up to
          $X value') per her locked-copy rule — dropping 'Up to' is a copy
          decision, not built. */
-   '.ks-wz-plan-value{display:inline-block;font-size:12px;font-weight:600;color:#1E1A19;',
-        'background:rgba(30,26,25,.13);padding:3px 9px;border-radius:999px;margin-top:8px;}',
+      /* ⚠ S196: EVERY CARD IS A DARK FILL NOW, so the chip is white on a
+         white tint on all four and the --toy override that used to do this
+         is deleted rather than left inert.
+         ⚠⚠ IT IS UPRIGHT AND MUST STAY UPRIGHT - HER RULING S196. Quicksand
+         is a roman-only family (read live off /signup: normal 300-700 and no
+         italic at any weight), so font-style:italic here would be a browser
+         SYNTHESISED slant, which distorts a geometric font's rounds. The
+         tinted pill is what separates this line; it does not need a lean. */
+   '.ks-wz-plan-value{display:inline-block;font-size:12px;font-weight:600;color:#FFFFFF;',
+        'background:rgba(255,255,255,.18);padding:3px 9px;border-radius:999px;margin-top:8px;}',
       /* ⚠⚠ S73: THE CHIP HARDCODES INK AND DOES NOT INHERIT, so the darkened
          green card would have kept BLACK TEXT ON A DARK TINT — unreadable,
          and invisible to anyone auditing only the card's own color rule. On
          green it flips to white on a light tint. The rgba is a tint of the
          fill underneath, which is one of the three jobs rgba is allowed. */
-      '.ks-wz-plan--toy .ks-wz-plan-value{color:#FFFFFF;background:rgba(255,255,255,.18);}',
+      /* the .ks-wz-plan--toy .ks-wz-plan-value override was DELETED S196 -
+         the base rule now says exactly what it said, on every card. */
 
       /* ⚠ RULED S69: benefits FRAME the choice up top — no filled box,
          a divider under them, text larger (15px) and bolder (600).
