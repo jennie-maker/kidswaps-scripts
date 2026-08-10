@@ -248,16 +248,29 @@
          serving originals now, so crop them to fill the button via object-fit. */
       '#ks-detail-root .ks-detail-thumb img{width:100%;height:100%;object-fit:cover;display:block;}' +
       '#ks-detail-root .ks-detail-thumb-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.28);color:#fff;}' +
-      /* PILL DIFFERENTIATION. tier = the one pill: essentials + elevated black,
-         Special gold (the only color left). fit rides the size line (muted); condition
-         pairs with the tier pill at body size; occasion/set are a quiet extras line.
-         #ks-detail-root prefix wins over the per-page base classes. */
+      /* PILL DIFFERENTIATION. tier = the one pill, ONE INK PILL FOR ALL THREE TIERS.
+         fit rides the size line (muted); condition pairs with the tier pill at body
+         size; occasion/set are a quiet extras line. #ks-detail-root prefix wins over
+         the per-page base classes.
+         S198: THE AMBER .ks-tier-special OVERRIDE IS DELETED, NOT LEFT INERT. It made
+         browse contradict itself -- amber meant SPECIAL here and ELEVATED on the bag
+         dot. The tier colour language now lives ONLY on the card grid, as a dot (no
+         mark on essentials, blue on elevated, gold on special).
+         AND THE DOT CANNOT COME HERE: measured against this pill's ink fill, the blue
+         reads 1.99 and would be near-invisible. A dot is a fast-scan aid for a GRID
+         and the overlay shows one item, so it has no job on this surface anyway.
+         DO NOT "restore" a colour to this pill. */
       '#ks-detail-root .ks-detail-tier-pill{background:#1E1A19;color:#EEEFE3;border:0;text-transform:none;letter-spacing:.01em;font-weight:600;}' +
-      '#ks-detail-root .ks-detail-tier-pill.ks-tier-special{background:#E5AD43;color:#1E1A19;font-weight:700;}' +
+      '#ks-detail-root a.ks-detail-tier-pill{text-decoration:none;color:#EEEFE3;cursor:pointer;}' +
       '#ks-detail-root .ks-detail-tier-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px;}' +
       '#ks-detail-root .ks-detail-name{font-family:"Instrument Serif",Quicksand,sans-serif;font-size:30px;line-height:1.12;}' +
       '#ks-detail-root .ks-detail-meta{display:flex;flex-wrap:wrap;align-items:baseline;gap:7px;margin:9px 0 0;}' +
+      '#ks-detail-root .ks-meta-brand{font-size:16px;font-weight:500;color:#1E1A19;}' +
       '#ks-detail-root .ks-meta-size{font-size:16px;font-weight:500;color:#1E1A19;}' +
+      /* A LINKED LABEL IS UNDERLINED and keeps the colour it already had, so the
+         facts row does not gain a second colour. The tier pill is excluded on
+         purpose -- it is a filled pill and already reads as tappable. */
+      '#ks-detail-root a.ks-meta-link{text-decoration:underline;text-underline-offset:2px;color:inherit;cursor:pointer;}' +
       '#ks-detail-root .ks-meta-fit{font-size:13.5px;color:#a99e92;}' +
       '#ks-detail-root .ks-meta-sku{font-size:13px;letter-spacing:.03em;color:#b3a99d;}' +
       '#ks-detail-root .ks-meta-sep{color:#cfc4b4;}' +
@@ -302,7 +315,25 @@
          and no breakpoint to get wrong. */
       '#ks-search{margin-bottom:10px;}' +
       '.inventory-layout{column-gap:50px;row-gap:14px;}' +
-      '#ks-browse-app .ks-browse-count{text-align:center;margin:0 0 14px;}';
+      '#ks-browse-app .ks-browse-count{text-align:center;margin:0 0 14px;color:#75736E;}' +
+      '#ks-browse-app .ks-browse-size{color:#75736E;}' +
+
+      /* TIER DOT ON THE CARD BADGE -- HER RULING S195, PLACEMENT RULED S198.
+         NO MARK ON ESSENTIALS, blue on elevated, gold on special. The WORD is the
+         information and the dot is only a fast-scan aid, which is what makes
+         colour safe here at all.
+         MEASURED, NOT EYEBALLED: against this pill's rgba(255,255,255,.92) fill the
+         blue reads 8.65 and the gold 3.81, both over the 3.0 bar for a mark. Amber
+         #E5AD43 (1.79) and mid gold #E0B838 (1.67) were REJECTED as too faint --
+         do not swap the dark gold back toward the brighter end of the family.
+         :has() SCOPES THE FLEX TO PILLS THAT ACTUALLY CARRY A DOT, so the essentials
+         pill is not touched at all. If :has ever fails the dot still paints, just
+         without the gap -- ugly, not broken. Accepted consequence: with no dot on
+         essentials the three pills are no longer the same width. */
+      '#ks-browse-app .ks-browse-tier:has(.ks-tier-dot){display:inline-flex;align-items:center;gap:5px;}' +
+      '#ks-browse-app .ks-browse-tier .ks-tier-dot{width:6px;height:6px;border-radius:50%;flex:none;display:inline-block;}' +
+      '#ks-browse-app .ks-browse-tier .ks-tier-dot.ks-tier-elevated{background:#28498D;}' +
+      '#ks-browse-app .ks-browse-tier .ks-tier-dot.ks-tier-special{background:#A67C0A;}';
     var s = document.createElement('style');
     s.id = 'ks-util-css';
     s.textContent = css;
@@ -384,7 +415,17 @@
     } else {
       media.appendChild(placeholderTile());
     }
-    if (item.tier) media.appendChild(el('span', 'ks-browse-tier', tierLabel(item.tier)));
+    if (item.tier) {
+      // TIER DOT (S198). No mark on essentials -- the dot is emitted for elevated and
+      // special ONLY, so the essentials pill keeps exactly the markup it always had.
+      var tierEl = el('span', 'ks-browse-tier');
+      var tKey   = String(item.tier).toLowerCase();
+      if (tKey === 'elevated' || tKey === 'special') {
+        tierEl.appendChild(el('span', 'ks-tier-dot ks-tier-' + tKey));
+      }
+      tierEl.appendChild(document.createTextNode(tierLabel(item.tier)));
+      media.appendChild(tierEl);
+    }
     if (isNew(item)) media.appendChild(el('span', 'ks-browse-new', 'New'));
     card.appendChild(media);
 
@@ -637,9 +678,17 @@
     var extraLine = extras.length
       ? '<p class="ks-detail-extras">' + extras.join(' \u00b7 ') + '</p>' : '';
 
+    // BRAND LEADS THE FACTS ROW -- her ruling S197, option A. It was not on this
+    // screen at all before: the brand only ever appeared inside the generated name.
     var metaParts = [];
-    if (item.size) metaParts.push('<span class="ks-meta-size">' + escapeHtml(item.size) + '</span>');
-    if (fit) metaParts.push('<span class="ks-meta-fit">' + escapeHtml(fit) + '</span>');
+    if (item.brand) metaParts.push(metaLabel('ks-meta-brand', 'brand', item.brand, item.brand));
+    // The size slot holds an AGE RANGE on a toy, so it targets a different facet.
+    if (item.size) metaParts.push(metaLabel('ks-meta-size', isToy ? 'age' : 'size', item.size, item.size));
+    // The fit slot is gender on clothing and washability on toys -- ONE CLASS, TWO
+    // FACETS. Not a bug; the item type decides which.
+    if (fit) metaParts.push(metaLabel('ks-meta-fit', isToy ? 'wash' : 'gender',
+      isToy ? item.toy_washability : item.gender_style, fit));
+    // SKU IS NEVER A LINK: it would return the item she is already looking at.
     if (item.sku) metaParts.push('<span class="ks-meta-sku">SKU ' + escapeHtml(item.sku) + '</span>');
     var metaLine = metaParts.length
       ? '<p class="ks-detail-meta">' +
@@ -647,8 +696,16 @@
       : '';
 
     var retail = money(item.retail_value);
-    var tierPill = item.tier
-      ? '<span class="ks-detail-tier-pill ks-tier-' + escapeHtml(String(item.tier).toLowerCase()) + '">' + escapeHtml(tierLabel(item.tier)) + '</span>' : '';
+    var tierPill = '';
+    if (item.tier) {
+      var pillKey = String(item.tier).toLowerCase();
+      var pillCls = 'ks-detail-tier-pill ks-tier-' + escapeHtml(pillKey);
+      var pillTxt = escapeHtml(tierLabel(item.tier));
+      tierPill = facetLive('tier')
+        ? '<a class="' + pillCls + '" href="#" data-facet-link="tier" data-facet-value="' +
+          escapeHtml(pillKey) + '">' + pillTxt + '</a>'
+        : '<span class="' + pillCls + '">' + pillTxt + '</span>';
+    }
 
     var blocks = '';
     if (item.description) {
@@ -692,6 +749,39 @@
      Inline-styled — no Webflow CSS edit, same discipline as the rail type links.
      Edit deep-links the listing tool's ?edit= handler; New listing is a fresh
      form load. Anchors, so Cmd/middle-click works. */
+  /* ---- FACET LINKS ON THE DETAIL OVERLAY (S198) ---------------------------
+     Her ask: tapping a label shows every other item that shares it. ONE RULE
+     rather than a per-label special case: A LABEL IS A LINK IF THAT FACET
+     EXISTS ON THE PAGE SHE IS ON. activeFacetKeys() already returns the live
+     per-page list, so brand/size/tier link everywhere, GENDER links on
+     /clothing and is plain on /browse, and CONDITION is plain today and starts
+     linking itself for free the day a condition facet is ever built.
+     THE VALUE MUST MATCH rowMatchesFacet'S NORMALISATION or the link filters to
+     nothing and reads as broken: 'lower' facets compare lowercased, and a
+     'tokens' facet (toy age) compares one band at a time. */
+  function facetLive(key) {
+    return !!FACETS[key] && activeFacetKeys().indexOf(key) !== -1;
+  }
+
+  function facetValueOf(key, raw) {
+    var def = FACETS[key];
+    var v = String(raw == null ? '' : raw).trim();
+    if (!def || !v) return '';
+    // A TOY CAN HOLD TWO AGE BANDS ("Toddler, Preschool"). Target the one the
+    // item shows FIRST; the age facet is token-aware, so either band matches.
+    if (def.match === 'tokens') v = tokensOf(v)[0] || '';
+    else if (def.match === 'lower') v = v.toLowerCase();
+    return v;
+  }
+
+  function metaLabel(cls, key, raw, text) {
+    var body = escapeHtml(text);
+    var v = facetLive(key) ? facetValueOf(key, raw) : '';
+    if (!v) return '<span class="' + cls + '">' + body + '</span>';
+    return '<a class="' + cls + ' ks-meta-link" href="#" data-facet-link="' +
+      escapeHtml(key) + '" data-facet-value="' + escapeHtml(v) + '">' + body + '</a>';
+  }
+
   function opBarHtml(sku) {
     var btn = 'display:inline-block;padding:8px 14px;border-radius:8px;font-size:.85rem;' +
               'font-weight:600;text-decoration:none;line-height:1.2;';
@@ -749,6 +839,13 @@
 
     // close affordances
     root.addEventListener('click', function (e) {
+      // FACET LINK first: it closes the overlay itself, so nothing below should run.
+      var fl = e.target.closest('[data-facet-link]');
+      if (fl) {
+        e.preventDefault();
+        applyFacetLink(fl.getAttribute('data-facet-link'), fl.getAttribute('data-facet-value'));
+        return;
+      }
       if (e.target.closest('[data-close]')) { e.preventDefault(); closeDetail(); }
       if (e.target.closest('[data-bag]')) { e.preventDefault(); addFromDetail(root); }
 
@@ -1625,9 +1722,13 @@ function outOfCreditsBlock(zeroClasses) {
       '.ks-bag-name{font-size:14.5px;font-weight:500;color:#1E1A19;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}' +
       '.ks-bag-meta{font-size:12.5px;color:#6f6a60;display:flex;align-items:center;gap:6px;margin-top:3px;}' +
       '.ks-bag-dot{width:7px;height:7px;border-radius:50%;background:#b9b2a3;flex:none;}' +
-      '.ks-bag-dot.ks-tier-essentials{background:#54935f;}' +
-      '.ks-bag-dot.ks-tier-elevated{background:#E5AD43;}' +
-      '.ks-bag-dot.ks-tier-special{background:#d24f28;}' +
+      /* S198: REPOINTED TO THE ONE SCHEME. Was green/amber/coral, which disagreed
+         with the card dot on every single tier. Essentials is HIDDEN rather than
+         recoloured -- "no mark" is the ruling, and the bag row prints the tier as a
+         WORD beside it anyway, so nothing is lost. */
+      '.ks-bag-dot.ks-tier-essentials{display:none;}' +
+      '.ks-bag-dot.ks-tier-elevated{background:#28498D;}' +
+      '.ks-bag-dot.ks-tier-special{background:#A67C0A;}' +
       '.ks-bag-x{width:40px;height:40px;border:0;background:transparent;color:#9a9384;cursor:pointer;' +
         'flex:none;display:flex;align-items:center;justify-content:center;}' +
       '.ks-bag-x svg{width:16px;height:16px;}' +
@@ -2152,6 +2253,31 @@ function outOfCreditsBlock(zeroClasses) {
     applyAndRender();
   }
 
+  /* A LABEL LINK REPLACES THE WHOLE SELECTION rather than adding to it, because
+     the promise it makes is "every other item like this one". Leaving her other
+     facets on would make that promise false and hand back a near-empty grid that
+     reads as a broken link -- the same reasoning that made size/age mutually
+     exclusive rather than explained. The search box is cleared for the same
+     reason. CLAUDE'S CALL, REVERSIBLE; the named cost is that she loses the
+     filter set she arrived with. */
+  function applyFacetLink(key, value) {
+    if (!facetLive(key) || !value) return;
+    Object.keys(FILTERS).forEach(function (k) { FILTERS[k] = []; });
+    FILTERS[key] = [value];
+    resetSearchInput();
+    // THE RAIL IS BUILT ONCE (RAIL_BUILT), so a box that is not ticked here will
+    // never repaint itself and the rail would silently disagree with the grid.
+    var rail = document.getElementById(RAIL_MOUNT_ID);
+    if (rail) Array.prototype.forEach.call(
+      rail.querySelectorAll('input.ks-flt-cb'),
+      function (cb) {
+        cb.checked = (cb.getAttribute('data-facet') === key && cb.value === value);
+      }
+    );
+    closeDetail();
+    applyAndRender();
+  }
+
   function updateClearVisibility() {
     var rail = document.getElementById(RAIL_MOUNT_ID);
     if (!rail) return;
@@ -2283,7 +2409,8 @@ function outOfCreditsBlock(zeroClasses) {
     SEARCH_BUILT = true;
   }
 
-  function clearSearch() {
+  // the DOM half alone, so a facet link can clear the query WITHOUT a second render
+  function resetSearchInput() {
     SEARCH = '';
     var mount = document.getElementById(SEARCH_MOUNT_ID);
     if (mount) {
@@ -2293,6 +2420,10 @@ function outOfCreditsBlock(zeroClasses) {
       if (box) box.classList.remove('has-text');
     }
     clearTimeout(searchDebounce);
+  }
+
+  function clearSearch() {
+    resetSearchInput();
     applyAndRender();                         // immediate (no debounce) + drops ?q=
   }
 
