@@ -2325,7 +2325,16 @@
          ⚠ Ink border rather than coral: coral already does four jobs on this
          page and a fifth ends the rule, and Back must not compete with
          Continue. It stays TOP RIGHT - the S74 ruling is untouched. */
-      '.ks-wz-top .ks-wz-btn-ghost{border-color:#1E1A19;font-weight:600;padding:9px 16px;}',
+      /* S200, HERS: BACK IS A CORAL PILL WITH WHITE TEXT ON **EVERY** STEP,
+         not only the coloured ones. It KNOWINGLY REVERSES S186's ink Back and
+         takes coral past the four §2 jobs as a fifth. She was shown both and
+         ruled anyway. DO NOT "CORRECT" IT BACK TO INK.
+         ⚠ STILL SCOPED TO .ks-wz-top - .ks-wz-btn-ghost is also worn by the
+         confirm dialog's "no" button, which must not grow a fill or an arrow.
+         ⚠ AND IT MUST STAY BELOW '.ks-wz-top .ks-wz-btn': both are (0,2,0), so
+         source order alone decides the padding (§STATE). */
+      '.ks-wz-top .ks-wz-btn-ghost{background:#E54F25;border-color:#E54F25;',
+        'color:#FFFFFF;font-weight:600;padding:9px 16px;}',
       '.ks-wz-top .ks-wz-btn-ghost::before{content:"\u2190";margin-right:6px;font-weight:400;}',
       /* ⚠ RULED S74: the name and the email STOP SHARING A ROW - the name
          wrapped to two lines beside the email and read as broken. They are
@@ -2401,7 +2410,16 @@
         '[data-ground] .ks-wz-assent-link,',
         '[data-ground] .ks-wz-btn-quiet{color:#EEEFE3;}',
       '[data-ground] .ks-wz-sum-b{color:rgba(255,255,255,.72);}',
+      /* ⚠⚠⚠ THE STATE RULES MUST BE RESTATED HERE OR THE TINT EATS THEM.
+         '[data-ground] .ks-wz-dot' is (0,2,0) and so are '.ks-wz-dot.is-done'
+         and '.is-on' - a tie is decided by SOURCE ORDER, and this block is
+         appended at the end, so the first build silently turned EVERY dot
+         uniform on the three coloured steps and the progress marker stopped
+         progressing. SHE CAUGHT IT ON A REAL RENDER. Add a rule up here, ask
+         what it ties with. */
       '[data-ground] .ks-wz-dot{background:rgba(255,255,255,.28);}',
+      '[data-ground] .ks-wz-dot.is-done,[data-ground] .ks-wz-dot.is-on{',
+        'background:#E54F25;}',
       /* BACK IS CORAL-FILLED WITH WHITE TEXT ON THE COLOURED STEPS - HER
          RULING S200, TAKEN WITH THE NUMBERS. It KNOWINGLY REVERSES S186, which
          put Back in INK precisely to avoid being a fifth coral job, and it
@@ -2415,8 +2433,9 @@
          SCOPED TO .ks-wz-top like the rule it overrides, so the confirm
          dialog's ghost button is untouched - it must not grow an arrow or a
          fill. The ::before arrow inherits currentColor and follows for free. */
-      '[data-ground] .ks-wz-top .ks-wz-btn-ghost{background:#E54F25;',
-        'border-color:#E54F25;color:#FFFFFF;}',
+      /* The [data-ground] Back override is GONE, not left inert: Back is coral
+         on every step now, from the base rule above (§0, inert rules are
+         deleted rather than left in). */
       /* Step 5: the summary loses its cream fill so the CONSENT BLOCK IS THE
          ONLY FILLED THING ON THE SCREEN. That is the point of the change, not
          a side effect - S17602 wants a clear and conspicuous disclosure.
