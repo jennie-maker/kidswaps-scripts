@@ -2504,6 +2504,32 @@
          this selector and one of the other two changes silently. */
       '[data-ground] .ks-wz-ask-row .ks-wz-btn-ghost{background:#FFFFFF;',
         'border-color:#FFFFFF;color:#1E1A19;}',
+      /* ⚠⚠⚠ THE ASK ROW'S TWO BUTTONS SPLIT ACROSS TWO LINES, ONE RIGHT AND
+         ONE LEFT, AND IT WAS NOT A WRAP PROBLEM. `.ks-wz-btn-primary` carries
+         margin-left:auto so that CONTINUE pushes to the right of the nav row.
+         In the ask row that same margin shoves "Use this one" right while the
+         ghost, which has no auto margin, stays left. A MARGIN DOING A JOB FROM
+         A DIFFERENT CONTEXT. Killed here only, so the nav row is untouched.
+         ⚠ NOT scoped to [data-ground]: this is structural, not a colour
+         question, and it would look equally wrong on any card. */
+      '.ks-wz-ask-row .ks-wz-btn-primary{margin-left:0;}',
+      /* ⚠⚠ THE PALE YELLOW ON AN AUTOFILLED FIELD IS **SAFARI'S**, NOT A
+         COLOUR OF OURS - it is the -webkit-autofill highlight, and it paints
+         OVER any background the CSS sets, which is why only the autofilled
+         field went yellow while its neighbours stayed white. There is no
+         approved shade to substitute: the field should not be yellow at all.
+         ⚠ background-color CANNOT BEAT IT. The only thing that reliably
+         covers it is a huge INSET box-shadow, plus -webkit-text-fill-color,
+         which the autofill styling also overrides.
+         ⚠ SCOPED TO THE MOUNT so nothing else on the site is touched. The same
+         yellow is on record on /login's email field, and that page carries its
+         own head CSS - THIS DOES NOT FIX IT THERE. */
+      '#' + MOUNT_ID + ' input:-webkit-autofill,',
+        '#' + MOUNT_ID + ' input:-webkit-autofill:hover,',
+        '#' + MOUNT_ID + ' input:-webkit-autofill:focus,',
+        '#' + MOUNT_ID + ' select:-webkit-autofill{',
+        '-webkit-box-shadow:0 0 0 1000px #FFFFFF inset;',
+        '-webkit-text-fill-color:#1E1A19;caret-color:#1E1A19;}',
       '#' + MOUNT_ID + ' [data-ground] :focus-visible{outline-color:#FFFFFF;}'
     ].join('');
     document.head.appendChild(s);
