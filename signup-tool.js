@@ -344,6 +344,8 @@
       headline: function (p) {
         return 'You\u2019re signing up for ' + p.name + ' at $' + p.monthly + ' per month.';
       },
+      /* S202: CLAUDE'S WORD, REVERSIBLE - one string. */
+      editEmail: 'Edit',
       dueTodayLabel: 'Due today',                      /* line kept, NO NUMBER until the CPA rules */
       consentTrial: function (p) {
         return 'I understand my KidSwaps membership renews automatically at $' + p.monthly +
@@ -396,6 +398,11 @@
       },
       label:   'Six digit code',
       resend:  'Send a new code',
+      /* S202, HERS, VERBATIM: it says START AGAIN and never "fix it". The
+         Memberstack member already exists on the address she typed and there
+         is no confirm-the-new-address primitive (#EMAIL-CHANGE), so the only
+         recovery is a fresh signup. DO NOT REWORD IT INTO A PROMISE. */
+      startAgain: 'Wrong email? Start again.',
       resent:  'Sent. Give it a minute.',
       submitLabel: 'Confirm my code',
       errCode: 'That code didn\u2019t work. Check it over, or send a new one.'
@@ -1434,7 +1441,25 @@
     if (p.pack) sum.appendChild(sumRow(p.pack.name, '$' + p.pack.amount + ' once'));
     /* ⚠ RULED S74: one value per row. See .ks-wz-sum-a. */
     sum.appendChild(sumRow(S.first + ' ' + S.last, ''));
-    sum.appendChild(sumRow(S.email, ''));
+    /* S202: THE EMAIL ROW CARRIES AN EDIT - HER RULING, #SIGNUP-EMAIL-DEADEND.
+       ⚠⚠ THIS SCREEN IS THE LAST FREE MOMENT. The account is created HERE, on
+       Create, so a mistyped email is fixable on this screen and NOT fixable one
+       step later. It sends her to step 3 and she walks forward normally; step 4's
+       address check simply re-runs, which is correct and costs nothing (a US
+       Shippo validation is free), and if she already accepted a suggestion the
+       corrected address is in S.addr so the re-check comes back clean.
+       ⚠ EMAIL ONLY, HER RULING. The address was typed one screen back and now has
+       a real check behind it, and a wrong name is cosmetic. Email is the one
+       IRREVERSIBLE field on this screen. Do not add Edit to the other rows.
+       ⚠ It is built inline rather than through sumRow() because that helper's
+       second slot is a span, and this one has to be a real control. */
+    var eRow = el('div', 'ks-wz-sum-row');
+    eRow.appendChild(el('span', 'ks-wz-sum-a', S.email));
+    var eEdit = el('button', 'ks-wz-link', COPY.s5.editEmail);
+    eEdit.type = 'button';
+    eEdit.addEventListener('click', function () { go(3); });
+    eRow.appendChild(eEdit);
+    sum.appendChild(eRow);
     sum.appendChild(sumRow(addrOneLine(), ''));
     /* ⚠⚠ RULED S69: THE DUE TODAY ROW IS HIDDEN ENTIRELY until the CPA
        rules on taxability. It read as broken with an empty value, and a
@@ -1587,6 +1612,34 @@
     });
     body.appendChild(again);
     body.appendChild(said);
+
+    /* S202: THE WAY OUT OF A MISTYPED EMAIL - HERS, #SIGNUP-EMAIL-DEADEND.
+       ⚠⚠ IT SITS UNDER "Send a new code" ON PURPOSE. That button is the only
+       other control on this screen and on a wrong address it makes things WORSE -
+       it fires a second code at an inbox she does not own. This is the other
+       answer, and it belongs immediately beneath it. It is also below the confirm
+       button, so somebody merely waiting on a slow code is not invited to bail.
+       ⚠ The screen already prints the address (COPY.s6.sub), so the evidence and
+       the escape are in the same place.
+       ⚠⚠⚠ A PLAIN RELOAD IS THE WHOLE MECHANISM. DO NOT ADD A removeItem HERE.
+       resumeEnd() is gated on a member token, and an abandon-at-step-6 member has
+       no confirmed code, so no session, so no token - it falls through to a fresh
+       step 1 by itself. Clearing END_KEY would instead drop a REAL finished member
+       onto step 1 when she refreshes her welcome screen, which is the exact failure
+       resumeEnd's own comment forbids.
+       ⚠⚠ ks_consent_pending IS LEFT ALONE TOO. She really did affirm the
+       disclosure and the member really does exist, so the row should be written -
+       a member with no consent row is the §17603 shape.
+       ⚠ pathname, not reload(), so any query string (forceRefetch) is dropped and
+       she gets a clean /signup. */
+    var over = el('button', 'ks-wz-link', COPY.s6.startAgain);
+    over.type = 'button';
+    over.addEventListener('click', function () {
+      track('email_start_over');
+      try { window.location.href = window.location.pathname; }
+      catch (e) { window.location.reload(); }
+    });
+    body.appendChild(over);
 
     paintNav({ hideNext: true });   /* Back is gone: the account now exists. */
   }
@@ -2282,6 +2335,12 @@
         'font-size:14px;color:#1E1A19;padding:6px 0;line-height:1.45;}',
       '.ks-wz-sum-row+.ks-wz-sum-row{border-top:1px solid #FFFFFF;}',
       '.ks-wz-sum-b{color:#75736E;text-align:right;white-space:nowrap;}',
+      /* S202: .ks-wz-link carries margin-top:14px for the two stacked links on
+         step 6. Inside a summary row that margin drops the Edit out of line, so
+         it is killed here. TWO CLASSES, (0,2,0), so it beats the bare rule on
+         specificity and NOT on source order. Placed with its siblings, never
+         appended - the end of this block is inside a media query. */
+      '.ks-wz-sum-row .ks-wz-link{margin-top:0;}',
       '.ks-wz-consent{display:flex;gap:10px;align-items:flex-start;cursor:pointer;',
         'background:#EEEFE3;border:1px solid #EEEFE3;border-left:3px solid #E54F25;',
         'border-radius:14px;padding:18px 18px;}',
