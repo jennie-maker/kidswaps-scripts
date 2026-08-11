@@ -2387,10 +2387,12 @@
          DO NOT SET padding OR max-width IN THIS BLOCK. These rules are (0,2,0)
          and would beat the @media (max-width:600px) card rule AT EVERY WIDTH -
          the trap this doc already records from the grading layout pass. */
-      '[data-ground="blue"]{background:#28498D;}',
-      '[data-ground="green"]{background:#256F43;}',
-      '[data-ground] .ks-wz-card{background:transparent;border-color:transparent;',
-        'box-shadow:none;}',
+      /* S200 FIX, HERS: THE COLOUR IS ON THE **CARD**, NOT THE SECTION. First
+         build put it on .ks-wz and the whole viewport went blue edge to edge.
+         The card keeps its radius and its shadow and loses only its border. */
+      '[data-ground] .ks-wz-card{border-color:transparent;}',
+      '[data-ground="blue"] .ks-wz-card{background:#28498D;}',
+      '[data-ground="green"] .ks-wz-card{background:#256F43;}',
       '[data-ground] .ks-wz-h,[data-ground] .ks-wz-headline,',
         '[data-ground] .ks-wz-label,[data-ground] .ks-wz-formslot label,',
         '[data-ground] .ks-wz-err,[data-ground] .ks-wz-ask-text,',
@@ -2400,10 +2402,21 @@
         '[data-ground] .ks-wz-btn-quiet{color:#EEEFE3;}',
       '[data-ground] .ks-wz-sum-b{color:rgba(255,255,255,.72);}',
       '[data-ground] .ks-wz-dot{background:rgba(255,255,255,.28);}',
-      /* Back: .ks-wz-btn-ghost is ink text on a #C9C7BC border, which is close
-         to invisible on a coloured ground. Scoped to .ks-wz-top like the rule
-         it overrides, so the confirm dialog's ghost button is untouched. */
-      '[data-ground] .ks-wz-top .ks-wz-btn-ghost{border-color:#FFFFFF;color:#FFFFFF;}',
+      /* BACK IS CORAL-FILLED WITH WHITE TEXT ON THE COLOURED STEPS - HER
+         RULING S200, TAKEN WITH THE NUMBERS. It KNOWINGLY REVERSES S186, which
+         put Back in INK precisely to avoid being a fifth coral job, and it
+         takes this page past the four §2 names as a fifth. She was shown both
+         and ruled anyway. DO NOT "CORRECT" IT BACK TO INK OR TO WHITE.
+         Coral as TEXT on these grounds is illegible - 2.26 on the blue and
+         1.60 on the green - so the fill plus white text is the only version of
+         her ruling that reads. White on coral is 3.83, what Continue carries.
+         ⚠ Back and Continue now share a fill and are separated only by size
+         and position: 14px top-left against 16px bottom-right.
+         SCOPED TO .ks-wz-top like the rule it overrides, so the confirm
+         dialog's ghost button is untouched - it must not grow an arrow or a
+         fill. The ::before arrow inherits currentColor and follows for free. */
+      '[data-ground] .ks-wz-top .ks-wz-btn-ghost{background:#E54F25;',
+        'border-color:#E54F25;color:#FFFFFF;}',
       /* Step 5: the summary loses its cream fill so the CONSENT BLOCK IS THE
          ONLY FILLED THING ON THE SCREEN. That is the point of the change, not
          a side effect - S17602 wants a clear and conspicuous disclosure.
@@ -2412,17 +2425,19 @@
         'padding-right:0;}',
       '[data-ground] .ks-wz-sum-row+.ks-wz-sum-row{border-top-color:rgba(255,255,255,.22);}',
       '[data-ground] .ks-wz-consent{border-radius:0;}',
-      /* THE CORAL BUTTON KEEPS CORAL AND TAKES A WHITE RING - HER RULING S200.
-         Coral against the ground measures 2.26 on blue and 1.60 on green
-         against a 3.0 bar for a shape edge, so the fill alone stops reading as
-         an object. The ring is white at 8.65/6.12. The FILL IS UNTOUCHED, so
-         coral is still the action everywhere in this flow. */
-      '[data-ground] .ks-wz-btn-primary,',
-        '[data-ground] .ks-wz-formslot input[type="submit"]{',
-        'box-shadow:0 0 0 2px #FFFFFF;}',
-      '@media (hover:hover){',
-        '[data-ground] .ks-wz-btn-primary:not([disabled]):hover{',
-          'box-shadow:0 0 0 2px #FFFFFF,0 5px 14px rgba(229,79,37,.34);}}',
+      /* S200 FIX, HERS: THE CODE BLOCK. Memberstack's step-2 wrapper carries a
+         pale Webflow fill, and the white-text sweep turned its label WHITE ON
+         LIGHT GREY - unreadable, seen on her screenshot. The wrapper goes
+         transparent so the block matches everything else on the card.
+         The input keeps its own ink colour, set two rules above, so it does
+         NOT inherit the white. */
+      '[data-ground] .ks-wz-formslot [data-ms-passwordless="step-2"]{',
+        'background:transparent;border:0;padding:0;color:#FFFFFF;}',
+      /* THE WHITE RING ON THE CORAL BUTTON WAS BUILT AND SHE REJECTED IT ON
+         SIGHT - S200. RULES DELETED, NOT LEFT INERT. The measured softness it
+         was answering is real and ACCEPTED KNOWINGLY: coral reads 2.26 on the
+         blue and 1.60 on the green against a 3.0 bar for a shape edge. Do not
+         reintroduce a ring, and do not "correct" the fill. */
       /* THE DEAD BUTTON MUST NOT OUT-SHOUT THE LIVE ONE. Both dead states are a
          cream #EEEFE3 pill, which reads 7.45 on blue against the live coral at
          2.26 - so on step 5 the LOCKED Create button would be the loudest thing
