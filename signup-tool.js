@@ -342,7 +342,7 @@
     s5: {
       head: 'One last look',
       headline: function (p) {
-        return 'You\u2019re joining ' + p.name + ', $' + p.monthly + ' per month.';
+        return 'You\u2019re signing up for ' + p.name + ' at $' + p.monthly + ' per month.';
       },
       dueTodayLabel: 'Due today',                      /* line kept, NO NUMBER until the CPA rules */
       consentTrial: function (p) {
@@ -826,6 +826,16 @@
 
   function render() {
     clear(body);
+    /* S200, HER RULING: steps 3, 4 and 5 sit on a coloured ground with white
+       text and no white card. Blue on 3 and 5, green on 4. ONE attribute, set
+       in the one place that runs on first paint AND on every go().
+       DO NOT move this into go() - go() does not fire on page load. */
+    if (shell) {
+      var g = (S.step === 3 || S.step === 5) ? 'blue'
+            : (S.step === 4) ? 'green' : '';
+      if (g) shell.setAttribute('data-ground', g);
+      else   shell.removeAttribute('data-ground');
+    }
     paintDots();
     if (S.step === 1) return step1();
     if (S.step === 2) return step2();
@@ -2229,7 +2239,7 @@
       '.ks-wz-formslot input[type="text"]:focus,.ks-wz-formslot input[type="email"]:focus{',
         'outline:none;border-color:#E54F25;}',
       '.ks-wz-formslot input[type="submit"]{display:block;width:100%;cursor:pointer;',
-        'font-family:inherit;font-size:16px;font-weight:600;color:#EEEFE3;background:#E54F25;',
+        'font-family:inherit;font-size:16px;font-weight:600;color:#FFFFFF;background:#E54F25;',
         'border:1px solid #E54F25;border-radius:999px;padding:14px 20px;margin-top:18px;}',
       /* ⚠ S64: the consent guard was always correct; the button just PAINTED
          live because nothing styled a locked form submit. Look only. */
@@ -2361,7 +2371,71 @@
          sitting beside working ones is the CSS version of a comment that lies. */
 
       /* ---- focus, everywhere, visible ---- */
-      '#' + MOUNT_ID + ' :focus-visible{outline:2px solid #28498D;outline-offset:2px;}'
+      '#' + MOUNT_ID + ' :focus-visible{outline:2px solid #28498D;outline-offset:2px;}',
+
+      /* ==== S200: THE COLOURED GROUND, STEPS 3, 4 AND 5 - HER RULING ========
+         render() sets data-ground on the section: blue on 3 and 5, green on 4.
+         The card KEEPS ITS ELEMENT and only loses its fill - foldFit() measures
+         card.offsetHeight, so deleting it would take the fold with it.
+         MEASURED: white on #28498D 8.65, white on #256F43 6.12 (her own S73
+         figure for that stop), cream #EEEFE3 7.45 / 5.27.
+         NO NEW HEXES. Every tint here is rgba white over the ground, which is
+         the device .ks-wz-plan-value already uses on the plan cards, and which
+         S2 permits as "a tint of the colour already under it".
+         THE GREEN IS FLAT #256F43, the middle stop of the S73 gradient -
+         CLAUDE'S CALL on the S196 flat-not-gradient reasoning, REVERSIBLE.
+         DO NOT SET padding OR max-width IN THIS BLOCK. These rules are (0,2,0)
+         and would beat the @media (max-width:600px) card rule AT EVERY WIDTH -
+         the trap this doc already records from the grading layout pass. */
+      '[data-ground="blue"]{background:#28498D;}',
+      '[data-ground="green"]{background:#256F43;}',
+      '[data-ground] .ks-wz-card{background:transparent;border-color:transparent;',
+        'box-shadow:none;}',
+      '[data-ground] .ks-wz-h,[data-ground] .ks-wz-headline,',
+        '[data-ground] .ks-wz-label,[data-ground] .ks-wz-formslot label,',
+        '[data-ground] .ks-wz-err,[data-ground] .ks-wz-ask-text,',
+        '[data-ground] .ks-wz-sum-a,[data-ground] .ks-wz-link{color:#FFFFFF;}',
+      '[data-ground] .ks-wz-sub,[data-ground] .ks-wz-assent,',
+        '[data-ground] .ks-wz-assent-link,',
+        '[data-ground] .ks-wz-btn-quiet{color:#EEEFE3;}',
+      '[data-ground] .ks-wz-sum-b{color:rgba(255,255,255,.72);}',
+      '[data-ground] .ks-wz-dot{background:rgba(255,255,255,.28);}',
+      /* Back: .ks-wz-btn-ghost is ink text on a #C9C7BC border, which is close
+         to invisible on a coloured ground. Scoped to .ks-wz-top like the rule
+         it overrides, so the confirm dialog's ghost button is untouched. */
+      '[data-ground] .ks-wz-top .ks-wz-btn-ghost{border-color:#FFFFFF;color:#FFFFFF;}',
+      /* Step 5: the summary loses its cream fill so the CONSENT BLOCK IS THE
+         ONLY FILLED THING ON THE SCREEN. That is the point of the change, not
+         a side effect - S17602 wants a clear and conspicuous disclosure.
+         Its white hairlines were drawn for a cream fill and shout on colour. */
+      '[data-ground] .ks-wz-summary{background:transparent;padding-left:0;',
+        'padding-right:0;}',
+      '[data-ground] .ks-wz-sum-row+.ks-wz-sum-row{border-top-color:rgba(255,255,255,.22);}',
+      '[data-ground] .ks-wz-consent{border-radius:0;}',
+      /* THE CORAL BUTTON KEEPS CORAL AND TAKES A WHITE RING - HER RULING S200.
+         Coral against the ground measures 2.26 on blue and 1.60 on green
+         against a 3.0 bar for a shape edge, so the fill alone stops reading as
+         an object. The ring is white at 8.65/6.12. The FILL IS UNTOUCHED, so
+         coral is still the action everywhere in this flow. */
+      '[data-ground] .ks-wz-btn-primary,',
+        '[data-ground] .ks-wz-formslot input[type="submit"]{',
+        'box-shadow:0 0 0 2px #FFFFFF;}',
+      '@media (hover:hover){',
+        '[data-ground] .ks-wz-btn-primary:not([disabled]):hover{',
+          'box-shadow:0 0 0 2px #FFFFFF,0 5px 14px rgba(229,79,37,.34);}}',
+      /* THE DEAD BUTTON MUST NOT OUT-SHOUT THE LIVE ONE. Both dead states are a
+         cream #EEEFE3 pill, which reads 7.45 on blue against the live coral at
+         2.26 - so on step 5 the LOCKED Create button would be the loudest thing
+         on screen and would get QUIETER the moment she ticks the box. It does
+         not happen today because a cream pill on a white card is nearly
+         invisible. Transparent with a white outline instead. */
+      '[data-ground] .ks-wz-btn-primary[disabled],',
+        '[data-ground] .ks-wz-formslot input[type="submit"].is-locked{',
+        'background:transparent;border-color:rgba(255,255,255,.45);',
+        'color:#EEEFE3;box-shadow:none;}',
+      /* THE FOCUS RING IS BLUE #28498D AND WOULD VANISH ON THE BLUE GROUND.
+         The rule it overrides carries an ID, so this one needs the ID too. */
+      '#' + MOUNT_ID + ' [data-ground] :focus-visible{outline-color:#FFFFFF;}'
     ].join('');
     document.head.appendChild(s);
   }
