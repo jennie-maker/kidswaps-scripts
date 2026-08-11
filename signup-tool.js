@@ -1358,6 +1358,16 @@
     var v = COPY.s4.ask[S.addrCode];
     if (!v) { go(5); return; }
 
+    /* ⚠⚠ HIDE Continue WHILE THE ASK IS OPEN - HER RULING S201, off a real
+       render. Continue and "Use this one" are BOTH coral primaries sitting
+       inches apart doing different jobs, which is the fifth-coral-job cost
+       arriving on a real screen. Continue is also REDUNDANT here: both ask
+       buttons already resolve the step, and pressing Continue merely re-runs
+       the whole check. ⚠ IT MUST BE RESTORED ON THE EDIT PATH BELOW - on
+       flagged/not_found the "no" button clears the ask and leaves her on the
+       fields, and without the restore she would be stranded with no way on. */
+    nextBtn.style.display = 'none';
+
     ask.appendChild(el('p', 'ks-wz-ask-text', v.text));
 
     if (S.addrCode === 'corrected' && S.addrSugg) {
@@ -1396,6 +1406,7 @@
       track('addr_ask', { code: S.addrCode, choice: 'edit' });
       if (S.addrCode === 'corrected') { go(5); return; }   /* keep what she typed */
       clear(ask);                                          /* back to the fields */
+      nextBtn.style.display = '';                          /* ⚠ or she is stranded */
     });
 
     row.appendChild(yes); row.appendChild(no);
@@ -2469,6 +2480,30 @@
         'color:#EEEFE3;box-shadow:none;}',
       /* THE FOCUS RING IS BLUE #28498D AND WOULD VANISH ON THE BLUE GROUND.
          The rule it overrides carries an ID, so this one needs the ID too. */
+      /* ==== S201: THE STEP-4 ADDRESS ASK, HER RULINGS OFF THE FIRST RENDER ====
+         This block is the FIRST TIME these elements have ever been styled for a
+         coloured card, because address-check did not exist until S201 and
+         nothing could make them paint.
+         ⚠ EVERY RULE HERE IS SCOPED UNDER [data-ground]. Step 4 is always the
+         green card today, but scoping keeps them from firing if a step ever
+         loses its ground - a white-on-white box is exactly what this pass
+         exists to end. */
+      /* THE SUGGESTED ADDRESS IS THE THING SHE IS BEING ASKED TO AGREE TO, so
+         it is the loudest element in the block. Cream #EEEFE3 was drawn for a
+         white card and reads as a bright slab on green. A DARK OVERLAY IS NOT
+         A NEW HEX - it is rgba black over the ground, the tint device S2
+         permits and .ks-wz-plan-value already uses. */
+      '[data-ground] .ks-wz-ask-addr{background:rgba(0,0,0,.18);color:#FFFFFF;',
+        'font-size:20px;font-weight:600;line-height:1.4;padding:14px 16px;}',
+      /* "Keep what I typed" was ink text on a #C9C7BC border - near invisible
+         on green. WHITE FILL WITH INK TEXT, NOT CORAL: there are already two
+         coral buttons on this screen and a third would say nothing.
+         ⚠⚠ SCOPED TO .ks-wz-ask-row DELIBERATELY. .ks-wz-btn-ghost is worn by
+         THREE different buttons - Back (coral, .ks-wz-top), the confirm
+         dialog's "no" (plain, must never gain a fill), and this one. Widen
+         this selector and one of the other two changes silently. */
+      '[data-ground] .ks-wz-ask-row .ks-wz-btn-ghost{background:#FFFFFF;',
+        'border-color:#FFFFFF;color:#1E1A19;}',
       '#' + MOUNT_ID + ' [data-ground] :focus-visible{outline-color:#FFFFFF;}'
     ].join('');
     document.head.appendChild(s);
