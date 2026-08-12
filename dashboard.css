@@ -399,12 +399,39 @@
      ⚠ WIDTH IS SET IN THE 19th-SESSION BLOCK BELOW (420, not 480). Do not
      re-add a max-width here — two authorities for one number is how this box
      grew three duplicate rules. */
+  /* ⚠⚠⚠ THE ONE COLOUR BLOCK ON THE DASHBOARD — S214. Every other section went
+     backgroundless (editorial cream, hairline dividers) to match the brand's mailer, and the
+     bank became the single saturated ground the way the mailer is mostly cream with ONE navy
+     panel. #1C4A91 IS THE BRAND NAVY SHE STARTED THE PROJECT WITH — sampled from her
+     Illustrator mailer and confirmed by her as the original, NOT the #28498D tier-system blue
+     added at S195. The two blues are BOTH hers and BOTH deliberate: navy = brand ground,
+     #28498D = the elevated-tier SIGNAL (a 6px dot). Unifying them is a held item, not this
+     commit — it would re-touch browse @ac7b175 (a ×3 pin bump), the /signup plan cards and
+     My Closet, all live. ⚠ THE SHADOW IS GONE: a drop shadow is the card idiom this whole
+     pass removed; the fill alone carries the block now.
+     ⚠⚠ EVERY INTERIOR TEXT RULE BELOW IS SCOPED .ks-hero-card SO NOTHING OFF-CARD MOVES. The
+     bare .ks-bank-label / .ks-swaps-ready / .ks-cycle-* rules still paint ink for any use
+     outside the bank; these overrides win on specificity (0,2,0 vs 0,1,0) inside it. */
   .ks-hero-card {
     margin: 0;
-    background: #FFFFFF;
+    background: #1C4A91;
     border-radius: 22px;
-    box-shadow: 0 10px 30px -12px #C9C7BC;
+    box-shadow: none;
   }
+  .ks-hero-card .ks-bank-label   { color: #EEEFE3; }
+  .ks-hero-card .ks-swaps-ready   { color: #C6D0E4; }
+  .ks-hero-card .ks-swaps-ready b { color: #FFFFFF; }
+  .ks-hero-card .ks-tier-row      { color: #C6D0E4; }
+  /* ⚠⚠ THE TIER DOTS ARE HIDDEN IN THE BANK ONLY — option 2, S214. The .ks-dot--elev blue
+     (#28498D) would vanish into the #1C4A91 fill, AND recolouring the shared .ks-dot--*
+     classes to fix that would silently change browse and My Closet, which lean on the SAME
+     classes (coinTierHTML + TIER_DOT). So the bank states the tiers in plain cream WORDS and
+     the dots survive untouched everywhere they do comparison work. Scoped to .ks-hero-card,
+     not the class, exactly so the shared language is not disturbed. */
+  .ks-hero-card .ks-dot           { display: none; }
+  .ks-hero-card .ks-cycle-bar-head   { color: #C6D0E4; }
+  .ks-hero-card .ks-cycle-bar-head b { color: #FFFFFF; }
+  .ks-hero-card .ks-cycle-line       { color: #C6D0E4 !important; }
   /* Tightened inside the card. ⚠ NO !important — see the .ks-bank-label block above. */
   .ks-hero-card .ks-bank-label { margin: 0 0 16px; }
 
@@ -479,6 +506,13 @@
     background: #D65A35;
     border-radius: 50px;
   }
+  /* ⚠⚠ THE PROGRESS BAR IS RECOLOURED FOR THE NAVY BANK — S214. Coral #D65A35 measures 2.25
+     against #1C4A91 and FAILS as a functional mark; on the old white card it was fine. Gold
+     #F7DE8A reads 6.47 on navy and ties to the coins directly above it. Coral therefore stays
+     purely a CTA/action colour, which tightens the vocabulary. The track goes to a navy tint
+     so the empty portion reads as part of the bank, not a cream cut-out. */
+  .ks-hero-card .ks-cycle-bar-track { background: #3A5488; }
+  .ks-hero-card .ks-cycle-bar-fill  { background: #F7DE8A; }
 
   /* ---------- SCRIPT-INJECTED SECTIONS ---------- */
   .ks-closet-sec { max-width: 480px; margin: 36px auto 0; text-align: left; }
@@ -674,6 +708,38 @@
      ⚠ ON INK AND ON GREEN, FOR THE RECORD: on ink cream 14.87 / line 10.17 / muted 3.64;
      on #1F5C38 cream 6.84 / gold #F7DE8A 5.96 / line #C9C7BC 4.68. Rollback pins carry them. */
   .ks-sec-look .ks-panel { background: transparent; }
+
+  /* ⚠⚠⚠ THE EDITORIAL PASS — S214. The bank is the ONE card (navy, above); every other
+     section drops the white fill, the border and the shadow and becomes type on cream,
+     separated by a hairline and generous space. This matches the brand mailer: mostly cream
+     and air, one saturated block. THESE OVERRIDE THE BARE .ks-panel (line ~522) and win on
+     specificity (0,2,0). Do not delete the bare rule — off-dashboard callers still use it.
+     ⚠ .ks-sec-look is already transparent above; these add the other three. */
+  .ks-sec-activity .ks-panel,
+  .ks-sec-review   .ks-panel,
+  .ks-sec-impact   .ks-panel,
+  .ks-sec-hcw      .ks-panel {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+  }
+  /* THE DIVIDERS ARE HAIRLINES BETWEEN SECTIONS, NOT BOXES — her ruling S214 ("theyre still
+     boxes instead of section dividers"). A top rule + generous top padding on each following
+     section does the separating. #C9C7BC is the house line grey (her call on the hex, S214),
+     not the one-off #D6D3C7 the mockups used. The bank sits above with its own edge, so the
+     FIRST divider is above Recent activity, never directly under the bank. */
+  .ks-sec-activity .ks-panel,
+  .ks-sec-impact   .ks-panel,
+  .ks-sec-hcw      .ks-panel {
+    border-top: 1px solid #C9C7BC;
+    padding-top: 48px;
+    margin-top: 48px;
+  }
+  /* ⚠ HOW CREDITS WORK IS THE QUIET FOOTER — reference copy a member reads once, so its
+     heading recedes to muted grey while the two info sections keep an ink heading. */
+  .ks-sec-hcw .ks-panel-h { color: #75736E; }
 
   .ks-look-h {
     font-family: 'Instrument Serif', serif;

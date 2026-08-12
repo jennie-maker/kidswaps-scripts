@@ -732,8 +732,14 @@ function paintCoins(s) {
   // string deliberately read the same at 1 and at 248. "second lives" does not, so the
   // singular is a real branch and not decoration — a member's FIRST graded bag lands on
   // exactly n === 1, which is the state she is most likely to be looking at.
-  var LOOK_L_KEPT  = 'second lives';
-  var LOOK_L_KEPT1 = 'second life';
+  /* ⚠⚠ THE LONE-STAT LABEL BREAKS TO TWO LINES — her ruling S214. A bare "2 second lives"
+     under the italic note read as a run-on with the sentence above it; number-over-stacked-
+     label fixes it. The <br> is OUR markup, never escaped. ⚠⚠⚠ THE SINGULAR PARTNER IS
+     REQUIRED, not optional — n===1 is the state after a member's FIRST graded bag, the most
+     common thing on this card, and "1 items given / a second life" would ship a grammar bug
+     to exactly that member. */
+  var LOOK_L_KEPT  = 'items given<br>second lives';
+  var LOOK_L_KEPT1 = 'item given<br>a second life';
 
   function paintLook(s) {
     var inset = document.querySelector('.ks-savings-block');
@@ -767,7 +773,10 @@ function paintCoins(s) {
     if (kept > 0) {
       html += '<div class="ks-look-stat">' +
                 '<div class="ks-look-n" data-ks-look="kept">' + esc(kept) + '</div>' +
-                '<div class="ks-look-l">' + esc(kept === 1 ? LOOK_L_KEPT1 : LOOK_L_KEPT) + '</div>' +
+                /* ⚠ NOT escaped: LOOK_L_KEPT/1 carry an intentional <br>. They are our own
+                   constants, never member data — the count is the only variable and it is a
+                   number. Do not wrap this in esc() "for safety"; it would print the tag. */
+                '<div class="ks-look-l">' + (kept === 1 ? LOOK_L_KEPT1 : LOOK_L_KEPT) + '</div>' +
               '</div>';
     }
     html += '</div>';
