@@ -150,7 +150,9 @@
      .ks-look-h heading so the two big serif headings rhyme. line-height tightened for the size. */
   .ks-bank-label {
     font-family: 'Instrument Serif', serif;
-    font-size: 52px;
+    /* ⚠ ENLARGED AGAIN S215, HERS — "about 15px bigger". 52 -> 67. The mobile twin at the foot
+       of this file stays 26px, so this cannot wrap on a phone. */
+    font-size: 67px;
     line-height: 1.05;
     color: #1E1A19;
     text-align: center;
@@ -417,7 +419,10 @@
     box-shadow: 0 12px 34px -10px rgba(30,26,25,0.28);
   }
   /* Tightened inside the card. ⚠ NO !important — see the .ks-bank-label block above. */
-  .ks-hero-card .ks-bank-label { margin: 0 0 16px; }
+  /* ⚠ 16px -> 6px S215, HERS — the swaps-ready line reads as a SUBHEADING of the bank title
+     rather than a separate line. .ks-swaps-ready keeps its own 16px BELOW it, so only the
+     space ABOVE the sub closes. */
+  .ks-hero-card .ks-bank-label { margin: 0 0 6px; }
 
   /* Tier dots — coin breakdown ladder */
   .ks-tier-row { display: flex; align-items: center; gap: 7px; }
@@ -518,7 +523,9 @@
     margin-top: 14px;
     padding-top: 14px;
     border-top: 1px solid #C9C7BC;   /* ⚠ #EEEFE3 is invisible on #EDECE0 (1.02); C9C7BC reads 1.43 */
-    font-family: system-ui, sans-serif;
+    /* ⚠ S215, HERS — this shipped as system-ui and was the ONLY element on the card not in
+       the house face. Quicksand matches every other body line in the bank. */
+    font-family: 'Quicksand', sans-serif;
     font-size: 13px;
     line-height: 1.5;
     color: #75736E;
@@ -759,7 +766,11 @@
     padding-top: 28px;
     margin-top: 28px;
   }
-  .ks-sec-look .ks-panel { margin-bottom: 0; }
+  /* ⚠⚠ padding-bottom 24 -> 8 S215, HERS — the space under "items given / second lives" was
+     the PANEL'S OWN PADDING, not a margin on the row (row, stat and section all measure 0).
+     SCOPED TO .ks-sec-look SO THE BANK CARD KEEPS ITS 24px. It also beats the mobile
+     .ks-panel { padding: 20px 18px } on specificity, deliberately — same gap at both widths. */
+  .ks-sec-look .ks-panel { margin-bottom: 0; padding-bottom: 8px; }
   /* HOW CREDITS WORK is the quiet footer — muted heading. */
   .ks-sec-hcw .ks-panel-h { color: #75736E; }
 
