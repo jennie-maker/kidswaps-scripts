@@ -444,7 +444,9 @@
   .ks-plan-chip {
     display: block;
     width: fit-content;
-    margin: 0;
+    /* ⚠ TOP CLEARANCE — S214, her find: the chip was touching the sticky page header. It sits
+       at the very top of the page content with no gap of its own. 18px lifts it off the nav. */
+    margin: 18px auto 0;
     padding: 7px 15px;
     background: #F7E4D9;
     color: #D65A35;
@@ -701,7 +703,10 @@
      heading, that is the reason it would be allowed — not a reversal of the S73 rule.
      ⚠ ON INK AND ON GREEN, FOR THE RECORD: on ink cream 14.87 / line 10.17 / muted 3.64;
      on #1F5C38 cream 6.84 / gold #F7DE8A 5.96 / line #C9C7BC 4.68. Rollback pins carry them. */
-  .ks-sec-look .ks-panel { background: transparent; }
+  /* ⚠⚠ FULLY BORDERLESS — her ruling S214 ("hairline boxes need to be removed"). The Look
+     card kept the bare .ks-panel border + radius + padding; the other sections were stripped
+     but this scoped rule only cleared the background. Now it clears the box too. */
+  .ks-sec-look .ks-panel { background: transparent; border: 0; border-radius: 0; box-shadow: none; }
 
   /* ⚠⚠⚠ THE EDITORIAL PASS — S214, her final layout after trying ink, green, left-rules and
      boxes. The bank is the ONE card (white, above); every other section drops fill/border/
@@ -728,7 +733,10 @@
     padding-top: 44px;
     margin-top: 44px;
   }
-  .ks-sec-look .ks-panel { margin-bottom: 44px; }
+  /* ⚠ TIGHTENED S214 — her ruling. Look -> How credits had 44px here PLUS the divider's 44px
+     top margin, ~88px total, far too much on mobile. 20px here + the divider's own top space
+     reads as one comfortable gap, not a void. */
+  .ks-sec-look .ks-panel { margin-bottom: 20px; }
   /* HOW CREDITS WORK is the quiet footer — muted heading. */
   .ks-sec-hcw .ks-panel-h { color: #75736E; }
 
@@ -745,14 +753,24 @@
      the heading text is wrapped in a <span> by paintLook. em-sized, so it scales with the
      heading at every breakpoint and needs no mobile twin. currentColor, so it can never
      disagree with the heading. */
-  .ks-look-h { display: flex; align-items: center; justify-content: center; gap: 0.28em; }
+  /* ⚠⚠ THE HEADING TEXT CENTRES ON THE CARD, NOT THE LEAF+TEXT UNIT — her ruling S214: the
+     note "should be centered below the TEXT above it not including the icon." The heading is
+     an inline-flex sized to its <span> of text; centring that block centres the TEXT. The leaf
+     is absolutely positioned against the span (position:relative on the h) so it hangs off the
+     left WITHOUT adding layout width — the text's centre is the card's centre, and the centred
+     note underneath now lines up. Robust to the phone wrap because nothing hard-codes a width. */
+  .ks-look-h { position: relative; display: inline-flex; justify-content: center; width: auto; max-width: 100%; }
+  .ks-look-h > span { display: inline-block; }
+  .ks-look-h .ks-look-spark { position: absolute; right: 100%; top: 0.14em; margin-right: 0.18em; }
   /* ⚠⚠ THE LEAF IS THE ONE GOLD LEFT ON THIS CARD, AND #A67C0A IS THE ONLY GOLD THAT CAN BE
      ON CREAM AT ALL (3.37, and a mark only needs 3.0). It sets `color` rather than a fill,
      because the SVG draws itself in currentColor — one value, and the icon can never
      disagree with itself. ⚠ SHE ASKED FOR A LEAF OVER A RECYCLE MARK KNOWING BOTH: reuse
      sits ABOVE recycling in the waste hierarchy and the chasing-arrows symbol is the one
      the FTC Green Guides treat as a recyclability claim, which is not what KidSwaps does. */
-  .ks-look-spark { width: 0.6em; height: 0.6em; flex: none; color: #A67C0A; }
+  /* ⚠ SIZED IN em SO IT SCALES WITH THE HEADING; colour is the one cream-safe gold #A67C0A.
+     Positioning is handled by the .ks-look-spark absolute rule above — no transform hacks. */
+  .ks-look-spark { width: 0.62em; height: 0.62em; color: #A67C0A; }
   /* ⚠⚠ THE NOTE MOVED UP — HERS. The order is heading → note → numbers, so it stops being
      a bottom signature. It is still emitted LAST in paintLook until the JS half ships, and
      that intermediate state is harmless: right colours, old order. */
@@ -1632,9 +1650,12 @@
                                         contribution used to hold, because the two numbers
                                         a member came to read now live in it. */
     .ks-sec-review   { order: 3; }   /* review prompt */
-    .ks-sec-hcw      { order: 4; }   /* how credits work */
-    .ks-sec-activity { order: 5; }   /* recent activity — moved down S85 */
-    .ks-sec-closet   { order: 6; }   /* my closet — moved down S85 */
+    .ks-sec-activity { order: 4; }   /* recent activity — moved down S85 */
+    .ks-sec-closet   { order: 5; }   /* my closet — moved down S85 */
+    /* ⚠ HOW CREDITS WORK IS LAST ON MOBILE — her ruling S214: reference copy a member reads
+       once belongs at the very bottom. order:9 keeps it after activity/closet and after the
+       retired impact block, no matter what re-numbers above it. */
+    .ks-sec-hcw      { order: 9; }   /* how credits work — S214, forced to the very bottom */
     .ks-sec-impact   { order: 7; }   /* credits earned + Member since — S163. Her ruling
                                         put it at the BOTTOM OF THE RAIL, and there is no
                                         rail below 940, so it goes last here too.
