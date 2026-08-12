@@ -174,7 +174,11 @@ function paintHeadline(member) {
   // ⚠⚠ .ks-sb-stop CARRIED THREE MESSAGES AND ONLY THIS ONE MOVED. The other two answer
   // a BUTTON PRESS and still live by the button (request success / request failure).
   // GREP THE CLASS BEFORE MOVING ANYTHING THAT WEARS IT.
-  var BAG_IN_MOTION = 'You\u2019ve already got a swap bag in motion. Once it finds its way back to us, we\u2019ll get the next one out to you.';
+  // ⚠ SHORTENED S214, HER RULING — was "You've already got a swap bag in motion. Once it finds
+  //   its way back to us, we'll get the next one out to you." She cut it to one line and dropped
+  //   the "we'll get the next one out" clause. This is the ACTIVE/capped/expiring bag-out line;
+  //   the PRECREDIT.bagout copy (a different state) was left untouched.
+  var BAG_IN_MOTION = 'You\u2019ve got a swap bag out.';
 
   // Returns '' when no bag sentence is owed. THE ORDER OF THESE CHECKS IS THE RULING.
   function bagSentence(s, state) {
@@ -347,7 +351,10 @@ function cycleLineString(s) {
     if (c > 0) parts.push('<b>' + c + ' clothing swap' + (c === 1 ? '' : 's') + '</b>');
     if (t > 0) parts.push('<b>' + t + ' toy swap' + (t === 1 ? '' : 's') + '</b>');
     if (!parts.length) return '';
-    return 'You have ' + parts.join(' and ') + ' ready to use this cycle';
+    // ⚠⚠ "this cycle" IMPLIED THE CREDITS EXPIRE AT CYCLE END — S214, her catch. They don't;
+    //   credits persist across cycles (the never-expire rule / "safe for next month" promise).
+    //   "in your bank" is accurate and drops the false expiry implication.
+    return 'You have ' + parts.join(' and ') + ' in your bank';
   }
 
   function paintSwapsReady(s) {

@@ -420,7 +420,13 @@
   .ks-hero-card .ks-bank-label { margin: 0 0 16px; }
 
   /* Tier dots — coin breakdown ladder */
-  .ks-tier-row { display: flex; align-items: center; gap: 7px; }
+  /* ⚠⚠ THE TWO TIER GROUPS WERE TOUCHING — S214, her find: "Essentials text and elevated dot
+     are touching each other." coinTierHTML joins the .ks-tier-row spans with rows.join('') — NO
+     separator — and the 7px gap is only INTERNAL (dot->label). Each row is an inline-flex span,
+     so consecutive rows sit flush. A right margin separates them; :last-child clears the trailing
+     one so a lone tier isn't pushed off-centre. */
+  .ks-tier-row { display: inline-flex; align-items: center; gap: 7px; margin-right: 18px; }
+  .ks-tier-row:last-child { margin-right: 0; }
   .ks-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
   /* ⚠⚠ ONE TIER LANGUAGE EVERYWHERE — HER RULING S213. These repoint onto the SHIPPED
      BROWSE SCHEME (browse-tool.js @ac7b175): essentials NO MARK, elevated blue, special
