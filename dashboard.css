@@ -640,10 +640,21 @@
      same shape as the S200 signup bug where the fill went on the SECTION and the viewport
      went blue edge to edge. (0,2,0) beats the base rule's (0,1,0), so this wins on
      SPECIFICITY and does not depend on source order.
-     ⚠ MEASURED ON INK #1E1A19: cream #EEEFE3 14.87, gold #F3CA7A 11.13, line #C9C7BC
-     10.17. The old muted #75736E reads 3.64 and FAILS AA for the 13px label, which is why
-     the label moved to #C9C7BC — an existing house value, not a new hex. */
-  .ks-sec-look .ks-panel { background: #1E1A19; }
+     ⚠⚠⚠ THE FILL WENT INK FIRST AND SHE REVERSED IT ON THE LIVE RENDER, S214: "the almost
+     black background is a little jarring, and it makes the celebration take over the page."
+     IT IS NOW #1F5C38 — one of the THREE DARK GREENS she approved at S73, live already as
+     the bottom stop of the Toy Chest card gradient. NOT INVENTED, and NOT brand green.
+     ⚠⚠⚠ BRAND GREEN #309359 CANNOT CARRY THIS CARD AND WAS ASKED FOR AND MEASURED DOWN:
+     cream reads 3.32 on it, white 3.86, the numerals 2.49, the labels 2.27 — every element
+     fails. That is the S73 rule exactly, and it is why these three greens exist at all:
+     DARKEN THE GREEN, NEVER WHITEN THE TEXT ON THE OLD GREEN. Do not "restore" #309359.
+     ⚠ MEASURED ON #1F5C38: cream #EEEFE3 6.84, gold #F7DE8A 5.96, line #C9C7BC 4.68.
+     ⚠ THE NUMERALS ARE #F7DE8A — HER S69 GOLD, an approved palette value. The #F3CA7A that
+     shipped at @296508e existed only in an S213 mockup and reads 5.12 here; the approved
+     gold is both hers and better. Do not reintroduce F3CA7A.
+     ⚠ ON INK, FOR THE RECORD: cream 14.87, line 10.17, and muted #75736E 3.64 — which is
+     why the label left #75736E and is not going back whatever the fill becomes. */
+  .ks-sec-look .ks-panel { background: #1F5C38; }
 
   .ks-look-h {
     font-family: 'Instrument Serif', serif;
@@ -651,9 +662,15 @@
     font-size: 52px;
     line-height: 1.05;
     color: #EEEFE3;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
     text-align: center;
   }
+  /* ⚠ THE SPARK SITS ON THE HEADING'S OWN CENTRE LINE, so .ks-look-h becomes a flex row and
+     the heading text is wrapped in a <span> by paintLook. em-sized, so it scales with the
+     heading at every breakpoint and needs no mobile twin. currentColor, so it can never
+     disagree with the heading. */
+  .ks-look-h { display: flex; align-items: center; justify-content: center; gap: 0.28em; }
+  .ks-look-spark { width: 0.56em; height: 0.56em; flex: none; }
   /* ⚠⚠ THE NOTE MOVED UP — HERS. The order is heading → note → numbers, so it stops being
      a bottom signature. It is still emitted LAST in paintLook until the JS half ships, and
      that intermediate state is harmless: right colours, old order. */
@@ -703,7 +720,7 @@
     font-weight: 400;
     font-size: 44px;
     line-height: 1;
-    color: #F3CA7A;
+    color: #F7DE8A;
     flex: 0 0 auto;
     font-variant-numeric: tabular-nums;
   }
