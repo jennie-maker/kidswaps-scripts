@@ -399,28 +399,103 @@
      ⚠ WIDTH IS SET IN THE 19th-SESSION BLOCK BELOW (420, not 480). Do not
      re-add a max-width here — two authorities for one number is how this box
      grew three duplicate rules. */
-  /* ⚠⚠⚠ THE NAVY EXPERIMENT IS REVERTED S214 — HER LIVE-RENDER CALL: "revert the blue
-     background credit bank back to edece0", then on the follow-up "plain white card again
-     (like before navy)". The navy hero lasted one commit. The bank is a PLAIN WHITE CARD, the
-     state it held all project before this session. Every navy-interior override is gone; the
-     bare .ks-bank-label / .ks-swaps-ready / .ks-cycle-* rules paint ink again and the shared
-     .ks-dot--* tier dots reappear in the bank (they were hidden only by a .ks-hero-card scope
-     that no longer exists). ⚠ THE COIN DROP-SHADOW IS REMOVED — she is adding it to the source
-     art herself, not faking it in CSS. ⚠ THE PROGRESS FILL RETURNS TO ITS WHITE-CARD ORIGINAL
-     (.ks-cycle-bar-fill #D65A35) — the navy-only gold/tint overrides are deleted with the block. */
+  /* ⚠⚠⚠ THE BANK IS #EDECE0 ON A WHITE PAGE — S214. She is changing the PAGE background to
+     plain white in Webflow, so the bank inverts: a warm off-white card on white instead of a
+     white card on cream. ⚠⚠ THE FILL ALONE READS 1.19 ON WHITE — NEARLY INVISIBLE — so the
+     DROP SHADOW IS LOAD-BEARING, not decoration; it is the only thing separating the card from
+     the page. Do not weaken it. ⚠ this is the CSS drop shadow (she wanted the COIN shadow in
+     the source art, but the CARD shadow stays in CSS). ⚠ interior text measured on #EDECE0:
+     ink 14.52, impact-blue 7.25, muted 3.99 and cycle-line #8A897F 2.96 — the last two are the
+     same knowing sub-4.5 acceptance already made on the email footer; ink carries the weight. */
   .ks-hero-card {
     margin: 0;
-    background: #FFFFFF;
+    background: #EDECE0;
     border-radius: 22px;
-    box-shadow: 0 10px 30px -12px #C9C7BC;
+    box-shadow: 0 12px 34px -10px rgba(30,26,25,0.28);
   }
-  /* ⚠ THE EARNED SENTENCE STAYS IN THE BANK FOOTER (her ruling), recoloured for white: muted
-     body, ink bold, cream-grey divider. paintImpact() writes .ks-bank-earned after the cycle bar. */
-  .ks-hero-card .ks-cycle-line   { color: #8A897F; }
+  /* Tightened inside the card. ⚠ NO !important — see the .ks-bank-label block above. */
+  .ks-hero-card .ks-bank-label { margin: 0 0 16px; }
+
+  /* Tier dots — coin breakdown ladder */
+  .ks-tier-row { display: flex; align-items: center; gap: 7px; }
+  .ks-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  /* ⚠⚠ ONE TIER LANGUAGE EVERYWHERE — HER RULING S213. These repoint onto the SHIPPED
+     BROWSE SCHEME (browse-tool.js @ac7b175): essentials NO MARK, elevated blue, special
+     brand yellow. The old grey / green / amber was a THIRD tier vocabulary nobody had
+     swept, and green means TOYS in the signup palette, so a green dot on a TIER read
+     doubly wrong. Found only because the S197 browse repoint never looked at this file.
+     ⚠⚠ ESSENTIALS IS display:none, NOT A COLOUR CHANGE. .ks-tier-row is a flex row, so
+     the 7px gap collapses on its own with the dot gone — the same device browse used for
+     its own bag dots. THE LABEL STILL NAMES THE TIER, so nothing is encoded in colour alone.
+     ⚠⚠⚠ TWO CONSUMERS, NOT ONE: coinTierHTML() in the credit bank AND the My Closet find
+     cards via TIER_DOT. Both move together, deliberately. Do not "scope" this to the bank.
+     ⚠ MEASURED, NOT EYEBALLED: blue reads 8.65 on the white card. #EDA920 reads 2.04,
+     UNDER the 3.0 bar for a graphical mark — carried anyway because it is what browse
+     already ships and re-splitting the language costs more than it buys. IF THE PALETTE
+     EVER GETS A PASS, #A67C0A (3.37) is the measured-safe gold and BOTH surfaces move. */
+  .ks-dot--ess  { display: none; }
+  .ks-dot--elev { background: #28498D; }
+  .ks-dot--spec { background: #EDA920; }
+
+  /* Plan chip — coral-light pill under the greeting sub */
+  /* ⚠ LIVES IN THE UTILITY ROW NOW (moved there by buildUtilityRow). It hides itself on a
+     null/unknown plan — which is also the CANCELLED member — so the row must read fine
+     without it. */
+  .ks-plan-chip {
+    display: block;
+    width: fit-content;
+    margin: 0;
+    padding: 7px 15px;
+    background: #F7E4D9;
+    color: #D65A35;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    border-radius: 50px;
+    text-align: center;
+  }
+
+  /* Swaps-ready line — the headline inside the card */
+  .ks-swaps-ready {
+    font-size: 15px;
+    line-height: 1.5;
+    color: #75736E;
+    text-align: center;
+  }
+  .ks-swaps-ready b { font-weight: 600; color: #1E1A19; }
+
+  /* Cycle bar */
+  .ks-cycle-bar-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #75736E;
+    margin-bottom: 8px;
+  }
+  .ks-cycle-bar-head b { font-weight: 600; color: #1E1A19; }
+  .ks-cycle-bar-track {
+    height: 7px;
+    background: #EEEFE3;
+    border-radius: 50px;
+    overflow: hidden;
+  }
+  .ks-cycle-bar-fill {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: #D65A35;
+    border-radius: 50px;
+  }
+  /* ⚠⚠⚠ THE EARNED SENTENCE — S214. Relocated from the retired .ks-sec-impact rail block into
+     the BANK FOOTER, her ruling. paintImpact() writes .ks-bank-earned and appends it after the
+     cycle bar. One sentence, muted, under a cream-grey divider so the bank has a clear footer.
+     ⚠ THIS SURVIVED A NAVY EXPERIMENT AND ITS REVERT — the navy version was cream-on-navy; this
+     is the white-card version. Do not re-add navy colours. */
   .ks-hero-card .ks-bank-earned {
     margin-top: 14px;
     padding-top: 14px;
-    border-top: 1px solid #EEEFE3;
+    border-top: 1px solid #C9C7BC;   /* ⚠ #EEEFE3 is invisible on #EDECE0 (1.02); C9C7BC reads 1.43 */
     font-family: system-ui, sans-serif;
     font-size: 13px;
     line-height: 1.5;
@@ -470,13 +545,12 @@
      HEADER LINE (icon left, date hard right) and the text beneath it, full width. DOM order
      is icon -> main -> when, so `order` does the rearranging — no markup change, no hook
      touched. */
-  /* ⚠⚠⚠ FIXED S214 — HER FINDING ON THE LIVE RENDER: "whats going on with recent activity?
-     the floating date and nothing next to the dot." THE BUG WAS THE WRAP: flex-wrap:wrap +
-     .ks-act-main flex:1 0 100% forced the title onto a SECOND full-width line, leaving the
-     icon and the date stranded alone on row one — reading as an empty dot with an orphaned
-     date. NOW A NORMAL THREE-COLUMN ROW: icon, then title/detail (middle, flex:1), then date
-     right, ALL ON ONE LINE. No wrap, no forced break, no order juggling. align-items:flex-start
-     so a two-line detail keeps the icon and date pinned to the top of the row, not centred. */
+  /* ⚠⚠⚠ FIXED S214 — her finding: "whats going on with recent activity? the floating date and
+     nothing next to the dot." THE BUG WAS THE WRAP: flex-wrap:wrap + .ks-act-main flex:1 0 100%
+     forced the title onto a SECOND full-width line, stranding the icon and the date alone on
+     row one. NOW A NORMAL THREE-COLUMN ROW on ONE line: icon, title/detail (flex:1), date.
+     align-items:flex-start so a two-line detail keeps icon+date pinned to the top. The emit
+     order in the JS is already icon -> main -> when, so no JS change is needed. */
   .ks-act-row {
     display: flex;
     align-items: flex-start;
@@ -485,7 +559,7 @@
     border-bottom: 1px solid #EEEFE3;
   }
   .ks-act-row:last-of-type { border-bottom: none; padding-bottom: 2px; }
-  .ks-act-row .ks-act-main { flex: 1; margin-top: 0; }
+  .ks-act-row .ks-act-main { flex: 1; margin-top: 0; text-align: left; }
   .ks-act-row .ks-act-when { flex: none; }
   .ks-act-icon {
     width: 34px; height: 34px; border-radius: 10px;   /* rounded squares, not circles */
@@ -629,15 +703,14 @@
      on #1F5C38 cream 6.84 / gold #F7DE8A 5.96 / line #C9C7BC 4.68. Rollback pins carry them. */
   .ks-sec-look .ks-panel { background: transparent; }
 
-  /* ⚠⚠⚠ THE LEFT-RULE VERSION IS REVERTED S214 — HER LIVE-RENDER CALL: "maybe we should have
-     horizontal dividers and center alignment, this just doesnt look right. especially the look
-     what youve done section." The coloured left-rule lasted one commit. Back to: no fill, no
-     box, a HAIRLINE TOP DIVIDER between sections, everything CENTRED, generous space. The bank
-     is the one card (white, above). ⚠ .ks-sec-impact is retired (text in the bank footer) so it
-     is not in this list. ⚠ NO left-align overrides on .ks-look-* — the base rules are already
-     centre / space-between, so dropping the overrides restores centred Look including a correct
-     two-stat full state. */
-  .ks-sec-look     .ks-panel,
+  /* ⚠⚠⚠ THE EDITORIAL PASS — S214, her final layout after trying ink, green, left-rules and
+     boxes. The bank is the ONE card (white, above); every other section drops fill/border/
+     shadow, CENTRES, and is separated by a HAIRLINE TOP DIVIDER with generous space. Her call:
+     "horizontal dividers and center alignment." THESE OVERRIDE THE BARE .ks-panel on
+     specificity (0,2,0). Do not delete the bare rule — off-dashboard callers use it.
+     ⚠ .ks-sec-impact is RETIRED (its text moved to the bank footer; paintImpact display:none's
+     it) so it is not listed here. ⚠ .ks-sec-look is already transparent above and already
+     centred by its own rules — it is in this list only for the shared reset, no divider. */
   .ks-sec-activity .ks-panel,
   .ks-sec-review   .ks-panel,
   .ks-sec-hcw      .ks-panel {
@@ -655,7 +728,8 @@
     padding-top: 44px;
     margin-top: 44px;
   }
-  .ks-sec-look .ks-panel { padding-top: 8px; margin-bottom: 44px; }
+  .ks-sec-look .ks-panel { margin-bottom: 44px; }
+  /* HOW CREDITS WORK is the quiet footer — muted heading. */
   .ks-sec-hcw .ks-panel-h { color: #75736E; }
 
   .ks-look-h {
