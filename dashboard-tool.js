@@ -1269,28 +1269,41 @@ function paintCloset(s) {
   // zero merged rows have ever existed. Banked for the get_member_state session.
   //
   // ⚠ THE DONATION TRIPWIRE MOVED WITH THE NUMBER — it is in paintLook() now, not here.
+  /* ⚠⚠⚠ RELOCATED S214, HER RULING. The credits-earned + Member-since text is NO LONGER a
+     standalone rail section — it reads as ONE SENTENCE in the FOOTER OF THE NAVY BANK, below
+     the cycle-reset line. Two reasons it moved: on the borderless page it was a headingless
+     naked block, and it duplicated the coins directly above it. The old .ks-sec-impact section
+     is HIDDEN (its wrapper still exists in the DOM; we blank it and display:none it).
+     ⚠⚠ THIS STILL OWNS THE SAME COMPUTE — the live earned count, the zero-hide, the date
+     format, the singular/plural. Only the RENDER TARGET changed: it appends .ks-bank-earned
+     after the cycle bar inside .ks-hero-card. DO NOT re-add the .ks-imp-* markup; those CSS
+     rules are now unused and get cleaned in the CSS half.
+     ⚠ THE SENTENCE IS HER APPROVED WORDING S214: "You've earned N credit(s) since joining on
+     <date>." Singular is REQUIRED — a brand-new member reads "1 credit" and "joining on" needs
+     the date or the whole line is suppressed (same zero/no-date guard as before). */
   function paintImpact(s) {
-    var panel = sectionIn('rail', 'ks-sec-impact');
-    if (!panel) return;
-    var sec = panel.parentNode;
+    var sec = document.querySelector('.ks-sec-impact');
+    if (sec) { sec.style.display = 'none'; }          // retire the old rail block
+
+    var card = document.querySelector('.ks-hero-card');
+    if (!card) return;
+    var el = card.querySelector('.ks-bank-earned');
 
     var lt     = (s && s.lifetime) || {};
     var earned = Number(lt.credits_earned) || 0;
+    var since  = fmtDate(lt.member_since);
 
-    if (earned <= 0) { sec.style.display = 'none'; return; }
-    sec.style.display = '';
+    // Nothing earned, or no join date -> no footer line at all (mirrors the old zero-hide).
+    if (earned <= 0 || !since) { if (el) el.style.display = 'none'; return; }
 
-    var html = '<div class="ks-imp-stat">' +
-                 '<div class="ks-imp-n">' + esc(earned) + '</div>' +
-                 '<div class="ks-imp-l">' + (earned === 1 ? 'credit' : 'credits') +
-                   ' earned to date</div>' +
-               '</div>';
-
-    // fmtDate returns '' on a missing/bad date. Render nothing rather than "Member since ".
-    var since = fmtDate(lt.member_since);
-    if (since) html += '<div class="ks-imp-since">Member since ' + esc(since) + '</div>';
-
-    panel.innerHTML = html;
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'ks-bank-earned';
+      card.appendChild(el);                            // sits after the cycle bar, bank footer
+    }
+    el.style.display = '';
+    el.innerHTML = 'You\'ve earned <b>' + esc(String(earned)) + ' credit' +
+                   (earned === 1 ? '' : 's') + '</b> since joining on ' + esc(since) + '.';
   }
 // ---------- SEND A BAG (§SB step 7a) ----------
   var BAG_URL = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1/member-bag-request";

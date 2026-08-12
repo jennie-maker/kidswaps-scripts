@@ -431,7 +431,27 @@
   .ks-hero-card .ks-dot           { display: none; }
   .ks-hero-card .ks-cycle-bar-head   { color: #C6D0E4; }
   .ks-hero-card .ks-cycle-bar-head b { color: #FFFFFF; }
-  .ks-hero-card .ks-cycle-line       { color: #C6D0E4 !important; }
+  /* ⚠⚠ THE RESET LINE IS THE BANK'S EMPHASIS FOOTER — S214, bigger and bolder (white 15px
+     600) so the useful fact reads first; the earned sentence sits quieter beneath it. */
+  .ks-hero-card .ks-cycle-line       { color: #FFFFFF !important; font-size: 15px !important; font-weight: 600 !important; }
+  /* ⚠⚠⚠ THE EARNED SENTENCE — relocated here from the retired .ks-sec-impact block, S214.
+     One sentence, pale blue, under a hairline navy-tint divider so the bank has a clear
+     footer. paintImpact() writes .ks-bank-earned and appends it after the cycle bar. */
+  .ks-hero-card .ks-bank-earned {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid #3A5488;
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #C6D0E4;
+    text-align: center;
+  }
+  .ks-hero-card .ks-bank-earned b { color: #FFFFFF; font-weight: 600; }
+  /* ⚠ THE COINS GAIN A DROP SHADOW ON NAVY — her ruling S214. Gold on #1C4A91 read flat
+     without an edge; the bank itself lost its shadow on purpose, but the coins need one to
+     lift off the fill. Applied to the coin element, not the bank. */
+  .ks-hero-card .ks-coin { box-shadow: 0 6px 16px -4px rgba(0,0,0,0.45); }
   /* Tightened inside the card. ⚠ NO !important — see the .ks-bank-label block above. */
   .ks-hero-card .ks-bank-label { margin: 0 0 16px; }
 
@@ -709,36 +729,43 @@
      on #1F5C38 cream 6.84 / gold #F7DE8A 5.96 / line #C9C7BC 4.68. Rollback pins carry them. */
   .ks-sec-look .ks-panel { background: transparent; }
 
-  /* ⚠⚠⚠ THE EDITORIAL PASS — S214. The bank is the ONE card (navy, above); every other
-     section drops the white fill, the border and the shadow and becomes type on cream,
-     separated by a hairline and generous space. This matches the brand mailer: mostly cream
-     and air, one saturated block. THESE OVERRIDE THE BARE .ks-panel (line ~522) and win on
-     specificity (0,2,0). Do not delete the bare rule — off-dashboard callers still use it.
-     ⚠ .ks-sec-look is already transparent above; these add the other three. */
+  /* ⚠⚠⚠ THE EDITORIAL PASS, v2 — S214. The plain-hairline version read as boxes with no
+     separation and she reversed it: "go back to the coloured border on the left of the
+     blocks", EVERYTHING LEFT ALIGNED. The bank is the ONE card (navy, above, still centred as
+     a self-contained block); the cream sections below get a 3px COLOURED LEFT-RULE — the mark
+     that separates them AND carries the section's colour. THESE OVERRIDE THE BARE .ks-panel
+     (line ~522) on specificity (0,2,0). Do not delete the bare rule — off-dashboard callers
+     use it. ⚠ .ks-sec-impact IS RETIRED (its text moved into the bank footer) so it is NOT in
+     this list; paintImpact display:none's it.
+     ⚠⚠ MEASURED ON CREAM #F2F1EB as a 3px bar: green 7.01, tier-blue 7.64, coral 4.58 — all
+     clear. Colours map to meaning: Look=green (impact/leaf), Recent activity=blue (info),
+     How credits work=coral. */
+  .ks-sec-look     .ks-panel,
   .ks-sec-activity .ks-panel,
   .ks-sec-review   .ks-panel,
-  .ks-sec-impact   .ks-panel,
   .ks-sec-hcw      .ks-panel {
     background: transparent;
     border: 0;
     border-radius: 0;
     box-shadow: none;
-    padding: 0;
+    padding: 6px 0 6px 24px;
+    margin: 0 0 44px;
+    text-align: left;
   }
-  /* THE DIVIDERS ARE HAIRLINES BETWEEN SECTIONS, NOT BOXES — her ruling S214 ("theyre still
-     boxes instead of section dividers"). A top rule + generous top padding on each following
-     section does the separating. #C9C7BC is the house line grey (her call on the hex, S214),
-     not the one-off #D6D3C7 the mockups used. The bank sits above with its own edge, so the
-     FIRST divider is above Recent activity, never directly under the bank. */
-  .ks-sec-activity .ks-panel,
-  .ks-sec-impact   .ks-panel,
-  .ks-sec-hcw      .ks-panel {
-    border-top: 1px solid #C9C7BC;
-    padding-top: 48px;
-    margin-top: 48px;
-  }
-  /* ⚠ HOW CREDITS WORK IS THE QUIET FOOTER — reference copy a member reads once, so its
-     heading recedes to muted grey while the two info sections keep an ink heading. */
+  .ks-sec-look     .ks-panel { border-left: 3px solid #1F5C38; }
+  .ks-sec-activity .ks-panel { border-left: 3px solid #28498D; }
+  .ks-sec-hcw      .ks-panel { border-left: 3px solid #C2410C; margin-bottom: 0; }
+  /* ⚠⚠ LOOK GOES LEFT-ALIGNED TOO — her ruling ("everything should be left aligned"). The
+     heading is a flex row already; align it to the start instead of centre, and the stat row
+     leaves centre for the left rule. */
+  /* ⚠⚠ LEFT-ALIGN ONLY THE HEADING AND NOTE. DO NOT touch .ks-look-row's justify-content —
+     the base rule is space-between, which SPREADS the two stats in the full state; overriding
+     it to flex-start jams them together on the left. The left rule already pulls the block
+     left; the row keeps its internal spacing. The lone stat sits left because a one-item flex
+     row starts at the left edge under space-between anyway. */
+  .ks-sec-look .ks-look-h,
+  .ks-sec-look .ks-look-note { justify-content: flex-start; text-align: left; }
+  /* HOW CREDITS WORK stays the quiet footer — muted heading. */
   .ks-sec-hcw .ks-panel-h { color: #75736E; }
 
   .ks-look-h {
