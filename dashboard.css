@@ -146,9 +146,12 @@
      .ks-greet-headline. Title case is what makes the surviving serif read as a CHOICE and
      not a leftover. The two decisions are ONE decision; do not undo one without the other.
      ============================================================ */
+  /* ⚠ ENLARGED S214 — her ruling: "a lot larger, like Look what you've done". 52px matches the
+     .ks-look-h heading so the two big serif headings rhyme. line-height tightened for the size. */
   .ks-bank-label {
     font-family: 'Instrument Serif', serif;
-    font-size: 30px;
+    font-size: 52px;
+    line-height: 1.05;
     color: #1E1A19;
     text-align: center;
     margin: 22px 0 14px;
@@ -433,7 +436,13 @@
      UNDER the 3.0 bar for a graphical mark — carried anyway because it is what browse
      already ships and re-splitting the language costs more than it buys. IF THE PALETTE
      EVER GETS A PASS, #A67C0A (3.37) is the measured-safe gold and BOTH surfaces move. */
-  .ks-dot--ess  { display: none; }
+  /* ⚠⚠⚠ ESSENTIALS GETS A DOT AGAIN — HER RULING S214, reversing the S213 "essentials no dot".
+     "one blue, one green": essentials GREEN, elevated BLUE. ⚠ GREEN ALREADY MEANS TOYS (signup)
+     AND IMPACT (the Look card right below), so this makes green a tier meaning too — her call,
+     made knowingly. Reusing #1F5C38 (the Look card's green, reads 6.68 on the #EDECE0 bank) so
+     it is the SAME green already on the page, not a fourth one. ⚠⚠ TWO CONSUMERS: the bank AND
+     the My Closet find cards via TIER_DOT — the green dot appears in both. */
+  .ks-dot--ess  { background: #1F5C38; }
   .ks-dot--elev { background: #28498D; }
   .ks-dot--spec { background: #EDA920; }
 
