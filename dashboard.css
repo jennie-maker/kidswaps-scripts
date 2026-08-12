@@ -652,16 +652,35 @@
      ⚠ THE NUMERALS ARE #F7DE8A — HER S69 GOLD, an approved palette value. The #F3CA7A that
      shipped at @296508e existed only in an S213 mockup and reads 5.12 here; the approved
      gold is both hers and better. Do not reintroduce F3CA7A.
-     ⚠ ON INK, FOR THE RECORD: cream 14.87, line 10.17, and muted #75736E 3.64 — which is
-     why the label left #75736E and is not going back whatever the fill becomes. */
-  .ks-sec-look .ks-panel { background: #1F5C38; }
+     ⚠⚠⚠ AND THE GREEN FILL WAS REVERSED TOO, ON ITS OWN LIVE RENDER, S214: "id rather have
+     no background at all ... the green background takes over the whole page, and its not
+     supposed to." THE CARD NOW HAS NO FILL AT ALL. Ink lasted one commit, green lasted one
+     commit; the direction across all three was the same and it was always DOWNWARD IN WEIGHT.
+     ⚠⚠ THE FILL IS transparent AND NOT A REMOVED RULE, ON PURPOSE — .ks-panel's own white
+     is what would show through, so this must actively override it. Deleting this rule does
+     NOT give you a backgroundless card, it gives you the white one back.
+     ⚠⚠⚠ THIS IS WHAT KILLED THE GOLD, AND IT IS ARITHMETIC RATHER THAN TASTE. ON THE CREAM
+     PAGE #F2F1EB: light gold #F7DE8A reads 1.18, brand yellow #EDA920 1.80, amber #E5AD43
+     1.79 — ALL UNREADABLE. The ONLY gold that survives on cream is #A67C0A at 3.37, and
+     that is LARGE-TEXT ONLY. So the S213 "numbers in gold, to rhyme with the coin bank"
+     idea died with the fill, and green became the through-line instead. DO NOT PUT A GOLD
+     NUMERAL BACK ON THIS CARD WHILE IT HAS NO FILL.
+     ⚠ MEASURED ON CREAM: dark green #1F5C38 7.01, mid green #256F43 5.40, ink 15.25, muted
+     #75736E 4.19. ⚠ THE 13px LABEL AT 4.19 IS UNDER THE 4.5 AA LINE AND IS ACCEPTED
+     KNOWINGLY, the same call already made on the email footer at 4.0.
+     ⚠⚠ BRAND GREEN #309359 READS 3.41 ON CREAM, so it is usable for LARGE TEXT here even
+     though it can never be a fill. It is NOT used today. If it is ever wanted on the
+     heading, that is the reason it would be allowed — not a reversal of the S73 rule.
+     ⚠ ON INK AND ON GREEN, FOR THE RECORD: on ink cream 14.87 / line 10.17 / muted 3.64;
+     on #1F5C38 cream 6.84 / gold #F7DE8A 5.96 / line #C9C7BC 4.68. Rollback pins carry them. */
+  .ks-sec-look .ks-panel { background: transparent; }
 
   .ks-look-h {
     font-family: 'Instrument Serif', serif;
     font-weight: 400;
     font-size: 52px;
     line-height: 1.05;
-    color: #EEEFE3;
+    color: #1F5C38;
     margin-bottom: 12px;
     text-align: center;
   }
@@ -670,7 +689,13 @@
      heading at every breakpoint and needs no mobile twin. currentColor, so it can never
      disagree with the heading. */
   .ks-look-h { display: flex; align-items: center; justify-content: center; gap: 0.28em; }
-  .ks-look-spark { width: 0.56em; height: 0.56em; flex: none; }
+  /* ⚠⚠ THE LEAF IS THE ONE GOLD LEFT ON THIS CARD, AND #A67C0A IS THE ONLY GOLD THAT CAN BE
+     ON CREAM AT ALL (3.37, and a mark only needs 3.0). It sets `color` rather than a fill,
+     because the SVG draws itself in currentColor — one value, and the icon can never
+     disagree with itself. ⚠ SHE ASKED FOR A LEAF OVER A RECYCLE MARK KNOWING BOTH: reuse
+     sits ABOVE recycling in the waste hierarchy and the chasing-arrows symbol is the one
+     the FTC Green Guides treat as a recyclability claim, which is not what KidSwaps does. */
+  .ks-look-spark { width: 0.6em; height: 0.6em; flex: none; color: #A67C0A; }
   /* ⚠⚠ THE NOTE MOVED UP — HERS. The order is heading → note → numbers, so it stops being
      a bottom signature. It is still emitted LAST in paintLook until the JS half ships, and
      that intermediate state is harmless: right colours, old order. */
@@ -680,7 +705,7 @@
     font-style: italic;
     font-size: 20px;
     line-height: 1.4;
-    color: #EEEFE3;
+    color: #1E1A19;
     margin: 0 0 26px;
     text-align: center;
   }
@@ -714,20 +739,20 @@
   /* ⚠ THE DIVIDER EXISTS ONLY WHEN THERE ARE TWO STATS TO DIVIDE — the adjacent-sibling
      selector cannot fire on a lone stat, so the half state needs no branch. CLAUDE'S CALL,
      REVERSIBLE. rgba white over the ink is a TINT of the card, not a faded brand colour. */
-  .ks-look-stat + .ks-look-stat { border-left: 1px solid rgba(238,239,227,0.18); }
+  .ks-look-stat + .ks-look-stat { border-left: 1px solid #C9C7BC; }
   .ks-look-n {
     font-family: 'Instrument Serif', serif;
     font-weight: 400;
     font-size: 44px;
     line-height: 1;
-    color: #F7DE8A;
+    color: #1F5C38;
     flex: 0 0 auto;
     font-variant-numeric: tabular-nums;
   }
   .ks-look-l {
     font-size: 13px;
     line-height: 1.35;
-    color: #C9C7BC;
+    color: #75736E;
     min-width: 0;
     text-align: left;
   }
