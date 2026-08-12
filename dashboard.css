@@ -444,9 +444,12 @@
   .ks-plan-chip {
     display: block;
     width: fit-content;
-    /* ⚠ TOP CLEARANCE — S214, her find: the chip was touching the sticky page header. It sits
-       at the very top of the page content with no gap of its own. 18px lifts it off the nav. */
-    margin: 18px auto 0;
+    /* ⚠⚠ TOP CLEARANCE ONLY — S214. The chip was touching the sticky header (18px lifts it),
+       BUT the first fix used `18px auto 0` and the AUTO SIDE MARGINS STRANDED THE CHIP IN THE
+       CENTRE of the flex-end .ks-util row, shoving Manage Membership / Account & Settings to
+       the far edge. It is a flex item in a justify-content:flex-end row — it must NOT have auto
+       side margins or it eats the free space. Top margin only; the row groups all three right. */
+    margin: 18px 0 0;
     padding: 7px 15px;
     background: #F7E4D9;
     color: #D65A35;
@@ -727,16 +730,19 @@
     margin: 0;
     text-align: center;
   }
+  /* ⚠⚠ ONE SPACE ABOVE THE DIVIDER LINE, NOT TWO — S214. This rule shipped with BOTH
+     padding-top:44 AND margin-top:44, which stacked to 88px, and Look added 20px below itself
+     on top of that: ~108px void on mobile, exactly the "still too much space" she flagged. The
+     divider needs ONE gap above its line. 28px padding (space between line and content) with
+     the margin providing the space above the line, and Look's own bottom margin dropped to 0
+     so nothing doubles. */
   .ks-sec-activity .ks-panel,
   .ks-sec-hcw      .ks-panel {
     border-top: 1px solid #C9C7BC;
-    padding-top: 44px;
-    margin-top: 44px;
+    padding-top: 28px;
+    margin-top: 28px;
   }
-  /* ⚠ TIGHTENED S214 — her ruling. Look -> How credits had 44px here PLUS the divider's 44px
-     top margin, ~88px total, far too much on mobile. 20px here + the divider's own top space
-     reads as one comfortable gap, not a void. */
-  .ks-sec-look .ks-panel { margin-bottom: 20px; }
+  .ks-sec-look .ks-panel { margin-bottom: 0; }
   /* HOW CREDITS WORK is the quiet footer — muted heading. */
   .ks-sec-hcw .ks-panel-h { color: #75736E; }
 
@@ -759,9 +765,15 @@
      is absolutely positioned against the span (position:relative on the h) so it hangs off the
      left WITHOUT adding layout width — the text's centre is the card's centre, and the centred
      note underneath now lines up. Robust to the phone wrap because nothing hard-codes a width. */
-  .ks-look-h { position: relative; display: inline-flex; justify-content: center; width: auto; max-width: 100%; }
-  .ks-look-h > span { display: inline-block; }
-  .ks-look-h .ks-look-spark { position: absolute; right: 100%; top: 0.14em; margin-right: 0.18em; }
+  /* ⚠⚠⚠ FIXED AGAIN S214 — the absolute right:100% version SHIPPED THE LEAF OFF-SCREEN (it
+     resolved against the whole inline-flex heading, not the text span, and vanished at f708802).
+     ROBUST METHOD: the heading is a normal CENTRED flex row [leaf][span]; the leaf is given a
+     NEGATIVE right margin equal to its own width so it contributes ZERO layout width. The text
+     then centres on the card as if the leaf weren't there, the note lines up under it, and the
+     leaf hangs into the left gutter — visible, and correct at any width including the phone wrap.
+     No positioning context, no hard-coded widths, nothing to break. */
+  .ks-look-h { display: flex; align-items: center; justify-content: center; }
+  .ks-look-h .ks-look-spark { margin-right: 0.24em; margin-left: -0.86em; }
   /* ⚠⚠ THE LEAF IS THE ONE GOLD LEFT ON THIS CARD, AND #A67C0A IS THE ONLY GOLD THAT CAN BE
      ON CREAM AT ALL (3.37, and a mark only needs 3.0). It sets `color` rather than a fill,
      because the SVG draws itself in currentColor — one value, and the icon can never
