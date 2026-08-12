@@ -712,9 +712,26 @@ function paintCoins(s) {
      shown that and took it anyway. It is a decision, not a slip.
      ============================================================ */
   var LOOK_HEAD    = 'Look what you’ve done';
+  /* ⚠⚠ THE SPARK IS A DRAWN SVG, NEVER A TEXT GLYPH — the same rule the signup star badge
+     follows. A character depends on whatever font is available and renders differently on
+     her phone than on the Mac. currentColor so it can never disagree with the heading it
+     sits beside, aria-hidden because the heading already says what the card is, and it is
+     PURE MARKUP so if anything about it fails the heading still reads. */
+  var LOOK_SPARK =
+    '<svg class="ks-look-spark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+    '<path fill="currentColor" d="M12 2l1.9 6.2L20 10l-6.1 1.8L12 18l-1.9-6.2L4 10l6.1-1.8z"/>' +
+    '<path fill="currentColor" d="M19 15l.8 2.4L22 18l-2.2.7L19 21l-.8-2.3L16 18l2.2-.6z"/>' +
+    '</svg>';
   var LOOK_NOTE    = 'I hope you’re proud of this, because I am.';
   var LOOK_L_SAVED = 'saved vs new';
-  var LOOK_L_KEPT  = 'kept in circulation';
+  // ⚠⚠ HER RULING S213: the count label becomes "second lives" — positive, and it works
+  // for clothes AND toys where "kept in circulation" was neutral about both.
+  // ⚠⚠⚠ IT REINTRODUCES A PLURAL BRANCH THAT "kept in circulation" EXISTED TO AVOID. That
+  // string deliberately read the same at 1 and at 248. "second lives" does not, so the
+  // singular is a real branch and not decoration — a member's FIRST graded bag lands on
+  // exactly n === 1, which is the state she is most likely to be looking at.
+  var LOOK_L_KEPT  = 'second lives';
+  var LOOK_L_KEPT1 = 'second life';
 
   function paintLook(s) {
     var inset = document.querySelector('.ks-savings-block');
@@ -732,7 +749,12 @@ function paintCoins(s) {
     if (saved <= 0 && kept <= 0) { sec.style.display = 'none'; return; }
     sec.style.display = '';
 
-    var html = '<div class="ks-look-h">' + esc(LOOK_HEAD) + '</div>' +
+    /* ⚠⚠ THE ORDER IS heading → note → numbers, HER RULING S213. The note stopped being a
+       bottom signature, which is what made the card read as an info card with a footnote.
+       ⚠ LOOK_SPARK IS CONCATENATED RAW AND MUST NOT BE PASSED THROUGH esc() — it is our own
+       markup, not member data. Only LOOK_HEAD is escaped. */
+    var html = '<div class="ks-look-h">' + LOOK_SPARK + '<span>' + esc(LOOK_HEAD) + '</span></div>' +
+               '<div class="ks-look-note">' + esc(LOOK_NOTE) + '</div>' +
                '<div class="ks-look-row">';
     if (saved > 0) {
       html += '<div class="ks-look-stat">' +
@@ -743,10 +765,10 @@ function paintCoins(s) {
     if (kept > 0) {
       html += '<div class="ks-look-stat">' +
                 '<div class="ks-look-n" data-ks-look="kept">' + esc(kept) + '</div>' +
-                '<div class="ks-look-l">' + esc(LOOK_L_KEPT) + '</div>' +
+                '<div class="ks-look-l">' + esc(kept === 1 ? LOOK_L_KEPT1 : LOOK_L_KEPT) + '</div>' +
               '</div>';
     }
-    html += '</div><div class="ks-look-note">' + esc(LOOK_NOTE) + '</div>';
+    html += '</div>';
     panel.innerHTML = html;
 
     armLookEntrance(sec, [
@@ -1045,6 +1067,7 @@ function paintCoins(s) {
 var _EMPTY_TEST = new URLSearchParams(window.location.search).get('empty') === '1';
   var CLOSET_VISIBLE = 6;
   var CLOSET_H = '<div class="ks-panel-h">My closet</div>';
+  var CLOSET_MIN = 3;   // her ruling S213 — see paintCloset
 
   function findCardHTML(it) {
     var dot = TIER_DOT[it.tier] || 'ks-dot--ess';
@@ -1072,14 +1095,20 @@ function paintCloset(s) {
     }
     panel.parentNode.style.display = '';
 
-    if (!list.length) {
-      panel.innerHTML =
-        CLOSET_H +
-        '<div class="ks-empty">' +
-          '<div class="ks-empty-h">Nothing in here yet</div>' +
-          '<div class="ks-empty-p">Send in a bag of outgrown clothes. Every item we accept adds a credit to your bank, and everything you bring home stays yours.</div>' +
-          '<a href="/browse" class="ks-empty-cta">See what\'s in the closet</a>' +
-        '</div>';
+    /* ⚠⚠⚠ MY CLOSET IS HIDDEN UNTIL SHE HAS AT LEAST 3 ITEMS — HER RULING S213, HER NUMBER.
+       It builds the S192 ruling this page still violated: blocks are CONDITIONAL ON STATE,
+       no empty states, no placeholder cards.
+       ⚠⚠ THE EMPTY STATE WAS NOT MERELY UGLY, IT WAS WRONG-MEMBER COPY — it told a member
+       to "send in a bag of outgrown clothes" while the card directly above it showed the
+       credits she had just earned for doing exactly that. Same species as GREET.zero.
+       ⚠ THE THRESHOLD HIDES THE **SECTION**, NOT JUST THE EMPTY BRANCH: at 1 or 2 items a
+       grid of one or two tiles reads thinner than no section at all, which is why her
+       number is 3 and not 1. The empty-state markup is DELETED rather than left unreachable
+       (§0: inert code is deleted, not left in) — the strings are recoverable from @2de9c4b.
+       ⚠ null still means WE DO NOT KNOW and still hides, exactly as before. Do not merge
+       the two returns: a null closet and a short closet are different facts. */
+    if (list.length < CLOSET_MIN) {
+      panel.parentNode.style.display = 'none';
       return;
     }
 
