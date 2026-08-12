@@ -718,9 +718,11 @@ function paintCoins(s) {
      sits beside, aria-hidden because the heading already says what the card is, and it is
      PURE MARKUP so if anything about it fails the heading still reads. */
   var LOOK_SPARK =
-    '<svg class="ks-look-spark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
-    '<path fill="currentColor" d="M12 2l1.9 6.2L20 10l-6.1 1.8L12 18l-1.9-6.2L4 10l6.1-1.8z"/>' +
-    '<path fill="currentColor" d="M19 15l.8 2.4L22 18l-2.2.7L19 21l-.8-2.3L16 18l2.2-.6z"/>' +
+    '<svg class="ks-look-spark" viewBox="0 0 24 24" aria-hidden="true" focusable="false" ' +
+    'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
+    'stroke-linejoin="round">' +
+    '<path d="M5 19C5 11 11 5 19 5C19 13 13 19 5 19Z"/>' +
+    '<path d="M5 19L14.5 9.5"/>' +
     '</svg>';
   var LOOK_NOTE    = 'I hope you’re proud of this, because I am.';
   var LOOK_L_SAVED = 'saved vs new';
