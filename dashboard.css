@@ -420,13 +420,15 @@
   .ks-hero-card .ks-bank-label { margin: 0 0 16px; }
 
   /* Tier dots — coin breakdown ladder */
-  /* ⚠⚠ THE TWO TIER GROUPS WERE TOUCHING — S214, her find: "Essentials text and elevated dot
-     are touching each other." coinTierHTML joins the .ks-tier-row spans with rows.join('') — NO
-     separator — and the 7px gap is only INTERNAL (dot->label). Each row is an inline-flex span,
-     so consecutive rows sit flush. A right margin separates them; :last-child clears the trailing
-     one so a lone tier isn't pushed off-centre. */
-  .ks-tier-row { display: inline-flex; align-items: center; gap: 7px; margin-right: 18px; }
-  .ks-tier-row:last-child { margin-right: 0; }
+  .ks-tier-row { display: flex; align-items: center; gap: 7px; }
+  /* ⚠⚠⚠ THE TIER LABELS WERE TOUCHING — S214, and the FIRST fix (margin-right on .ks-tier-row)
+     WAS THE WRONG ELEMENT: each coin has its OWN .ks-coin-tier (flex-direction:column, one row
+     each), so "9 Essentials" and "1 Elevated" sit under TWO DIFFERENT COINS, not as siblings in
+     one row. The real cause is .ks-coin-unit + .ks-coin-unit { margin-left:-15px } (line ~167) —
+     the coins OVERLAP on purpose, but that pulls the second coin's tier LABEL left under the
+     first coin's label. Fix: give each tier label horizontal padding so the labels clear the
+     15px overlap while the COINS stay tucked. Scoped to .ks-coin-tier, not the coins. */
+
   .ks-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
   /* ⚠⚠ ONE TIER LANGUAGE EVERYWHERE — HER RULING S213. These repoint onto the SHIPPED
      BROWSE SCHEME (browse-tool.js @ac7b175): essentials NO MARK, elevated blue, special
@@ -459,12 +461,12 @@
   .ks-plan-chip {
     display: block;
     width: fit-content;
-    /* ⚠⚠ TOP CLEARANCE ONLY — S214. The chip was touching the sticky header (18px lifts it),
-       BUT the first fix used `18px auto 0` and the AUTO SIDE MARGINS STRANDED THE CHIP IN THE
-       CENTRE of the flex-end .ks-util row, shoving Manage Membership / Account & Settings to
-       the far edge. It is a flex item in a justify-content:flex-end row — it must NOT have auto
-       side margins or it eats the free space. Top margin only; the row groups all three right. */
-    margin: 18px 0 0;
+    /* ⚠⚠⚠ NO MARGIN — S214. Two prior fixes both broke: `18px auto 0` stranded the chip in the
+       centre (auto side margins eat free space in a flex-end row), and `18px 0 0` DROPPED IT
+       BELOW its row-mates (a top margin in an align-items:center row pushes one item down). The
+       header clearance the chip needed belongs on the .ks-util ROW (below), not the item, so the
+       chip stays level with Manage Membership / Account & Settings. */
+    margin: 0;
     padding: 7px 15px;
     background: #F7E4D9;
     color: #D65A35;
@@ -1500,6 +1502,10 @@
     justify-content: flex-end;
     align-items: center;
     gap: 22px;
+    /* ⚠ HEADER CLEARANCE LIVES HERE, ON THE ROW — S214. The chip needed lifting off the sticky
+       header; putting it on the chip dropped the chip below its row-mates. margin-top on the
+       whole row lifts all three together and keeps them level. */
+    margin-top: 18px;
     margin-bottom: 4px;
   }
   .ks-util-mem { display: flex; align-items: center; gap: 7px; font-size: 14px; }

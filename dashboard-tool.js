@@ -484,7 +484,12 @@ function paintCoins(s) {
       // The coins stay level via align-items:flex-start on .ks-coins-row, not via this reserve.
       var tierHTML = coinTierHTML(byClassTier[key]);
       var tierReserve = tierHTML ? '54px' : '0px';
-      tierEl.style.cssText = 'margin-top:' + (tierHTML ? '6px' : '0') + ';font-size:12px;line-height:1.7;color:#75736E;min-height:' + tierReserve + ';display:flex;flex-direction:column;align-items:flex-start;width:fit-content;margin-left:auto;margin-right:auto;';
+      // ⚠⚠ THE TIER LABELS TOUCHED — S214. The two coins overlap by 15px (.ks-coin-unit + margin-left:-15px)
+      // which is deliberate for the COINS, but it dragged the second coin's tier label under the first's.
+      // The fix lives HERE, in the inline style, because a stylesheet margin loses to the margin-left:auto
+      // set on this same line. `padding:0 12px` gives each label breathing room the overlap can't erase;
+      // the coins stay tucked, the labels clear. Do not move this to CSS — inline auto-margins win.
+      tierEl.style.cssText = 'margin-top:' + (tierHTML ? '6px' : '0') + ';font-size:12px;line-height:1.7;color:#75736E;min-height:' + tierReserve + ';display:flex;flex-direction:column;align-items:flex-start;width:fit-content;margin-left:auto;margin-right:auto;padding:0 12px;';
       tierEl.innerHTML = tierHTML;
       var img = unit.querySelector('.ks-coin-img');
       if (COIN_REDUCE) {                           // reduced-motion: still coin, number shown
