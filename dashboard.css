@@ -411,9 +411,23 @@
   /* Tier dots — coin breakdown ladder */
   .ks-tier-row { display: flex; align-items: center; gap: 7px; }
   .ks-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
-  .ks-dot--ess  { background: #75736E; }
-  .ks-dot--elev { background: #4E9360; }
-  .ks-dot--spec { background: #E5AD43; }
+  /* ⚠⚠ ONE TIER LANGUAGE EVERYWHERE — HER RULING S213. These repoint onto the SHIPPED
+     BROWSE SCHEME (browse-tool.js @ac7b175): essentials NO MARK, elevated blue, special
+     brand yellow. The old grey / green / amber was a THIRD tier vocabulary nobody had
+     swept, and green means TOYS in the signup palette, so a green dot on a TIER read
+     doubly wrong. Found only because the S197 browse repoint never looked at this file.
+     ⚠⚠ ESSENTIALS IS display:none, NOT A COLOUR CHANGE. .ks-tier-row is a flex row, so
+     the 7px gap collapses on its own with the dot gone — the same device browse used for
+     its own bag dots. THE LABEL STILL NAMES THE TIER, so nothing is encoded in colour alone.
+     ⚠⚠⚠ TWO CONSUMERS, NOT ONE: coinTierHTML() in the credit bank AND the My Closet find
+     cards via TIER_DOT. Both move together, deliberately. Do not "scope" this to the bank.
+     ⚠ MEASURED, NOT EYEBALLED: blue reads 8.65 on the white card. #EDA920 reads 2.04,
+     UNDER the 3.0 bar for a graphical mark — carried anyway because it is what browse
+     already ships and re-splitting the language costs more than it buys. IF THE PALETTE
+     EVER GETS A PASS, #A67C0A (3.37) is the measured-safe gold and BOTH surfaces move. */
+  .ks-dot--ess  { display: none; }
+  .ks-dot--elev { background: #28498D; }
+  .ks-dot--spec { background: #EDA920; }
 
   /* Plan chip — coral-light pill under the greeting sub */
   /* ⚠ LIVES IN THE UTILITY ROW NOW (moved there by buildUtilityRow). It hides itself on a
@@ -619,14 +633,39 @@
      instead, via :only-child, so a half state is not a number stranded on the left. Half
      states DO render: the hide is PER STAT LINE and it lives in the JS, not here.
      ============================================================ */
+  /* ⚠⚠⚠ THE INK CARD — HER RULING S213, AND IT IS THE ONE NON-WHITE CARD ON THIS PAGE.
+     A celebration that wears the same white box as every information card reads as one.
+     ⚠⚠ SCOPED TO .ks-sec-look .ks-panel AND NEVER TO THE BARE .ks-panel, which every
+     section on this dashboard wears — one unscoped fill turns the whole page dark, the
+     same shape as the S200 signup bug where the fill went on the SECTION and the viewport
+     went blue edge to edge. (0,2,0) beats the base rule's (0,1,0), so this wins on
+     SPECIFICITY and does not depend on source order.
+     ⚠ MEASURED ON INK #1E1A19: cream #EEEFE3 14.87, gold #F3CA7A 11.13, line #C9C7BC
+     10.17. The old muted #75736E reads 3.64 and FAILS AA for the 13px label, which is why
+     the label moved to #C9C7BC — an existing house value, not a new hex. */
+  .ks-sec-look .ks-panel { background: #1E1A19; }
+
   .ks-look-h {
     font-family: 'Instrument Serif', serif;
     font-weight: 400;
-    font-size: 27px;
-    line-height: 1.15;
-    color: #1E1A19;
-    margin-bottom: 18px;
-    text-align: left;
+    font-size: 52px;
+    line-height: 1.05;
+    color: #EEEFE3;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+  /* ⚠⚠ THE NOTE MOVED UP — HERS. The order is heading → note → numbers, so it stops being
+     a bottom signature. It is still emitted LAST in paintLook until the JS half ships, and
+     that intermediate state is harmless: right colours, old order. */
+  .ks-look-note {
+    font-family: 'Instrument Serif', serif;
+    font-weight: 400;
+    font-style: italic;
+    font-size: 20px;
+    line-height: 1.4;
+    color: #EEEFE3;
+    margin: 0 0 26px;
+    text-align: center;
   }
   .ks-look-row {
     display: flex;
@@ -637,6 +676,7 @@
   .ks-look-stat {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 10px;
     min-width: 0;
     /* ⚠⚠ EQUAL HALVES, S163, AFTER SEEING IT RENDER. space-between alone left the gap
@@ -654,33 +694,26 @@
      Under flex:1 1 0 the only child already FILLS the row, so auto margins have nothing left
      to distribute and the stat would sit hard left. The common half state is savings-only. */
   .ks-look-stat:only-child { justify-content: center; }
+  /* ⚠ THE DIVIDER EXISTS ONLY WHEN THERE ARE TWO STATS TO DIVIDE — the adjacent-sibling
+     selector cannot fire on a lone stat, so the half state needs no branch. CLAUDE'S CALL,
+     REVERSIBLE. rgba white over the ink is a TINT of the card, not a faded brand colour. */
+  .ks-look-stat + .ks-look-stat { border-left: 1px solid rgba(238,239,227,0.18); }
   .ks-look-n {
     font-family: 'Instrument Serif', serif;
     font-weight: 400;
-    font-size: 40px;
+    font-size: 44px;
     line-height: 1;
-    color: #1E1A19;
+    color: #F3CA7A;
     flex: 0 0 auto;
     font-variant-numeric: tabular-nums;
   }
   .ks-look-l {
     font-size: 13px;
     line-height: 1.35;
-    color: #75736E;
+    color: #C9C7BC;
     min-width: 0;
     text-align: left;
   }
-  .ks-look-note {
-    font-family: 'Instrument Serif', serif;
-    font-weight: 400;
-    font-style: italic;
-    font-size: 18px;
-    line-height: 1.4;
-    color: #1E1A19;
-    margin-top: 20px;
-    text-align: left;
-  }
-
   /* THE COUNT-UP'S FINISHING GESTURE. CSS owns the animation, JS only adds the class -
      the same split .ks-greet-accent already uses. INERT UNTIL THE JS HALF SHIPS, which is
      what makes it safe to ride this commit.
@@ -1620,8 +1653,8 @@
     .ks-imp-n          { font-size: 30px; }
     /* HER PHONE SPEC, S163: 24 / 32 / 12 / 16. Side by side at BOTH widths — the
        stacked-on-mobile version was built and REJECTED. Do not restack it. */
-    .ks-look-h         { font-size: 24px; }
-    .ks-look-n         { font-size: 32px; }
+    .ks-look-h         { font-size: 34px; }
+    .ks-look-n         { font-size: 30px; }
     .ks-look-l         { font-size: 12px; }
-    .ks-look-note      { font-size: 16px; }
+    .ks-look-note      { font-size: 17px; }
   }
