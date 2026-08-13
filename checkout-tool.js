@@ -298,14 +298,43 @@
     // coins (top-right)
     // bank (#ksc-bank = the future step-6 animation mount; coins are the static stand-in)
     ID + " #ksc-bank{display:flex; justify-content:flex-end; margin:0 0 18px;}",
-    ID + " .ksc-coins{display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;}",
-    ID + " .ksc-coin{display:flex; align-items:center; gap:8px; background:#faf8f2;",
-    "  border:1px solid var(--ks-gold); border-radius:999px; padding:6px 12px 6px 8px;}",
-    ID + " .ksc-coin .disc{width:26px; height:26px; border-radius:50%; background:var(--ks-gold);",
-    "  border:1px solid var(--ks-green-d); border-color:#c79527; display:flex; align-items:center; justify-content:center;",
-    "  font-weight:700; font-size:.82rem; color:#5c4708;}",
-    ID + " .ksc-coin .lab{font-size:.72rem; line-height:1.15; color:var(--ks-muted);}",
-    ID + " .ksc-coin .lab b{display:block; font-size:.82rem; color:var(--ks-ink); text-transform:capitalize; font-weight:700;}",
+    // ---- THE REAL COINS, PORTED FROM dashboard-tool.js @7d49e80 / dashboard.css
+    // @91d836e (S217). The old .ksc-coin / .ksc-coins pill rules were DELETED, not left
+    // inert (§0) - nothing wears those classes any more.
+    // ⚠⚠ NOTHING IS SHARED WITH THE DASHBOARD. Its coin styling lives in dashboard.css;
+    // this file injects all its CSS as a string array, so every rule below is a hand
+    // copy. IF ONE SURFACE CHANGES, DIFF THE OTHER - they are two artifacts now.
+    ID + " .ks-coins-row{display:flex; gap:0; align-items:flex-start;}",
+    // ⚠ THE -15px OVERLAP SITS ON THE UNIT, NOT THE COIN, so coin + label + tiers shift
+    // together as a column. The tier label's own 12px padding is what stops the second
+    // coin's label sliding under the first's (dashboard.css S214).
+    ID + " .ks-coin-unit{display:flex; flex-direction:column; align-items:center;}",
+    ID + " .ks-coin-unit + .ks-coin-unit{margin-left:-15px;}",
+    // ⚠⚠ THREE NUMBERS MOVE TOGETHER OR THE COINS BREAK: the 87px box, the 29px numeral
+    // and the -15px overlap. The art is a 130px PNG, so the img rule is not optional.
+    ID + " .ks-coin{width:87px; height:87px; position:relative;}",
+    ID + " .ks-coin .ks-coin-img{width:100%; height:100%; display:block;}",
+    // ⚠⚠ THE ENGRAVED NUMERAL IS THE ONLY SANCTIONED GOLD ON THIS COMPONENT (her S53
+    // ruling, carried across). DO NOT restore an ink fill. It ships at opacity 0 and is
+    // faded in by the tumble; the watchdog forces it visible if the spin never runs.
+    ID + " .ks-coin .ks-coin-num{position:absolute; inset:0; font-family:Quicksand,sans-serif;",
+    "  font-weight:600; font-size:29px; line-height:1; display:flex; align-items:center;",
+    "  justify-content:center; color:#D9AF4A; opacity:0;",
+    "  text-shadow:0 -1px 0 rgba(120,84,16,.55), 0 1px 0 rgba(255,250,222,.95);}",
+    ID + " .ks-coin-label{font-size:.82rem; font-weight:700; color:var(--ks-ink); text-align:center; padding:0 12px;}",
+    // tier breakdown - ALWAYS SHOWN, her S216 ruling. Empty when the class has no tiers,
+    // and the reserve collapses so a zero coin holds no empty gap open.
+    ID + " .ks-coin-tier{margin-top:6px; font-size:12px; line-height:1.7; color:var(--ks-muted);",
+    "  display:flex; flex-direction:column; align-items:flex-start; width:fit-content;",
+    "  margin-left:auto; margin-right:auto; padding:0 12px;}",
+    ID + " .ks-tier-row{display:flex; align-items:center; gap:7px;}",
+    ID + " .ks-dot{width:7px; height:7px; border-radius:50%; flex:none;}",
+    // ⚠ ONE TIER LANGUAGE EVERYWHERE (her S213/S214 rulings): essentials green, elevated
+    // blue, special brand yellow. These match dashboard.css and browse-tool.js. A change
+    // here is a change on all three.
+    ID + " .ks-dot--ess{background:#1F5C38;}",
+    ID + " .ks-dot--elev{background:#28498D;}",
+    ID + " .ks-dot--spec{background:#EDA920;}",
     // header / savings (all-left)
     ID + " .ksc-head{text-align:left; font-family:'Instrument Serif',Georgia,serif; font-weight:400; font-size:3.2rem; line-height:1.05; letter-spacing:-.01em; margin:0 0 8px; color:var(--ks-ink);}",
     ID + " .ksc-value{text-align:left; font-size:1.02rem; color:var(--ks-ink); margin:0 0 2px; font-weight:700;}",
@@ -410,8 +439,8 @@
     ID + " .ksc-opt .curtag{display:block; margin-top:2px; font-size:.7rem; font-weight:700; color:var(--ks-green); text-align:right;}",
     ID + " .ksc-modal-ft{font-size:.76rem; color:var(--ks-muted); margin-top:14px; text-align:center; font-weight:500;}",
     "@media (max-width:600px){",
-    ID + " #ksc-bank{justify-content:flex-start;}",
-    ID + " .ksc-coins{justify-content:flex-start;}",
+    // ⚠ THE MOBILE FLIP TO flex-start IS RETIRED - HER RULING S217. The coins sit TOP
+    // RIGHT at every width, on both screens. Do not restore a left-align breakpoint.
     ID + " .ksc-head{font-size:2.5rem;}",
     ID + " .ksc-screen h2{font-size:1.75rem;}",
     "}",
@@ -494,27 +523,152 @@
     }
   }
 
-  // ---- coins (static; bank balance LEFT after this swap) --------------------
+  // ==== THE COINS =============================================================
+  // PORTED FROM dashboard-tool.js @7d49e80 (S217). #ksc-bank was always described as the
+  // "stable mount for the step-6 animated bank"; this is that bank arriving.
+  // ⚠⚠ THE DASHBOARD DOES NOT BUILD ITS OWN COIN MARKUP - the .ks-coin-unit elements are
+  // authored in WEBFLOW and its script only paints into them. This file builds everything
+  // as strings, so the markup below is NEW here and has no counterpart to diff against.
+  // The animation, the frames and the timings ARE copies and must be diffed if either
+  // surface changes.
+  var COIN_FRAMES = [
+    "https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a519b690af665b710e72397_1.png",
+    "https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a519b69f8963de4ade9c6f3_2.png",
+    "https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a519b690d55ec781cc518be_3.png",
+    "https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a519b6915f14827ff280f72_4.png",
+    "https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a519b69d6108c2bd6c11b3f_5.png",
+    "https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a519b69f8963de4ade9c6f6_6.png",
+    "https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a519b69de57bb0d285396f3_7.png",
+    "https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a519b691aee406df1bd0bda_8.png",
+    "https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a519b693f83baa40803c070_9.png",
+    "https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a519b697caae2e0fb664fee_10.png"
+  ];
+  // spin path: front(1) -> back(10) -> front(1); lands flat on frame 1 where the number sits
+  var COIN_SPIN = [0,1,2,3,4,5,6,7,8,9,8,7,6,5,4,3,2,1,0];
+  var COIN_STAGGER = 120;
+  var COIN_REDUCE = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  var _coinPreload = COIN_FRAMES.map(function (u) { var im = new Image(); im.src = u; return im; });
+  // ⚠ ONE SPIN PER PAGE LOAD - CLAUDE'S CALL, REVERSIBLE. The receipt re-renders whenever
+  // she changes a credit, and re-spinning on every re-render is noise rather than a
+  // moment. The numbers show the CURRENT bank, which a credit swap does not change.
+  var _coinsSpun = false;
+
+  // tier rows under a coin. Returns "" when the class holds nothing, which collapses the
+  // reserve - a zero coin must not hold an empty gap open.
+  function coinTierHTML(obj) {
+    var order = [["essentials","Essential","Essentials","ks-dot--ess"],
+                 ["elevated","Elevated","Elevated","ks-dot--elev"],
+                 ["special","Special","Special","ks-dot--spec"]];
+    var rows = [];
+    order.forEach(function (t) {
+      var n = parseFloat(obj && obj[t[0]]);
+      if (!isNaN(n) && n > 0) {
+        rows.push('<span class="ks-tier-row"><i class="ks-dot ' + t[3] + '"></i>' +
+                  esc(String(n) + " " + (n === 1 ? t[1] : t[2])) + "</span>");
+      }
+    });
+    return rows.join("");
+  }
+
+  // ⚠⚠ THE NUMBER IS THE CURRENT BANK, NOT A PROJECTED POST-ORDER BALANCE - HER RULING
+  // S215. "0 left after this" is retired. Her reason: "we should always show what they
+  // currently have. after their order is placed, theyll see their new balance on their
+  // dashboard." Both figures ride the payload; read .now, never .after.
   function coinsHtml(bank, cap) {
-    var bc = (bank && bank.by_class) || {}, out = [];
-    function coin(label, after) {
-      return '<div class="ksc-coin"><span class="disc">' + esc(after) + '</span>' +
-        '<span class="lab">left after this<b>' + esc(label) + '</b></span></div>';
+    var bc = (bank && bank.by_class) || {};
+    var bt = (bank && bank.by_class_tier) || {};
+    var out = [];
+    function coin(key, label) {
+      var v = bc[key];
+      var n = (v && v.now != null) ? v.now : 0;
+      return '<div class="ks-coin-unit">' +
+          '<div class="ks-coin">' +
+            '<img class="ks-coin-img" src="' + COIN_FRAMES[0] + '" alt="">' +
+            '<div class="ks-coin-num">' + esc(n) + "</div>" +
+          "</div>" +
+          '<div class="ks-coin-label">' + esc(label) + "</div>" +
+          '<div class="ks-coin-tier">' + coinTierHTML(bt[key]) + "</div>" +
+        "</div>";
     }
-    if (cap && cap.clothing && Number(cap.clothing.limit) > 0)
-      out.push(coin("clothes", (bc.clothing && bc.clothing.after != null) ? bc.clothing.after : 0));
-    if (cap && cap.toy && Number(cap.toy.limit) > 0)
-      out.push(coin("toys", (bc.toy && bc.toy.after != null) ? bc.toy.after : 0));
+    if (cap && cap.clothing && Number(cap.clothing.limit) > 0) out.push(coin("clothing", "Clothes"));
+    if (cap && cap.toy && Number(cap.toy.limit) > 0) out.push(coin("toy", "Toys"));
     if (!out.length) return "";
-    // #ksc-bank = stable mount for the step-6 animated bank; coins are today's stand-in
-    return '<div id="ksc-bank"><div class="ksc-coins">' + out.join("") + "</div></div>";
+    return '<div id="ksc-bank"><div class="ks-coins-row">' + out.join("") + "</div></div>";
+  }
+
+  // Arm and spin whatever coins are on screen. Called AFTER setHtml, on both the receipt
+  // and the confirmation screen.
+  // ⚠⚠ THE FAILURE DIRECTION IS LOAD-BEARING, same as the dashboard's: the real number is
+  // written into the markup FIRST and the animation only reveals it. Reduced motion, an
+  // old browser or a dropped frame all end with the CORRECT NUMBER SITTING STILL. Failure
+  // lands on "no animation", never on a blank coin.
+  function armCoins() {
+    var units = document.querySelectorAll("#ksc-bank .ks-coin-unit");
+    if (!units.length) return;
+    if (_coinsSpun || COIN_REDUCE) {
+      units.forEach(function (u) {
+        var n = u.querySelector(".ks-coin-num"); if (n) n.style.opacity = "1";
+      });
+      return;
+    }
+    _coinsSpun = true;
+    var list = [];
+    units.forEach(function (u) { u.style.visibility = "hidden"; list.push(u); });
+    requestAnimationFrame(function () {
+      list.forEach(function (u, i) { tumbleCoin(u, i * COIN_STAGGER); });
+    });
+    // WATCHDOG: a coin must never sit blank. Covers a dropped rAF or a backgrounded tab.
+    setTimeout(function () {
+      list.forEach(function (u) {
+        u.style.visibility = "visible";
+        var n = u.querySelector(".ks-coin-num");
+        if (n && n.style.opacity !== "1") n.style.opacity = "1";
+      });
+    }, 1500);
+  }
+
+  function tumbleCoin(unit, delay) {
+    var coin = unit.querySelector(".ks-coin");
+    var img  = unit.querySelector(".ks-coin-img");
+    var num  = unit.querySelector(".ks-coin-num");
+    if (!coin || !img || !num) return;
+    setTimeout(function () {
+      unit.style.visibility = "visible";        // the coin appears WITH its spin, never before
+      if (coin.animate) {                       // vertical drop-in + settle bounce
+        coin.animate([
+          { transform: "translateY(-24px)", opacity: 0.4 },
+          { transform: "translateY(0)",     opacity: 1, offset: 0.55 },
+          { transform: "translateY(-6px)",  offset: 0.72 },
+          { transform: "translateY(0)",     offset: 0.86 },
+          { transform: "translateY(-2px)",  offset: 0.94 },
+          { transform: "translateY(0)" }
+        ], { duration: 650, easing: "ease-out" });
+      }
+      var i = 0;                                // spin the frames 1 -> 10 -> 1
+      var spin = setInterval(function () {
+        img.src = COIN_FRAMES[COIN_SPIN[i]];
+        i++;
+        if (i >= COIN_SPIN.length) { clearInterval(spin); img.src = COIN_FRAMES[0]; }
+      }, 26);
+      setTimeout(function () {                  // number fades in on the flat face
+        num.style.transition = "opacity 200ms ease-out";
+        num.style.opacity = "1";
+      }, 460);
+    }, delay || 0);
   }
 
   // ---- receipt --------------------------------------------------------------
   function renderReceipt(p) {
     LAST_PREVIEW = p;   // success screen reads items / value_of_items / bank-after from here
     var lines = Array.isArray(p.lines) ? p.lines : [];
+    // ⚠ HER APPROVED COPY, S215/S216, BOTH BRANCHES: "Your swaps are ready, Olivia." and
+    // "Your swap is ready, Olivia." Her reason for the singular: it is always one order at
+    // a time. Falls back to the bare line with no trailing period when no name is on file.
+    // ⚠⚠ USE THE displayName() ALREADY IN THIS FILE. Do not add a second casing helper and
+    // do not reach for the deleted titleCase() - it lowercases first and breaks McAllister.
     var head = lines.length === 1 ? "Your swap is ready" : "Your swaps are ready";
+    var headName = displayName(msField("first-name"));
+    if (headName) head += ", " + headName + ".";
     var value = Number(p.value_of_items) || 0;
     var totalCents = (p.fees && Number(p.fees.total_cents)) || 0;
 
@@ -631,6 +785,7 @@
       modalHtml
     );
 
+    armCoins();
     wireReceipt(vlCount > 0);
   }
 
@@ -823,15 +978,17 @@
           '<div style="font-size:.8rem; color:var(--ks-ink); margin-top:5px;">What you\u2019d pay for these new</div>' +
         "</div>"
       : "";
-    // bank band: coin balance + earn nudge share the top row; #ksc-bank stays the mount for the future animated coin
-    var bankBandHtml =
-      '<div style="background:var(--ks-card); border:1px solid var(--ks-line); border-radius:12px; padding:12px; display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin:6px 0 10px;">' +
-        '<div style="flex-shrink:0;">' + coinsHtml(p.bank, p.cap) + "</div>" +
-        '<div style="flex:1; min-width:150px;">' +
-          '<div style="font-weight:700; font-size:.9rem; color:var(--ks-ink); line-height:1.25; margin-bottom:4px;">The more you send, the more you earn</div>' +
-          '<div style="font-size:.8rem; color:var(--ks-muted); line-height:1.5;">Every accepted item you send in adds a credit to your bank.</div>' +
-        "</div>" +
-      "</div>";
+    // ⚠⚠⚠ "The more you send, the more you earn" IS DELETED OUTRIGHT - HER RULING S215,
+    // "just lose it." Heading and sub, both gone. Do NOT reposition it, restyle it, or
+    // move it below the coins. She saw the placement problem and chose removal over
+    // restyling, superseding her own "can be styled more" earlier in the same session.
+    // ⚠ THE CARD AND ITS BORDER WENT WITH IT: the band existed to hold two things side by
+    // side, and a bordered box around a lone right-aligned coin row is a frame around
+    // nothing. #ksc-bank already carries justify-content:flex-end.
+    // ⚠⚠ ON THIS SCREEN THE BALANCE IS GENUINELY ZERO - she has just spent the credits -
+    // and the tier line is empty with it. THAT IS THE REAL RENDER AND SHE HAS ACCEPTED IT
+    // (S216: "i want her to know her balance"). Do not hide the coins to avoid a zero.
+    var bankBandHtml = '<div style="margin:6px 0 10px;">' + coinsHtml(p.bank, p.cap) + "</div>";
 
     // greet by name when present; count-neutral, drops cleanly to "You're all set." with no fallback word
     var firstName = displayName(msField("first-name"));
@@ -878,11 +1035,23 @@
           payLine + shipLine + mailLine +
         "</div>" +
         shipToHtml +
-        '<div style="background:#f4e3d9; border-radius:12px; padding:15px; margin-top:14px; display:flex; gap:12px; align-items:flex-start;">' +
-          '<div style="flex-shrink:0; width:38px; height:38px; border-radius:50%; background:#e9c9b8; color:#c0491f; display:flex; align-items:center; justify-content:center;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg></div>' +
+        // ⚠⚠ THE THANK-YOU PANEL IS FIVE COLOUR VALUES AND ALL FIVE MOVED - HER RULING
+        // S216, off a rendered mockup. Was: fill #f4e3d9, circle #e9c9b8, leaf #c0491f,
+        // heading ink, body #8a5f4d. Now her brand green #309359 with cream #EEEFE3 text,
+        // the circle a WHITE TINT over the fill (not a second green - #2A7F4C was Claude's
+        // invention and she withdrew it: "my green shade has always been 309359"), and the
+        // leaf cream.
+        // ⚠⚠⚠ THIS KNOWINGLY REVERSES HER OWN S72/S73 RULE - "any green background takes
+        // white text ... DARKEN THE GREEN, NEVER WHITEN THE TEXT" - FOR THIS ELEMENT ONLY.
+        // Cream reads ~3.5 on #309359 and white 3.86, both UNDER the 4.5 AA bar for the
+        // small body line. SHE CHOSE IT HAVING SEEN IT RENDER, which beats the
+        // measurement. The rule still binds /signup's toy card, and #1F5C38 remains the
+        // DASHBOARD's green - two greens, deliberately. DO NOT "correct" this back.
+        '<div style="background:#309359; border-radius:12px; padding:15px; margin-top:14px; display:flex; gap:12px; align-items:flex-start;">' +
+          '<div style="flex-shrink:0; width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,.18); color:#EEEFE3; display:flex; align-items:center; justify-content:center;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg></div>' +
           '<div>' +
-            '<div style="font-weight:700; font-size:1.05rem; color:var(--ks-ink); margin-bottom:4px;">Thank you for swapping</div>' +
-            '<div style="font-size:.88rem; color:#8a5f4d; line-height:1.55;">You chose a new way to shop for your kids, and gave good things a second life.</div>' +
+            '<div style="font-weight:700; font-size:1.05rem; color:#EEEFE3; margin-bottom:4px;">Thank you for swapping</div>' +
+            '<div style="font-size:.88rem; color:#EEEFE3; line-height:1.55;">You chose a new way to shop for your kids, and gave good things a second life.</div>' +
           "</div>" +
         "</div>" +
       "</div>" +
@@ -893,6 +1062,8 @@
         '<a href="/browse" style="flex:1; box-sizing:border-box; text-align:center; background:transparent; color:var(--ks-orange); border:1px solid var(--ks-line); border-radius:50px; padding:14px 10px; font-weight:700; font-size:.9rem; text-decoration:none;">Keep browsing</a>' +
       "</div>"
     );
+
+    armCoins();
   }
 
   // ---- block / failure / error / loading ------------------------------------
