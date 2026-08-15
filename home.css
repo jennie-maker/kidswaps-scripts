@@ -1,6 +1,7 @@
 /* home.css — /old-home only. Linked from that page's head box, NEVER Site Settings.
    Moving it site-wide would make the generic hero-* class names a live hazard.
-   v2 (S232): the hero. Field, card, media half, type, seam stars. Marquee is v3. */
+   v3 (S232): the hero. Field, card, media half, type, seam stars. Marquee is v4.
+   NOTE: Webflow has FOUR breakpoints. This file speaks at 991, 767 and 479. */
 
 /* ---- FIELD ------------------------------------------------------------- */
 
@@ -290,5 +291,16 @@
     width: 68px;
     top: 240px;
     right: 16px;
+  }
+}
+
+/* ---- PHONE PORTRAIT ---------------------------------------------------- */
+/* Webflow's fourth breakpoint. Its own rules are unopposed below here
+   unless this block speaks. hero-section carries a min-height from the
+   Designer that leaves dead navy running under the card. */
+
+@media screen and (max-width: 479px) {
+  .hero-section {
+    min-height: 0;
   }
 }
