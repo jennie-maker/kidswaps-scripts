@@ -1,6 +1,7 @@
 /* home.css — /old-home only. Linked from that page's head box, NEVER Site Settings.
    Moving it site-wide would make the generic hero-* class names a live hazard.
-   v3 (S232): the hero. Field, card, media half, type, seam stars. Marquee is v4.
+   v3 (S232): the hero. Field, card, media half, type, seam stars.
+   v3.1 (S233): the 991 width fix + the inherited-centring fix. Marquee is still v4.
    NOTE: Webflow has FOUR breakpoints. This file speaks at 991, 767 and 479. */
 
 /* ---- FIELD ------------------------------------------------------------- */
@@ -28,6 +29,10 @@
   position: relative;
 }
 
+/* text-align:left beats Webflow's own `.hero-section` rule setting text-align:center — a
+   shared-sheet rule with NO media query that applies at every width. It was
+   invisible while every line was short enough not to wrap. Set on the COLUMN so
+   every child inherits it, including any added later. */
 .hero-section .hero-left {
   flex: 0 0 54%;
   max-width: 54%;
@@ -37,6 +42,7 @@
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
+  text-align: left;
 }
 
 .hero-section .home-hero-media {
@@ -204,8 +210,14 @@
     min-height: 0;
   }
 
+  /* width:100% beats Webflow's own `.hero-left` rule setting width:40%, INERT at
+     desktop (flex-basis 54% governs on the row's main axis) and LIVE here, where
+     the container is a COLUMN and width becomes the cross axis. max-width:100%
+     cannot help — 40% is already under it. A property doing a job from a
+     different context, same species as the margin-left:auto trap. */
   .hero-section .hero-left {
     flex: 0 0 auto;
+    width: 100%;
     max-width: 100%;
     padding: 44px 36px 40px;
     margin: 0;
