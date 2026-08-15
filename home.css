@@ -3,7 +3,8 @@
    v3 (S232): the hero. Field, card, media half, type, seam stars.
    v3.1 (S233): the 991 width fix + the inherited-centring fix.
    v3.2 (S233): desktop card density + bottom clearance for the marquee.
-   v3.3 (S233): placeholder fill for the two seam stars. Marquee is v4.
+   v3.3 (S233): placeholder fill for the two seam stars.
+   v3.4 (S233): the lower star steps off the seam. Marquee is v4.
    NOTE: Webflow has FOUR breakpoints. This file speaks at 991, 767 and 479. */
 
 /* ---- FIELD ------------------------------------------------------------- */
@@ -108,10 +109,16 @@
   transform: translateX(-50%);
 }
 
+/* HER RULING S233, off the live desktop render: the two stars must NOT sit perfectly
+   aligned on the crease. The UPPER one stays on the seam — it is the one that survives
+   the stack below 991 — and the LOWER one steps left. 75px is the middle of her 50-100
+   range, Claude's pick inside it, adjustable. calc keeps it a FIXED offset from the seam
+   rather than a percentage that drifts as the card narrows. Desktop only by construction:
+   the 991 block hides this star outright. */
 .hero-section .home-hero-star-lower {
   width: 66px;
   top: 63%;
-  left: 54%;
+  left: calc(54% - 75px);
   transform: translateX(-50%);
 }
 
