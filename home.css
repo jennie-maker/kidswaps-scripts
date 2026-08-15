@@ -1,0 +1,245 @@
+/* home.css — /old-home only. Linked from that page's head box, NEVER Site Settings.
+   Moving it site-wide would make the generic hero-* class names a live hazard.
+   v1 (S232): the hero. Field, card, media half, type. Star and marquee are v2. */
+
+/* ---- FIELD ------------------------------------------------------------- */
+
+.hero-section {
+  background-color: #1C4A91;
+  padding: 44px 44px 44px;
+  position: relative;
+}
+
+/* ---- CARD -------------------------------------------------------------- */
+
+.hero-section .hero-container {
+  background-color: #EDECE0;
+  border-radius: 24px;
+  overflow: hidden;
+  width: 100%;
+  max-width: 1240px;
+  margin-left: auto;
+  margin-right: auto;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  min-height: 520px;
+}
+
+.hero-section .hero-left {
+  flex: 0 0 54%;
+  max-width: 54%;
+  min-width: 0;
+  padding: 60px 40px 60px 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.hero-section .home-hero-media {
+  flex: 1 1 auto;
+  min-width: 0;
+  position: relative;
+  background-color: #C9C7BC;
+  overflow: hidden;
+}
+
+.hero-section .home-hero-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+/* ---- TYPE -------------------------------------------------------------- */
+
+.hero-section .hero-tagline {
+  font-family: Quicksand, sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 1.2;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #E54F25;
+  margin: 0 0 18px;
+}
+
+/* the .h1 wrapper carries site-wide spacing; neutralised here only */
+.hero-section .h1 {
+  margin: 0;
+  padding: 0;
+}
+
+/* beats the site-wide .h1-light-leftaligned, which sets LIGHT text */
+.hero-section .h1-light-leftaligned {
+  font-family: "Instrument Serif", serif;
+  font-weight: 400;
+  font-size: 60px;
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+  color: #1E1A19;
+  margin: 0;
+  text-align: left;
+  max-width: 15ch;
+}
+
+.hero-section .h1-light-leftaligned em,
+.hero-section .h1-light-leftaligned i {
+  font-style: italic;
+  font-weight: 400;
+}
+
+.hero-section .hero-subhead {
+  font-family: Quicksand, sans-serif;
+  font-weight: 400;
+  font-size: 17px;
+  line-height: 1.5;
+  color: #1E1A19;
+  margin: 20px 0 0;
+  max-width: 34ch;
+}
+
+.hero-section .hero-highlights {
+  font-family: Quicksand, sans-serif;
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #75736E;
+  margin: 18px 0 0;
+}
+
+/* ---- BUTTONS ----------------------------------------------------------- */
+/* two classes on purpose: both buttons also wear Webflow's own .w-button,
+   which sets a background and a text colour. A one-class rule would tie
+   with it and win only on source order. */
+
+.hero-section .hero-buttons {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 30px 0 0;
+}
+
+.hero-buttons .hero-button-primary {
+  font-family: Quicksand, sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1;
+  background-color: #E54F25;
+  color: #FFFFFF;
+  border: 1.5px solid #E54F25;
+  border-radius: 50px;
+  padding: 14px 28px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.hero-buttons .hero-button-primary:hover {
+  background-color: #B23D22;
+  border-color: #B23D22;
+  color: #FFFFFF;
+}
+
+.hero-buttons .hero-button-secondary {
+  font-family: Quicksand, sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1;
+  background-color: transparent;
+  color: #1E1A19;
+  border: 1.5px solid #1E1A19;
+  border-radius: 50px;
+  padding: 14px 24px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.hero-buttons .hero-button-secondary:hover {
+  background-color: #1E1A19;
+  color: #EDECE0;
+}
+
+/* ---- TABLET ------------------------------------------------------------ */
+
+@media screen and (max-width: 991px) {
+  .hero-section {
+    padding: 28px 28px 28px;
+  }
+
+  .hero-section .hero-container {
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .hero-section .hero-left {
+    flex: 0 0 auto;
+    max-width: 100%;
+    padding: 44px 36px 40px;
+  }
+
+  .hero-section .h1-light-leftaligned {
+    font-size: 46px;
+    max-width: 18ch;
+  }
+
+  .hero-section .home-hero-media {
+    flex: 0 0 auto;
+    width: 100%;
+    height: 320px;
+  }
+}
+
+/* ---- PHONE ------------------------------------------------------------- */
+
+@media screen and (max-width: 767px) {
+  .hero-section {
+    padding: 16px 16px 20px;
+  }
+
+  .hero-section .hero-container {
+    border-radius: 18px;
+  }
+
+  .hero-section .hero-left {
+    padding: 32px 22px 30px;
+  }
+
+  .hero-section .hero-tagline {
+    font-size: 11px;
+    margin-bottom: 14px;
+  }
+
+  .hero-section .h1-light-leftaligned {
+    font-size: 34px;
+    max-width: 100%;
+  }
+
+  .hero-section .hero-subhead {
+    font-size: 15px;
+    margin-top: 16px;
+    max-width: 100%;
+  }
+
+  .hero-section .hero-highlights {
+    font-size: 12px;
+  }
+
+  .hero-section .hero-buttons {
+    margin-top: 24px;
+    gap: 10px;
+  }
+
+  .hero-buttons .hero-button-primary,
+  .hero-buttons .hero-button-secondary {
+    font-size: 13px;
+    padding: 13px 22px;
+  }
+
+  .hero-section .home-hero-media {
+    height: 240px;
+  }
+}
