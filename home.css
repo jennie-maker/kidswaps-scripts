@@ -122,6 +122,95 @@
   transform: translateX(-50%);
 }
 
+/* ---- THE BRAND MARQUEE -------------------------------------------------- */
+
+/* HER RULINGS S234, off three rendered mockups: the AMBER fill with SOFT ENDS (the fill
+   and the logos dissolve into the cream together, so a start or a stop can never appear
+   on screen -- her S231 hidden-end-points rule), the THINNER 44px band ("it needs to be
+   an accessory"), and a 2.8deg incline. It is a LOGO STRIP, not the serif wordmark strip
+   in the older mockups.
+   EVERY SIZE BELOW THE DESKTOP SET IS CLAUDE'S PICK AND IS REVERSIBLE -- she has judged
+   the desktop band only.
+   THE 90px BOTTOM PADDING ON .hero-left IS THIS STRIP'S ROOM (S233). It is a FIXED height
+   at every width -- do not scale that clearance with the card.
+   z-index 2 puts it UNDER both seam stars (z-index 3) and over the card's own halves.
+   pointer-events:none because nothing in here is a link. */
+.hero-section .home-hero-marquee {
+  --marquee-gap: 40px;
+  --marquee-fade: 80px;
+  --logo-grimms: 27px;
+  --logo-gap: 17px;
+  --logo-janie: 25px;
+  --logo-zara: 15px;
+  --logo-lovevery: 13px;
+  --logo-melissa: 22px;
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: 16px;
+  height: 44px;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  background-color: #E5AD43;
+  transform: rotate(-2.8deg);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--marquee-fade), #000 calc(100% - var(--marquee-fade)), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 var(--marquee-fade), #000 calc(100% - var(--marquee-fade)), transparent 100%);
+}
+
+/* THE LOOP DISTANCE AND THE SET COUNT ARE LOCKED TO EACH OTHER. The track holds SIX
+   identical sets and slides by exactly ONE of them, which is -16.6667%. Change the
+   number of sets in the Webflow embed and this percentage MUST change with it
+   (100 / sets), or the strip jumps once per cycle -- silently, and only on a screen wide
+   enough to see the seam. Six rather than five is headroom: the five sets that are not
+   sliding off have to cover a band that is wider than the card. */
+.hero-section .home-hero-marquee-track {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  animation: ks-home-marquee 52s linear infinite;
+}
+
+.hero-section .home-hero-marquee-set {
+  display: flex;
+  align-items: center;
+  gap: var(--marquee-gap);
+  padding-right: var(--marquee-gap);
+}
+
+/* max-width:none is LOAD-BEARING inside a Webflow embed -- Webflow's own base stylesheet
+   sets img{max-width:100%}, and a percentage inside an embed resolves against a wrapper
+   that is sizing itself from its content (the S224 trap). Heights drive the sizing here
+   and widths follow. */
+.hero-section .home-hero-marquee-set img {
+  display: block;
+  width: auto;
+  max-width: none;
+}
+
+/* SIX SEPARATE HEIGHTS, NOT ONE. A long wordmark and a stacked lockup set to the same
+   size read as two different decisions -- these are optical values, tuned by eye against
+   her own contact sheet, and each one is safe to nudge on its own. */
+.hero-section .home-hero-marquee-logo-grimms { height: var(--logo-grimms); }
+.hero-section .home-hero-marquee-logo-gap { height: var(--logo-gap); }
+.hero-section .home-hero-marquee-logo-janie { height: var(--logo-janie); }
+.hero-section .home-hero-marquee-logo-zara { height: var(--logo-zara); }
+.hero-section .home-hero-marquee-logo-lovevery { height: var(--logo-lovevery); }
+.hero-section .home-hero-marquee-logo-melissa { height: var(--logo-melissa); }
+
+@keyframes ks-home-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-16.6667%); }
+}
+
+/* The strip still draws, still tilts and still shows its logos with the animation off --
+   it simply sits still. Failure lands on "no movement", never on "no strip". */
+@media (prefers-reduced-motion: reduce) {
+  .hero-section .home-hero-marquee-track { animation: none; }
+}
+
 /* ---- TYPE -------------------------------------------------------------- */
 
 .hero-section .hero-tagline {
@@ -236,6 +325,19 @@
 /* ---- TABLET ------------------------------------------------------------ */
 
 @media screen and (max-width: 991px) {
+
+  .hero-section .home-hero-marquee {
+    --marquee-gap: 34px;
+    --marquee-fade: 60px;
+    --logo-grimms: 23px;
+    --logo-gap: 14px;
+    --logo-janie: 21px;
+    --logo-zara: 13px;
+    --logo-lovevery: 11px;
+    --logo-melissa: 19px;
+    bottom: 14px;
+    height: 38px;
+  }
   .hero-section {
     padding: 28px 28px 28px;
   }
@@ -289,6 +391,19 @@
 /* ---- PHONE ------------------------------------------------------------- */
 
 @media screen and (max-width: 767px) {
+
+  .hero-section .home-hero-marquee {
+    --marquee-gap: 28px;
+    --marquee-fade: 48px;
+    --logo-grimms: 20px;
+    --logo-gap: 13px;
+    --logo-janie: 19px;
+    --logo-zara: 11px;
+    --logo-lovevery: 10px;
+    --logo-melissa: 17px;
+    bottom: 12px;
+    height: 34px;
+  }
   .hero-section {
     padding: 16px 16px 20px;
   }
@@ -350,6 +465,19 @@
    Designer that leaves dead navy running under the card. */
 
 @media screen and (max-width: 479px) {
+
+  .hero-section .home-hero-marquee {
+    --marquee-gap: 24px;
+    --marquee-fade: 40px;
+    --logo-grimms: 18px;
+    --logo-gap: 11px;
+    --logo-janie: 16px;
+    --logo-zara: 10px;
+    --logo-lovevery: 9px;
+    --logo-melissa: 15px;
+    bottom: 10px;
+    height: 30px;
+  }
   .hero-section {
     min-height: 0;
   }
