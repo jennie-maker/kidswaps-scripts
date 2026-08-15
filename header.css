@@ -41,6 +41,11 @@
 
 .header-utility-row,
 .header-main-row {
+  position: relative;
+  z-index: 960;                     /* load-bearing: the scrim is a CHILD of
+                                       .site-header at z-index 900, so without a
+                                       higher z-index here it paints OVER the logo
+                                       and the hamburger whenever the drawer opens */
   width: 100%;
   border-bottom: 1px solid var(--hdr-line);
 }
