@@ -26,6 +26,8 @@
   --hdr-drawer-w:     284px;
   --hdr-pad:          24px;
 
+  --hdr-cart-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='4' width='14' height='17' rx='2.5'/%3E%3Cpath d='M5 8.5h14'/%3E%3Cpath d='M10.5 6.2h3'/%3E%3C/svg%3E");
+
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -216,6 +218,20 @@
   color: var(--hdr-cream);
 }
 
+/* The phone cart icon. A shipping mailer, her S228 ruling, drawn as a mask so
+   the Designer needs no Embed and no second element. currentColor means it
+   follows the link's own colour, so hover and focus need no second rule.
+   OFF above 767px — the desktop cart stays the outline pill. */
+.header-cart-link::before {
+  content: "";
+  display: none;
+  width: 22px;
+  height: 22px;
+  background-color: currentColor;
+  -webkit-mask: var(--hdr-cart-icon) center / contain no-repeat;
+          mask: var(--hdr-cart-icon) center / contain no-repeat;
+}
+
 .header-join-button {
   color: #FFFFFF;
   background: var(--hdr-coral);
@@ -306,6 +322,11 @@
   max-width: 86vw;
   max-height: calc(100dvh - var(--hdr-main-h));
   overflow-y: auto;
+  overscroll-behavior: contain;     /* the page behind must not scroll with it */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;      /* no long-press link preview on iOS */
+  -webkit-user-select: none;
+  user-select: none;                /* a drag on a label scrolls, never selects */
   z-index: 950;
   background: var(--hdr-cream);
   border-right: 1px solid var(--hdr-line);
@@ -350,6 +371,9 @@
 .header-drawer-legal {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;          /* load-bearing: without this every link
+                                       stretches the full drawer width and there
+                                       is nowhere neutral to start a scroll */
 }
 
 .header-drawer-nav     { gap: 2px; padding-bottom: 14px; }
@@ -449,8 +473,32 @@
   .header-main-container { justify-content: space-between; gap: 10px; }
 
   /* the right-hand slot only ever holds one of Cart or Join */
-  .header-cart-link,
   .header-join-button { padding: 10px 18px; font-size: 13px; }
+
+  /* Cart drops the pill and becomes the mailer icon. The label is COLLAPSED,
+     not removed — it stays in the DOM so the link keeps its accessible name. */
+  .header-cart-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: none;
+    background: none;
+    border-radius: 0;
+    font-size: 0;
+    line-height: 0;
+    color: var(--hdr-ink);
+  }
+
+  .header-cart-link::before { display: block; }
+
+  .header-cart-link:hover,
+  .header-cart-link:active {
+    background: none;
+    color: var(--hdr-coral);
+  }
 }
 
 /* --------------------------------------------------------------------------
