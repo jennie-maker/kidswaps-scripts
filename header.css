@@ -117,7 +117,26 @@
    MAIN ROW — LOGO, NAV, ACTIONS
    -------------------------------------------------------------------------- */
 
-.header-logo-link { display: flex; align-items: center; flex-shrink: 0; }
+/* THE LOGO SWAP. A single Y-axis flip on hover — the logo turns front to back
+   and comes round to front again, which is the product's own gesture. Desktop
+   only by nature, since a phone has no hover state. The perspective lives on
+   the link and the rotation on the logo, so the box never moves and nothing
+   around it reflows. Reduced motion kills it via the block at the foot. */
+.header-logo-link {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  perspective: 700px;
+}
+
+.header-logo {
+  display: block;
+  transform-style: preserve-3d;
+  backface-visibility: visible;
+  transition: transform .75s cubic-bezier(.45, .05, .25, 1);
+}
+
+.header-logo-link:hover .header-logo { transform: rotateY(360deg); }
 
 .header-nav {
   display: flex;
@@ -425,7 +444,7 @@
 
   .header-menu-button { display: flex; }
   .header-scrim       { display: block; }
-  .header-drawer      { display: flex; }
+  .header-drawer      { display: flex; flex-direction: column; }
 
   .header-main-container { justify-content: space-between; gap: 10px; }
 
