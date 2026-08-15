@@ -140,9 +140,9 @@
   --marquee-fade: 80px;
   --logo-grimms: 27px;
   --logo-gap: 17px;
-  --logo-janie: 25px;
-  --logo-zara: 15px;
-  --logo-lovevery: 13px;
+  --logo-janie: 22px;
+  --logo-zara: 11px;
+  --logo-lovevery: 24px;
   --logo-melissa: 22px;
   position: absolute;
   left: -10%;
@@ -192,7 +192,11 @@
 
 /* SIX SEPARATE HEIGHTS, NOT ONE. A long wordmark and a stacked lockup set to the same
    size read as two different decisions -- these are optical values, tuned by eye against
-   her own contact sheet, and each one is safe to nudge on its own. */
+   her own contact sheet, and each one is safe to nudge on its own.
+   HER S234 CORRECTION, OFF THE LIVE BAND AT DISTANCE, AND IT IS THE RULE HERE: HEIGHT IS
+   A BAD PROXY FOR HOW BIG A LOGO LOOKS. Zara is a heavy solid wordmark and dominated at
+   15px; Lovevery is light and arched and was unreadable at 13. Optical size is weight
+   times width, not height -- judge these on the published page, never in the file. */
 .hero-section .home-hero-marquee-logo-grimms { height: var(--logo-grimms); }
 .hero-section .home-hero-marquee-logo-gap { height: var(--logo-gap); }
 .hero-section .home-hero-marquee-logo-janie { height: var(--logo-janie); }
@@ -331,9 +335,9 @@
     --marquee-fade: 60px;
     --logo-grimms: 23px;
     --logo-gap: 14px;
-    --logo-janie: 21px;
-    --logo-zara: 13px;
-    --logo-lovevery: 11px;
+    --logo-janie: 19px;
+    --logo-zara: 10px;
+    --logo-lovevery: 21px;
     --logo-melissa: 19px;
     bottom: 14px;
     height: 38px;
@@ -397,9 +401,9 @@
     --marquee-fade: 48px;
     --logo-grimms: 20px;
     --logo-gap: 13px;
-    --logo-janie: 19px;
-    --logo-zara: 11px;
-    --logo-lovevery: 10px;
+    --logo-janie: 17px;
+    --logo-zara: 8px;
+    --logo-lovevery: 18px;
     --logo-melissa: 17px;
     bottom: 12px;
     height: 34px;
@@ -471,9 +475,9 @@
     --marquee-fade: 40px;
     --logo-grimms: 18px;
     --logo-gap: 11px;
-    --logo-janie: 16px;
-    --logo-zara: 10px;
-    --logo-lovevery: 9px;
+    --logo-janie: 15px;
+    --logo-zara: 8px;
+    --logo-lovevery: 16px;
     --logo-melissa: 15px;
     bottom: 10px;
     height: 30px;
