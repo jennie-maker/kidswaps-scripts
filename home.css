@@ -1,7 +1,8 @@
 /* home.css — /old-home only. Linked from that page's head box, NEVER Site Settings.
    Moving it site-wide would make the generic hero-* class names a live hazard.
    v3 (S232): the hero. Field, card, media half, type, seam stars.
-   v3.1 (S233): the 991 width fix + the inherited-centring fix. Marquee is still v4.
+   v3.1 (S233): the 991 width fix + the inherited-centring fix.
+   v3.2 (S233): desktop card density + bottom clearance for the marquee. Marquee is v4.
    NOTE: Webflow has FOUR breakpoints. This file speaks at 991, 767 and 479. */
 
 /* ---- FIELD ------------------------------------------------------------- */
@@ -37,7 +38,18 @@
   flex: 0 0 54%;
   max-width: 54%;
   min-width: 0;
-  padding: 60px 40px 60px 60px;
+  /* margin:0 kills Webflow's own 100px 0 100px 100px on this element. That margin
+     sits INSIDE the card and paints cream, so it read as part of the text half:
+     100 + 670 = 770 of visible cream, 62% where the file asks for 54%, and the media
+     half squeezed to 470. It also stacked with this padding — 45% of the old 718px
+     card was clearance. HER RULING S233 off a rendered comparison: padding alone
+     carries the spacing, and the card drops 718 -> 548.
+     THE 90px BOTTOM IS NOT SYMMETRY, IT IS THE MARQUEE'S ROOM. The strip (v4) breaks
+     the card's bottom edge, and at 60 it crossed straight under the buttons. The strip
+     is a FIXED height at every width, so this clearance is absolute, not proportional —
+     do not scale it with the card. */
+  margin: 0;
+  padding: 60px 60px 90px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -219,7 +231,9 @@
     flex: 0 0 auto;
     width: 100%;
     max-width: 100%;
-    padding: 44px 36px 40px;
+    /* bottom 75 = the marquee's room in the tablet band. CLAUDE'S CALL, REVERSIBLE:
+       she ruled 90 at desktop and 60 at phone, and nobody has looked at this width. */
+    padding: 44px 36px 75px;
     margin: 0;
     order: 2;
   }
@@ -261,7 +275,8 @@
   }
 
   .hero-section .hero-left {
-    padding: 32px 22px 30px;
+    /* bottom 60 = the marquee's room on a phone. HER RULING S233, off a render. */
+    padding: 32px 22px 60px;
   }
 
   .hero-section .hero-tagline {
