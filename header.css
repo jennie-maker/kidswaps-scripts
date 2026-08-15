@@ -233,17 +233,27 @@
   transition: transform .22s ease, opacity .14s ease;
 }
 
-/* The morph. :has() lets an earlier element react to a later one being
-   targeted, which a sibling selector cannot do. The drawer opens BELOW the
-   header rather than over it, which is what keeps this control visible and
-   lets one button both open and close the menu. */
-.site-header:has(#header-drawer:target) .header-menu-bar:nth-child(1) {
+/* The morph. The drawer opens BELOW the header rather than over it, which is
+   what keeps this control visible and lets one button both open and close.
+
+   TWO SELECTORS ON PURPOSE, EVERYWHERE THE DRAWER OPENS:
+     .drawer-open  — set by header.js, the normal path
+     :target       — the no-script fallback
+   WEBFLOW'S OWN SCRIPT INTERCEPTS IN-PAGE ANCHOR CLICKS and sets the hash
+   through the history API, which does NOT re-evaluate :target. So :target
+   fires on a real navigation and never on a click. Proven on the live page.
+   Do not delete either selector: the class is what works, the target is what
+   keeps the menu reachable if header.js never arrives. */
+.site-header:has(#header-drawer:target) .header-menu-bar:nth-child(1),
+.site-header.drawer-open .header-menu-bar:nth-child(1) {
   transform: translateY(7px) rotate(45deg);
 }
-.site-header:has(#header-drawer:target) .header-menu-bar:nth-child(2) {
+.site-header:has(#header-drawer:target) .header-menu-bar:nth-child(2),
+.site-header.drawer-open .header-menu-bar:nth-child(2) {
   opacity: 0;
 }
-.site-header:has(#header-drawer:target) .header-menu-bar:nth-child(3) {
+.site-header:has(#header-drawer:target) .header-menu-bar:nth-child(3),
+.site-header.drawer-open .header-menu-bar:nth-child(3) {
   transform: translateY(-7px) rotate(-45deg);
 }
 
@@ -262,7 +272,8 @@
   transition: opacity .22s ease, visibility .22s ease;
 }
 
-.site-header:has(#header-drawer:target) .header-scrim {
+.site-header:has(#header-drawer:target) .header-scrim,
+.site-header.drawer-open .header-scrim {
   opacity: 1;
   visibility: visible;
 }
@@ -285,7 +296,8 @@
   transition: transform .26s ease;
 }
 
-#header-drawer:target { transform: translateX(0); }
+#header-drawer:target,
+.site-header.drawer-open .header-drawer { transform: translateX(0); }
 
 /* The X. Drawn in CSS so the element can stay empty in Webflow. */
 .header-drawer-close {
