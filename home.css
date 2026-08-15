@@ -1,6 +1,6 @@
 /* home.css — /old-home only. Linked from that page's head box, NEVER Site Settings.
    Moving it site-wide would make the generic hero-* class names a live hazard.
-   v1 (S232): the hero. Field, card, media half, type. Star and marquee are v2. */
+   v2 (S232): the hero. Field, card, media half, type, seam stars. Marquee is v3. */
 
 /* ---- FIELD ------------------------------------------------------------- */
 
@@ -24,6 +24,7 @@
   flex-direction: row;
   align-items: stretch;
   min-height: 520px;
+  position: relative;
 }
 
 .hero-section .hero-left {
@@ -51,6 +52,32 @@
   object-fit: cover;
   object-position: center;
   display: block;
+}
+
+/* ---- SEAM STARS -------------------------------------------------------- */
+/* the seam is VERTICAL at desktop and HORIZONTAL once the card stacks.
+   pointer-events off so a sticker can never eat a button click. */
+
+.hero-section .home-hero-star-upper,
+.hero-section .home-hero-star-lower {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  height: auto;
+}
+
+.hero-section .home-hero-star-upper {
+  width: 104px;
+  top: 13%;
+  left: 54%;
+  transform: translateX(-50%);
+}
+
+.hero-section .home-hero-star-lower {
+  width: 66px;
+  top: 63%;
+  left: 54%;
+  transform: translateX(-50%);
 }
 
 /* ---- TYPE -------------------------------------------------------------- */
@@ -83,6 +110,7 @@
   margin: 0;
   text-align: left;
   max-width: 15ch;
+  text-shadow: none;
 }
 
 .hero-section .h1-light-leftaligned em,
@@ -179,6 +207,8 @@
     flex: 0 0 auto;
     max-width: 100%;
     padding: 44px 36px 40px;
+    margin: 0;
+    order: 2;
   }
 
   .hero-section .h1-light-leftaligned {
@@ -190,6 +220,19 @@
     flex: 0 0 auto;
     width: 100%;
     height: 320px;
+    order: 1;
+  }
+
+  .hero-section .home-hero-star-upper {
+    width: 84px;
+    top: 320px;
+    left: auto;
+    right: 24px;
+    transform: translateY(-50%);
+  }
+
+  .hero-section .home-hero-star-lower {
+    display: none;
   }
 }
 
@@ -241,5 +284,11 @@
 
   .hero-section .home-hero-media {
     height: 240px;
+  }
+
+  .hero-section .home-hero-star-upper {
+    width: 68px;
+    top: 240px;
+    right: 16px;
   }
 }
