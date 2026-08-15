@@ -2,7 +2,8 @@
    Moving it site-wide would make the generic hero-* class names a live hazard.
    v3 (S232): the hero. Field, card, media half, type, seam stars.
    v3.1 (S233): the 991 width fix + the inherited-centring fix.
-   v3.2 (S233): desktop card density + bottom clearance for the marquee. Marquee is v4.
+   v3.2 (S233): desktop card density + bottom clearance for the marquee.
+   v3.3 (S233): placeholder fill for the two seam stars. Marquee is v4.
    NOTE: Webflow has FOUR breakpoints. This file speaks at 991, 767 and 479. */
 
 /* ---- FIELD ------------------------------------------------------------- */
@@ -75,7 +76,12 @@
 
 /* ---- SEAM STARS -------------------------------------------------------- */
 /* the seam is VERTICAL at desktop and HORIZONTAL once the card stacks.
-   pointer-events off so a sticker can never eat a button click. */
+   pointer-events off so a sticker can never eat a button click.
+   ⚠ THESE POSITION AGAINST .hero-container, NOT .hero-section — the container carries
+   position:relative and the stars are its children, so top/left are percentages OF THE
+   CARD. That is why top:240px at 767 lands exactly on the photo's bottom edge. S233
+   raised a "they sit high by the field's padding" fault and it was FALSE; do not
+   re-derive it. */
 
 .hero-section .home-hero-star-upper,
 .hero-section .home-hero-star-lower {
@@ -83,6 +89,16 @@
   z-index: 3;
   pointer-events: none;
   height: auto;
+  /* PLACEHOLDER FILL, S233 — these are Div Blocks, not Images, so she can place and
+     judge them before choosing the artwork. aspect-ratio gives a div the square box an
+     img would have had from its file. WHEN THE PNGs LAND: delete background-color and
+     clip-path, add background-image / background-size:contain / background-repeat:
+     no-repeat. THE ELEMENT AND ITS POSITION RULES DO NOT CHANGE — no Designer work.
+     The pink is a placeholder colour, NOT a ruling; both stars share it deliberately so
+     the mockup's two-colour version is not mistaken for a decision. */
+  aspect-ratio: 1 / 1;
+  background-color: #E796A9;
+  clip-path: polygon(50% 2%, 61% 36%, 97% 36%, 68% 57%, 79% 92%, 50% 71%, 21% 92%, 32% 57%, 3% 36%, 39% 36%);
 }
 
 .hero-section .home-hero-star-upper {
