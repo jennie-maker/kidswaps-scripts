@@ -609,7 +609,18 @@
 }
 
 /* ---- THE CLOSET PREVIEW ------------------------------------------------- */
-/* v12 (S238). "What you'll find" — the featured band.
+/* v13 (S238). "What you'll find" — the featured band.
+   v13, all hers: the heading and eyebrow go INK and the heading moves IN FRONT
+   of the cards, so the word "find" stays readable the whole way across instead
+   of being clipped where the cards cover it. Cream measures 3.23 on this coral
+   and 1.06 on a white card — it could never have crossed one. The CTA moves to
+   the top right, the section loses padding top and bottom, cards 2 and 4 get a
+   shorter photo box than 1 and 3, and the phone gets shorter photos and its
+   star back.
+   ⚠ THE GROUND STAYS CORAL. Ink was measured on all seven palette colours: navy
+   2.04 (dead), coral 4.50, green 4.55, pink 7.87, amber 8.54, cream ~14. Cream
+   is unavailable because how-it-works directly above is cream and the two bands
+   would have no edge; amber would swallow the ribbon. HER RULING: coral.
    v12 fixed four faults found on the live render: the cards were pulled up so
    far they buried the word "find" (-96px against 128px type), the star was
    positioned 478px past the end of the word it belonged beside and landed on
@@ -627,7 +638,7 @@
 .closet-preview-section {
   position: relative;
   background-color: #E54F25;
-  padding: 0 0 110px;
+  padding: 0 0 72px;
 }
 
 /* THE SECTION HIDES ONLY WHEN THE SCRIPT SAYS SO. The class is added by the
@@ -712,20 +723,21 @@
   position: relative;
   max-width: 1240px;
   margin: 0 auto;
-  padding: 96px 32px 0;
+  padding: 64px 32px 0;
 }
 
-/* 20px IS LEGIBILITY, NOT TASTE. Cream on this coral measures 3.23:1, which
-   fails AA for normal text and passes the 3:1 bar for large text — and bold
-   type counts as large from 18.66px. Below that size this line must go ink
-   #1E1A19, which measures 4.50:1. Do not quietly shrink it. */
+/* INK AS OF v13, FOLLOWING THE HEADING. The old cream measured 3.23:1, which
+   fails AA for normal text and only cleared the bar because 20px bold counts as
+   large — the size was carrying the contrast. Ink measures 4.50:1 and passes at
+   any size, so the 20px is now a design choice rather than a legibility floor.
+   DO NOT PUT CREAM BACK HERE WITHOUT PUTTING THE SIZE RULE BACK WITH IT. */
 .closet-preview-eyebrow {
   font-family: Quicksand, sans-serif;
   font-weight: 700;
   font-size: 20px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #EDECE0;
+  color: #1E1A19;
   margin: 0 0 16px;
 }
 
@@ -734,16 +746,21 @@
    design was approved on. It is the first thing to check on a render, and the
    lever if it comes out wrong: lower it to force the break sooner, raise it to
    let more onto line one. Instrument Serif loads at 400 only, so the size does
-   all the work and any heavier weight would be faked by the browser. */
+   all the work and any heavier weight would be faked by the browser.
+   ⚠⚠ THE z-index PUTS THE TYPE IN FRONT OF THE CARDS AND THE INK IS WHAT MAKES
+   THAT SURVIVABLE. Ink reads 4.50 on the coral and about 15 on a white card, so
+   one colour crosses both. Cream in front of a white card measures 1.06 — the
+   word would vanish rather than be clipped. IF THE HEADING EVER GOES BACK TO A
+   LIGHT COLOUR, THE z-index HAS TO GO BACK UNDER THE CARDS IN THE SAME EDIT. */
 .closet-preview-heading {
   position: relative;
-  z-index: 1;
+  z-index: 5;
   font-family: "Instrument Serif", serif;
   font-weight: 400;
   font-size: 128px;
   line-height: 0.92;
   letter-spacing: -0.01em;
-  color: #EDECE0;
+  color: #1E1A19;
   max-width: 560px;
   margin: 0;
 }
@@ -766,7 +783,10 @@
   pointer-events: none;
 }
 
-/* THE OVERLAP IS A NEGATIVE MARGIN ON THE ROW plus a per-card offset, never
+/* CARDS 2 AND 4 GET A SHORTER PHOTO BOX THAN 1 AND 3 — HER RULING S238, to break
+   up the white. The box is the only thing that changes; object-fit stays cover,
+   so a shorter box crops further into the photo rather than shrinking it.
+   THE OVERLAP IS A NEGATIVE MARGIN ON THE ROW plus a per-card offset, never
    absolute coordinates on individual cards. That is what lets the ragged line
    survive any width and leaves ONE number to tune. */
 .closet-preview-grid {
@@ -793,6 +813,11 @@
 .closet-preview-grid > *:nth-child(2) { margin-top: 36px; }
 .closet-preview-grid > *:nth-child(3) { margin-top: 12px; }
 .closet-preview-grid > *:nth-child(4) { margin-top: 48px; }
+
+.closet-preview-grid > *:nth-child(2) .closet-preview-card-media,
+.closet-preview-grid > *:nth-child(4) .closet-preview-card-media {
+  aspect-ratio: 1 / 1;
+}
 
 /* THE TILE IS WHITE AS OF v12 — HER RULING S238, TAKEN OFF A THREE-WAY MOCKUP
    AND KNOWINGLY. It shipped cream at v10 and the cream lost: her product photos
@@ -856,11 +881,20 @@
 }
 
 /* Written at the class, never at the link tag. The site-wide All Links tag
-   selector reaches all twenty pages and is read-only. */
+   selector reaches all twenty pages and is read-only.
+   ⚠ TOP RIGHT AS OF v13, HERS. It is positioned against .closet-preview-container
+   rather than moved in the markup, so there was no Designer trip and the DOM
+   order is unchanged — the link still follows the grid for a screen reader and
+   for anyone tabbing. IT GOES BACK INTO FLOW ON THE PHONE, where a pill beside
+   the heading would collide with it. */
 .closet-preview-cta,
 .closet-preview-cta:visited {
+  position: absolute;
+  top: 56px;
+  right: 32px;
+  z-index: 6;
   display: inline-block;
-  margin-top: 56px;
+  margin-top: 0;
   padding: 15px 34px;
   border-radius: 50px;
   background-color: #EDECE0;
@@ -891,13 +925,18 @@
 @media screen and (max-width: 991px) {
 
   .closet-preview-section {
-    padding-bottom: 88px;
+    padding-bottom: 60px;
   }
   .closet-preview-ribbon {
     --ribbon-height: 40px;
   }
   .closet-preview-container {
-    padding: 76px 24px 0;
+    padding: 52px 24px 0;
+  }
+  .closet-preview-cta,
+  .closet-preview-cta:visited {
+    top: 44px;
+    right: 24px;
   }
   .closet-preview-heading {
     font-size: 92px;
@@ -924,7 +963,7 @@
 @media screen and (max-width: 767px) {
 
   .closet-preview-section {
-    padding-bottom: 72px;
+    padding-bottom: 52px;
   }
   .closet-preview-ribbon {
     --ribbon-height: 34px;
@@ -938,18 +977,35 @@
     height: 11px;
   }
   .closet-preview-container {
-    padding: 56px 20px 0;
+    padding: 40px 20px 0;
   }
   .closet-preview-heading {
     font-size: 64px;
     max-width: 280px;
   }
+  /* THE STAR IS BACK ON THE PHONE — HER RULING S238. v10 hid it below 767 before
+     anyone had seen that width. These two figures are positioned against the
+     container and, exactly like the desktop pair before them, THEY ARE A GUESS
+     THAT NEEDS ONE RENDER. */
   .closet-preview-star {
-    display: none;
+    display: block;
+    top: 155px;
+    left: 125px;
+    width: 44px;
+    height: 44px;
   }
   .closet-preview-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 14px;
+  }
+  /* ALL FOUR PHOTO BOXES GO SQUARE ON THE PHONE — hers, "a lot shorter". Written
+     at every nth-child so it matches the desktop rule's specificity; a bare
+     .closet-preview-card-media here would lose to it on cards 2 and 4. */
+  .closet-preview-grid > *:nth-child(1) .closet-preview-card-media,
+  .closet-preview-grid > *:nth-child(2) .closet-preview-card-media,
+  .closet-preview-grid > *:nth-child(3) .closet-preview-card-media,
+  .closet-preview-grid > *:nth-child(4) .closet-preview-card-media {
+    aspect-ratio: 1 / 1;
   }
   .closet-preview-grid:not(:empty) {
     margin-top: 36px;
@@ -963,7 +1019,11 @@
   .closet-preview-grid > *:nth-child(4) {
     margin-top: 0;
   }
-  .closet-preview-cta {
+  .closet-preview-cta,
+  .closet-preview-cta:visited {
+    position: static;
+    top: auto;
+    right: auto;
     margin-top: 40px;
   }
 }
@@ -983,7 +1043,13 @@
     font-size: 12px;
   }
   .closet-preview-container {
-    padding: 46px 16px 0;
+    padding: 34px 16px 0;
+  }
+  .closet-preview-star {
+    top: 132px;
+    left: 103px;
+    width: 38px;
+    height: 38px;
   }
   .closet-preview-eyebrow {
     font-size: 19px;
