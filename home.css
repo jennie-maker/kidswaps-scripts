@@ -11,6 +11,7 @@
      eyebrow removed the problem it solved, so v7 was reverted, never published,
      and survives only in the rollback chain.
    v8 (S235): the section title becomes a coral eyebrow, both breakpoints.
+   v9 (S236): that eyebrow grows into a header - 18px, weight 700, her green.
    NOTE: Webflow has FOUR breakpoints. This file speaks at 991, 767 and 479. */
 
 /* ---- FIELD ------------------------------------------------------------- */
@@ -371,17 +372,26 @@
   padding-right: 24px;
 }
 
-/* ⚠⚠ THE SECTION TITLE IS AN EYEBROW, NOT A HEADING — HER RULING S235, off a
-   live phone render. "How It Works" and "Send" were both large Instrument
-   Serif in ink, so the section title read as a fifth step. Making it BIGGER is
-   the lever that was already failing; the fix is that it stops competing.
+/* ⚠⚠ THE SECTION TITLE IS A SANS HEADER, NOT A SERIF HEADING — HER RULING S235,
+   off a live phone render. "How It Works" and "Send" were both large Instrument
+   Serif in ink, so the section title read as a fifth step. THE FIX IS THAT IT
+   STOPS COMPETING, and it does that by changing FACE, not by shrinking.
 
-   IT IS THE HERO'S OWN EYEBROW SPEC, CHARACTER FOR CHARACTER — Quicksand 600,
-   12px, 0.14em, uppercase, coral. ONE eyebrow style on the page, not two.
-   ⚠ Coral on cream measures 3.23:1, under AA for text this size. That is
-   ALREADY TRUE OF THE HERO EYEBROW at the same size on the same ground, so the
-   choice was match-the-hero or fix-both, never make-this-one-different.
-   Navy #1C4A91 reads 7.25:1 and is the swap if she ever wants them distinct.
+   ⚠⚠ IT SHIPPED AT S235 AS A 12px CORAL EYEBROW AND THAT IS SUPERSEDED. HER
+   RULING S236, off the live render: it read as a label rather than a header, so
+   it is now 18px at weight 700 in HER GREEN #309359. It NO LONGER MATCHES THE
+   HERO EYEBROW and is not supposed to — a section header and a hero kicker are
+   two different jobs. The page has TWO sans uppercase styles on purpose.
+   ⚠ CONTRAST, MEASURED AND KNOWINGLY ACCEPTED: green on this cream reads
+   3.25:1, essentially the same as the coral it replaced (3.23). The colour
+   change bought no legibility and she was told so. 18px/700 sits just UNDER the
+   18.66px threshold where the large-text 3:1 bar would apply, so this fails AA
+   by half a pixel. 20px/700 would have passed on size alone and she chose 18.
+   DO NOT SILENTLY BUMP IT TO 20 AND DO NOT SWAP THE GREEN FOR A DARKER ONE.
+   #1F5C38 reads 6.68:1 and is the swap ONLY if she asks for it.
+   ⚠⚠ AND HER S236 PAGE-WIDE RULING: EVERY COLOUR IN HER PALETTE MAY APPEAR ON
+   /old-home REGARDLESS OF WHAT IT MEANS ELSEWHERE. Green meaning toys in the
+   signup flow does not constrain this page. Do not raise it again.
 
    ⚠ TWO SELECTORS ON PURPOSE. .h2-dark is the class it wears today; the direct
    > h1 catches it if that class is ever renamed in the Designer. A rename would
@@ -392,14 +402,14 @@
 .how-it-works-section .how-it-works-container .h2-dark,
 .how-it-works-section .how-it-works-container > h1 {
   font-family: Quicksand, sans-serif;
-  font-weight: 600;
-  font-size: 12px;
+  font-weight: 700;
+  font-size: 18px;
   line-height: 1.2;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #E54F25;
+  color: #309359;
   text-align: left;
-  margin: 0 0 26px;
+  margin: 0 0 30px;
 }
 
 .how-it-works-section .how-it-works-container .steps-row {
@@ -521,10 +531,11 @@
     padding-right: 20px;
   }
 
-  /* the eyebrow labels the row, so it sits closer to it than a title would */
+  /* the header steps down with the section, keeping its distance from the row */
   .how-it-works-section .how-it-works-container .h2-dark,
   .how-it-works-section .how-it-works-container > h1 {
-    margin: 0 0 20px;
+    font-size: 16px;
+    margin: 0 0 24px;
   }
 
   .how-it-works-section .how-it-works-container .steps-row {
