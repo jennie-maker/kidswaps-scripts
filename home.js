@@ -10,10 +10,17 @@
  * browse-tool.js makes, headers and body byte-for-byte. It is a REPETITION of a
  * proven seam, not a new kind of one.
  *
- * WHAT IT DOES: takes the featured-and-available items the RPC already returns
- * in order (featured desc, date_added desc), keeps the ones actually flagged
- * featured, paints the first four into .closet-preview-grid, and hides the
- * whole section if there are none.
+ * WHAT IT DOES: paints the first four available items into
+ * .closet-preview-grid, and hides the whole section if there are none.
+ *
+ * ⚠ THE ORDER IS THE RPC'S, NOT THIS FILE'S, AND THAT IS THE WHOLE FEATURE.
+ * get_available_inventory already sorts `featured desc nulls last, date_added
+ * desc nulls last`, so the head of the array IS flagged items first and then
+ * the newest. Taking the head therefore gives FEATURED FIRST, TOPPED UP WITH
+ * THE NEWEST, with no filter and no second sort here. She curates when she
+ * wants to and the row can never render short while there is any stock at all.
+ * DO NOT "TIDY" THIS INTO A .filter(featured === true) — that is the version
+ * that empties the band the moment a flagged item is claimed.
  *
  * ⚠ THE SECTION IS VISIBLE BY DEFAULT AND THIS SCRIPT HIDES IT, never the
  * reverse. A script that never arrives therefore leaves the section on the page
@@ -138,26 +145,28 @@
     if (!section || !grid) { return; }
 
     fetchInventory().then(function (items) {
-      // The RPC already filters to status = 'available' and already orders
-      // featured first, so this only has to keep the genuinely flagged ones and
-      // take the head of the list. NO FUNCTION CHANGE WAS NEEDED FOR THIS.
-      var featured = items.filter(function (it) { return it.featured === true; });
-      var show = featured.slice(0, CARDS);
+      // The RPC filters to status = 'available' and orders featured first, so
+      // the head of the list is already the right four. NO FUNCTION CHANGE WAS
+      // NEEDED FOR THIS, and no sorting happens in the browser.
+      var show = items.slice(0, CARDS);
 
-      if (!show.length) { hide(section, 'no featured items available'); return; }
+      if (!show.length) { hide(section, 'no items available at all'); return; }
 
       var frag = document.createDocumentFragment();
       for (var i = 0; i < show.length; i++) { frag.appendChild(cardEl(show[i])); }
       grid.appendChild(frag);
 
-      console.log(LOG, 'painted ' + show.length + ' of ' + featured.length +
-        ' featured (' + items.length + ' available)');
+      // The flagged count is logged for her, not used for anything. It is the
+      // only place the featured pool's size is visible anywhere today — there
+      // is a per-item toggle in the listing tool and no list view of the set.
+      var flagged = 0;
+      for (var n = 0; n < items.length; n++) { if (items[n].featured === true) flagged++; }
+      console.log(LOG, 'painted ' + show.length + ' of ' + items.length +
+        ' available (' + flagged + ' flagged featured)');
 
-      // ⚠ NOT A FAILURE, BUT SHE HAS NO OTHER WARNING: if the featured pool ever
-      // runs below the row size the band renders short. Keep more items flagged
-      // featured than the row shows.
-      if (featured.length < CARDS) {
-        console.warn(LOG, 'featured pool is smaller than the row — the band will render short');
+      // The band can only render short if the whole catalogue is nearly empty.
+      if (show.length < CARDS) {
+        console.warn(LOG, 'fewer available items than the row holds — the band will render short');
       }
     }).catch(function (err) {
       console.error(LOG, 'load failed:', err);
