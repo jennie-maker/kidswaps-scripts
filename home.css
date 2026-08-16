@@ -5,6 +5,8 @@
    v3.2 (S233): desktop card density + bottom clearance for the marquee.
    v3.3 (S233): placeholder fill for the two seam stars.
    v3.4 (S233): the lower star steps off the seam. Marquee is v4.
+   v6 (S235): the how-it-works section. Ground, 920 container, amber rules,
+     hairlines between steps, icon-left phone rows.
    NOTE: Webflow has FOUR breakpoints. This file speaks at 991, 767 and 479. */
 
 /* ---- FIELD ------------------------------------------------------------- */
@@ -324,6 +326,227 @@
 .hero-buttons .hero-button-secondary:hover {
   background-color: #1E1A19;
   color: #EDECE0;
+}
+
+/* ---- HOW IT WORKS ------------------------------------------------------- */
+/* HER RULINGS S234, off five mockups: OPTION D — an amber rule under each
+   heading plus hairlines between the steps. The container narrows to 920 so the
+   section reads clearly narrower than the hero card's 1240. The ground goes to
+   palette cream #EDECE0. On the phone the steps become icon-left / text-right
+   rows, which knowingly changes her S224 2x2 ruling.
+
+   ⚠⚠⚠ EVERY RULE HERE IS AT THREE CLASSES OR MORE, ON PURPOSE. The four icon
+   EMBEDS carry their own <style> blocks, those blocks sit in the BODY, and the
+   body is later in source order than this file in the head. At equal
+   specificity THE EMBED WINS. A two-class rule here ships, verifies clean and
+   does nothing. What is being beaten, read live S235:
+     .how-it-works-section .steps-row > *{text-align:left;padding:0 18px}
+     .how-it-works-section .steps-row p{max-width:24ch;margin-left:0}
+     .how-it-works-section .steps-row > *{align-items:flex-start}
+     .kshw-send,.kshw-earn,.kshw-swap,.kshw-repeat{margin:0 0 10px}
+     @media(max-width:767px) .steps-row{grid-template-columns:1fr 1fr;gap:40px 8px}
+   ⚠ THE SECTION'S OWN BACKGROUND IS THE ONE EXCEPTION AND IT IS SAFE AT ONE
+   CLASS — Webflow's stylesheet is in the head ABOVE this file, so an equal tie
+   goes to us. .hero-section proves it: it is one class and it paints navy. */
+
+.how-it-works-section {
+  background-color: #EDECE0;
+  padding: 100px 0 88px;
+}
+
+/* 88px bottom is CLAUDE'S CALL, REVERSIBLE — it was 40px, which was fine while
+   the band had no visible edge. Cream against the white featured-section below
+   gives it one, and 100/40 then reads lopsided. One number. */
+
+.how-it-works-section .how-it-works-container {
+  width: 100%;
+  max-width: 920px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+.how-it-works-section .how-it-works-container .steps-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  column-gap: 0;
+  row-gap: 0;
+  align-items: stretch;
+}
+
+/* the hairlines. A border-left on every step but the first draws one line
+   BETWEEN each pair and none at the outer edges, which is what makes the row
+   read as one object rather than four cards. */
+
+.how-it-works-section .steps-row .step-1 {
+  padding: 0 22px;
+  border-left: 1px solid #C9C7BC;
+  text-align: left;
+}
+
+.how-it-works-section .steps-row .step-1:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.how-it-works-section .steps-row .step-1:last-child {
+  padding-right: 0;
+}
+
+/* ⚠⚠ THE FIXED-HEIGHT ICON BOX IS WHAT KEEPS THE FOUR AMBER RULES ON ONE LINE.
+   The four embeds each size their own icon and each may change; this wrapper
+   does not care what is inside it. The icon sits on the BOTTOM of the box so
+   art with different amounts of transparent padding still bottoms out level. */
+
+.how-it-works-section .steps-row .step-1 .w-embed {
+  align-self: stretch;
+  height: 150px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  margin: 0 0 16px;
+}
+
+.how-it-works-section .steps-row .step-1 .w-embed > * {
+  width: 150px;
+  margin: 0;
+}
+
+.how-it-works-section .steps-row .step-1 h1 {
+  margin: 0;
+  text-align: left;
+}
+
+/* the amber rule. 36x4, HER RULING S234. It is a pseudo on the heading rather
+   than a border, so it cannot be pushed out of line by anything below it. */
+
+.how-it-works-section .steps-row .step-1 h1::after {
+  content: "";
+  display: block;
+  width: 36px;
+  height: 4px;
+  background-color: #E5AD43;
+  margin: 12px 0 14px;
+}
+
+.how-it-works-section .steps-row .step-1 p {
+  margin: 0;
+  max-width: none;
+  text-align: left;
+}
+
+/* max-width:none is deliberate and it beats the embed's 24ch cap. At a 920
+   container the four columns are ~190px of content each, which is NARROWER
+   than 24ch — so the cap is inert here and only adds rag. CLAUDE'S CALL. */
+
+/* ---- HOW IT WORKS, TABLET ----------------------------------------------- */
+/* 2x2 at this width. CLAUDE'S PICK, REVERSIBLE, AND NOBODY HAS LOOKED AT IT —
+   four columns inside 991 leaves ~135px of text per column, which rags to
+   about three words a line. Her ruled phone rows start at 767. */
+
+@media screen and (max-width: 991px) {
+
+  .how-it-works-section {
+    padding: 72px 0 64px;
+  }
+
+  .how-it-works-section .how-it-works-container .steps-row {
+    grid-template-columns: repeat(2, 1fr);
+    row-gap: 44px;
+  }
+
+  .how-it-works-section .steps-row .step-1:nth-child(odd) {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .how-it-works-section .steps-row .step-1:nth-child(even) {
+    padding-right: 0;
+  }
+
+  .how-it-works-section .steps-row .step-1:nth-child(3) {
+    border-left: 0;
+  }
+}
+
+/* ---- HOW IT WORKS, PHONE ------------------------------------------------ */
+/* HER RULING S234: icon LEFT, text RIGHT, one row per step, hairline between
+   rows. It knowingly replaces the S224 2x2 — at 2x2 the column is ~156px and
+   the paragraphs rag to sixteen characters a line. */
+
+@media screen and (max-width: 767px) {
+
+  .how-it-works-section {
+    padding: 56px 0 48px;
+  }
+
+  .how-it-works-section .how-it-works-container {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .how-it-works-section .how-it-works-container .steps-row {
+    display: flex;
+    flex-direction: column;
+    row-gap: 0;
+    column-gap: 0;
+  }
+
+  .how-it-works-section .steps-row .step-1 {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    grid-template-rows: auto auto;
+    column-gap: 18px;
+    align-items: start;
+    padding: 24px 0;
+    border-left: 0;
+    border-top: 1px solid #C9C7BC;
+  }
+
+  .how-it-works-section .steps-row .step-1:first-child {
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .how-it-works-section .steps-row .step-1:last-child {
+    padding-bottom: 0;
+  }
+
+  .how-it-works-section .steps-row .step-1 .w-embed {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-self: start;
+    height: 96px;
+    margin: 0;
+  }
+
+  .how-it-works-section .steps-row .step-1 .w-embed > * {
+    width: 96px;
+  }
+
+  .how-it-works-section .steps-row .step-1 h1::after {
+    margin: 10px 0 10px;
+  }
+}
+
+/* ---- HOW IT WORKS, PHONE PORTRAIT --------------------------------------- */
+
+@media screen and (max-width: 479px) {
+
+  .how-it-works-section .steps-row .step-1 {
+    grid-template-columns: 76px 1fr;
+    column-gap: 14px;
+    padding: 20px 0;
+  }
+
+  .how-it-works-section .steps-row .step-1 .w-embed {
+    height: 76px;
+  }
+
+  .how-it-works-section .steps-row .step-1 .w-embed > * {
+    width: 76px;
+  }
 }
 
 /* ---- TABLET ------------------------------------------------------------ */
