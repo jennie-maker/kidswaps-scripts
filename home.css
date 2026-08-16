@@ -1069,6 +1069,212 @@
   }
 }
 
+/* ---- CLOSET STANDARD --------------------------------------------------- */
+
+.closet-standard-section {
+  background-color: #EDECE0;
+}
+
+.closet-standard-container {
+  display: flex;
+  align-items: stretch;
+}
+
+.closet-standard-photo {
+  flex: 0 0 38%;
+  background-color: #E5AD43;
+  min-height: 520px;
+}
+
+.closet-standard-text {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 96px 72px 96px 64px;
+}
+
+.closet-standard-eyebrow {
+  font-family: Quicksand, sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #309359;
+  margin: 0 0 30px;
+}
+
+.closet-standard-heading {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-weight: 400;
+  font-size: 112px;
+  line-height: 0.92;
+  color: #1E1A19;
+  max-width: 5.5em;
+  margin: 0 0 34px;
+}
+
+.closet-standard-body {
+  font-family: Quicksand, sans-serif;
+  font-weight: 400;
+  font-size: 19px;
+  line-height: 1.7;
+  color: #1E1A19;
+  max-width: 46ch;
+  margin: 0 0 22px;
+}
+
+.closet-standard-closer {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 27px;
+  line-height: 1.25;
+  color: #1E1A19;
+  max-width: 20ch;
+  margin: 0 0 34px;
+}
+
+.closet-standard-cta,
+.closet-standard-cta:visited {
+  display: inline-block;
+  font-family: Quicksand, sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1;
+  color: #EDECE0;
+  background-color: #E54F25;
+  border-radius: 50px;
+  padding: 16px 34px;
+  text-decoration: none;
+}
+
+.closet-standard-cta:hover {
+  background-color: #B23D22;
+  color: #EDECE0;
+}
+
+.closet-standard-star {
+  position: absolute;
+  left: 336px;
+  bottom: 92px;
+  width: 46px;
+  height: 46px;
+  background-color: #E796A9;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  pointer-events: none;
+}
+
+@media screen and (max-width: 991px) {
+
+  .closet-standard-photo {
+    flex: 0 0 34%;
+    min-height: 440px;
+  }
+
+  .closet-standard-text {
+    padding: 72px 48px 72px 44px;
+  }
+
+  .closet-standard-heading {
+    font-size: 74px;
+    margin-bottom: 26px;
+  }
+
+  .closet-standard-eyebrow {
+    margin-bottom: 24px;
+  }
+
+  .closet-standard-body {
+    font-size: 17px;
+  }
+
+  .closet-standard-closer {
+    font-size: 23px;
+  }
+
+  .closet-standard-star {
+    left: 258px;
+    bottom: 74px;
+    width: 38px;
+    height: 38px;
+  }
+
+}
+
+@media screen and (max-width: 767px) {
+
+  .closet-standard-container {
+    display: block;
+  }
+
+  .closet-standard-photo {
+    min-height: 300px;
+  }
+
+  .closet-standard-text {
+    padding: 56px 28px 64px;
+  }
+
+  .closet-standard-eyebrow {
+    font-size: 16px;
+    margin-bottom: 20px;
+  }
+
+  .closet-standard-heading {
+    font-size: 58px;
+    margin-bottom: 22px;
+  }
+
+  .closet-standard-body {
+    font-size: 16px;
+    max-width: none;
+  }
+
+  .closet-standard-closer {
+    font-size: 21px;
+    max-width: none;
+  }
+
+  .closet-standard-star {
+    left: auto;
+    right: 34px;
+    bottom: 78px;
+    width: 34px;
+    height: 34px;
+  }
+
+}
+
+@media screen and (max-width: 479px) {
+
+  .closet-standard-photo {
+    min-height: 240px;
+  }
+
+  .closet-standard-text {
+    padding: 44px 22px 52px;
+  }
+
+  .closet-standard-heading {
+    font-size: 44px;
+  }
+
+  .closet-standard-closer {
+    font-size: 19px;
+  }
+
+  .closet-standard-star {
+    right: 24px;
+    bottom: 66px;
+    width: 30px;
+    height: 30px;
+  }
+
+}
+
 /* ---- TABLET ------------------------------------------------------------ */
 
 @media screen and (max-width: 991px) {
