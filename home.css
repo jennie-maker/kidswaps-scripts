@@ -21,6 +21,32 @@
      drag the CTA across the heading.
    NOTE: Webflow has FOUR breakpoints. This file speaks at 991, 767 and 479. */
 
+/* ---- SECTION RHYTHM ------------------------------------------------------ */
+/* HER RULING S240: ONE number for the space every section puts between itself
+   and its neighbour, identical at every breakpoint. She chose it off a rendered
+   comparison of 144 / 79 / 35 at the hero-to-how-it-works seam.
+   ⚠⚠ TWO EDGES CANNOT TAKE IT AND THAT IS STRUCTURAL, NOT AN OVERSIGHT:
+   .closet-preview-section's TOP is owned by the ribbon, which straddles the
+   seam by pulling itself up half its own height — give that edge padding and
+   the ribbon pulls into the padding instead of onto the seam. And
+   .closet-standard-section has no padding at all because its photo panel is
+   full-bleed to the section edge; padding there would frame the photo in cream.
+   Those two edges stay 0 ON PURPOSE. Every free edge takes the token. */
+
+:root {
+  --section-gap: 35px;
+
+  /* ⚠⚠⚠ --ribbon-height LIVES HERE, NOT ON .closet-preview-ribbon, AND THAT IS
+     LOAD-BEARING. The ribbon straddles the cream-to-coral seam by pulling itself
+     up HALF ITS OWN HEIGHT, so it eats half of whatever padding sits above it.
+     .how-it-works-section's bottom padding adds that half back, which is the only
+     way the VISIBLE cream at that seam equals --section-gap like every other seam.
+     TWO CONSUMERS, ONE VARIABLE, LOCKED TOGETHER — change the height at any
+     breakpoint and the seam corrects itself. Move it back onto the ribbon and the
+     seam silently collapses to 12px on desktop with nothing erroring. */
+  --ribbon-height: 46px;
+}
+
 /* ---- FIELD ------------------------------------------------------------- */
 
 .hero-section {
@@ -363,7 +389,7 @@
 
 .how-it-works-section {
   background-color: #EDECE0;
-  padding: 100px 0 88px;
+  padding: var(--section-gap) 0 calc(var(--section-gap) + var(--ribbon-height) / 2);
 }
 
 /* 88px bottom is CLAUDE'S CALL, REVERSIBLE — it was 40px, which was fine while
@@ -499,10 +525,6 @@
 
 @media screen and (max-width: 991px) {
 
-  .how-it-works-section {
-    padding: 72px 0 64px;
-  }
-
   .how-it-works-section .how-it-works-container .steps-row {
     grid-template-columns: repeat(2, 1fr);
     row-gap: 44px;
@@ -528,10 +550,6 @@
    the paragraphs rag to sixteen characters a line. */
 
 @media screen and (max-width: 767px) {
-
-  .how-it-works-section {
-    padding: 56px 0 48px;
-  }
 
   .how-it-works-section .how-it-works-container {
     padding-left: 20px;
@@ -638,7 +656,7 @@
 .closet-preview-section {
   position: relative;
   background-color: #E54F25;
-  padding: 0 0 72px;
+  padding: 0 0 var(--section-gap);
 }
 
 /* THE SECTION HIDES ONLY WHEN THE SCRIPT SAYS SO. The class is added by the
@@ -663,7 +681,6 @@
    overflow:hidden lives on the band, NEVER on the section, or the half that
    sits up in the cream above would be clipped away. */
 .closet-preview-ribbon {
-  --ribbon-height: 46px;
   --ribbon-gap: 30px;
   position: relative;
   z-index: 2;
@@ -897,8 +914,8 @@
   margin-top: 0;
   padding: 15px 34px;
   border-radius: 50px;
-  background-color: #EDECE0;
-  color: #1E1A19;
+  background-color: #1E1A19;
+  color: #EDECE0;
   font-family: Quicksand, sans-serif;
   font-weight: 600;
   font-size: 16px;
@@ -924,10 +941,7 @@
 
 @media screen and (max-width: 991px) {
 
-  .closet-preview-section {
-    padding-bottom: 60px;
-  }
-  .closet-preview-ribbon {
+  :root {
     --ribbon-height: 40px;
   }
   .closet-preview-container {
@@ -962,11 +976,11 @@
 
 @media screen and (max-width: 767px) {
 
-  .closet-preview-section {
-    padding-bottom: 52px;
-  }
-  .closet-preview-ribbon {
+  :root {
     --ribbon-height: 34px;
+  }
+
+  .closet-preview-ribbon {
     --ribbon-gap: 22px;
   }
   .closet-preview-ribbon-word {
@@ -1035,8 +1049,11 @@
 
 @media screen and (max-width: 479px) {
 
-  .closet-preview-ribbon {
+  :root {
     --ribbon-height: 30px;
+  }
+
+  .closet-preview-ribbon {
     --ribbon-gap: 18px;
   }
   .closet-preview-ribbon-word {
