@@ -1324,6 +1324,51 @@
 
 }
 
+/* ---- PRICING PREVIEW ---------------------------------------------------- */
+/* v17 (S241). The footnote under the four plan cards.
+   HER RULING S241: the savings figures are UP TO numbers built on the TOP OF
+   THE ESSENTIALS BAND ($35 clothing, $30 toy) times the plan's cap, minus the
+   monthly price. $180 / $305 / $105 / $370. The savings are CELEBRATED, not
+   minimised, because the model assumes she swaps the items back and earns the
+   next month -- that recurring loop is the claim.
+   ⚠ THE WRITTEN GRADING BAND IS THE AUTHORITY, NOT THE MAX VALUE IN THE
+   INVENTORY TABLE. A live read S241 returned an essentials clothing max of $68;
+   that is an outlier or a mis-grade, NOT the top of the band. Her words: any
+   line saying essentials clothing runs to $68 is completely wrong.
+   ⚠ THE FOUR ASTERISKS ON THE CARDS POINTED AT NOTHING until this shipped.
+   An asterisk promises the terms are explained somewhere, and on a section
+   headed "Simple, honest pricing" it was pointing at empty space.
+   ⚠ THE COPY IS HERS, VERBATIM, AND IT DELIBERATELY DOES NOT STATE THE
+   PER-ITEM FIGURE -- her words, "i just dont want to be so obvious about my
+   formula". Whether an UP TO claim needs its basis stated is owed to Shahin
+   alongside the savings-substantiation question. DO NOT ADD THE $35 / $30
+   TO THIS LINE WITHOUT HER.
+   ⚠ TWO CLASSES ON PURPOSE. A single-class rule ties with Webflow's own and
+   wins only on load order; (0,2,0) beats it outright. Same reason every
+   button rule in this file is written at two classes. */
+
+.pricing-preview-section .pricing-footnote {
+  margin: 22px auto 0;
+  max-width: 620px;
+  padding: 0 24px;
+  color: #EDECE0;
+  font-family: Quicksand, sans-serif;
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+/* ---- PRICING PREVIEW, PHONE --------------------------------------------- */
+/* CLAUDE'S PICK, REVERSIBLE, AND NOBODY HAS LOOKED AT IT AT THIS WIDTH. */
+
+@media screen and (max-width: 767px) {
+  .pricing-preview-section .pricing-footnote {
+    margin-top: 18px;
+    font-size: 12px;
+  }
+}
+
 /* ---- TABLET ------------------------------------------------------------ */
 
 @media screen and (max-width: 991px) {
