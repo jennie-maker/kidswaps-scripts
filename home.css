@@ -12,6 +12,8 @@
      and survives only in the rollback chain.
    v8 (S235): the section title becomes a coral eyebrow, both breakpoints.
    v9 (S236): that eyebrow grows into a header - 18px, weight 700, her green.
+   v10 (S237): the closet preview. Coral band, amber ribbon straddling the
+     seam, oversized cream type, four cream cards overlapping it on desktop.
    NOTE: Webflow has FOUR breakpoints. This file speaks at 991, 767 and 479. */
 
 /* ---- FIELD ------------------------------------------------------------- */
@@ -598,6 +600,362 @@
 
   .how-it-works-section .steps-row .step-1 .w-embed > * {
     width: 76px;
+  }
+}
+
+/* ---- THE CLOSET PREVIEW ------------------------------------------------- */
+/* v10 (S237). "What you'll find" — the featured band.
+   Full-bleed coral, an amber marquee ribbon straddling the seam above it,
+   oversized cream serif type, four cream cards pulled up over the type on
+   desktop, one amber star, a cream pill CTA.
+   THE GRID SHIPS EMPTY AND THE SCRIPT PAINTS THE CARDS INTO IT, so nothing
+   here can ever render a row of blank boxes.
+   SCOPE: every selector is a .closet-preview-* class. The heading no longer
+   wears .h2-dark, so nothing in here can reach the how-it-works section. */
+
+.closet-preview-section {
+  position: relative;
+  background-color: #E54F25;
+  padding: 0 0 110px;
+}
+
+/* THE SECTION HIDES ONLY WHEN THE SCRIPT SAYS SO. The class is added by the
+   script on an empty featured pool. Nothing is hidden by default, so a script
+   that never runs leaves the section visible rather than blank — the S224
+   rule, bought by a section that rendered permanently empty. */
+.closet-preview-section.is-empty {
+  display: none;
+}
+
+/* A percentage width inside a Webflow embed can collapse to zero, because
+   div.w-embed shrink-wraps its content. The wrapper is given its width here
+   rather than left to inherit one. */
+.closet-preview-section .w-embed {
+  display: block;
+  width: 100%;
+}
+
+/* THE RIBBON. It straddles the cream-to-coral seam by exactly half its own
+   height, so the height and the negative margin are locked together — the
+   margin is written as a calc off the height variable so they cannot drift.
+   overflow:hidden lives on the band, NEVER on the section, or the half that
+   sits up in the cream above would be clipped away. */
+.closet-preview-ribbon {
+  --ribbon-height: 46px;
+  --ribbon-gap: 30px;
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: var(--ribbon-height);
+  margin-top: calc(var(--ribbon-height) / -2);
+  background-color: #E5AD43;
+  overflow: hidden;
+}
+
+/* TWELVE SETS IN THE EMBED, SLIDING -8.3333%, i.e. 100 divided by 12.
+   CHANGE THE NUMBER OF SETS AND THIS PERCENTAGE MUST CHANGE WITH IT, or the
+   strip jumps once per cycle — silently, and only on a screen wide enough to
+   show the seam. The eleven sets that are not sliding off must cover a band
+   wider than the viewport; twelve holds to roughly 2560px. */
+.closet-preview-ribbon-track {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  height: 100%;
+  animation: closet-preview-ribbon-slide 42s linear infinite;
+}
+
+.closet-preview-ribbon-set {
+  display: flex;
+  align-items: center;
+  gap: var(--ribbon-gap);
+  padding-right: var(--ribbon-gap);
+}
+
+.closet-preview-ribbon-word {
+  font-family: Quicksand, sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #1E1A19;
+  white-space: nowrap;
+}
+
+/* A DRAWN SHAPE, NEVER A TEXT GLYPH — a character renders differently on her
+   phone than on the Mac. Ink on amber measures 8.54:1. */
+.closet-preview-ribbon-star {
+  flex: 0 0 auto;
+  width: 13px;
+  height: 13px;
+  background-color: #1E1A19;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+
+@keyframes closet-preview-ribbon-slide {
+  from { transform: translateX(0); }
+  to { transform: translateX(-8.3333%); }
+}
+
+.closet-preview-container {
+  position: relative;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 96px 32px 0;
+}
+
+/* 20px IS LEGIBILITY, NOT TASTE. Cream on this coral measures 3.23:1, which
+   fails AA for normal text and passes the 3:1 bar for large text — and bold
+   type counts as large from 18.66px. Below that size this line must go ink
+   #1E1A19, which measures 4.50:1. Do not quietly shrink it. */
+.closet-preview-eyebrow {
+  font-family: Quicksand, sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #EDECE0;
+  margin: 0 0 16px;
+}
+
+/* THE max-width IS WHAT BREAKS THE HEADING ONTO TWO LINES. There is no line
+   break in the markup, so this number is the only thing holding the shape the
+   design was approved on. It is the first thing to check on a render, and the
+   lever if it comes out wrong: lower it to force the break sooner, raise it to
+   let more onto line one. Instrument Serif loads at 400 only, so the size does
+   all the work and any heavier weight would be faked by the browser. */
+.closet-preview-heading {
+  position: relative;
+  z-index: 1;
+  font-family: "Instrument Serif", serif;
+  font-weight: 400;
+  font-size: 128px;
+  line-height: 0.92;
+  letter-spacing: -0.01em;
+  color: #EDECE0;
+  max-width: 680px;
+  margin: 0;
+}
+
+/* PLACEHOLDER FILL, exactly like the two hero seam stars. When her PNG lands
+   it is one property swap on this same element — drop background-color and
+   clip-path, add background-image, background-size:contain and
+   background-repeat:no-repeat. NO DESIGNER WORK.
+   The top and left figures are positioned against the container and have
+   never been looked at. They are a guess and they need one render. */
+.closet-preview-star {
+  position: absolute;
+  z-index: 3;
+  top: 296px;
+  left: 690px;
+  width: 76px;
+  height: 76px;
+  background-color: #E5AD43;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  pointer-events: none;
+}
+
+/* THE OVERLAP IS A NEGATIVE MARGIN ON THE ROW plus a per-card offset, never
+   absolute coordinates on individual cards. That is what lets the ragged line
+   survive any width and leaves ONE number to tune. */
+.closet-preview-grid {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 22px;
+  margin-top: -96px;
+}
+
+.closet-preview-grid > *:nth-child(1) { margin-top: 0; }
+.closet-preview-grid > *:nth-child(2) { margin-top: 36px; }
+.closet-preview-grid > *:nth-child(3) { margin-top: 12px; }
+.closet-preview-grid > *:nth-child(4) { margin-top: 48px; }
+
+/* EACH TILE IS A CREAM CARD, NOT A BARE PHOTO. That is load-bearing twice
+   over: no photo ever touches the coral, and the item text is ink on cream
+   rather than needing a tint of a colour this page does not have. */
+.closet-preview-card {
+  display: block;
+  background-color: #EDECE0;
+  border-radius: 14px;
+  overflow: hidden;
+  color: #1E1A19;
+  text-decoration: none;
+}
+
+.closet-preview-card-media {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  background-color: rgba(30, 26, 25, 0.06);
+}
+
+.closet-preview-card-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.closet-preview-card-body {
+  padding: 14px 16px 18px;
+}
+
+.closet-preview-card-name {
+  font-family: Quicksand, sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.25;
+  color: #1E1A19;
+}
+
+.closet-preview-card-meta {
+  font-family: Quicksand, sans-serif;
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1.3;
+  margin-top: 4px;
+  color: rgba(30, 26, 25, 0.62);
+}
+
+/* Written at the class, never at the link tag. The site-wide All Links tag
+   selector reaches all twenty pages and is read-only. */
+.closet-preview-cta,
+.closet-preview-cta:visited {
+  display: inline-block;
+  margin-top: 56px;
+  padding: 15px 34px;
+  border-radius: 50px;
+  background-color: #EDECE0;
+  color: #1E1A19;
+  font-family: Quicksand, sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  transition: transform .18s ease;
+}
+
+.closet-preview-cta:hover {
+  transform: translateY(-2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .closet-preview-ribbon-track {
+    animation: none;
+  }
+}
+
+/* ---- THE CLOSET PREVIEW, TABLET ----------------------------------------- */
+/* THE OVERLAP STAYS HERE. Her ruling: it is dropped entirely in the 767 block
+   and never reduced, so no in-between value lives in this file. Nobody has
+   looked at this width. */
+
+@media screen and (max-width: 991px) {
+
+  .closet-preview-section {
+    padding-bottom: 88px;
+  }
+  .closet-preview-ribbon {
+    --ribbon-height: 40px;
+  }
+  .closet-preview-container {
+    padding: 76px 24px 0;
+  }
+  .closet-preview-heading {
+    font-size: 92px;
+    max-width: 500px;
+  }
+  .closet-preview-star {
+    top: 232px;
+    left: 500px;
+    width: 62px;
+    height: 62px;
+  }
+  .closet-preview-grid {
+    gap: 16px;
+  }
+}
+
+/* ---- THE CLOSET PREVIEW, PHONE ------------------------------------------ */
+/* NO OVERLAP AT ALL, 2x2, all four level. Her ruling, chosen over the half
+   version: "the inbetween state is awkward." */
+
+@media screen and (max-width: 767px) {
+
+  .closet-preview-section {
+    padding-bottom: 72px;
+  }
+  .closet-preview-ribbon {
+    --ribbon-height: 34px;
+    --ribbon-gap: 22px;
+  }
+  .closet-preview-ribbon-word {
+    font-size: 13px;
+  }
+  .closet-preview-ribbon-star {
+    width: 11px;
+    height: 11px;
+  }
+  .closet-preview-container {
+    padding: 56px 20px 0;
+  }
+  .closet-preview-heading {
+    font-size: 64px;
+    max-width: 340px;
+  }
+  .closet-preview-star {
+    display: none;
+  }
+  .closet-preview-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-top: 36px;
+  }
+  .closet-preview-grid > *:nth-child(1),
+  .closet-preview-grid > *:nth-child(2),
+  .closet-preview-grid > *:nth-child(3),
+  .closet-preview-grid > *:nth-child(4) {
+    margin-top: 0;
+  }
+  .closet-preview-cta {
+    margin-top: 40px;
+  }
+}
+
+/* ---- THE CLOSET PREVIEW, PHONE PORTRAIT --------------------------------- */
+/* Webflow's fourth breakpoint. Its own rules are unopposed below here unless
+   this block speaks. The eyebrow stays at 19px so it clears the large-text
+   contrast bar. */
+
+@media screen and (max-width: 479px) {
+
+  .closet-preview-ribbon {
+    --ribbon-height: 30px;
+    --ribbon-gap: 18px;
+  }
+  .closet-preview-ribbon-word {
+    font-size: 12px;
+  }
+  .closet-preview-container {
+    padding: 46px 16px 0;
+  }
+  .closet-preview-eyebrow {
+    font-size: 19px;
+  }
+  .closet-preview-heading {
+    font-size: 52px;
+    max-width: 280px;
+  }
+  .closet-preview-grid {
+    gap: 12px;
+  }
+  .closet-preview-card-body {
+    padding: 12px 12px 14px;
+  }
+  .closet-preview-card-name {
+    font-size: 14px;
   }
 }
 
