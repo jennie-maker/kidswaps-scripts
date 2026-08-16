@@ -7,7 +7,10 @@
    v3.4 (S233): the lower star steps off the seam. Marquee is v4.
    v6 (S235): the how-it-works section. Ground, 920 container, amber rules,
      hairlines between steps, icon-left phone rows.
-   v7 (S235): the phone gap under the section heading.
+   v7 (S235): the phone gap under the section heading. SUPERSEDED BY v8 — the
+     eyebrow removed the problem it solved, so v7 was reverted, never published,
+     and survives only in the rollback chain.
+   v8 (S235): the section title becomes a coral eyebrow, both breakpoints.
    NOTE: Webflow has FOUR breakpoints. This file speaks at 991, 767 and 479. */
 
 /* ---- FIELD ------------------------------------------------------------- */
@@ -368,6 +371,37 @@
   padding-right: 24px;
 }
 
+/* ⚠⚠ THE SECTION TITLE IS AN EYEBROW, NOT A HEADING — HER RULING S235, off a
+   live phone render. "How It Works" and "Send" were both large Instrument
+   Serif in ink, so the section title read as a fifth step. Making it BIGGER is
+   the lever that was already failing; the fix is that it stops competing.
+
+   IT IS THE HERO'S OWN EYEBROW SPEC, CHARACTER FOR CHARACTER — Quicksand 600,
+   12px, 0.14em, uppercase, coral. ONE eyebrow style on the page, not two.
+   ⚠ Coral on cream measures 3.23:1, under AA for text this size. That is
+   ALREADY TRUE OF THE HERO EYEBROW at the same size on the same ground, so the
+   choice was match-the-hero or fix-both, never make-this-one-different.
+   Navy #1C4A91 reads 7.25:1 and is the swap if she ever wants them distinct.
+
+   ⚠ TWO SELECTORS ON PURPOSE. .h2-dark is the class it wears today; the direct
+   > h1 catches it if that class is ever renamed in the Designer. A rename would
+   otherwise leave a 52px serif title back on the page with nothing erroring.
+   ⚠ ZERO DESIGNER EDITS — the element and its text are untouched, and the title
+   case stops mattering because text-transform owns it. */
+
+.how-it-works-section .how-it-works-container .h2-dark,
+.how-it-works-section .how-it-works-container > h1 {
+  font-family: Quicksand, sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 1.2;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #E54F25;
+  text-align: left;
+  margin: 0 0 26px;
+}
+
 .how-it-works-section .how-it-works-container .steps-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -487,19 +521,18 @@
     padding-right: 20px;
   }
 
+  /* the eyebrow labels the row, so it sits closer to it than a title would */
+  .how-it-works-section .how-it-works-container .h2-dark,
+  .how-it-works-section .how-it-works-container > h1 {
+    margin: 0 0 20px;
+  }
+
   .how-it-works-section .how-it-works-container .steps-row {
     display: flex;
     flex-direction: column;
     row-gap: 0;
     column-gap: 0;
-    margin-top: 28px;
   }
-
-  /* HER ASK S235, off the live phone render: the first step needs separating
-     from the section heading. The first step's 24px top padding was zeroed so
-     it would not read as indented under the heading; giving it back, plus 28px
-     above the row, makes 52px — a section break rather than a bigger gap, and
-     close to the 48px rhythm between the steps below it. */
 
   .how-it-works-section .steps-row .step-1 {
     display: grid;
@@ -513,6 +546,7 @@
   }
 
   .how-it-works-section .steps-row .step-1:first-child {
+    padding-top: 0;
     border-top: 0;
   }
 
