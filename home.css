@@ -7,6 +7,7 @@
    v3.4 (S233): the lower star steps off the seam. Marquee is v4.
    v6 (S235): the how-it-works section. Ground, 920 container, amber rules,
      hairlines between steps, icon-left phone rows.
+   v7 (S235): the phone gap under the section heading.
    NOTE: Webflow has FOUR breakpoints. This file speaks at 991, 767 and 479. */
 
 /* ---- FIELD ------------------------------------------------------------- */
@@ -491,7 +492,14 @@
     flex-direction: column;
     row-gap: 0;
     column-gap: 0;
+    margin-top: 28px;
   }
+
+  /* HER ASK S235, off the live phone render: the first step needs separating
+     from the section heading. The first step's 24px top padding was zeroed so
+     it would not read as indented under the heading; giving it back, plus 28px
+     above the row, makes 52px — a section break rather than a bigger gap, and
+     close to the 48px rhythm between the steps below it. */
 
   .how-it-works-section .steps-row .step-1 {
     display: grid;
@@ -505,7 +513,6 @@
   }
 
   .how-it-works-section .steps-row .step-1:first-child {
-    padding-top: 0;
     border-top: 0;
   }
 
