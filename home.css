@@ -1082,8 +1082,8 @@
 
 .closet-standard-photo {
   flex: 0 0 38%;
-  background-color: #E5AD43;
-  min-height: 520px;
+  background-color: #CCCAC5;
+  min-height: 0;
 }
 
 .closet-standard-text {
@@ -1167,11 +1167,22 @@
   pointer-events: none;
 }
 
+.closet-standard-star-two {
+  position: absolute;
+  right: 104px;
+  top: 128px;
+  width: 78px;
+  height: 78px;
+  background-color: #E796A9;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  pointer-events: none;
+}
+
 @media screen and (max-width: 991px) {
 
   .closet-standard-photo {
     flex: 0 0 34%;
-    min-height: 440px;
+    min-height: 0;
   }
 
   .closet-standard-text {
@@ -1200,6 +1211,13 @@
     bottom: 74px;
     width: 38px;
     height: 38px;
+  }
+
+  .closet-standard-star-two {
+    right: 62px;
+    top: 96px;
+    width: 60px;
+    height: 60px;
   }
 
 }
@@ -1246,6 +1264,13 @@
     height: 34px;
   }
 
+  .closet-standard-star-two {
+    right: 30px;
+    top: 74px;
+    width: 52px;
+    height: 52px;
+  }
+
 }
 
 @media screen and (max-width: 479px) {
@@ -1271,6 +1296,13 @@
     bottom: 66px;
     width: 30px;
     height: 30px;
+  }
+
+  .closet-standard-star-two {
+    right: 20px;
+    top: 58px;
+    width: 42px;
+    height: 42px;
   }
 
 }
