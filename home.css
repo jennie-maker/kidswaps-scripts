@@ -609,7 +609,13 @@
 }
 
 /* ---- THE CLOSET PREVIEW ------------------------------------------------- */
-/* v10 (S237). "What you'll find" — the featured band.
+/* v12 (S238). "What you'll find" — the featured band.
+   v12 fixed four faults found on the live render: the cards were pulled up so
+   far they buried the word "find" (-96px against 128px type), the star was
+   positioned 478px past the end of the word it belonged beside and landed on
+   card 3, the grid stretched every card to the row height so the bottoms were
+   flush and card 1 carried 66px of dead cream, and the cream tile read as a
+   white card with a cream label because the photos are shot on white.
    Full-bleed coral, an amber marquee ribbon straddling the seam above it,
    oversized cream serif type, four cream cards pulled up over the type on
    desktop, one amber star, a cream pill CTA.
@@ -751,8 +757,8 @@
 .closet-preview-star {
   position: absolute;
   z-index: 3;
-  top: 296px;
-  left: 690px;
+  top: 244px;
+  left: 248px;
   width: 76px;
   height: 76px;
   background-color: #E5AD43;
@@ -768,6 +774,7 @@
   z-index: 2;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
+  align-items: start;
   gap: 22px;
 }
 
@@ -779,7 +786,7 @@
    specificity, so a bare .closet-preview-grid in the phone block would LOSE to
    this desktop rule at every width. */
 .closet-preview-grid:not(:empty) {
-  margin-top: -96px;
+  margin-top: -40px;
 }
 
 .closet-preview-grid > *:nth-child(1) { margin-top: 0; }
@@ -787,12 +794,22 @@
 .closet-preview-grid > *:nth-child(3) { margin-top: 12px; }
 .closet-preview-grid > *:nth-child(4) { margin-top: 48px; }
 
-/* EACH TILE IS A CREAM CARD, NOT A BARE PHOTO. That is load-bearing twice
-   over: no photo ever touches the coral, and the item text is ink on cream
-   rather than needing a tint of a colour this page does not have. */
+/* THE TILE IS WHITE AS OF v12 — HER RULING S238, TAKEN OFF A THREE-WAY MOCKUP
+   AND KNOWINGLY. It shipped cream at v10 and the cream lost: her product photos
+   are shot on WHITE and fill the media box edge to edge, so a cream card read as
+   a white card with a cream label stuck underneath rather than as one object.
+   The other two options were leaving it and insetting the photo in cream.
+   ⚠ THE COST SHE WAS TOLD ABOUT AND ACCEPTED: the eyebrow, the heading and the
+   CTA pill are all cream #EDECE0, so the cards are now the only white thing in
+   the section and the cream can read slightly dirty beside them. LOOK AT THE
+   WHOLE SECTION, not a card, before judging that.
+   ⚠ THE REAL FIX IS THE PHOTOGRAPHY. The day items are shot on cream this goes
+   back to #EDECE0 and the tile is one object again. Still true: no photo ever
+   touches the coral, and the item text is ink rather than a tint this page
+   does not have. */
 .closet-preview-card {
   display: block;
-  background-color: #EDECE0;
+  background-color: #FFFFFF;
   border-radius: 14px;
   overflow: hidden;
   color: #1E1A19;
@@ -822,6 +839,7 @@
   font-weight: 600;
   font-size: 15px;
   line-height: 1.25;
+  min-height: 38px;
   color: #1E1A19;
 }
 
@@ -832,6 +850,9 @@
   line-height: 1.3;
   margin-top: 4px;
   color: rgba(30, 26, 25, 0.62);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Written at the class, never at the link tag. The site-wide All Links tag
@@ -883,13 +904,16 @@
     max-width: 400px;
   }
   .closet-preview-star {
-    top: 232px;
-    left: 500px;
+    top: 184px;
+    left: 176px;
     width: 62px;
     height: 62px;
   }
   .closet-preview-grid {
     gap: 16px;
+  }
+  .closet-preview-grid:not(:empty) {
+    margin-top: -28px;
   }
 }
 
@@ -929,6 +953,9 @@
   }
   .closet-preview-grid:not(:empty) {
     margin-top: 36px;
+  }
+  .closet-preview-grid {
+    align-items: stretch;
   }
   .closet-preview-grid > *:nth-child(1),
   .closet-preview-grid > *:nth-child(2),
