@@ -1472,11 +1472,24 @@
    it replaced. 64 IS THE SIZE THAT KEEPS HER COMPOSITION. This one number is
    the lever if the break lands in the wrong place. */
 
+/* ⚠⚠ padding-left:0 BEATS A WEBFLOW PROPERTY NOTHING HERE HAD OPPOSED — v28 (S244).
+   Webflow sets a LEFT PADDING on .h2-light (15px measured at 386px, 20px at 815px,
+   per breakpoint), so the heading's text started right of the sub line, the cards
+   row and the star, which all sit on the container's own padding edge. margin:0
+   was already here and could never have caught it. FOUND BY PRINTING TWO
+   ELEMENTS' LEFT EDGES TOGETHER, not by reading either one alone — same species
+   as the hero's text-align:center. This selector is (0,3,0) against Webflow's
+   (0,1,0) and A MEDIA QUERY ADDS NO SPECIFICITY, so the base block kills it at
+   all four widths and the breakpoint blocks need no repeat.
+   ⚠ THE VERTICAL PADDING IS LEFT ALONE ON PURPOSE — part of the approved
+   composition, and she asked for a left-edge fix, not for the heading to move up. */
+
 .pricing-preview-section .pricing-preview-container > .h2-light {
   grid-column: 1;
   grid-row: 1;
   align-self: end;
   margin: 0;
+  padding-left: 0;
   max-width: 520px;
   color: #EDECE0;
   font-family: "Instrument Serif", serif;
@@ -1747,7 +1760,7 @@
     grid-row: 1;
     justify-self: start;
     max-width: none;
-    font-size: 34px;
+    font-size: 52px;
     text-align: left;
   }
 
@@ -1807,7 +1820,7 @@
 
 @media screen and (max-width: 479px) {
   .pricing-preview-section .pricing-preview-container > .h2-light {
-    font-size: 29px;
+    font-size: 44px;
   }
 }
 
