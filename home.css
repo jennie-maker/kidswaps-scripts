@@ -34,7 +34,7 @@
    Those two edges stay 0 ON PURPOSE. Every free edge takes the token. */
 
 :root {
-  --section-gap: 35px;
+  --section-gap: 44px;
 
   /* ⚠⚠⚠ --ribbon-height LIVES HERE, NOT ON .closet-preview-ribbon, AND THAT IS
      LOAD-BEARING. The ribbon straddles the cream-to-coral seam by pulling itself
@@ -402,13 +402,38 @@
    the band had no visible edge. Cream against the white featured-section below
    gives it one, and 100/40 then reads lopsided. One number. */
 
+/* ⚠⚠⚠ ONE SPINE — v29 (S244). HER RULING, AND IT KNOWINGLY REVERSES S234's
+   920 CONTAINER, which she narrowed on purpose so this section would "read more
+   narrow at a glance". She was shown the cost on a rendered comparison — wider
+   step columns, and the ~24ch paragraph measure no longer ragging — and chose the
+   single left edge anyway. DO NOT "RESTORE" 920 ON THE STRENGTH OF THE S234 LINE.
+   ⚠⚠ THE SPINE IS A **TEXT** EDGE, NOT A CONTAINER EDGE: 1240 max-width with 60px
+   padding puts type at 166 on a 1451 viewport, which is where the hero's words
+   already sit (hero-container 1240 + hero-left's own 60 padding). THE HERO CARD'S
+   OUTER EDGE STAYS OUTSIDE THE SPINE ON PURPOSE — it is a drawn object, like the
+   closet-standard photo, and closet-standard is exempt for the same reason.
+   ⚠ SOURCES IS NOT IN THIS FILE — it ships as a Webflow Embed with its own scoped
+   CSS, so its 40px padding is a separate edit and is NOT on the spine yet.
+   ⚠ align-items:flex-start BEATS A WEBFLOW align-items:center THAT IS IN NO RULE
+   IN THIS FILE. The heading is shrink-to-fit, so it was being centred AS A BOX and
+   its own text-align:left could never move it — the §0 rule about text-align and
+   shrink-to-fit children, arriving on a second element.
+   ⚠⚠ THE PRICING CLAMPS WERE **NOT** RETUNED, DELIBERATELY. §STATE says the three
+   vw factors cap at 1188 because that is where the container stopped growing at
+   max-width 1140. The container is now 1240, so type caps ~52px of viewport BEFORE
+   the container does. THAT IS THE SAFE DIRECTION — the rows get ~28px more room and
+   nothing can overflow — and it leaves the type she approved at S243 untouched at
+   every width. Retuning to 2.82/2.26/1.85vw would cap at 1240 and shrink her
+   approved sizes everywhere below it. CLAUDE'S CALL, REVERSIBLE. */
+
 .how-it-works-section .how-it-works-container {
   width: 100%;
-  max-width: 920px;
+  max-width: 1240px;
   margin-left: auto;
   margin-right: auto;
-  padding-left: 24px;
-  padding-right: 24px;
+  padding-left: 60px;
+  padding-right: 60px;
+  align-items: flex-start;
 }
 
 /* ⚠⚠ THE SECTION TITLE IS A SANS HEADER, NOT A SERIF HEADING — HER RULING S235,
@@ -530,6 +555,11 @@
    about three words a line. Her ruled phone rows start at 767. */
 
 @media screen and (max-width: 991px) {
+
+  .how-it-works-section .how-it-works-container {
+    padding-left: 40px;
+    padding-right: 40px;
+  }
 
   .how-it-works-section .how-it-works-container .steps-row {
     grid-template-columns: repeat(2, 1fr);
@@ -746,7 +776,7 @@
   position: relative;
   max-width: 1240px;
   margin: 0 auto;
-  padding: 64px 32px 0;
+  padding: 64px 60px 0;
 }
 
 /* INK AS OF v13, FOLLOWING THE HEADING. The old cream measured 3.23:1, which
@@ -951,7 +981,7 @@
     --ribbon-height: 40px;
   }
   .closet-preview-container {
-    padding: 52px 24px 0;
+    padding: 52px 40px 0;
   }
   .closet-preview-cta,
   .closet-preview-cta:visited {
@@ -1066,7 +1096,7 @@
     font-size: 12px;
   }
   .closet-preview-container {
-    padding: 34px 16px 0;
+    padding: 34px 20px 0;
   }
   .closet-preview-star {
     top: 132px;
@@ -1458,9 +1488,9 @@
   grid-template-columns: 1fr auto;
   column-gap: 40px;
   align-items: end;
-  max-width: 1140px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 60px;
 }
 
 /* ⚠⚠⚠ THE max-width IS WHAT MAKES THE HEADING TWO LINES, NOT THE FONT SIZE.
@@ -1732,6 +1762,10 @@
     background-size: 44px 44px;
   }
 
+  .pricing-preview-section .pricing-preview-container {
+    padding: 0 40px;
+  }
+
   .pricing-preview-section .pricing-preview-container > .h2-light {
     font-size: 52px;
     max-width: 420px;
@@ -1752,7 +1786,7 @@
   .pricing-preview-section .pricing-preview-container {
     grid-template-columns: 1fr;
     column-gap: 0;
-    padding: 0 18px;
+    padding: 0 20px;
   }
 
   .pricing-preview-section .pricing-preview-container > .h2-light {
