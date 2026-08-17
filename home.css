@@ -1567,11 +1567,22 @@
    ⚠ THE TYPE IS SET ON THE CARD and inherited by three of its four children,
    so the line is one size by construction rather than by four rules agreeing. */
 
+/* ⚠⚠⚠ space-between IS HER RULING S243, TAKEN OFF THE LIVE PAGE RATHER THAN A
+   MOCKUP — she marked the empty right-hand third of every row on a screenshot
+   and asked for the text to fill it. IT REVERSES HER OWN S243 CHOICE OF THE
+   NATURAL-WIDTH ROW, made before she had seen either version at full width.
+   ⚠⚠ AND IT IS WHY THE SEPARATOR DOTS ARE GONE ABOVE 767: once real space
+   opens between the items a trailing middot floats in the middle of a gap
+   attached to nothing. THE SPACING DOES THE SEPARATING NOW. Restore the dots
+   only if the spread is reversed — the two decisions are one decision.
+   ⚠ column-gap IS THE MINIMUM, NOT THE GAP. It only governs a width narrow
+   enough that space-between has nothing left to distribute. */
 .pricing-preview-section .pricing-card {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   align-items: baseline;
+  justify-content: space-between;
   column-gap: 10px;
   row-gap: 2px;
   width: auto;
@@ -1658,17 +1669,10 @@
   text-align: left;
 }
 
-/* THE SEPARATORS — TRAILING, GLUED, AND NEVER ON THE LAST ITEM. */
-
-.pricing-preview-section .pricing-card > .footer-tagline-dark::after,
-.pricing-preview-section .pricing-card > .body-text-dark::after,
-.pricing-preview-section .pricing-card > .h3::after {
-  content: "\00A0\00B7";
-  color: #FFFFFF;
-  font-family: Quicksand, sans-serif;
-  font-style: normal;
-  font-size: 17px;
-}
+/* THE SEPARATORS LIVE IN THE PHONE BLOCK ONLY as of S243 — see the phone
+   section below. Above 767 the row is spread edge to edge and a dot would sit
+   in the middle of empty space. DO NOT RESTORE A DESKTOP SEPARATOR RULE HERE
+   without reversing space-between at the same time. */
 
 /* THE FOOTNOTE sits under the lines, left, with the asterisks it explains.
    v17's rules still set its colour, family and size; these win by coming
@@ -1705,12 +1709,6 @@
 
   .pricing-preview-section .pricing-card > .footer-tagline-dark {
     font-size: 20px;
-  }
-
-  .pricing-preview-section .pricing-card > .footer-tagline-dark::after,
-  .pricing-preview-section .pricing-card > .body-text-dark::after,
-  .pricing-preview-section .pricing-card > .h3::after {
-    font-size: 16px;
   }
 }
 
@@ -1769,10 +1767,25 @@
     grid-row: 5;
   }
 
+  /* ⚠⚠ BELOW 767 THE SPREAD IS OFF AND THE DOTS COME BACK. A spread row that
+     WRAPS stretches each wrapped line separately, which reads as broken; and
+     packed items need the dots to separate them. THE TWO GO TOGETHER AT EVERY
+     WIDTH — spread without dots, or packed with dots, never a mixture. */
   .pricing-preview-section .pricing-card {
+    justify-content: flex-start;
     font-size: 15px;
     padding: 12px 0;
     column-gap: 8px;
+  }
+
+  .pricing-preview-section .pricing-card > .footer-tagline-dark::after,
+  .pricing-preview-section .pricing-card > .body-text-dark::after,
+  .pricing-preview-section .pricing-card > .h3::after {
+    content: "\00A0\00B7";
+    color: #FFFFFF;
+    font-family: Quicksand, sans-serif;
+    font-style: normal;
+    font-size: 15px;
   }
 
   .pricing-preview-section .pricing-card > .footer-tagline-dark {
@@ -1826,11 +1839,8 @@
 }
 
 
-.pricing-preview-section .pricing-card br {
-  display: none;
-}
-
 /* ---- TABLET ------------------------------------------------------------ */
+
 @media screen and (max-width: 991px) {
 
   .hero-section .home-hero-marquee {
