@@ -1449,18 +1449,24 @@
 }
 
 .pricing-preview-section .pricing-preview-container > .h2-light {
-  grid-column: 1;
-  grid-row: 1 / span 2;
+  grid-column: 1 / -1;
+  grid-row: 1;
   align-self: end;
   margin: 0;
   color: #EDECE0;
   font-family: "Instrument Serif", serif;
   font-weight: 400;
-  /* 72px, RAISED FROM 44 AT S242 TO FILL THE EMPTY RUNG IN THE LADDER.
-     IT BREAKS TO TWO LINES ON PURPOSE — "Simple," then "honest pricing." —
-     which gives the pink italic its own line and makes the heading a shape
-     instead of a strip. That is the break the approved mockup had. */
-  font-size: 72px;
+  /* 112px, MATCHING .closet-standard-heading — HER RULING S242, so pricing
+     sits in the same size family as the two interior sections instead of
+     halfway between them and the plan list.
+     ⚠⚠⚠ THE max-width IS WHAT MAKES IT TWO LINES, NOT THE FONT SIZE. The
+     Closet Standard heading breaks because its text column is half a section
+     wide, not because it is large — at 72px across a full container this
+     heading stayed on ONE line and the wrap was predicted wrongly twice.
+     THIS IS THE NUMBER TO TUNE IF THE BREAK LANDS IN THE WRONG PLACE, and
+     nothing else needs to move with it. */
+  font-size: 112px;
+  max-width: 780px;
   line-height: 0.98;
   text-align: left;
 }
@@ -1475,32 +1481,35 @@
   color: #E796A9;
 }
 
-/* THE STAR. A Div Block filled by clip-path, PLACEHOLDER PINK #E796A9, the
-   same construction as the two hero seam stars. When her PNG lands it is one
-   property on this same element — drop background-color and clip-path, add
-   background-image / background-size:contain / background-repeat:no-repeat.
-   NO DESIGNER WORK.
-   ⚠ IT POSITIONS AGAINST .pricing-preview-container, which carries the
-   position:relative — NOT against the section. These coordinates are the two
-   numbers to nudge. */
+/* THE STAR IS DRAWN BY THE HEADING, NOT PLACED BESIDE IT.
+   ⚠⚠⚠ IT USED TO BE AN ABSOLUTELY POSITIONED DIV AT left:47%, AND THAT
+   LANDED IT ON TOP OF THE "i" IN "pricing" THE FIRST TIME THE HEADING
+   CHANGED SIZE. A coordinate cannot follow text. As an inline mark it trails
+   the final period at every size, at every width, and through any wrap.
+   ⚠ SIZED IN em ON PURPOSE, so it scales with the heading and needs no twin
+   in any media query. When her PNG lands it is one property on this same
+   pseudo-element — drop background-color and clip-path, add background-image
+   / background-size:contain / background-repeat:no-repeat.
+   ⚠ THE .pricing-heading-star DIV IS DELETED FROM THE DESIGNER. If a future
+   session finds that class in an old note, it is gone on purpose. */
 
-.pricing-preview-section .pricing-heading-star {
-  position: absolute;
-  left: 47%;
-  top: 62px;
-  width: 30px;
-  height: 30px;
+.pricing-preview-section .pricing-preview-container > .h2-light::after {
+  content: "";
+  display: inline-block;
+  width: 0.30em;
+  height: 0.30em;
+  margin-left: 0.10em;
+  vertical-align: 0.06em;
   background-color: #E796A9;
   clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
-  pointer-events: none;
 }
 
 .pricing-preview-section .pricing-preview-container > .footer-tagline-dark {
   grid-column: 2;
-  grid-row: 1;
+  grid-row: 2;
   justify-self: end;
   max-width: 230px;
-  margin: 0 0 12px;
+  margin: 14px 0 12px;
   color: #EDECE0;
   font-family: Quicksand, sans-serif;
   font-weight: 400;
@@ -1522,7 +1531,7 @@
 
 .pricing-preview-section .pricing-preview-container > .btn-primary {
   grid-column: 2;
-  grid-row: 2;
+  grid-row: 3;
   justify-self: end;
   align-self: start;
   margin: 0;
@@ -1530,7 +1539,7 @@
 
 .pricing-preview-section .pricing-cards-row {
   grid-column: 1 / -1;
-  grid-row: 3;
+  grid-row: 4;
   display: block;
   width: 100%;
   margin: 22px 0 0;
@@ -1662,7 +1671,7 @@
 
 .pricing-preview-section .pricing-footnote {
   grid-column: 1 / -1;
-  grid-row: 4;
+  grid-row: 5;
   max-width: none;
   margin: 16px 0 0;
   padding: 0;
@@ -1681,13 +1690,8 @@
   }
 
   .pricing-preview-section .pricing-preview-container > .h2-light {
-    font-size: 52px;
-  }
-
-  .pricing-preview-section .pricing-heading-star {
-    top: 46px;
-    width: 26px;
-    height: 26px;
+    font-size: 76px;
+    max-width: 540px;
   }
 
   .pricing-preview-section .pricing-card {
@@ -1716,6 +1720,7 @@
     grid-column: 1;
     grid-row: 1;
     font-size: 30px;
+    max-width: none;
   }
 
   .pricing-preview-section .pricing-preview-container > .footer-tagline-dark {
@@ -1725,6 +1730,11 @@
     max-width: 300px;
     margin: 10px 0 16px;
     text-align: left;
+  }
+
+  .pricing-preview-section .pricing-preview-container > .h2-light::after {
+    width: 0.26em;
+    height: 0.26em;
   }
 
   .pricing-preview-section .pricing-preview-container > .btn-primary {
@@ -1740,14 +1750,6 @@
 
   .pricing-preview-section .pricing-footnote {
     grid-row: 5;
-  }
-
-  .pricing-preview-section .pricing-heading-star {
-    left: auto;
-    right: 18px;
-    top: 6px;
-    width: 22px;
-    height: 22px;
   }
 
   .pricing-preview-section .pricing-card {
