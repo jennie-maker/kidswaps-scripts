@@ -278,7 +278,13 @@
 .hero-section .h1-light-leftaligned {
   font-family: "Instrument Serif", serif;
   font-weight: 400;
-  font-size: 60px;
+  /* 80px, RAISED FROM 60 AT S242. THE PAGE'S HEADING LADDER WAS 128 / 112 /
+     60 / 44 WITH NOTHING BETWEEN 60 AND 112, so the hero — the most important
+     section on the page — was closer in size to the pricing list than to the
+     two interior sections. 88 was tried at true size and took the headline to
+     FOUR lines, which grows the card and eats the marquee's fixed 90px
+     clearance. 80 IS THE CEILING THAT KEEPS IT AT THREE. */
+  font-size: 80px;
   line-height: 1.02;
   letter-spacing: -0.01em;
   color: #1E1A19;
@@ -1450,7 +1456,11 @@
   color: #EDECE0;
   font-family: "Instrument Serif", serif;
   font-weight: 400;
-  font-size: 44px;
+  /* 72px, RAISED FROM 44 AT S242 TO FILL THE EMPTY RUNG IN THE LADDER.
+     IT BREAKS TO TWO LINES ON PURPOSE — "Simple," then "honest pricing." —
+     which gives the pink italic its own line and makes the heading a shape
+     instead of a strip. That is the break the approved mockup had. */
+  font-size: 72px;
   line-height: 0.98;
   text-align: left;
 }
@@ -1671,7 +1681,7 @@
   }
 
   .pricing-preview-section .pricing-preview-container > .h2-light {
-    font-size: 38px;
+    font-size: 52px;
   }
 
   .pricing-preview-section .pricing-heading-star {
@@ -1832,7 +1842,9 @@
   }
 
   .hero-section .h1-light-leftaligned {
-    font-size: 46px;
+    /* 54, up from 46, so the drop from 80 at the breakpoint is a step rather
+       than a cliff. CLAUDE'S PICK AND NOBODY HAS LOOKED AT THIS WIDTH. */
+    font-size: 54px;
     max-width: 18ch;
   }
 
