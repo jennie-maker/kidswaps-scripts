@@ -1826,8 +1826,11 @@
 }
 
 
-/* ---- TABLET ------------------------------------------------------------ */
+.pricing-preview-section .pricing-card br {
+  display: none;
+}
 
+/* ---- TABLET ------------------------------------------------------------ */
 @media screen and (max-width: 991px) {
 
   .hero-section .home-hero-marquee {
