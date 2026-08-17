@@ -692,7 +692,8 @@
 .closet-preview-section {
   position: relative;
   background-color: #E54F25;
-  padding: 0 0 var(--section-gap);
+  overflow-x: clip;
+  padding: 0 0 calc(var(--section-gap) + var(--ribbon-height) / 2);
 }
 
 /* THE SECTION HIDES ONLY WHEN THE SCRIPT SAYS SO. The class is added by the
@@ -765,6 +766,52 @@
   height: 13px;
   background-color: #1E1A19;
   clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+
+/* ⚠⚠⚠ THE CLOSING RIBBON — v30 (S244). HER RULING: dark green #1F5C38, cream
+   text, RIGHT END DOWN, stars for now (she may swap the mark later), STRADDLING
+   the bottom seam exactly as the top one straddles the top. Approved string,
+   verbatim, no terminal full stop: "Every piece, checked by hand"
+   ⚠⚠ IT REUSES .closet-preview-ribbon-track / -set / -word / -star, so the type
+   ladder and the star already scale per breakpoint. ONLY the band differs.
+   ⚠⚠⚠ overflow-x:clip ON THE SECTION IS LOAD-BEARING AND overflow:hidden WOULD
+   BREAK IT. The band is 112% wide so the rotation cannot expose a wedge of coral
+   at either end, and anything wider than the viewport would otherwise give the
+   whole page a horizontal scrollbar. `clip` clips sideways while leaving the
+   vertical axis VISIBLE, which is what lets both ribbons hang past their section.
+   `hidden` forces the other axis to auto and would cut the straddle off.
+   ⚠ OLD SAFARI (<16) TREATS clip AS visible — a horizontal scrollbar there, not a
+   broken layout. Accepted knowingly.
+   ⚠⚠ THE SECTION'S BOTTOM PADDING IS NOW calc(--section-gap + --ribbon-height/2),
+   THE SAME SHAPE how-it-works USES ABOVE THE TOP RIBBON, so the VISIBLE coral
+   below the cards equals --section-gap at every width. A literal value there
+   renders as gap-minus-half-a-ribbon. Both edges of this section are now owned by
+   a ribbon; neither can take the token directly.
+   ⚠ THE LOWER HALF LIES OVER THE CLOSET STANDARD PHOTO, HER CHOICE, seen on a
+   rendered comparison against the alternative of sitting inside the coral.
+   z-index 3 keeps it above that photo — if it ever disappears, look for a
+   position + z-index on .closet-standard-section before looking here. */
+
+.closet-preview-ribbon-closing {
+  --ribbon-gap: 30px;
+  position: relative;
+  z-index: 3;
+  width: 112%;
+  margin-left: -6%;
+  height: var(--ribbon-height);
+  margin-top: 0;
+  margin-bottom: calc(var(--ribbon-height) / -2);
+  background-color: #1F5C38;
+  transform: rotate(2.8deg);
+  overflow: hidden;
+}
+
+.closet-preview-ribbon-closing .closet-preview-ribbon-word {
+  color: #EDECE0;
+}
+
+.closet-preview-ribbon-closing .closet-preview-ribbon-star {
+  background-color: #EDECE0;
 }
 
 @keyframes closet-preview-ribbon-slide {
@@ -1016,6 +1063,10 @@
     --ribbon-height: 34px;
   }
 
+  .closet-preview-ribbon-closing {
+    --ribbon-gap: 22px;
+  }
+
   .closet-preview-ribbon {
     --ribbon-gap: 22px;
   }
@@ -1087,6 +1138,10 @@
 
   :root {
     --ribbon-height: 30px;
+  }
+
+  .closet-preview-ribbon-closing {
+    --ribbon-gap: 18px;
   }
 
   .closet-preview-ribbon {
