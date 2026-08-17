@@ -1376,27 +1376,34 @@
 }
 
 /* ======================================================================
-   PRICING PREVIEW — v19 (S242). ONE LINE PER PLAN.
-   HER RULING, after v18's two-column rows were rejected: ALL FOUR FACTS ARE
-   EQUALLY IMPORTANT. Every layout that ranked them by size failed for the
-   same reason, so they are now one size on one line, separated by middots,
-   and told apart by ORDER and COLOUR rather than by scale.
-   Her words on the render: "love it".
+   PRICING PREVIEW — v23 (S242). ONE LINE PER PLAN, FULL WIDTH.
+   HER RULING: ALL FOUR FACTS ARE EQUALLY IMPORTANT. Every layout that ranked
+   them by size failed for the same reason, so they are one size on one line,
+   separated by middots, told apart by ORDER and COLOUR rather than by scale.
 
    READS: name (serif) · swap count (YELLOW) · price · savings (NUNITO ITALIC)
 
-   ⚠⚠⚠ STILL NOT ONE ELEMENT RESTRUCTURED. The markup order in every card is
-   name, PRICE, savings, SWAPS — which is not the reading order. `order` on a
-   flex row fixes that with no Designer work. DO NOT "TIDY" THE MARKUP TO
-   MATCH THE LINE; the four cards are still cards and the order is these rules.
+   ⚠⚠⚠ NOT ONE ELEMENT RESTRUCTURED. The markup order in every card is name,
+   PRICE, savings, SWAPS — which is not the reading order. `order` on a flex
+   row fixes that with no Designer work. DO NOT "TIDY" THE MARKUP TO MATCH THE
+   LINE; the four cards are still cards and the order is these rules.
 
-   ⚠⚠ THE MIDDOTS ARE ::before CONTENT, NOT TYPED CHARACTERS. Nobody has to
-   paste a separator into a Designer field, and a reordered or removed item
-   cannot leave a stranded dot behind.
+   ⚠⚠⚠ flex-direction IS NOT OPTIONAL AND ITS ABSENCE SHIPPED ONCE. Webflow's
+   own .pricing-card is a flex COLUMN — that is how the four children used to
+   stack — so `display:flex` alone changes nothing and every item takes its
+   own row. `order` still works, which makes the fault read as a stacking bug
+   rather than a missing declaration. STATE THE DIRECTION WHENEVER YOU TAKE
+   OVER A WEBFLOW FLEX.
 
-   ⚠⚠ EVERY RULE IS AT TWO CLASSES, SCOPED TO .pricing-preview-section, and
-   .footer-tagline-dark IS WORN TWICE IN THIS SECTION — the sub line and the
-   four plan names. THE DIRECT-CHILD COMBINATOR IS WHAT TELLS THEM APART.
+   ⚠⚠ THE SEPARATORS ARE TRAILING ::after MARKS, NOT LEADING ::before ONES,
+   AND THAT IS WHAT MAKES THE LINE WRAP CLEANLY. Drawn before each item, a
+   wrapped line STARTS with a stranded middot — seen on the phone at S242.
+   Drawn after, with a non-breaking space glueing the dot to the word before
+   it, the dot can only ever end a line. The savings clause takes none,
+   because nothing follows it.
+
+   ⚠⚠ .footer-tagline-dark IS WORN TWICE IN THIS SECTION — the sub line and
+   the four plan names. THE DIRECT-CHILD COMBINATOR IS WHAT TELLS THEM APART.
    ====================================================================== */
 
 .pricing-preview-section {
@@ -1411,12 +1418,10 @@
    next. NO IMAGE, NO MARKUP.
    ⚠⚠⚠ THE z-index PAIR IS LOAD-BEARING. section-categories comes LATER in
    the DOM and carries its own background, so without z-index on both the
-   section and this pseudo-element the next section paints straight over the
-   bumps and the edge silently goes flat.
+   section and this pseudo-element the next section paints over the bumps and
+   the edge silently goes flat.
    ⚠⚠ RADIUS, TILE AND OFFSET ARE ONE NUMBER IN THREE PLACES: tile = radius
-   x 2, height = radius, bottom = minus radius. Change one, change all three.
-   ⚠ IT CURRENTLY BITES INTO section-categories, WHICH IS ALSO GREEN, so it
-   reads softer than it will once that section comes off the page. */
+   x 2, height = radius, bottom = minus radius. Change one, change all three. */
 
 .pricing-preview-section::after {
   content: "";
@@ -1434,8 +1439,10 @@
 
 /* THE CONTAINER IS THE LAYOUT. Heading left across two rows, sub line and
    button stacked on the right, the plan lines spanning underneath, footnote
-   last. EVERY CHILD IS PLACED EXPLICITLY, so DOM order decides nothing and
-   an element added later cannot shuffle the grid. */
+   last. EVERY CHILD IS PLACED EXPLICITLY, so DOM order decides nothing.
+   ⚠ 1140 RATHER THAN 920 — HER ASK S242, so each plan line runs as close to
+   full width as it can. It is deliberately wider than how-it-works' 920 and
+   narrower than the hero's field. */
 
 .pricing-preview-section .pricing-preview-container {
   position: relative;
@@ -1443,38 +1450,39 @@
   grid-template-columns: 1fr auto;
   column-gap: 40px;
   align-items: end;
-  max-width: 920px;
+  max-width: 1140px;
   margin: 0 auto;
   padding: 0 24px;
 }
 
+/* ⚠⚠⚠ THE max-width IS WHAT MAKES THE HEADING TWO LINES, NOT THE FONT SIZE.
+   The Closet Standard heading breaks because its text column is half a
+   section wide, not because it is 112px — and this heading was predicted to
+   wrap at 72 and did not, twice. 112 WAS TRIED AND REVERTED: it needs the
+   full container, and taking the full container pushed the sub line and the
+   button into the middle of an empty field, which was worse than the layout
+   it replaced. 64 IS THE SIZE THAT KEEPS HER COMPOSITION. This one number is
+   the lever if the break lands in the wrong place. */
+
 .pricing-preview-section .pricing-preview-container > .h2-light {
-  grid-column: 1 / -1;
-  grid-row: 1;
+  grid-column: 1;
+  grid-row: 1 / span 2;
   align-self: end;
   margin: 0;
+  max-width: 520px;
   color: #EDECE0;
   font-family: "Instrument Serif", serif;
   font-weight: 400;
-  /* 112px, MATCHING .closet-standard-heading — HER RULING S242, so pricing
-     sits in the same size family as the two interior sections instead of
-     halfway between them and the plan list.
-     ⚠⚠⚠ THE max-width IS WHAT MAKES IT TWO LINES, NOT THE FONT SIZE. The
-     Closet Standard heading breaks because its text column is half a section
-     wide, not because it is large — at 72px across a full container this
-     heading stayed on ONE line and the wrap was predicted wrongly twice.
-     THIS IS THE NUMBER TO TUNE IF THE BREAK LANDS IN THE WRONG PLACE, and
-     nothing else needs to move with it. */
-  font-size: 112px;
-  max-width: 780px;
+  font-size: 64px;
   line-height: 0.98;
   text-align: left;
 }
 
-/* THE ITALIC WORD. Instrument Serif italic is a REAL loaded face on this
-   page, measured at S232 — not a synthesised slant. It hangs off the <em>
-   the Designer writes when a word is italicised, so if that markup is ever
-   removed this rule goes inert and the heading simply reads plain. */
+/* THE ITALIC WORD. Instrument Serif italic is a REAL loaded face on this page,
+   measured at S232 — not a synthesised slant. It hangs off the <em> the
+   Designer writes when a word is italicised, so IF THAT MARKUP IS EVER LOST
+   THE PINK SILENTLY GOES WITH IT. That happened once at S242 and the fix was
+   one click, not a CSS change. */
 
 .pricing-preview-section .pricing-preview-container > .h2-light em {
   font-style: italic;
@@ -1483,15 +1491,14 @@
 
 /* THE STAR IS DRAWN BY THE HEADING, NOT PLACED BESIDE IT.
    ⚠⚠⚠ IT USED TO BE AN ABSOLUTELY POSITIONED DIV AT left:47%, AND THAT
-   LANDED IT ON TOP OF THE "i" IN "pricing" THE FIRST TIME THE HEADING
-   CHANGED SIZE. A coordinate cannot follow text. As an inline mark it trails
-   the final period at every size, at every width, and through any wrap.
-   ⚠ SIZED IN em ON PURPOSE, so it scales with the heading and needs no twin
-   in any media query. When her PNG lands it is one property on this same
-   pseudo-element — drop background-color and clip-path, add background-image
-   / background-size:contain / background-repeat:no-repeat.
-   ⚠ THE .pricing-heading-star DIV IS DELETED FROM THE DESIGNER. If a future
-   session finds that class in an old note, it is gone on purpose. */
+   LANDED IT ON TOP OF THE "i" IN "pricing" THE FIRST TIME THE HEADING CHANGED
+   SIZE. A coordinate cannot follow text. As an inline mark it trails the final
+   period at every size, at every width, and through any wrap.
+   ⚠ SIZED IN em ON PURPOSE, so it scales with the heading and needs no twin in
+   any media query. When her PNG lands it is one property on this same
+   pseudo-element — drop background-color and clip-path, add background-image /
+   background-size:contain / background-repeat:no-repeat.
+   ⚠ THE .pricing-heading-star DIV IS DELETED FROM THE DESIGNER. */
 
 .pricing-preview-section .pricing-preview-container > .h2-light::after {
   content: "";
@@ -1506,10 +1513,10 @@
 
 .pricing-preview-section .pricing-preview-container > .footer-tagline-dark {
   grid-column: 2;
-  grid-row: 2;
+  grid-row: 1;
   justify-self: end;
   max-width: 230px;
-  margin: 14px 0 12px;
+  margin: 0 0 12px;
   color: #EDECE0;
   font-family: Quicksand, sans-serif;
   font-weight: 400;
@@ -1531,7 +1538,7 @@
 
 .pricing-preview-section .pricing-preview-container > .btn-primary {
   grid-column: 2;
-  grid-row: 3;
+  grid-row: 2;
   justify-self: end;
   align-self: start;
   margin: 0;
@@ -1539,28 +1546,21 @@
 
 .pricing-preview-section .pricing-cards-row {
   grid-column: 1 / -1;
-  grid-row: 4;
+  grid-row: 3;
   display: block;
   width: 100%;
-  margin: 22px 0 0;
+  margin: 24px 0 0;
   padding: 0;
 }
 
 /* THE CARD BECOMES THE LINE. Fill, radius and shadow are cleared here rather
-   than in the Designer, so the Style panel keeps the card exactly as it was
-   and this page-linked file owns the whole look.
+   than in the Designer, so the Style panel keeps the card as it was and this
+   page-linked file owns the whole look.
    ⚠ THE TYPE IS SET ON THE CARD and inherited by three of its four children,
-   so the line is one size by construction rather than by four rules agreeing
-   with each other. */
+   so the line is one size by construction rather than by four rules agreeing. */
 
 .pricing-preview-section .pricing-card {
   display: flex;
-  /* ⚠⚠⚠ flex-direction IS NOT OPTIONAL HERE AND ITS ABSENCE SHIPPED ONCE.
-     Webflow's own .pricing-card is a flex COLUMN — that is how the four
-     children used to stack inside the card — so `display:flex` alone changes
-     nothing about direction and every item takes its own row. `order` still
-     works, which makes the fault read as a stacking bug rather than a missing
-     declaration. STATE THE DIRECTION WHENEVER YOU TAKE OVER A WEBFLOW FLEX. */
   flex-direction: row;
   flex-wrap: wrap;
   align-items: baseline;
@@ -1568,7 +1568,7 @@
   row-gap: 2px;
   width: auto;
   max-width: none;
-  padding: 13px 0;
+  padding: 14px 0;
   background-color: transparent;
   border-radius: 0;
   box-shadow: none;
@@ -1599,13 +1599,13 @@
   text-align: left;
 }
 
-/* THE SWAP COUNT CARRIES THE YELLOW — HERS, S242, moved here off the savings
-   clause. It is the one coloured thing on the line.
+/* THE SWAP COUNT CARRIES THE YELLOW — HERS, moved here off the savings clause.
+   It is the one coloured thing on the line.
    ⚠⚠ MEASURED AND KNOWINGLY ACCEPTED: #EDA920 reads 3.89 against this green,
    under the 4.5 small text wants. She was shown the number and every
-   alternative that clears it — gold #F7DE8A at 5.96, a pill at 8.54, 19px
-   bold where the bar drops to 3:1 — and chose this. DO NOT "CORRECT" THE HEX
-   OR THE SIZE TO FIX A CONTRAST SCORE. */
+   alternative that clears it — gold #F7DE8A at 5.96, a pill at 8.54, 19px bold
+   where the bar drops to 3:1 — and chose this. DO NOT "CORRECT" THE HEX OR THE
+   SIZE TO FIX A CONTRAST SCORE. */
 
 .pricing-preview-section .pricing-card > .body-text-dark {
   order: 2;
@@ -1631,13 +1631,11 @@
 }
 
 /* THE SAVINGS CLAUSE IS THE ONLY NUNITO ON THIS SITE, AND IT IS HERE FOR ONE
-   REASON: QUICKSAND HAS NO ITALIC AT ANY WEIGHT. A font-style:italic on
+   REASON: QUICKSAND HAS NO ITALIC AT ANY WEIGHT. font-style:italic on
    Quicksand is a browser-synthesised shear, which on a rounded geometric face
    turns the circles oval and smears the terminals. She picked Nunito over
    Poppins and Rubik off a rendered comparison because it is the only one of
-   the three with ROUNDED TERMINALS, so it reads as a relative rather than a
-   stranger. ⚠ IT IS SCOPED TO THIS ONE CLAUSE. If Nunito ever wants a second
-   job on this site, that is a decision, not a drive-by. */
+   the three with ROUNDED TERMINALS. ⚠ IT IS SCOPED TO THIS ONE CLAUSE. */
 
 .pricing-preview-section .pricing-card > .savings-text {
   order: 4;
@@ -1652,33 +1650,32 @@
   text-align: left;
 }
 
-/* THE SEPARATORS. Middot plus a non-breaking space, so the dot can never be
-   left stranded at the end of a wrapped line. The colour is set explicitly
-   because the swap count's own colour would otherwise bleed into its dot. */
+/* THE SEPARATORS — TRAILING, GLUED, AND NEVER ON THE LAST ITEM. */
 
-.pricing-preview-section .pricing-card > .body-text-dark::before,
-.pricing-preview-section .pricing-card > .h3::before,
-.pricing-preview-section .pricing-card > .savings-text::before {
-  content: "\00B7\00A0";
+.pricing-preview-section .pricing-card > .footer-tagline-dark::after,
+.pricing-preview-section .pricing-card > .body-text-dark::after,
+.pricing-preview-section .pricing-card > .h3::after {
+  content: "\00A0\00B7";
   color: #EDECE0;
   font-family: Quicksand, sans-serif;
   font-style: normal;
+  font-size: 17px;
 }
 
-/* THE FOOTNOTE moves out of v17's centred position and sits under the lines,
-   left, with the asterisks it explains. v17's rules still set its colour,
-   family and size; these win by coming later at the same specificity. */
+/* THE FOOTNOTE sits under the lines, left, with the asterisks it explains.
+   v17's rules still set its colour, family and size; these win by coming
+   later at the same specificity. */
 
 .pricing-preview-section .pricing-footnote {
   grid-column: 1 / -1;
-  grid-row: 5;
+  grid-row: 4;
   max-width: none;
   margin: 16px 0 0;
   padding: 0;
   text-align: left;
 }
 
-/* ---- PRICING PREVIEW v19, TABLET ---------------------------------------- */
+/* ---- PRICING PREVIEW v23, TABLET ---------------------------------------- */
 /* ⚠ CLAUDE'S PICKS AT EVERY WIDTH BELOW DESKTOP. */
 
 @media screen and (max-width: 991px) {
@@ -1690,8 +1687,8 @@
   }
 
   .pricing-preview-section .pricing-preview-container > .h2-light {
-    font-size: 76px;
-    max-width: 540px;
+    font-size: 52px;
+    max-width: 420px;
   }
 
   .pricing-preview-section .pricing-card {
@@ -1701,13 +1698,23 @@
   .pricing-preview-section .pricing-card > .footer-tagline-dark {
     font-size: 20px;
   }
+
+  .pricing-preview-section .pricing-card > .footer-tagline-dark::after,
+  .pricing-preview-section .pricing-card > .body-text-dark::after,
+  .pricing-preview-section .pricing-card > .h3::after {
+    font-size: 16px;
+  }
 }
 
-/* ---- PRICING PREVIEW v19, PHONE ----------------------------------------- */
-/* THE LINE BREAKS INTO THREE, WHICH IS WHAT MAKES IT WORK AT THIS WIDTH:
-   name / swaps + price / savings. SAME MARKUP, SAME RULES, DIFFERENT BREAKS —
-   the name and the savings clause take the full row and drop their leading
-   middots, and the flex wrap does the rest. */
+/* ---- PRICING PREVIEW v23, PHONE ----------------------------------------- */
+/* ⚠⚠⚠ NOTHING IS FORCED ONTO ITS OWN ROW AT THIS WIDTH ANY MORE. v22 gave the
+   name and the savings clause flex-basis:100%, which cut the line into FOUR
+   rows and left a stranded middot leading the price. THE LINE IS ALLOWED TO
+   WRAP ON ITS OWN, which lands it on two rows at 390px, and the trailing
+   separators mean a wrap can never start a line with a dot.
+   ⚠ ONE LINE IS NOT AVAILABLE HERE AND IT IS ARITHMETIC, NOT TASTE: the
+   longest row is about 65 characters, which needs roughly 480px at a readable
+   size. DO NOT SHRINK THE TYPE TO CHASE IT. */
 
 @media screen and (max-width: 767px) {
   .pricing-preview-section .pricing-preview-container {
@@ -1719,22 +1726,24 @@
   .pricing-preview-section .pricing-preview-container > .h2-light {
     grid-column: 1;
     grid-row: 1;
-    font-size: 30px;
-    max-width: none;
-  }
-
-  .pricing-preview-section .pricing-preview-container > .footer-tagline-dark {
-    grid-column: 1;
-    grid-row: 2;
     justify-self: start;
-    max-width: 300px;
-    margin: 10px 0 16px;
+    max-width: none;
+    font-size: 34px;
     text-align: left;
   }
 
   .pricing-preview-section .pricing-preview-container > .h2-light::after {
     width: 0.26em;
     height: 0.26em;
+  }
+
+  .pricing-preview-section .pricing-preview-container > .footer-tagline-dark {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: start;
+    max-width: 320px;
+    margin: 10px 0 16px;
+    text-align: left;
   }
 
   .pricing-preview-section .pricing-preview-container > .btn-primary {
@@ -1755,21 +1764,21 @@
   .pricing-preview-section .pricing-card {
     font-size: 15px;
     padding: 12px 0;
+    column-gap: 8px;
   }
 
   .pricing-preview-section .pricing-card > .footer-tagline-dark {
-    flex-basis: 100%;
     font-size: 19px;
   }
 
   .pricing-preview-section .pricing-card > .savings-text {
-    flex-basis: 100%;
     font-size: 13px;
   }
 
-  .pricing-preview-section .pricing-card > .body-text-dark::before,
-  .pricing-preview-section .pricing-card > .savings-text::before {
-    content: none;
+  .pricing-preview-section .pricing-card > .footer-tagline-dark::after,
+  .pricing-preview-section .pricing-card > .body-text-dark::after,
+  .pricing-preview-section .pricing-card > .h3::after {
+    font-size: 15px;
   }
 
   .pricing-preview-section::after {
@@ -1780,13 +1789,13 @@
   }
 }
 
-/* ---- PRICING PREVIEW v19, PHONE PORTRAIT -------------------------------- */
+/* ---- PRICING PREVIEW v23, PHONE PORTRAIT -------------------------------- */
 /* ⚠⚠ WEBFLOW HAS FOUR BREAKPOINTS AND THIS FILE SPEAKS AT THREE. Below 479
    Webflow's own rules are unopposed unless this block says otherwise. */
 
 @media screen and (max-width: 479px) {
   .pricing-preview-section .pricing-preview-container > .h2-light {
-    font-size: 27px;
+    font-size: 29px;
   }
 
   .pricing-preview-section .pricing-card {
@@ -1800,7 +1809,14 @@
   .pricing-preview-section .pricing-card > .savings-text {
     font-size: 12px;
   }
+
+  .pricing-preview-section .pricing-card > .footer-tagline-dark::after,
+  .pricing-preview-section .pricing-card > .body-text-dark::after,
+  .pricing-preview-section .pricing-card > .h3::after {
+    font-size: 14px;
+  }
 }
+
 
 /* ---- TABLET ------------------------------------------------------------ */
 
