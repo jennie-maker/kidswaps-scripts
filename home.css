@@ -1369,6 +1369,402 @@
   }
 }
 
+/* ======================================================================
+   PRICING PREVIEW — v18 (S242). THE EDITORIAL ROW LAYOUT.
+   HER RULING, off five mockup rounds: Option C, rows and not cards, on a
+   DARK GREEN ground, price big and white, savings small and yellow under it.
+
+   ⚠⚠⚠ NOT ONE ELEMENT WAS RESTRUCTURED TO BUILD THIS. Each .pricing-card
+   already held name / price / savings / swaps in that order, so a 2x2 grid
+   puts name and swaps down the left and price and savings down the right.
+   THE CARDS ARE STILL CARDS IN THE MARKUP. Do not "tidy" the Designer to
+   match what the page looks like — the layout is entirely these rules.
+
+   ⚠⚠ EVERY RULE IS AT TWO CLASSES, SCOPED TO .pricing-preview-section.
+   .h3, .footer-tagline-dark, .body-text-dark and .btn-primary are SITE-WIDE
+   Webflow classes worn on other pages; a single-class rule here would tie
+   with Webflow's own and win only on load order, and would reach further
+   than this section. The scope is the safety, not the specificity.
+
+   ⚠⚠ .footer-tagline-dark IS WORN TWICE IN THIS SECTION and means two
+   different things — the sub line under the heading, and the four plan
+   names inside the cards. THE DIRECT-CHILD COMBINATOR IS WHAT TELLS THEM
+   APART. Change > to a descendant space and the plan names take the sub
+   line's styling with nothing erroring.
+   ====================================================================== */
+
+.pricing-preview-section {
+  position: relative;
+  z-index: 1;
+  background-color: #1F5C38;
+  padding: var(--section-gap) 0 var(--section-gap);
+}
+
+/* THE SCALLOP. Circles of the band colour centred ON the section's bottom
+   edge, so only their lower halves show and they hang into whatever comes
+   next. NO IMAGE, NO MARKUP.
+   ⚠⚠⚠ THE z-index PAIR IS LOAD-BEARING. section-categories comes LATER in
+   the DOM and carries its own background, so without z-index on both the
+   section and this pseudo-element the next section paints straight over the
+   bumps and the edge silently goes flat.
+   ⚠⚠ THE RADIUS, THE TILE AND THE OFFSET ARE ONE NUMBER IN THREE PLACES:
+   tile = radius x 2, height = radius, bottom = minus radius. Change one and
+   change all three or the bumps clip or gap. 28 / 56 / -28 is hers, chosen
+   after the first pass at 15 read too fine. */
+
+.pricing-preview-section::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -28px;
+  height: 28px;
+  z-index: 2;
+  pointer-events: none;
+  background-image: radial-gradient(circle at 28px 0, #1F5C38 27px, transparent 27.5px);
+  background-size: 56px 56px;
+  background-repeat: repeat-x;
+}
+
+/* THE CONTAINER IS THE LAYOUT. Heading left across two rows, sub line and
+   button stacked on the right, the plan rows spanning underneath, footnote
+   last. EVERY CHILD IS PLACED EXPLICITLY, so DOM order decides nothing and
+   an element added later cannot shuffle the grid. */
+
+.pricing-preview-section .pricing-preview-container {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 40px;
+  align-items: end;
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.pricing-preview-section .pricing-preview-container > .h2-light {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  align-self: end;
+  margin: 0;
+  color: #EDECE0;
+  font-family: "Instrument Serif", serif;
+  font-weight: 400;
+  font-size: 54px;
+  line-height: 0.98;
+  text-align: left;
+}
+
+/* THE ITALIC WORD. Instrument Serif italic is a REAL loaded face on this
+   page, measured at S232 — this is not a synthesised slant. It hangs off the
+   <em> the Designer writes when you italicise a word, so if that markup is
+   ever removed this rule goes inert and the heading simply reads plain. */
+
+.pricing-preview-section .pricing-preview-container > .h2-light em {
+  font-style: italic;
+  color: #E796A9;
+}
+
+/* THE STAR. A Div Block, filled by clip-path, PLACEHOLDER PINK #E796A9, the
+   same construction as the two hero seam stars. When her PNG lands it is one
+   property on this same element — drop background-color and clip-path, add
+   background-image / background-size:contain / background-repeat:no-repeat.
+   NO DESIGNER WORK.
+   ⚠ THESE TWO COORDINATES HAVE NEVER BEEN SEEN RENDERED. They are a first
+   guess at "trailing the end of the heading" and they are the two numbers to
+   nudge. It positions against .pricing-preview-container, which carries the
+   position:relative — NOT against the section. */
+
+.pricing-preview-section .pricing-heading-star {
+  position: absolute;
+  left: 47%;
+  top: 62px;
+  width: 34px;
+  height: 34px;
+  background-color: #E796A9;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  pointer-events: none;
+}
+
+.pricing-preview-section .pricing-preview-container > .footer-tagline-dark {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+  max-width: 300px;
+  margin: 0 0 14px;
+  color: #EDECE0;
+  font-family: Quicksand, sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: right;
+}
+
+/* THE SUB LINE CARRIES A NESTED SPAN wearing .body-text-light. Neutralised
+   rather than styled, so the sentence reads as one thing whether that span
+   survives a future copy paste or not. */
+
+.pricing-preview-section .pricing-preview-container > .footer-tagline-dark .body-text-light {
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.pricing-preview-section .pricing-preview-container > .btn-primary {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: end;
+  align-self: start;
+  margin: 0;
+}
+
+.pricing-preview-section .pricing-cards-row {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  display: block;
+  width: 100%;
+  margin: 34px 0 0;
+  padding: 0;
+}
+
+/* THE CARD BECOMES THE ROW. Fill, radius and shadow are cleared here rather
+   than in the Designer, so the Style panel keeps the card exactly as it was
+   and this page-linked file owns the whole look. */
+
+.pricing-preview-section .pricing-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 24px;
+  align-items: baseline;
+  width: auto;
+  max-width: none;
+  padding: 16px 0;
+  background-color: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  border-top: 1px solid rgba(237, 236, 224, 0.35);
+}
+
+.pricing-preview-section .pricing-cards-row .pricing-card:last-child {
+  border-bottom: 1px solid rgba(237, 236, 224, 0.35);
+}
+
+.pricing-preview-section .pricing-card > .footer-tagline-dark {
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0;
+  color: #EDECE0;
+  font-family: "Instrument Serif", serif;
+  font-weight: 400;
+  font-size: 27px;
+  line-height: 1.1;
+  letter-spacing: 0;
+  text-transform: none;
+  text-align: left;
+}
+
+.pricing-preview-section .pricing-card > .h3 {
+  grid-column: 2;
+  grid-row: 1;
+  margin: 0;
+  color: #FFFFFF;
+  font-family: "Instrument Serif", serif;
+  font-weight: 400;
+  font-size: 38px;
+  line-height: 1;
+  text-align: right;
+}
+
+/* THE SAVINGS LINE. Her yellow #EDA920, Quicksand 500, 15px, 0.05em — hers,
+   settled at S242 after seeing it bold, italic, on a pill and at 19px.
+   ⚠⚠ MEASURED AND KNOWINGLY ACCEPTED: #EDA920 reads 3.89 against this
+   green, which is under the 4.5 small text wants. She was shown the number
+   and every alternative that clears it — gold #F7DE8A at 5.96, a pill at
+   8.54, 19px bold where the bar drops to 3:1 — and chose this. DO NOT
+   "CORRECT" THE HEX, THE SIZE OR THE WEIGHT TO FIX A CONTRAST SCORE. */
+
+.pricing-preview-section .pricing-card > .savings-text {
+  grid-column: 2;
+  grid-row: 2;
+  margin: 4px 0 0;
+  color: #EDA920;
+  font-family: Quicksand, sans-serif;
+  font-weight: 500;
+  font-size: 15px;
+  letter-spacing: 0.05em;
+  line-height: 1.3;
+  text-align: right;
+}
+
+.pricing-preview-section .pricing-card > .body-text-dark {
+  grid-column: 1;
+  grid-row: 2;
+  margin: 4px 0 0;
+  color: #EDECE0;
+  font-family: Quicksand, sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: left;
+}
+
+/* THE FOOTNOTE moves out of v17's centred position and sits under the rows,
+   left, with the line it explains. v17's rules still set its colour, family
+   and size; these three win by coming later at the same specificity. */
+
+.pricing-preview-section .pricing-footnote {
+  grid-column: 1 / -1;
+  grid-row: 4;
+  max-width: none;
+  margin: 16px 0 0;
+  padding: 0;
+  text-align: left;
+}
+
+/* ---- PRICING PREVIEW v18, TABLET ---------------------------------------- */
+/* ⚠ CLAUDE'S PICKS AT EVERY WIDTH BELOW DESKTOP. NOBODY HAS LOOKED AT THEM. */
+
+@media screen and (max-width: 991px) {
+  .pricing-preview-section::after {
+    bottom: -22px;
+    height: 22px;
+    background-image: radial-gradient(circle at 22px 0, #1F5C38 21px, transparent 21.5px);
+    background-size: 44px 44px;
+  }
+
+  .pricing-preview-section .pricing-preview-container > .h2-light {
+    font-size: 42px;
+  }
+
+  .pricing-preview-section .pricing-heading-star {
+    top: 50px;
+    width: 28px;
+    height: 28px;
+  }
+
+  .pricing-preview-section .pricing-card > .footer-tagline-dark {
+    font-size: 23px;
+  }
+
+  .pricing-preview-section .pricing-card > .h3 {
+    font-size: 32px;
+  }
+}
+
+/* ---- PRICING PREVIEW v18, PHONE ----------------------------------------- */
+/* THE COLUMN COLLAPSES AND THE HEADING STOPS SHARING ITS ROW. The plan rows
+   stay two columns on purpose — a price list reads as label-then-figure at
+   every width, and stacking them would put four bare numbers under four bare
+   names with nothing tying each pair together. */
+
+@media screen and (max-width: 767px) {
+  .pricing-preview-section .pricing-preview-container {
+    grid-template-columns: 1fr;
+    column-gap: 0;
+  }
+
+  .pricing-preview-section .pricing-preview-container > .h2-light {
+    grid-column: 1;
+    grid-row: 1;
+    font-size: 34px;
+  }
+
+  .pricing-preview-section .pricing-preview-container > .footer-tagline-dark {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: start;
+    max-width: none;
+    margin: 12px 0 16px;
+    text-align: left;
+  }
+
+  .pricing-preview-section .pricing-preview-container > .btn-primary {
+    grid-column: 1;
+    grid-row: 3;
+    justify-self: start;
+  }
+
+  .pricing-preview-section .pricing-cards-row {
+    grid-row: 4;
+    margin-top: 26px;
+  }
+
+  .pricing-preview-section .pricing-footnote {
+    grid-row: 5;
+  }
+
+  .pricing-preview-section .pricing-heading-star {
+    left: auto;
+    right: 8px;
+    top: 4px;
+    width: 26px;
+    height: 26px;
+  }
+
+  .pricing-preview-section .pricing-card > .footer-tagline-dark {
+    font-size: 20px;
+  }
+
+  .pricing-preview-section .pricing-card > .h3 {
+    font-size: 27px;
+  }
+
+  .pricing-preview-section .pricing-card > .savings-text {
+    font-size: 14px;
+  }
+
+  .pricing-preview-section .pricing-card > .body-text-dark {
+    font-size: 13px;
+  }
+
+  .pricing-preview-section::after {
+    bottom: -20px;
+    height: 20px;
+    background-image: radial-gradient(circle at 20px 0, #1F5C38 19px, transparent 19.5px);
+    background-size: 40px 40px;
+  }
+}
+
+/* ---- PRICING PREVIEW v18, PHONE PORTRAIT -------------------------------- */
+/* ⚠⚠ WEBFLOW HAS FOUR BREAKPOINTS AND THIS FILE SPEAKS AT THREE. Below 479
+   Webflow's own rules are unopposed unless this block says otherwise. */
+
+@media screen and (max-width: 479px) {
+  .pricing-preview-section .pricing-preview-container {
+    padding: 0 18px;
+  }
+
+  .pricing-preview-section .pricing-preview-container > .h2-light {
+    font-size: 29px;
+  }
+
+  .pricing-preview-section .pricing-card {
+    column-gap: 14px;
+    padding: 14px 0;
+  }
+
+  .pricing-preview-section .pricing-card > .footer-tagline-dark {
+    font-size: 18px;
+  }
+
+  .pricing-preview-section .pricing-card > .h3 {
+    font-size: 24px;
+  }
+
+  .pricing-preview-section .pricing-card > .savings-text {
+    font-size: 13px;
+    letter-spacing: 0.04em;
+  }
+
+  .pricing-preview-section::after {
+    bottom: -16px;
+    height: 16px;
+    background-image: radial-gradient(circle at 16px 0, #1F5C38 15px, transparent 15.5px);
+    background-size: 32px 32px;
+  }
+}
+
 /* ---- TABLET ------------------------------------------------------------ */
 
 @media screen and (max-width: 991px) {
