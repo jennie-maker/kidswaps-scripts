@@ -1536,6 +1536,13 @@
 
 .pricing-preview-section .pricing-card {
   display: flex;
+  /* ⚠⚠⚠ flex-direction IS NOT OPTIONAL HERE AND ITS ABSENCE SHIPPED ONCE.
+     Webflow's own .pricing-card is a flex COLUMN — that is how the four
+     children used to stack inside the card — so `display:flex` alone changes
+     nothing about direction and every item takes its own row. `order` still
+     works, which makes the fault read as a stacking bug rather than a missing
+     declaration. STATE THE DIRECTION WHENEVER YOU TAKE OVER A WEBFLOW FLEX. */
+  flex-direction: row;
   flex-wrap: wrap;
   align-items: baseline;
   column-gap: 10px;
