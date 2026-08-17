@@ -331,6 +331,16 @@
   flex-wrap: wrap;
   gap: 12px;
   margin: 30px 0 0;
+  /* ⚠⚠ transform:none BEATS A WEBFLOW scale(0.95) THAT IS IN NO RULE IN THIS
+     FILE — v32 (S245), HER RULING. A 5% shrink on a flex row also shrinks its
+     LEFT EDGE toward the row's centre, which is why this row alone sat ~7px
+     right of the eyebrow, headline, subhead and highlights while every one of
+     those shared an edge. IT WAS NEVER A MARGIN. Same species as the
+     align-items:center that centred the how-it-works heading — an invisible
+     Designer value that no rule here opposed.
+     ⚠ NAMED COST, ACCEPTED BY HER: both hero buttons are now 5% LARGER than in
+     the hero she closed at S234 with "perfect". Reversible in one line. */
+  transform: none;
 }
 
 .hero-buttons .hero-button-primary {
