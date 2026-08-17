@@ -790,7 +790,24 @@
    ⚠ THE LOWER HALF LIES OVER THE CLOSET STANDARD PHOTO, HER CHOICE, seen on a
    rendered comparison against the alternative of sitting inside the coral.
    z-index 3 keeps it above that photo — if it ever disappears, look for a
-   position + z-index on .closet-standard-section before looking here. */
+   position + z-index on .closet-standard-section before looking here.
+   ⚠⚠⚠ THE box-shadow IS THE CORAL BACKING AND IT IS NOT DECORATION — v31 (S244),
+   hers, off the live render. A TILTED RIBBON ON A LEVEL SEAM OPENS A WEDGE: the
+   coral section ends horizontally, the ribbon does not, so a triangle of whatever
+   is BEHIND shows through at the end that dips. Here that is
+   .closet-standard-photo. A hard-edged shadow (blur 0, spread 0) is a copy of the
+   band offset upward, IT ROTATES WITH THE ELEMENT, and overflow:hidden does not
+   clip it because a shadow is outside the border box. A ::before could not do this
+   — overflow:hidden would eat it.
+   ⚠⚠ 40px IS A CEILING, NOT A TASTE VALUE. The clearance between the product cards
+   and the ribbon's top edge is exactly --section-gap (44px), because the section's
+   bottom padding is gap + ribbon-height/2 and the ribbon's own top edge sits
+   ribbon-height/2 above the seam. GO PAST 44 AND THE CORAL PAINTS OVER THE BOTTOM
+   OF THE WHITE CARDS, since this element sits at z-index 3 above them.
+   ⚠⚠ AND IT IS A FIXED NUMBER AGAINST A WEDGE THAT GROWS WITH VIEWPORT WIDTH. The
+   wedge is (0.56 x viewport x tan 2.8deg) - ribbon-height/2, so 40px covers to
+   roughly a 2300px viewport and a sliver of photo reappears at the right end
+   beyond that. RAISING THE ROTATION OR THE 112% WIDTH GROWS THE WEDGE TOO. */
 
 .closet-preview-ribbon-closing {
   --ribbon-gap: 30px;
@@ -802,6 +819,7 @@
   margin-top: 0;
   margin-bottom: calc(var(--ribbon-height) / -2);
   background-color: #1F5C38;
+  box-shadow: 0 -40px 0 0 #E54F25;
   transform: rotate(2.8deg);
   overflow: hidden;
 }
