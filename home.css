@@ -412,8 +412,11 @@
    already sit (hero-container 1240 + hero-left's own 60 padding). THE HERO CARD'S
    OUTER EDGE STAYS OUTSIDE THE SPINE ON PURPOSE — it is a drawn object, like the
    closet-standard photo, and closet-standard is exempt for the same reason.
-   ⚠ SOURCES IS NOT IN THIS FILE — it ships as a Webflow Embed with its own scoped
-   CSS, so its 40px padding is a separate edit and is NOT on the spine yet.
+   ⚠⚠ SOURCES IS ON THE SPINE AS OF v32 (S245) AND THIS COMMENT USED TO SAY IT
+   COULD NOT BE. Its markup is a Webflow Embed carrying its own <style>, which
+   wins every TIE on source order and loses on SPECIFICITY — see the SOURCES
+   block near the foot of this file. The old line sent one session looking for
+   a Designer edit that was not needed.
    ⚠ align-items:flex-start BEATS A WEBFLOW align-items:center THAT IS IN NO RULE
    IN THIS FILE. The heading is shrink-to-fit, so it was being centred AS A BOX and
    its own text-align:left could never move it — the §0 rule about text-align and
@@ -2068,6 +2071,72 @@
     width: 68px;
     top: 240px;
     right: 16px;
+  }
+}
+
+/* ---- SOURCES ONTO THE SPINE — v32 (S245) -------------------------------- */
+/* ⚠⚠⚠ THIS SECTION'S MARKUP IS A WEBFLOW EMBED WITH ITS OWN <style> BLOCK, AND
+   AN EMBED'S STYLE SITS IN THE BODY — LATER IN SOURCE ORDER THAN THIS FILE. SO
+   IT WINS EVERY TIE AND LOSES EVERY SPECIFICITY CONTEST. The embed writes
+   .ks-src and .ks-src-in at ONE class each, so every rule below carries TWO and
+   beats it outright wherever it sits. DO NOT "SIMPLIFY" ANY OF THESE TO A
+   SINGLE CLASS — that is a tie, and a tie loses to the embed silently.
+   ⚠⚠ BOTH CLASSES BELOW LIVE INSIDE THE EMBED'S OWN MARKUP. THERE IS NO
+   sources-section CLASS IN THE CHAIN — read live S245, the embed's parent is a
+   Webflow-named div.code-embed-11.w-embed — so do not rescope these onto a
+   section selector that does not exist.
+   ⚠ THE EMBED'S OWN VERTICAL PADDING, clamp(48px,7vw,88px), IS LEFT ALONE ON
+   PURPOSE. Only the horizontal padding is zeroed here. That vertical figure is
+   roughly double --section-gap and is HERS TO RULE, not a drive-by.
+
+   WHY IT WAS OFF THE SPINE: the embed centres a 720px column inside the band,
+   which put its text at 365px on a 1451 viewport where the spine sits at 166.
+   A CENTRED COLUMN AND A PADDING EDGE CANNOT AGREE AT ANY WIDTH — so the 720
+   MEASURE MOVES OFF THE WRAPPER AND ONTO THE CHILDREN, and the wrapper then
+   carries the same 1240/60/40/20 as every other section. */
+
+.w-embed .ks-src {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.ks-src .ks-src-in {
+  max-width: 1240px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 60px;
+  padding-right: 60px;
+}
+
+/* the 720 measure she approved, now hanging off the spine instead of centred.
+   The <hr> is a child too and is capped with the type, deliberately — a rule
+   running the full 1240 would draw a line nothing else reaches. */
+.ks-src .ks-src-in > * {
+  max-width: 720px;
+}
+
+/* ---- SOURCES, TABLET ---------------------------------------------------- */
+
+@media screen and (max-width: 991px) {
+
+  .ks-src .ks-src-in {
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+}
+
+/* ---- SOURCES, PHONE ----------------------------------------------------- */
+/* ⚠ THE EMBED'S clamp(20px,5vw,40px) LANDED AT ~38px AT 767 AND ~24px AT 479,
+   so the phone was off the spine by a different amount at every width rather
+   than by a constant. This block is what makes the mobile edge match. NO 479
+   OVERRIDE IS NEEDED — max-width:767 already covers it, and the spine is 20px
+   at 767 and below. */
+
+@media screen and (max-width: 767px) {
+
+  .ks-src .ks-src-in {
+    padding-left: 20px;
+    padding-right: 20px;
   }
 }
 
