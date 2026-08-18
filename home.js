@@ -182,7 +182,7 @@
 })();
 
 /* ============================================================================
- * MOTION — v35 (S247)
+ * MOTION — v36 (S247)
  * ----------------------------------------------------------------------------
  * The thirteen Webflow interactions on /old-home are DELETED (S246, her ruling).
  * This is their replacement, and it is deliberately smaller than what it
@@ -233,8 +233,11 @@
   /* ==========================================================================
      THE STARS SPIN WITH THE SCROLL — HER RULING S247.
      Each turns at its own rate and its own direction, so five stars never read
-     as one mechanism. The twinkle is a CSS loop in home.css and is INDEPENDENT
-     of this: the stars keep breathing while the page is still.
+     as one mechanism.
+     ⚠⚠ THE SPIN IS THE ONLY THING THEY DO — v36. An opacity twinkle shipped
+     alongside this at v35 and SHE CUT IT after seeing it live. So a star is
+     STILL whenever the page is still, and that is the ruled behaviour, not a
+     dead animation. Do not rebuild the twinkle.
 
      ⚠⚠⚠ IT WRITES AN INLINE `rotate:` AND NEVER `transform`. .home-hero-star-upper
      and -lower are POSITIONED by transform: translateX(-50%); writing transform

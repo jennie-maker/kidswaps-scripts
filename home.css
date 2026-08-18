@@ -2175,7 +2175,7 @@
 }
 
 /* ============================================================================
-   MOTION  —  v35 (S247)
+   MOTION  —  v36 (S247)
    ----------------------------------------------------------------------------
    THE THIRTEEN WEBFLOW INTERACTIONS ARE DELETED — HER RULING S246, "id rather
    remove the two interactions and keep all of them in your file." Every one of
@@ -2317,49 +2317,26 @@
 
   /* ---- 3. THE STARS, TIED TO THE SCROLL ----------------------------------
      HER RULING S247, REPLACING THE S246 ONE-SHOT TURN: all five stars SPIN AS
-     SHE SCROLLS, either direction, and twinkle. Her words: "they spin and
-     opacity in and out for a little twinkle."
+     SHE SCROLLS, either direction. Her words: "just have them spin on scroll."
 
-     ⚠⚠⚠ THE SPIN IS WRITTEN BY home.js AS AN INLINE `rotate:`, NOT BY THIS FILE.
-     A scroll-linked value cannot live in a stylesheet, and inline is the one
-     thing that always wins — the same mechanism the deleted Webflow
-     interactions used, chosen deliberately here instead of inherited.
-     SO THERE IS NO rotate RULE BELOW ON PURPOSE. Adding one would lose to the
-     inline value silently and read as a dead rule.
+     ⚠⚠⚠ THIS SECTION IS DELIBERATELY EMPTY OF RULES AND THAT IS NOT AN OVERSIGHT.
+     THE SPIN IS WRITTEN BY home.js AS AN INLINE `rotate:`. A scroll-linked value
+     cannot live in a stylesheet, and inline is the one thing that always wins —
+     the same mechanism the deleted Webflow interactions used, chosen
+     deliberately here rather than inherited. ADDING A rotate RULE HERE WOULD
+     LOSE TO THE INLINE VALUE SILENTLY and read as a dead rule.
      ⚠⚠⚠ `rotate:` NOT `transform: rotate()`, IN BOTH FILES. The two hero stars
      are POSITIONED by transform: translateX(-50%) and a transform would delete
      it, throwing the star across the section. The independent property composes.
 
-     ⚠⚠ THE STARS ARE NO LONGER HIDDEN AND NO LONGER OBSERVED — v35. They carry
-     no opacity:0 and no .ks-in, so script gone → stars visible and still, which
-     is a better floor than the entrance version had. THE REPLAY IN home.js IS
-     NOW THE PRICING CARDS ONLY. Do not re-add these selectors to it.
+     ⚠⚠ A TWINKLE WAS BUILT HERE AT v35 AND REMOVED AT v36, HERS: an opacity loop
+     on all five, 1 -> .6, five unsynchronised durations. She saw it live and cut
+     it. DO NOT REBUILD IT AS AN IMPROVEMENT — it has been shipped and rejected.
 
-     ⚠ FIVE DIFFERENT TWINKLE DURATIONS AND DELAYS, none a multiple of another,
-     so no two ever blink together — matching turns five stickers into one
-     mechanism. Claude's numbers, reversible. The dip stops at .6 rather than 0:
-     five elements blinking to nothing on a page she calls busy is the
-     overwhelming version of this. */
-
-  @keyframes ks-star-twinkle {
-    0%   { opacity: 1;  }
-    50%  { opacity: .6; }
-    100% { opacity: 1;  }
-  }
-
-  .home-hero-star-upper,
-  .home-hero-star-lower,
-  .closet-preview-star,
-  .closet-standard-star,
-  .closet-standard-star-two {
-    animation: ks-star-twinkle 3.4s ease-in-out infinite;
-  }
-
-  .home-hero-star-upper     { animation-duration: 3.1s; animation-delay: 0s;   }
-  .home-hero-star-lower     { animation-duration: 4.3s; animation-delay: .7s;  }
-  .closet-preview-star      { animation-duration: 2.7s; animation-delay: .3s;  }
-  .closet-standard-star     { animation-duration: 3.9s; animation-delay: 1.1s; }
-  .closet-standard-star-two { animation-duration: 3.3s; animation-delay: .5s;  }
+     ⚠⚠ THE STARS ARE NOT HIDDEN AND NOT OBSERVED — v35 took them off the
+     observer. They carry no opacity:0 and no .ks-in anywhere, so script gone ->
+     stars visible and still. THE REPLAY IN home.js IS THE PRICING CARDS ONLY;
+     do not re-add these selectors to it. */
 
   /* ---- 4. PHONE ----------------------------------------------------------
      THE DEAL IS DESKTOP-ONLY BY CONSTRUCTION. Below 767 the four cards stack
