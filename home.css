@@ -2175,7 +2175,7 @@
 }
 
 /* ============================================================================
-   MOTION  —  v34 (S247)
+   MOTION  —  v35 (S247)
    ----------------------------------------------------------------------------
    THE THIRTEEN WEBFLOW INTERACTIONS ARE DELETED — HER RULING S246, "id rather
    remove the two interactions and keep all of them in your file." Every one of
@@ -2204,9 +2204,10 @@
    3. REDUCED MOTION KILLS IT WHOLE. The block sits inside
       prefers-reduced-motion: no-preference, so anyone asking for less motion
       gets a still page with everything VISIBLE — never a hidden one.
-   4. THE SCROLL ITEMS REPLAY — HER RULING S247, REVERSING S246's ONE SHOT.
-      The cards and all five stars re-hide once they are FULLY off screen and
-      play again on the way back. ⚠⚠ THE HYSTERESIS IS LOAD-BEARING: reveal at
+   4. THE PRICING CARDS REPLAY — HER RULING S247, REVERSING S246's ONE SHOT.
+      They re-hide once FULLY off screen and play again on the way back. THE
+      STARS ARE NOT IN THIS — v35 took them off the observer entirely; they are
+      never hidden and their spin is written inline by home.js on scroll. ⚠⚠ THE HYSTERESIS IS LOAD-BEARING: reveal at
       15% visible, re-hide ONLY at a ratio of exactly 0, never on a small scroll
       wobble, or a phone jitters the page. ⚠ THE HERO IS UNAFFECTED — it runs on
       load and is never observed.
@@ -2218,6 +2219,20 @@
      HER RULING S246: the page felt unfinished without an entrance and the hero
      on load is the one she named. ONE gesture, staggered — a 32px rise and a
      fade, 140ms apart — not five separate animations.
+     ⚠⚠⚠ IT IS A KEYFRAME ANIMATION, NOT A TRANSITION — REBUILT S247 AFTER THE
+     TRANSITION VERSION SHIPPED AND DID NOT FIRE ON LOAD ON THE LIVE PAGE. HER
+     WORDS: "no animation on page load on the hero ... it's like its stuck."
+     THE MECHANISM: a transition only runs if the browser has PAINTED the start
+     state before the class lands, so the old version bet on a double
+     requestAnimationFrame winning that race. It is a race, and on a warm cache
+     it loses — both states collapse into one frame and NOTHING animates, with
+     every gate passing. AN ANIMATION MAKES NO SUCH BET: it runs whenever the
+     class exists, whatever the paint timing. ▶ ANY ENTRANCE THAT MUST FIRE ON
+     LOAD IS A KEYFRAME ANIMATION ON THIS PROJECT. A transition is for a state
+     change on a page that is already painted.
+     ⚠⚠ `both` FILL IS LOAD-BEARING: it holds the START state through the delay
+     (so a staggered element cannot flash visible before its turn) and holds the
+     END state after (so nothing snaps back). Drop it and both ends break.
      ⚠⚠⚠ RETUNED S247 FROM 16px/.45s/.09s AND FROM cubic-bezier(.22,.61,.36,1),
      HER RULING OFF THE LIVE PAGE: "this is perfect, whats live right now is
      terrible." THE CURVE DID MOST OF THE WORK, NOT THE DISTANCE — the old one
@@ -2235,6 +2250,11 @@
      ⚠ THE BUTTONS ARRIVE A BEAT LATER (.70s against the highlights' .42s) —
      HER CALL, a nudge toward the click. */
 
+  @keyframes ks-hero-in {
+    from { opacity: 0; translate: 0 32px; }
+    to   { opacity: 1; translate: 0 0;    }
+  }
+
   html.ks-motion .hero-section .hero-tagline,
   html.ks-motion .hero-section .h1-light-leftaligned,
   html.ks-motion .hero-section .hero-subhead,
@@ -2242,8 +2262,6 @@
   html.ks-motion .hero-section .hero-buttons {
     opacity: 0;
     translate: 0 32px;
-    transition: opacity .7s cubic-bezier(.4, 0, .2, 1),
-                translate .7s cubic-bezier(.4, 0, .2, 1);
   }
 
   html.ks-motion .hero-section .hero-tagline.ks-in,
@@ -2251,17 +2269,18 @@
   html.ks-motion .hero-section .hero-subhead.ks-in,
   html.ks-motion .hero-section .hero-highlights.ks-in,
   html.ks-motion .hero-section .hero-buttons.ks-in {
-    opacity: 1;
-    translate: 0 0;
+    animation: ks-hero-in .7s cubic-bezier(.4, 0, .2, 1) both;
   }
 
   /* the stagger. these tie with the base rule above at (0,3,1) and win on
-     SOURCE ORDER alone, so they must stay BELOW it. */
-  html.ks-motion .hero-section .hero-tagline         { transition-delay: 0s;   }
-  html.ks-motion .hero-section .h1-light-leftaligned { transition-delay: .14s; }
-  html.ks-motion .hero-section .hero-subhead         { transition-delay: .28s; }
-  html.ks-motion .hero-section .hero-highlights      { transition-delay: .42s; }
-  html.ks-motion .hero-section .hero-buttons         { transition-delay: .70s; }
+     SOURCE ORDER alone, so they must stay BELOW it.
+     ⚠ THEY ARE animation-delay NOW, NOT transition-delay — v35. A leftover
+     transition-delay here would apply to nothing and read as a working stagger. */
+  html.ks-motion .hero-section .hero-tagline.ks-in         { animation-delay: 0s;   }
+  html.ks-motion .hero-section .h1-light-leftaligned.ks-in { animation-delay: .14s; }
+  html.ks-motion .hero-section .hero-subhead.ks-in         { animation-delay: .28s; }
+  html.ks-motion .hero-section .hero-highlights.ks-in      { animation-delay: .42s; }
+  html.ks-motion .hero-section .hero-buttons.ks-in         { animation-delay: .70s; }
 
   /* ---- 2. THE PRICING CARDS, ON SCROLL -----------------------------------
      HER RULING S246: the four plans want an entrance that differentiates them.
@@ -2296,42 +2315,51 @@
   html.ks-motion .pricing-preview-section .pricing-card:nth-child(3) { transition-delay: .19s; }
   html.ks-motion .pricing-preview-section .pricing-card:nth-child(4) { transition-delay: 0s;   }
 
-  /* ---- 3. THE STARS ------------------------------------------------------
-     Five drawn stars sit across this page doing nothing. Each turns and settles
-     as it comes into view, with its OWN rotation and duration so they read as
-     SCATTERED rather than synchronised. This is the one piece of personality in
-     the pass and it costs no new colour, no new element and no new information.
-     ⚠⚠⚠ `rotate:` NOT `transform: rotate()`. The two hero stars are POSITIONED
-     by transform: translateX(-50%) and a transform here would delete it. The
-     independent property composes with it instead. */
+  /* ---- 3. THE STARS, TIED TO THE SCROLL ----------------------------------
+     HER RULING S247, REPLACING THE S246 ONE-SHOT TURN: all five stars SPIN AS
+     SHE SCROLLS, either direction, and twinkle. Her words: "they spin and
+     opacity in and out for a little twinkle."
 
-  html.ks-motion .home-hero-star-upper,
-  html.ks-motion .home-hero-star-lower,
-  html.ks-motion .closet-preview-star,
-  html.ks-motion .closet-standard-star,
-  html.ks-motion .closet-standard-star-two {
-    opacity: 0;
-    transition: opacity .9s ease,
-                rotate .9s cubic-bezier(.4, 0, .2, 1);
+     ⚠⚠⚠ THE SPIN IS WRITTEN BY home.js AS AN INLINE `rotate:`, NOT BY THIS FILE.
+     A scroll-linked value cannot live in a stylesheet, and inline is the one
+     thing that always wins — the same mechanism the deleted Webflow
+     interactions used, chosen deliberately here instead of inherited.
+     SO THERE IS NO rotate RULE BELOW ON PURPOSE. Adding one would lose to the
+     inline value silently and read as a dead rule.
+     ⚠⚠⚠ `rotate:` NOT `transform: rotate()`, IN BOTH FILES. The two hero stars
+     are POSITIONED by transform: translateX(-50%) and a transform would delete
+     it, throwing the star across the section. The independent property composes.
+
+     ⚠⚠ THE STARS ARE NO LONGER HIDDEN AND NO LONGER OBSERVED — v35. They carry
+     no opacity:0 and no .ks-in, so script gone → stars visible and still, which
+     is a better floor than the entrance version had. THE REPLAY IN home.js IS
+     NOW THE PRICING CARDS ONLY. Do not re-add these selectors to it.
+
+     ⚠ FIVE DIFFERENT TWINKLE DURATIONS AND DELAYS, none a multiple of another,
+     so no two ever blink together — matching turns five stickers into one
+     mechanism. Claude's numbers, reversible. The dip stops at .6 rather than 0:
+     five elements blinking to nothing on a page she calls busy is the
+     overwhelming version of this. */
+
+  @keyframes ks-star-twinkle {
+    0%   { opacity: 1;  }
+    50%  { opacity: .6; }
+    100% { opacity: 1;  }
   }
 
-  html.ks-motion .home-hero-star-upper.ks-in,
-  html.ks-motion .home-hero-star-lower.ks-in,
-  html.ks-motion .closet-preview-star.ks-in,
-  html.ks-motion .closet-standard-star.ks-in,
-  html.ks-motion .closet-standard-star-two.ks-in {
-    opacity: 1;
-    rotate: 0deg;
+  .home-hero-star-upper,
+  .home-hero-star-lower,
+  .closet-preview-star,
+  .closet-standard-star,
+  .closet-standard-star-two {
+    animation: ks-star-twinkle 3.4s ease-in-out infinite;
   }
 
-  /* the scatter: five different start angles, five different durations, five
-     different delays. Claude's picks, reversible, and the POINT is that no two
-     match — matching turns five stickers into one mechanism. */
-  html.ks-motion .home-hero-star-upper     { rotate: -32deg; transition-duration: 1.1s; transition-delay: .55s; }
-  html.ks-motion .home-hero-star-lower     { rotate:  24deg; transition-duration: .95s; transition-delay: .75s; }
-  html.ks-motion .closet-preview-star      { rotate: -20deg; transition-duration: 1.3s; transition-delay: .05s; }
-  html.ks-motion .closet-standard-star     { rotate:  30deg; transition-duration: 1.0s; transition-delay: .10s; }
-  html.ks-motion .closet-standard-star-two { rotate: -26deg; transition-duration: 1.2s; transition-delay: .22s; }
+  .home-hero-star-upper     { animation-duration: 3.1s; animation-delay: 0s;   }
+  .home-hero-star-lower     { animation-duration: 4.3s; animation-delay: .7s;  }
+  .closet-preview-star      { animation-duration: 2.7s; animation-delay: .3s;  }
+  .closet-standard-star     { animation-duration: 3.9s; animation-delay: 1.1s; }
+  .closet-standard-star-two { animation-duration: 3.3s; animation-delay: .5s;  }
 
   /* ---- 4. PHONE ----------------------------------------------------------
      THE DEAL IS DESKTOP-ONLY BY CONSTRUCTION. Below 767 the four cards stack
@@ -2349,33 +2377,5 @@
     }
   }
 
-  /* ---- 5. THE CLOSET-PREVIEW STAR THROBS ---------------------------------
-     HER ASK S247, AND IT IS THE ONLY ONE OF THE FIVE THAT DOES. The other four
-     turn once on arrival and then sit still; do not "make them consistent."
-
-     ⚠⚠⚠ IT ANIMATES THE INDEPENDENT `scale:` PROPERTY, NEVER `transform`, AND
-     THAT IS THE SAME RULE AS THE REST OF THIS BLOCK. These stars are POSITIONED
-     by transform, so a transform keyframe would overwrite the positioning and
-     throw the star across the section. `scale:` composes with it instead.
-
-     ⚠⚠ IT IS DELIBERATELY **NOT** SCOPED UNDER html.ks-motion. The entrance is,
-     because the entrance HIDES things and hiding must never survive a missing
-     script. A throb hides nothing — so if home.js never arrives, the star is
-     simply visible and pulsing, which is a better failure than visible and
-     dead. FAILURE STILL LANDS ON "NO ANIMATION, NEVER INVISIBLE."
-
-     ⚠ 1 → 1.07 over 2.6s, ease-in-out, infinite. Claude's numbers, reversible.
-     The scale is small on purpose: it sits beside a coral ribbon and four
-     photo cards, and her brief for this page is fun but NOT overwhelming. */
-
-  @keyframes ks-star-throb {
-    0%   { scale: 1;    }
-    50%  { scale: 1.07; }
-    100% { scale: 1;    }
-  }
-
-  .closet-preview-star {
-    animation: ks-star-throb 2.6s ease-in-out infinite;
-  }
 
 }

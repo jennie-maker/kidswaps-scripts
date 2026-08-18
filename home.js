@@ -182,7 +182,7 @@
 })();
 
 /* ============================================================================
- * MOTION — v34 (S247)
+ * MOTION — v35 (S247)
  * ----------------------------------------------------------------------------
  * The thirteen Webflow interactions on /old-home are DELETED (S246, her ruling).
  * This is their replacement, and it is deliberately smaller than what it
@@ -215,12 +215,9 @@
 
   var CARDS = '.pricing-preview-section .pricing-card';
 
-  var STARS =
-    '.home-hero-star-upper,' +
-    '.home-hero-star-lower,' +
-    '.closet-preview-star,' +
-    '.closet-standard-star,' +
-    '.closet-standard-star-two';
+  /* STARS was here. DELETED v35, not left inert (§0): the stars came off the
+     observer when the spin went scroll-linked, so nothing reveals them any
+     more. Their selectors now live once, in SPIN below, WITH their rates. */
 
   function revealAll(sel) {
     var n = document.querySelectorAll(sel), i;
@@ -231,7 +228,55 @@
   function revealEverything() {
     revealAll(HERO);
     revealAll(CARDS);
-    revealAll(STARS);
+  }
+
+  /* ==========================================================================
+     THE STARS SPIN WITH THE SCROLL — HER RULING S247.
+     Each turns at its own rate and its own direction, so five stars never read
+     as one mechanism. The twinkle is a CSS loop in home.css and is INDEPENDENT
+     of this: the stars keep breathing while the page is still.
+
+     ⚠⚠⚠ IT WRITES AN INLINE `rotate:` AND NEVER `transform`. .home-hero-star-upper
+     and -lower are POSITIONED by transform: translateX(-50%); writing transform
+     here would delete that and throw them across the section.
+     ⚠⚠ NOTHING IS EVER HIDDEN BY THIS. A star with no script is visible, still,
+     and twinkling — the floor is "no spin", never "no star".
+     ⚠ rAF-THROTTLED AND PASSIVE. A bare scroll handler writing five inline
+     styles per event is a scroll-jank generator on a phone; this coalesces to
+     one write per frame and never blocks the scroll itself. */
+  var SPIN = [
+    { sel: '.home-hero-star-upper',     rate:  0.060 },
+    { sel: '.home-hero-star-lower',     rate: -0.045 },
+    { sel: '.closet-preview-star',      rate:  0.075 },
+    { sel: '.closet-standard-star',     rate: -0.055 },
+    { sel: '.closet-standard-star-two', rate:  0.090 }
+  ];
+
+  function startSpin() {
+    var nodes = [], i, el;
+    for (i = 0; i < SPIN.length; i++) {
+      el = document.querySelector(SPIN[i].sel);
+      if (el) nodes.push({ el: el, rate: SPIN[i].rate });
+    }
+    if (!nodes.length) return;
+
+    var ticking = false;
+
+    function paint() {
+      ticking = false;
+      var y = window.pageYOffset || document.documentElement.scrollTop || 0, k;
+      for (k = 0; k < nodes.length; k++) {
+        nodes[k].el.style.rotate = (y * nodes[k].rate).toFixed(2) + 'deg';
+      }
+    }
+
+    window.addEventListener('scroll', function () {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(paint);
+    }, { passive: true });
+
+    paint();
   }
 
   function start() {
@@ -242,16 +287,22 @@
        everything at once and stop. Nothing hidden, nothing animated. */
     if (reduced || !('IntersectionObserver' in window)) {
       revealEverything();
-      return;
+      return;                            /* no spin either — she asked for less motion */
     }
 
+    startSpin();
+
     /* THE HERO RUNS ON LOAD, NOT ON SCROLL — it is already on screen, so there
-       is nothing to wait for. ⚠ THE DOUBLE requestAnimationFrame IS LOAD-BEARING:
-       the browser must PAINT the start state before the class lands, or it
-       collapses both states into one frame and no transition runs at all. */
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () { revealAll(HERO); });
-    });
+       is nothing to wait for.
+       ⚠⚠⚠ THE DOUBLE requestAnimationFrame IS GONE — v35, AND ITS REMOVAL IS THE
+       FIX, NOT A TIDY-UP. It existed to make the browser paint the hidden start
+       state before the class landed, because a TRANSITION only runs across a
+       painted state. That was a race and on a warm cache it lost: the hero
+       simply appeared, with the flag set, the classes landed and every gate
+       passing. home.css now drives the hero with a KEYFRAME ANIMATION, which
+       runs whenever the class exists and cannot lose that race — so the class
+       goes on immediately and there is nothing left to wait for. */
+    revealAll(HERO);
 
     /* ⚠⚠⚠ THE WATCHDOG BELOW IS DELIBERATE-LOOKING AND WAS A BUG AT v33, FOUND
        S246 ON THE LIVE PAGE. It was an UNCONDITIONAL setTimeout(revealEverything,
@@ -284,7 +335,7 @@
       });
     }, { threshold: [0, 0.15], rootMargin: '0px 0px -8% 0px' });
 
-    var watched = document.querySelectorAll(CARDS + ',' + STARS), i;
+    var watched = document.querySelectorAll(CARDS), i;
     for (i = 0; i < watched.length; i++) io.observe(watched[i]);
 
     /* THE TWO REAL HOLES, EACH CLOSED WITHOUT TOUCHING A HEALTHY PAGE.
@@ -302,7 +353,7 @@
            window were widened later. Anything measuring 0x0 at 3s is revealed. */
     setTimeout(function () {
       if (!sawCallback) { revealEverything(); return; }
-      var n = document.querySelectorAll(CARDS + ',' + STARS), k, r;
+      var n = document.querySelectorAll(CARDS), k, r;
       for (k = 0; k < n.length; k++) {
         r = n[k].getBoundingClientRect();
         if (!r.width || !r.height) n[k].classList.add('ks-in');
