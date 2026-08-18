@@ -842,7 +842,20 @@
   margin-top: 0;
   margin-bottom: calc(var(--ribbon-height) / -2);
   background-color: #1F5C38;
-  box-shadow: 0 -40px 0 0 #E54F25;
+  /* ⚠⚠⚠ THE CORAL SHADOW FILLS THE WEDGE ABOVE THE TILTED RIBBON, AND ITS SIZE
+     IS ARITHMETIC, NOT TASTE — RETUNED 40px -> 120px AT S247. The ribbon is
+     rotated 2.8deg and is 112% of the viewport, so the vertical drop from its
+     left end to its right end is width * tan(2.8deg): about 17px on a 317px
+     phone, 56px at 1024, 79px at 1440. A FIXED 40px COVERS THE PHONE AND RUNS
+     OUT ON A DESKTOP, which is exactly how this presented — clean on her phone,
+     a pale wedge with the photo placeholder showing through on her Mac.
+     ⚠⚠ IT IS FREE TO OVERSHOOT. The extra coral paints over a section that is
+     already coral, so it is invisible everywhere except the wedge it exists to
+     fill. 120px covers a drop up to roughly a 2,400px viewport.
+     ⚠ IF THIS EVER REAPPEARS, CHECK THE ROTATION FIRST: the required shadow
+     scales with BOTH the angle and the width, so steepening the tilt or
+     widening the bleed re-opens it. */
+  box-shadow: 0 -120px 0 0 #E54F25;
   transform: rotate(2.8deg);
   overflow: hidden;
 }
@@ -2230,7 +2243,7 @@
 }
 
 /* ============================================================================
-   MOTION  —  v38 (S247)
+   MOTION  —  v39 (S247)
    ----------------------------------------------------------------------------
    THE THIRTEEN WEBFLOW INTERACTIONS ARE DELETED — HER RULING S246, "id rather
    remove the two interactions and keep all of them in your file." Every one of
