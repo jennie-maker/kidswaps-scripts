@@ -2249,7 +2249,7 @@
 }
 
 /* ============================================================================
-   THE FAQ  —  v41 (S251)
+   THE FAQ  —  v42 (S251)
    ----------------------------------------------------------------------------
    The markup was built by hand in the Designer and PUBLISHED first, then read
    back off HER OWN CONSOLE before a line of this was written (§0: read the
@@ -2359,15 +2359,20 @@
 
 /* ---- TYPE --------------------------------------------------------------- */
 /* THE EYEBROW IS A SANS HEADER, not a label — the same job and the same
-   treatment as how-it-works' (S236), in cream instead of green because green on
-   this navy is not a pairing anyone has measured and cream reads 7.25. */
+   treatment as how-it-works' (S236).
+   ⚠⚠ AMBER, HERS, v42, AND THE CONTRAST WAS MEASURED AND ACCEPTED BEFORE SHE
+   RULED: #EDA920 on this navy reads 4.22:1, against 4.5 for normal-size text.
+   18px at weight 700 sits just under the 18.66px large-text exemption, so this
+   fails AA by the same half-pixel the green eyebrow does at S236 — SHE HAS PAID
+   THAT COST KNOWINGLY TWICE NOW. DO NOT SILENTLY BUMP IT TO 20px AND DO NOT SWAP
+   THE AMBER FOR A DARKER YELLOW; both are hers to ask for. */
 .faq-section .faq-eyebrow {
   font-family: Quicksand, sans-serif;
   font-weight: 700;
   font-size: 18px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #EDECE0;
+  color: #EDA920;
   margin: 0 0 18px;
 }
 
@@ -2413,6 +2418,13 @@
   cursor: pointer;
 }
 
+/* ⚠⚠ AMBER, HERS, v42. Same measurement as the eyebrow: 4.22:1, under the 4.5
+   bar for normal text. 22px at weight 600 is NOT "large text" under WCAG — that
+   needs 24px, or 18.66px at 700 — so raising this one value to 24px is what
+   would make the amber pass outright. SHE WAS SHOWN THAT AND KEPT 22.
+   ⚠ THE TEASER AND THE ANSWER STAY CREAM, deliberately: amber on every line
+   would flatten the yellow back into a background colour and take the emphasis
+   with it. */
 .faq-section .faq-question-text {
   grid-column: 1;
   grid-row: 1;
@@ -2420,7 +2432,7 @@
   font-weight: 600;
   font-size: 22px;
   line-height: 1.3;
-  color: #EDECE0;
+  color: #EDA920;
   margin: 0;
 }
 
@@ -2464,6 +2476,17 @@
 html.ks-motion .faq-section .faq-answer-wrap {
   display: grid;
   grid-template-rows: 0fr;
+  /* ⚠⚠⚠ THE CLIP IS ON THE WRAP **AND** ON THE ITEM, AND THE WRAP'S IS THE ONE
+     THAT MATTERS — v42, after she saw the first line of every answer showing on
+     the live page under the closed teaser. The item's own overflow:hidden only
+     clips what the ITEM decides to clip; a grid item is free to OVERFLOW a
+     0-height track, and when it did, the leak spilled straight out of a wrap
+     that had no clip of its own. The wrap is 0 tall whenever the track is 0, so
+     clipping here is unconditional and does not care why the item misbehaved.
+     ⚠ THE PADDING STAYS ON THE ANSWER, NEVER ON THIS WRAP. Padding on a
+     zero-height grid container is not clipped by its own track and would leave a
+     26px ghost gap under every closed row. */
+  overflow: hidden;
   transition: grid-template-rows .45s cubic-bezier(.4, 0, .2, 1);
 }
 
@@ -2632,7 +2655,7 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
 
 
 /* ============================================================================
-   MOTION  —  v41 (S251)
+   MOTION  —  v42 (S251)
    ----------------------------------------------------------------------------
    THE THIRTEEN WEBFLOW INTERACTIONS ARE DELETED — HER RULING S246, "id rather
    remove the two interactions and keep all of them in your file." Every one of
