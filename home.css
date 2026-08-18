@@ -842,20 +842,26 @@
   margin-top: 0;
   margin-bottom: calc(var(--ribbon-height) / -2);
   background-color: #1F5C38;
-  /* ⚠⚠⚠ THE CORAL SHADOW FILLS THE WEDGE ABOVE THE TILTED RIBBON, AND ITS SIZE
-     IS ARITHMETIC, NOT TASTE — RETUNED 40px -> 120px AT S247. The ribbon is
-     rotated 2.8deg and is 112% of the viewport, so the vertical drop from its
-     left end to its right end is width * tan(2.8deg): about 17px on a 317px
-     phone, 56px at 1024, 79px at 1440. A FIXED 40px COVERS THE PHONE AND RUNS
-     OUT ON A DESKTOP, which is exactly how this presented — clean on her phone,
-     a pale wedge with the photo placeholder showing through on her Mac.
-     ⚠⚠ IT IS FREE TO OVERSHOOT. The extra coral paints over a section that is
-     already coral, so it is invisible everywhere except the wedge it exists to
-     fill. 120px covers a drop up to roughly a 2,400px viewport.
-     ⚠ IF THIS EVER REAPPEARS, CHECK THE ROTATION FIRST: the required shadow
-     scales with BOTH the angle and the width, so steepening the tilt or
-     widening the bleed re-opens it. */
-  box-shadow: 0 -120px 0 0 #E54F25;
+  /* ⚠⚠⚠ THE CORAL SHADOW FILLS THE WEDGE ABOVE THE TILTED RIBBON. 40px, AND
+     44px IS A HARD CEILING — v40 (S248) REVERTS S247's 120px, WHICH WAS A
+     REGRESSION THIS FILE HAD ALREADY WARNED AGAINST IN WRITING. At 120 the
+     shadow is a copy of the band painted 120px higher at z-index 3, so it laid
+     a solid coral bar STRAIGHT ACROSS THE BOTTOM OF THE WHITE PRODUCT CARDS.
+     Seen on her live Mac; the cards were sliced mid-line.
+     ⚠⚠ IT IS NOT FREE TO OVERSHOOT AND THE S247 NOTE SAYING SO WAS FALSE. The
+     clearance between the cards and the ribbon's top edge is exactly
+     --section-gap (44px), so any value past 44 reaches the cards.
+     ⚠⚠ AND THE REASON GIVEN FOR RAISING IT WAS WRONG TOO. The wedge is
+     (0.56 x viewport x tan 2.8deg) - ribbon-height/2, so 40px covers to roughly
+     a 2,300px viewport — about 12px of wedge on a 1,280px Mac. 40 was never
+     running out on her screen; the grey she was seeing was the Webflow
+     background-image.svg PLACEHOLDER on the page-level Body class, cleared in
+     the Designer at S248, and NOT this shadow failing.
+     ⚠ IF A SLIVER EVER REAPPEARS BEYOND ~2,300px, THE ANSWER IS NOT A BIGGER
+     NUMBER — the ceiling is 44. It is a tilted coral wedge on
+     .closet-standard-section's own top edge, painting DOWNWARD into the photo
+     instead of upward into the cards. Scoped, never built. */
+  box-shadow: 0 -40px 0 0 #E54F25;
   transform: rotate(2.8deg);
   overflow: hidden;
 }
