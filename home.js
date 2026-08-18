@@ -182,7 +182,7 @@
 })();
 
 /* ============================================================================
- * MOTION — v36 (S247)
+ * MOTION — v41 (S251)
  * ----------------------------------------------------------------------------
  * The thirteen Webflow interactions on /old-home are DELETED (S246, her ruling).
  * This is their replacement, and it is deliberately smaller than what it
@@ -206,6 +206,68 @@
      condition, and there is a window where the page paints hidden. */
   HTML.classList.add('ks-motion');
 
+  /* ==========================================================================
+     THE FAQ ACCORDION — S251, HER RULING: ONE ROW OPEN AT A TIME.
+     ⚠⚠⚠ IT IS BOUND HERE, IMMEDIATELY AFTER THE FLAG AND OUTSIDE start(), ON
+     PURPOSE. start() returns early on reduced motion, so binding it in there
+     would leave a reader who has asked for less motion with FOUR ROWS THAT
+     CANNOT OPEN — the collapse would be live (it is scoped under html.ks-motion
+     in home.css, and this flag is already set) with nothing to open it. Behaviour
+     is not motion. The flag and the handler now arrive in the same breath, which
+     is what makes the no-script floor honest: no script, no flag, no collapse,
+     ALL FOUR ANSWERS SIT OPEN.
+     ⚠⚠ ONE LISTENER ON THE LIST, NOT FOUR ON THE HEADERS. The rows are static
+     markup today, but a delegated listener cannot go stale if a fifth row is
+     ever added in the Designer — and there is nothing to unbind.
+     ⚠ THE HEADER IS A DIV, SO THE KEYBOARD IS NOT FREE. tabindex, role and
+     aria-expanded are set here rather than in Webflow, because a custom
+     attribute typed into the Designer is one more unversioned thing to keep
+     right — this way the whole control ships with the file. */
+  (function () {
+    var list = document.querySelector('.faq-section .faq-question-list');
+    if (!list) return;
+
+    var rows = list.querySelectorAll('.faq-question-row'), i, hdr;
+
+    for (i = 0; i < rows.length; i++) {
+      hdr = rows[i].querySelector('.faq-question-header');
+      if (!hdr) continue;
+      hdr.setAttribute('tabindex', '0');
+      hdr.setAttribute('role', 'button');
+      hdr.setAttribute('aria-expanded', 'false');
+    }
+
+    function toggle(row) {
+      var open = row.classList.contains('is-open'), k, h;
+      for (k = 0; k < rows.length; k++) {
+        rows[k].classList.remove('is-open');
+        h = rows[k].querySelector('.faq-question-header');
+        if (h) h.setAttribute('aria-expanded', 'false');
+      }
+      if (!open) {
+        row.classList.add('is-open');
+        h = row.querySelector('.faq-question-header');
+        if (h) h.setAttribute('aria-expanded', 'true');
+      }
+    }
+
+    list.addEventListener('click', function (e) {
+      var hit = e.target.closest && e.target.closest('.faq-question-header');
+      if (!hit || !list.contains(hit)) return;
+      var row = hit.closest('.faq-question-row');
+      if (row) toggle(row);
+    });
+
+    list.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+      var hit = e.target.closest && e.target.closest('.faq-question-header');
+      if (!hit || !list.contains(hit)) return;
+      e.preventDefault();                /* Space would scroll the page */
+      var row = hit.closest('.faq-question-row');
+      if (row) toggle(row);
+    });
+  })();
+
   var HERO =
     '.hero-section .hero-tagline,' +
     '.hero-section .h1-light-leftaligned,' +
@@ -214,6 +276,17 @@
     '.hero-section .hero-buttons';
 
   var CARDS = '.pricing-preview-section .pricing-card';
+
+  /* THE FAQ ROWS RIDE THE SAME OBSERVER AS THE CARDS — HER RULING S249 that they
+     REPLAY on re-entry, down and up, is exactly what that observer already does.
+     A second observer with its own thresholds would be a new kind of seam where a
+     repetition of a working one was available (§2 STACK DISCIPLINE). */
+  var ROWS = '.faq-section .faq-question-row';
+
+  /* Everything that is hidden and revealed, in one string. Anything added here is
+     observed, revealed by the escape hatch, and swept by the watchdog — all three
+     at once, which is what stops one of them being forgotten. */
+  var WATCHED = CARDS + ',' + ROWS;
 
   /* STARS was here. DELETED v35, not left inert (§0): the stars came off the
      observer when the spin went scroll-linked, so nothing reveals them any
@@ -227,7 +300,7 @@
   /* THE ESCAPE HATCH, USED BY EVERY FAILURE PATH BELOW. */
   function revealEverything() {
     revealAll(HERO);
-    revealAll(CARDS);
+    revealAll(WATCHED);
   }
 
   /* ==========================================================================
@@ -252,7 +325,12 @@
     { sel: '.home-hero-star-lower',     rate: -0.045 },
     { sel: '.closet-preview-star',      rate:  0.075 },
     { sel: '.closet-standard-star',     rate: -0.055 },
-    { sel: '.closet-standard-star-two', rate:  0.090 }
+    { sel: '.closet-standard-star-two', rate:  0.090 },
+    /* THE SIXTH, S251. ⚠⚠ A STAR JOINS THIS ONLY BY A LINE HERE — the list is
+       explicit and each entry is read with querySelector, so a new star wearing a
+       new class spins for exactly no reason until it is named. ITS OWN RATE AND
+       ITS OWN SIGN, so six stars still never read as one mechanism. */
+    { sel: '.faq-star',                 rate: -0.070 }
   ];
 
   function startSpin() {
@@ -338,7 +416,7 @@
       });
     }, { threshold: [0, 0.15], rootMargin: '0px 0px -8% 0px' });
 
-    var watched = document.querySelectorAll(CARDS), i;
+    var watched = document.querySelectorAll(WATCHED), i;
     for (i = 0; i < watched.length; i++) io.observe(watched[i]);
 
     /* THE TWO REAL HOLES, EACH CLOSED WITHOUT TOUCHING A HEALTHY PAGE.
@@ -356,7 +434,7 @@
            window were widened later. Anything measuring 0x0 at 3s is revealed. */
     setTimeout(function () {
       if (!sawCallback) { revealEverything(); return; }
-      var n = document.querySelectorAll(CARDS), k, r;
+      var n = document.querySelectorAll(WATCHED), k, r;
       for (k = 0; k < n.length; k++) {
         r = n[k].getBoundingClientRect();
         if (!r.width || !r.height) n[k].classList.add('ks-in');

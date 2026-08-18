@@ -2249,7 +2249,390 @@
 }
 
 /* ============================================================================
-   MOTION  —  v39 (S247)
+   THE FAQ  —  v41 (S251)
+   ----------------------------------------------------------------------------
+   The markup was built by hand in the Designer and PUBLISHED first, then read
+   back off HER OWN CONSOLE before a line of this was written (§0: read the
+   markup before writing CSS at it — the pricing rows cost nine versions of this
+   file learning that). Every selector below was confirmed present in the served
+   page. Nothing here is aimed at an element we hope exists.
+
+   HER RULINGS S249/S250: ground #1C4A91 · photo panel #211B1A ON THE RIGHT with
+   THE SAME EDGES AS THE HERO IMAGE · chevrons and CTA pill #EDA920 · star
+   #F491A9 · ALL TEXT LIGHT #EDECE0. Layout option C, so the teaser line stays
+   VISIBLE under every question whether the row is open or shut. ONE row open at
+   a time. ONE CTA for the whole section.
+
+   ⚠⚠⚠ THE CLOSED STATE IS SCOPED UNDER html.ks-motion AND SITS AT TOP LEVEL,
+   DELIBERATELY OUTSIDE THE prefers-reduced-motion: no-preference BLOCK AT THE
+   FOOT OF THIS FILE. Two reasons, both about failure direction.
+   (1) home.js sets that flag as its FIRST act and binds the click handler in the
+       same breath, so the thing that hides an answer and the thing that opens it
+       arrive together. Script never arrives → no flag → ALL FOUR ANSWERS SIMPLY
+       SIT OPEN. Her S224 rule: fail visible, never blank.
+   (2) Put it inside the motion block instead and a reader who has asked for
+       reduced motion gets rows that CANNOT OPEN — the click would toggle a class
+       no rule reads. She still gets a working accordion here; it just snaps.
+
+   ⚠⚠ CONTRAST, MEASURED NOT EYEBALLED: cream on navy 7.25 · ink on the amber
+   pill 8.46 · amber chevron on navy 4.22 · pink star on navy 3.88. Both marks
+   clear the 3.0 bar for a graphical object and the text clears AA at any size.
+   ⚠ CREAM ON AMBER IS 1.72. THE CTA LABEL IS INK AND CAN NEVER BE CREAM.
+   ⚠ THE PILL'S INK IS #1E1A19, the value header.css already uses site-wide. Her
+   S249 palette names #211B1A and that difference is UNRULED — if she rules the
+   other way it is one value in one place here.
+
+   ⚠⚠ NO BRAND HEX IS FADED ANYWHERE BELOW (§2). The hairlines are a WHITE TINT
+   over the navy — the sanctioned device, the same one the plan cards use for
+   their value chip — never a watered-down cream.
+   ============================================================================ */
+
+/* ---- THE BAND AND THE TWO HALVES --------------------------------------- */
+/* THE SECTION IS THE ROW. faq-container and faq-photo-panel are siblings with no
+   wrapper between them, because the Designer build gave them none, so the
+   section itself carries the centring: a 1240 measure with the gutter clamped at
+   0, and the container's own 60px puts the type EXACTLY ON THE SPINE that every
+   other section on this page sits on (S244). The photo panel then ends where the
+   hero card ends. ⚠ max(0px, …) IS NOT DECORATION — a negative padding value is
+   invalid and would drop the whole declaration, so the clamp is what keeps this
+   from silently un-padding itself below 1240. */
+.faq-section {
+  --faq-gutter: max(0px, calc((100% - 1240px) / 2));
+  --faq-photo: 38%;
+  position: relative;
+  background-color: #1C4A91;
+  display: flex;
+  align-items: stretch;
+  padding: 88px var(--faq-gutter);
+}
+
+.faq-section .faq-container {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  /* the 60 is the spine. text-align beats the centred inheritance the canvas
+     showed before this file existed — set on the COLUMN so anything added later
+     inherits it too, the same way .hero-left does it. */
+  padding: 0 64px 0 60px;
+  text-align: left;
+}
+
+/* ALL FOUR CORNERS ARE ROUNDED, NOT JUST THE OUTER TWO — CLAUDE'S CALL,
+   REVERSIBLE IN ONE VALUE. Her ruling is "the same edges as the hero image", and
+   that image's edges are the hero card's 24px radius. In the hero the photo's
+   left edge is a SEAM against the cream card, so it is square; here there is no
+   card, the left edge meets the navy ground, and a square edge there reads as a
+   cut rather than a seam. ⚠ THE PANEL IS A DIV, NOT AN IMAGE, exactly like the
+   hero's and the closet standard's. When her photo lands it is background-image
+   / size:cover / repeat:no-repeat ON THIS SAME ELEMENT — NO DESIGNER WORK. */
+.faq-section .faq-photo-panel {
+  flex: 0 0 var(--faq-photo);
+  min-height: 0;
+  background-color: #211B1A;
+  border-radius: 24px;
+}
+
+/* THE STAR SITS ON THE SEAM, and the seam is the photo's left edge, so its offset
+   is arithmetic rather than a guessed number: the gutter, plus 38% of the row
+   inside it, minus half the star. Change --faq-photo and the star follows.
+   ⚠⚠ THE SPIN IS NOT HERE AND MUST NOT BE. home.js writes an inline `rotate:` on
+   scroll; a rotate rule in this file would lose to it silently and read as dead.
+   THE CLASS IS .faq-star AND home.js's SPIN LIST NAMES IT LITERALLY — that list
+   is five explicit selectors read one at a time with querySelector, not a class
+   match, so this star spins only because a sixth line was added there.
+   ⚠ PLACEHOLDER FILL, same as the other five: when the PNG lands, drop
+   background-color and clip-path, add background-image / size:contain /
+   repeat:no-repeat. The element and its position do not change. */
+.faq-section .faq-star {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  width: 68px;
+  aspect-ratio: 1 / 1;
+  top: 56px;
+  right: calc(var(--faq-gutter) + (100% - var(--faq-gutter) * 2) * 0.38 - 34px);
+  background-color: #F491A9;
+  clip-path: polygon(50% 2%, 61% 36%, 97% 36%, 68% 57%, 79% 92%, 50% 71%, 21% 92%, 32% 57%, 3% 36%, 39% 36%);
+}
+
+/* ---- TYPE --------------------------------------------------------------- */
+/* THE EYEBROW IS A SANS HEADER, not a label — the same job and the same
+   treatment as how-it-works' (S236), in cream instead of green because green on
+   this navy is not a pairing anyone has measured and cream reads 7.25. */
+.faq-section .faq-eyebrow {
+  font-family: Quicksand, sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #EDECE0;
+  margin: 0 0 18px;
+}
+
+/* ⚠ INSTRUMENT SERIF LOADS AT 400 ONLY. Anything heavier is a browser-faked bold
+   on this page — the size does the work, never a weight. */
+.faq-section .faq-heading {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-weight: 400;
+  font-size: 52px;
+  line-height: 1.05;
+  color: #EDECE0;
+  margin: 0 0 36px;
+  max-width: 16ch;
+}
+
+/* ---- THE ROWS ----------------------------------------------------------- */
+/* ⚠⚠⚠ faq-question-list HOLDS THE FOUR ROWS AND NOTHING ELSE, AND THE ENTRANCE
+   DELAYS AT THE FOOT OF THIS FILE KEY ON nth-child INSIDE IT. She caught the
+   stagger arriving TWO AT A TIME on the mockup and it was a MARKUP fault, not a
+   value: with the eyebrow, heading and CTA as sibling divs, nth-of-type counted
+   by TAG and two rows matched no delay at all. PUT THE CTA BACK IN HERE AND IT
+   RETURNS. */
+.faq-section .faq-question-list {
+  width: 100%;
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.faq-section .faq-question-row {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+/* THE HEADER IS THE WHOLE CLICKABLE STRIP AND IT IS A TWO-COLUMN GRID, which is
+   what lets the question, the teaser and the chevron sit in her approved layout
+   with NO extra wrapper — her class list has none and none was invented. The
+   chevron spans both rows and centres against them. */
+.faq-section .faq-question-header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  column-gap: 28px;
+  align-items: start;
+  padding: 24px 0;
+  cursor: pointer;
+}
+
+.faq-section .faq-question-text {
+  grid-column: 1;
+  grid-row: 1;
+  font-family: Quicksand, sans-serif;
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 1.3;
+  color: #EDECE0;
+  margin: 0;
+}
+
+/* THE TEASER IS ALWAYS VISIBLE — HER LAYOUT OPTION C. It is a lighter WEIGHT and
+   a smaller SIZE rather than a faded colour, because §2 forbids fading a brand
+   hex to make a quieter one. */
+.faq-section .faq-question-teaser {
+  grid-column: 1;
+  grid-row: 2;
+  font-family: Quicksand, sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.45;
+  color: #EDECE0;
+  margin: 6px 0 0;
+}
+
+/* A DRAWN SHAPE, NOT A GLYPH AND NOT AN ASSET — the same decision as the stars.
+   A character depends on whatever font arrives and renders differently on her
+   phone than on her Mac. ⚠ `rotate:`, NEVER `transform: rotate()`, so nothing
+   here can ever delete a positioning transform (the rule this file learned from
+   the hero stars). */
+.faq-section .faq-question-chevron {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  width: 20px;
+  height: 20px;
+  background-color: #EDA920;
+  clip-path: polygon(50% 78%, 2% 26%, 14% 12%, 50% 52%, 86% 12%, 98% 26%);
+  transition: rotate .35s cubic-bezier(.4, 0, .2, 1);
+}
+
+/* ---- OPEN AND SHUT ------------------------------------------------------ */
+/* THE COLLAPSE IS grid-template-rows 0fr -> 1fr, WHICH IS WHY IT CAN ANIMATE TO
+   THE ANSWER'S REAL HEIGHT with no measured pixel value and no JavaScript doing
+   arithmetic. ⚠ AND ITS FALLBACK IS THE RIGHT WAY UP: a browser too old to
+   understand 0fr drops the declaration, the wrap keeps auto rows, AND THE ANSWER
+   IS SIMPLY VISIBLE. Every failure path on this section ends at "open", never at
+   "unreachable". */
+html.ks-motion .faq-section .faq-answer-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows .45s cubic-bezier(.4, 0, .2, 1);
+}
+
+html.ks-motion .faq-section .faq-answer-wrap > * {
+  min-height: 0;
+  overflow: hidden;
+}
+
+html.ks-motion .faq-section .faq-question-row.is-open .faq-answer-wrap {
+  grid-template-rows: 1fr;
+}
+
+html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
+  rotate: 180deg;
+}
+
+.faq-section .faq-answer-text {
+  font-family: Quicksand, sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #EDECE0;
+  margin: 0;
+  padding: 0 0 26px;
+  max-width: 56ch;
+}
+
+/* A visible focus ring for anyone tabbing. home.js gives the header a tabindex
+   and a role; without this rule that keyboard path would be invisible. */
+.faq-section .faq-question-header:focus-visible {
+  outline: 2px solid #EDA920;
+  outline-offset: 4px;
+}
+
+/* ⚠ REDUCED MOTION KEEPS THE ACCORDION AND LOSES ONLY THE EASING. This is the
+   whole reason the collapse lives out here rather than in the motion block. */
+@media (prefers-reduced-motion: reduce) {
+  html.ks-motion .faq-section .faq-answer-wrap,
+  .faq-section .faq-question-chevron {
+    transition: none;
+  }
+}
+
+/* ---- THE CTA ------------------------------------------------------------ */
+/* ⚠⚠ THE LABEL IS TARGETED AS `> div`, NEVER AS .text-block-119. That class is
+   Webflow's own auto-generated name for the text block inside the link — it is
+   not ours, it carries no meaning, and Webflow is free to hand the same name to
+   something else. The structural selector cannot go stale.
+   ⚠ :visited is matched deliberately: `All Links` is a TAG selector styling every
+   <a> on all twenty pages, and a visited link would otherwise take its colour. */
+.faq-section .faq-cta-button,
+.faq-section .faq-cta-button:visited {
+  display: inline-block;
+  margin-top: 44px;
+  padding: 15px 34px;
+  border-radius: 50px;
+  background-color: #EDA920;
+  color: #1E1A19;
+  text-decoration: none;
+  transition: transform .18s ease;
+}
+
+.faq-section .faq-cta-button > div {
+  font-family: Quicksand, sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: 0.01em;
+  color: inherit;
+}
+
+.faq-section .faq-cta-button:hover {
+  transform: translateY(-2px);
+}
+
+/* ---- FAQ, TABLET -------------------------------------------------------- */
+/* THE HALVES STACK AND THE PHOTO GOES BELOW THE TYPE, in source order. The
+   questions are the point of this section and a near-black block above them
+   would delay them — CLAUDE'S CALL, REVERSIBLE with one `order` line.
+   ⚠ THE PHOTO TAKES A FIXED HEIGHT HERE ON PURPOSE: stacked, it has no sibling
+   to stretch against, so without one it collapses to nothing and the star hangs
+   over navy. THE STAR'S OFFSET IS COMPUTED FROM THAT HEIGHT — change one, change
+   both. */
+@media screen and (max-width: 991px) {
+
+  .faq-section {
+    --faq-photo-height: 280px;
+    flex-direction: column;
+    padding: 64px 0;
+  }
+
+  .faq-section .faq-container {
+    padding: 0 40px;
+  }
+
+  .faq-section .faq-photo-panel {
+    flex: 0 0 auto;
+    height: var(--faq-photo-height);
+    margin: 48px 40px 0;
+  }
+
+  .faq-section .faq-star {
+    width: 56px;
+    top: auto;
+    right: 56px;
+    /* 64 = the section's bottom padding, so this lands the star's centre on the
+       photo's TOP edge — the horizontal seam the stack creates. */
+    bottom: calc(64px + var(--faq-photo-height) - 28px);
+  }
+
+  .faq-section .faq-heading {
+    font-size: 44px;
+  }
+}
+
+/* ---- FAQ, PHONE --------------------------------------------------------- */
+@media screen and (max-width: 767px) {
+
+  .faq-section {
+    --faq-photo-height: 220px;
+    padding: 48px 0;
+  }
+
+  .faq-section .faq-container {
+    padding: 0 20px;
+  }
+
+  .faq-section .faq-photo-panel {
+    margin: 36px 20px 0;
+  }
+
+  .faq-section .faq-star {
+    width: 44px;
+    right: 28px;
+    bottom: calc(48px + var(--faq-photo-height) - 22px);
+  }
+
+  .faq-section .faq-heading {
+    font-size: 36px;
+    margin-bottom: 28px;
+  }
+
+  .faq-section .faq-question-text {
+    font-size: 19px;
+  }
+
+  .faq-section .faq-question-header {
+    column-gap: 18px;
+    padding: 20px 0;
+  }
+}
+
+/* ---- FAQ, SMALL PHONE ---------------------------------------------------- */
+/* ⚠ WEBFLOW HAS FOUR BREAKPOINTS AND THIS FILE SPEAKS AT THREE. Below 479 the
+   Designer's own rules are unopposed unless this file says otherwise, which is a
+   rule for every section on this page and not a hero problem. */
+@media screen and (max-width: 479px) {
+
+  .faq-section .faq-heading {
+    font-size: 32px;
+  }
+
+  .faq-section .faq-eyebrow {
+    font-size: 16px;
+  }
+}
+
+
+/* ============================================================================
+   MOTION  —  v41 (S251)
    ----------------------------------------------------------------------------
    THE THIRTEEN WEBFLOW INTERACTIONS ARE DELETED — HER RULING S246, "id rather
    remove the two interactions and keep all of them in your file." Every one of
@@ -2428,5 +2811,49 @@
     }
   }
 
+
+
+  /* ---- 5. THE FAQ ROWS, ON SCROLL ---------------------------------------
+     THE SAME GESTURE AS EVERYTHING ELSE ON THIS PAGE: a 32px rise and a fade,
+     .7s on cubic-bezier(.4,0,.2,1), .14s apart. No new numbers were invented —
+     these are her S247 values, and reusing them is what stops the page reading
+     as four different animators.
+
+     ⚠⚠⚠ THE DELAYS KEY ON nth-child AND THAT IS THE WHOLE FIX FOR THE BUG SHE
+     CAUGHT. On the mockup the rows arrived TWO AT A TIME: the selector counted
+     with nth-of-type, which counts BY TAG, so the eyebrow and the heading — divs
+     in the same parent — ate the first two delays and two rows fired together at
+     zero. .faq-question-list now holds the four rows and nothing else, so
+     nth-child counts rows and only rows.
+
+     ⚠⚠ THESE REPLAY, LIKE THE PRICING CARDS AND FOR THE SAME REASON — HER RULING
+     S249: they re-hide once FULLY off screen and play again on the way back down
+     OR UP. home.js observes them with the pricing cards on one observer, so the
+     hysteresis that stops a phone wobble flickering the row is inherited rather
+     than rebuilt.
+     ⚠ THE DELAYS ARE KEPT ON THE PHONE, unlike the pricing cards'. Those zero out
+     because four stacked cards are taller than the screen and enter one at a
+     time; four question rows are short enough that two or three share the
+     viewport, so the stagger still reads as one gesture.
+     ⚠ AND THE ACCORDION IS NOT IN HERE. Its collapse lives at top level under
+     html.ks-motion so that reduced motion keeps a WORKING accordion — see the
+     FAQ block above. Nothing in this section touches whether a row can open. */
+
+  html.ks-motion .faq-section .faq-question-row {
+    opacity: 0;
+    translate: 0 32px;
+    transition: opacity .7s cubic-bezier(.4, 0, .2, 1),
+                translate .7s cubic-bezier(.4, 0, .2, 1);
+  }
+
+  html.ks-motion .faq-section .faq-question-row.ks-in {
+    opacity: 1;
+    translate: 0 0;
+  }
+
+  html.ks-motion .faq-section .faq-question-list .faq-question-row:nth-child(1) { transition-delay: 0s;   }
+  html.ks-motion .faq-section .faq-question-list .faq-question-row:nth-child(2) { transition-delay: .14s; }
+  html.ks-motion .faq-section .faq-question-list .faq-question-row:nth-child(3) { transition-delay: .28s; }
+  html.ks-motion .faq-section .faq-question-list .faq-question-row:nth-child(4) { transition-delay: .42s; }
 
 }
