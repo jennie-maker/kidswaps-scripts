@@ -253,7 +253,18 @@
       requestAnimationFrame(function () { revealAll(HERO); });
     });
 
+    /* ⚠⚠⚠ THE WATCHDOG BELOW IS DELIBERATE-LOOKING AND WAS A BUG AT v33, FOUND
+       S246 ON THE LIVE PAGE. It was an UNCONDITIONAL setTimeout(revealEverything,
+       6000), so on a healthy page it fired while she was still reading the hero
+       and revealed the pricing cards and every star BEFORE she scrolled to them.
+       Nothing errored, the flag was set, the classes landed, and the animations
+       simply never had anything left to run. A SAFETY NET THAT FIRES ON A
+       HEALTHY PAGE IS NOT A SAFETY NET, IT IS THE FAULT.
+       It now fires ONLY when the observer is proven not to work. */
+    var sawCallback = false;
+
     var io = new IntersectionObserver(function (entries) {
+      sawCallback = true;                /* the observer is alive, whatever it reports */
       entries.forEach(function (e) {
         if (!e.isIntersecting) return;
         e.target.classList.add('ks-in');
@@ -264,11 +275,24 @@
     var watched = document.querySelectorAll(CARDS + ',' + STARS), i;
     for (i = 0; i < watched.length; i++) io.observe(watched[i]);
 
-    /* WATCHDOG. If anything at all goes wrong — an observer that never fires, a
-       backgrounded tab, an element that never reaches the threshold — every
-       element is revealed after 6 seconds. A member can never be left looking
-       at a hole. */
-    setTimeout(revealEverything, 6000);
+    /* THE TWO REAL HOLES, EACH CLOSED WITHOUT TOUCHING A HEALTHY PAGE.
+       (1) THE OBSERVER NEVER RUNS AT ALL. A live IntersectionObserver delivers a
+           first callback within a frame or two of observe(), reporting every
+           element including the off-screen ones, so a callback having happened
+           is the honest liveness test. No callback by 3s = it is not working,
+           and everything is revealed.
+       (2) AN ELEMENT THAT CAN NEVER INTERSECT. .home-hero-star-lower is
+           display:none below 991, so it has no box and no callback can ever
+           reveal it — harmless while hidden, but it would sit at opacity 0 if the
+           window were widened later. Anything measuring 0x0 at 3s is revealed. */
+    setTimeout(function () {
+      if (!sawCallback) { revealEverything(); return; }
+      var n = document.querySelectorAll(CARDS + ',' + STARS), k, r;
+      for (k = 0; k < n.length; k++) {
+        r = n[k].getBoundingClientRect();
+        if (!r.width || !r.height) n[k].classList.add('ks-in');
+      }
+    }, 3000);
   }
 
   if (document.readyState === 'loading') {
