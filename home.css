@@ -300,6 +300,15 @@
   font-weight: 400;
 }
 
+/* ⚠⚠ padding-left:0 IS A CORRECTION, NOT A STYLE — S247. WEBFLOW authors a
+   padding-left:10px on this element in the Designer and no pinned file explains
+   it, so the subhead's text started 10px right of the eyebrow, the headline, the
+   highlights and the buttons, which all sit at 0. She saw it as the line being
+   indented differently every time she looked; it was static and it was this.
+   ⚠ THE DESIGNER VALUE IS STILL THERE and this only overrides it. Same species
+   as hero-left's dead Webflow margin (S233) — clear it at source on the next
+   Designer trip and this line can go. Until then, DO NOT DELETE THIS. */
+
 .hero-section .hero-subhead {
   font-family: Quicksand, sans-serif;
   font-weight: 400;
@@ -307,6 +316,7 @@
   line-height: 1.5;
   color: #1E1A19;
   margin: 20px 0 0;
+  padding-left: 0;
   max-width: 34ch;
 }
 
@@ -834,6 +844,24 @@
   background-color: #1F5C38;
   box-shadow: 0 -40px 0 0 #E54F25;
   transform: rotate(2.8deg);
+  overflow: hidden;
+}
+
+/* ⚠⚠⚠ THE CLOSING RIBBON'S BLEED HAS TO BE CLIPPED BY ITS EMBED — S247, AND ITS
+   ABSENCE WAS 19px OF HORIZONTAL PAGE SCROLL ON A PHONE, FOUND BY MEASUREMENT.
+   The ribbon is width:112% margin-left:-6%, deliberately, so its ends can never
+   show (her S231 rule). It clips its own 3,174px track with overflow:hidden —
+   but the body-level div.w-embed AROUND it is overflow:visible, so the ribbon's
+   own 6% bleed escaped to the document and dragged the whole page sideways.
+   On a wide desktop it is lost in the margin; on a 317px screen it is the fault.
+   ⚠⚠ NOT `body{overflow-x:hidden}`. That works and it ALSO KILLS THE STICKY
+   HEADER — a scroll container on body breaks position:sticky, and .site-header
+   is sticky site-wide.
+   ⚠ :has SCOPES IT TO THIS ONE EMBED. The page carries several w-embeds and a
+   bare .w-embed rule would clip all of them, including the hero marquee, whose
+   clipping is already correctly owned by hero-container. */
+
+.w-embed:has(> .closet-preview-ribbon-closing) {
   overflow: hidden;
 }
 
@@ -2058,6 +2086,19 @@
     max-width: 100%;
   }
 
+  /* ⚠⚠ THE 60px UNDER THE STEPS IS WEBFLOW'S, NOT THIS FILE'S — S247, MEASURED.
+     .steps-row carries margin-bottom:60px from the Designer, and on a phone it
+     stacked with the section's own 59px of ribbon-seam padding to put ~119px of
+     empty cream between "Repeat" and the next section. HER CALL: too big.
+     ⚠ PHONE ONLY, deliberately. The same 60px is live at desktop, where she has
+     approved the render — this does not touch it. Claude's call, reversible.
+     ⚠ THE SECTION'S OWN padding-bottom IS NOT THE LEVER AND MUST NOT BE TOUCHED:
+     it is calc(--section-gap + --ribbon-height / 2), the arithmetic that makes
+     the VISIBLE cream equal --section-gap once the ribbon straddles the seam. */
+  .how-it-works-section .how-it-works-container .steps-row {
+    margin-bottom: 0;
+  }
+
   .hero-section .hero-highlights {
     font-size: 12px;
   }
@@ -2175,7 +2216,7 @@
 }
 
 /* ============================================================================
-   MOTION  —  v36 (S247)
+   MOTION  —  v37 (S247)
    ----------------------------------------------------------------------------
    THE THIRTEEN WEBFLOW INTERACTIONS ARE DELETED — HER RULING S246, "id rather
    remove the two interactions and keep all of them in your file." Every one of
