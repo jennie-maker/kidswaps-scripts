@@ -182,7 +182,7 @@
 })();
 
 /* ============================================================================
- * MOTION — v33 (S246)
+ * MOTION — v34 (S247)
  * ----------------------------------------------------------------------------
  * The thirteen Webflow interactions on /old-home are DELETED (S246, her ruling).
  * This is their replacement, and it is deliberately smaller than what it
@@ -263,19 +263,34 @@
        It now fires ONLY when the observer is proven not to work. */
     var sawCallback = false;
 
+    /* ⚠⚠⚠ THESE REPLAY — HER RULING S247, REVERSING S246's ONE SHOT. Nothing is
+       unobserved now: an element re-hides once it is FULLY off screen and plays
+       again on the way back down or up.
+       ⚠⚠ THE TWO THRESHOLDS ARE THE HYSTERESIS AND THEY ARE NOT DECORATION.
+       Revealing at 0.15 and re-hiding ONLY at exactly 0 means a card must leave
+       the viewport COMPLETELY before it can hide — with one threshold the same
+       edge would both reveal and re-hide, and a small scroll wobble on a phone
+       would flicker the whole row. DO NOT COLLAPSE THESE TO ONE VALUE.
+       ⚠ AND RE-HIDING IS SAFE ONLY BECAUSE THE HIDE LIVES UNDER html.ks-motion
+       IN home.css. Script gone → flag gone → nothing hides, replay or not. */
     var io = new IntersectionObserver(function (entries) {
       sawCallback = true;                /* the observer is alive, whatever it reports */
       entries.forEach(function (e) {
-        if (!e.isIntersecting) return;
-        e.target.classList.add('ks-in');
-        io.unobserve(e.target);          /* ONE SHOT — scrolling back up never replays */
+        if (e.isIntersecting && e.intersectionRatio >= 0.15) {
+          e.target.classList.add('ks-in');
+        } else if (e.intersectionRatio === 0) {
+          e.target.classList.remove('ks-in');
+        }
       });
-    }, { threshold: 0.15, rootMargin: '0px 0px -8% 0px' });
+    }, { threshold: [0, 0.15], rootMargin: '0px 0px -8% 0px' });
 
     var watched = document.querySelectorAll(CARDS + ',' + STARS), i;
     for (i = 0; i < watched.length; i++) io.observe(watched[i]);
 
     /* THE TWO REAL HOLES, EACH CLOSED WITHOUT TOUCHING A HEALTHY PAGE.
+       ⚠ BOTH REVEALS BELOW ARE PERMANENT — they add ks-in without observing, so
+       nothing re-hides them. That is correct for both cases: a dead observer and
+       a zero-box element are exactly the states where replay cannot work.
        (1) THE OBSERVER NEVER RUNS AT ALL. A live IntersectionObserver delivers a
            first callback within a frame or two of observe(), reporting every
            element including the off-screen ones, so a callback having happened

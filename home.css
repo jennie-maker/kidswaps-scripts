@@ -2175,7 +2175,7 @@
 }
 
 /* ============================================================================
-   MOTION  —  v33 (S246)
+   MOTION  —  v34 (S247)
    ----------------------------------------------------------------------------
    THE THIRTEEN WEBFLOW INTERACTIONS ARE DELETED — HER RULING S246, "id rather
    remove the two interactions and keep all of them in your file." Every one of
@@ -2204,19 +2204,35 @@
    3. REDUCED MOTION KILLS IT WHOLE. The block sits inside
       prefers-reduced-motion: no-preference, so anyone asking for less motion
       gets a still page with everything VISIBLE — never a hidden one.
-   4. ONE SHOT. home.js unobserves each element as it fires, so scrolling back
-      up never replays anything.
+   4. THE SCROLL ITEMS REPLAY — HER RULING S247, REVERSING S246's ONE SHOT.
+      The cards and all five stars re-hide once they are FULLY off screen and
+      play again on the way back. ⚠⚠ THE HYSTERESIS IS LOAD-BEARING: reveal at
+      15% visible, re-hide ONLY at a ratio of exactly 0, never on a small scroll
+      wobble, or a phone jitters the page. ⚠ THE HERO IS UNAFFECTED — it runs on
+      load and is never observed.
    ============================================================================ */
 
 @media (prefers-reduced-motion: no-preference) {
 
   /* ---- 1. THE HERO, ON LOAD ---------------------------------------------
      HER RULING S246: the page felt unfinished without an entrance and the hero
-     on load is the one she named. ONE gesture, staggered — a 16px rise and a
-     fade, ~90ms apart — not five separate animations.
+     on load is the one she named. ONE gesture, staggered — a 32px rise and a
+     fade, 140ms apart — not five separate animations.
+     ⚠⚠⚠ RETUNED S247 FROM 16px/.45s/.09s AND FROM cubic-bezier(.22,.61,.36,1),
+     HER RULING OFF THE LIVE PAGE: "this is perfect, whats live right now is
+     terrible." THE CURVE DID MOST OF THE WORK, NOT THE DISTANCE — the old one
+     was front-loaded and dumped roughly two-thirds of both the fade and the
+     rise into the first 150ms, so the eye never caught it STARTING and the
+     whole gesture read as the page finishing painting. cubic-bezier(.4,0,.2,1)
+     lets it visibly begin. ▶ WHEN AN ENTRANCE READS AS A LOAD, LOOK AT THE
+     EASING BEFORE REACHING FOR A BIGGER NUMBER.
+     ⚠⚠ AND A MOCKUP CANNOT JUDGE THIS. The same 16px/.45s read FINE in a 680px
+     widget and vanished at hero scale — motion reads relative to the size of
+     the thing moving, so the mockup was the wrong instrument and a live
+     display-only console probe on her own page is what settled it.
      ⚠ THE NAVY FIELD, THE CREAM CARD AND THE PHOTO HALF DO NOT MOVE. Animating
      the frame is what made the old thirteen-element version feel busy.
-     ⚠ THE BUTTONS ARRIVE A BEAT LATER (.45s against the highlights' .27s) —
+     ⚠ THE BUTTONS ARRIVE A BEAT LATER (.70s against the highlights' .42s) —
      HER CALL, a nudge toward the click. */
 
   html.ks-motion .hero-section .hero-tagline,
@@ -2225,9 +2241,9 @@
   html.ks-motion .hero-section .hero-highlights,
   html.ks-motion .hero-section .hero-buttons {
     opacity: 0;
-    translate: 0 16px;
-    transition: opacity .45s cubic-bezier(.22, .61, .36, 1),
-                translate .45s cubic-bezier(.22, .61, .36, 1);
+    translate: 0 32px;
+    transition: opacity .7s cubic-bezier(.4, 0, .2, 1),
+                translate .7s cubic-bezier(.4, 0, .2, 1);
   }
 
   html.ks-motion .hero-section .hero-tagline.ks-in,
@@ -2242,10 +2258,10 @@
   /* the stagger. these tie with the base rule above at (0,3,1) and win on
      SOURCE ORDER alone, so they must stay BELOW it. */
   html.ks-motion .hero-section .hero-tagline         { transition-delay: 0s;   }
-  html.ks-motion .hero-section .h1-light-leftaligned { transition-delay: .09s; }
-  html.ks-motion .hero-section .hero-subhead         { transition-delay: .18s; }
-  html.ks-motion .hero-section .hero-highlights      { transition-delay: .27s; }
-  html.ks-motion .hero-section .hero-buttons         { transition-delay: .45s; }
+  html.ks-motion .hero-section .h1-light-leftaligned { transition-delay: .14s; }
+  html.ks-motion .hero-section .hero-subhead         { transition-delay: .28s; }
+  html.ks-motion .hero-section .hero-highlights      { transition-delay: .42s; }
+  html.ks-motion .hero-section .hero-buttons         { transition-delay: .70s; }
 
   /* ---- 2. THE PRICING CARDS, ON SCROLL -----------------------------------
      HER RULING S246: the four plans want an entrance that differentiates them.
@@ -2265,9 +2281,9 @@
 
   html.ks-motion .pricing-preview-section .pricing-card {
     opacity: 0;
-    translate: 0 20px;
-    transition: opacity .5s cubic-bezier(.22, .61, .36, 1),
-                translate .5s cubic-bezier(.22, .61, .36, 1);
+    translate: 0 36px;
+    transition: opacity .75s cubic-bezier(.4, 0, .2, 1),
+                translate .75s cubic-bezier(.4, 0, .2, 1);
   }
 
   html.ks-motion .pricing-preview-section .pricing-card.ks-in {
@@ -2275,9 +2291,9 @@
     translate: 0 0;
   }
 
-  html.ks-motion .pricing-preview-section .pricing-card:nth-child(1) { transition-delay: .36s; }
-  html.ks-motion .pricing-preview-section .pricing-card:nth-child(2) { transition-delay: .24s; }
-  html.ks-motion .pricing-preview-section .pricing-card:nth-child(3) { transition-delay: .12s; }
+  html.ks-motion .pricing-preview-section .pricing-card:nth-child(1) { transition-delay: .57s; }
+  html.ks-motion .pricing-preview-section .pricing-card:nth-child(2) { transition-delay: .38s; }
+  html.ks-motion .pricing-preview-section .pricing-card:nth-child(3) { transition-delay: .19s; }
   html.ks-motion .pricing-preview-section .pricing-card:nth-child(4) { transition-delay: 0s;   }
 
   /* ---- 3. THE STARS ------------------------------------------------------
@@ -2296,7 +2312,7 @@
   html.ks-motion .closet-standard-star-two {
     opacity: 0;
     transition: opacity .9s ease,
-                rotate .9s cubic-bezier(.22, .61, .36, 1);
+                rotate .9s cubic-bezier(.4, 0, .2, 1);
   }
 
   html.ks-motion .home-hero-star-upper.ks-in,
@@ -2331,6 +2347,35 @@
     html.ks-motion .pricing-preview-section .pricing-card:nth-child(4) {
       transition-delay: 0s;
     }
+  }
+
+  /* ---- 5. THE CLOSET-PREVIEW STAR THROBS ---------------------------------
+     HER ASK S247, AND IT IS THE ONLY ONE OF THE FIVE THAT DOES. The other four
+     turn once on arrival and then sit still; do not "make them consistent."
+
+     ⚠⚠⚠ IT ANIMATES THE INDEPENDENT `scale:` PROPERTY, NEVER `transform`, AND
+     THAT IS THE SAME RULE AS THE REST OF THIS BLOCK. These stars are POSITIONED
+     by transform, so a transform keyframe would overwrite the positioning and
+     throw the star across the section. `scale:` composes with it instead.
+
+     ⚠⚠ IT IS DELIBERATELY **NOT** SCOPED UNDER html.ks-motion. The entrance is,
+     because the entrance HIDES things and hiding must never survive a missing
+     script. A throb hides nothing — so if home.js never arrives, the star is
+     simply visible and pulsing, which is a better failure than visible and
+     dead. FAILURE STILL LANDS ON "NO ANIMATION, NEVER INVISIBLE."
+
+     ⚠ 1 → 1.07 over 2.6s, ease-in-out, infinite. Claude's numbers, reversible.
+     The scale is small on purpose: it sits beside a coral ribbon and four
+     photo cards, and her brief for this page is fun but NOT overwhelming. */
+
+  @keyframes ks-star-throb {
+    0%   { scale: 1;    }
+    50%  { scale: 1.07; }
+    100% { scale: 1;    }
+  }
+
+  .closet-preview-star {
+    animation: ks-star-throb 2.6s ease-in-out infinite;
   }
 
 }
