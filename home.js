@@ -180,3 +180,100 @@
     paint();
   }
 })();
+
+/* ============================================================================
+ * MOTION — v33 (S246)
+ * ----------------------------------------------------------------------------
+ * The thirteen Webflow interactions on /old-home are DELETED (S246, her ruling).
+ * This is their replacement, and it is deliberately smaller than what it
+ * replaces: the hero on load, the four pricing cards on scroll, and the five
+ * stars. Nothing else on the page moves.
+ *
+ * ⚠⚠⚠ THIS FILE ONLY EVER ADDS A CLASS. All the motion is in home.css. The
+ * split is deliberate: if this script never arrives, the flag is never set,
+ * NOTHING in home.css hides anything, and the page renders exactly as it does
+ * today — fully visible, just still. Her S224 ruling, after a scroll entrance
+ * left the how-it-works section permanently blank on the live page.
+ * FAILURE MUST ALWAYS LAND ON "NO ANIMATION", NEVER ON "INVISIBLE".
+ * ========================================================================== */
+(function () {
+  'use strict';
+
+  var HTML = document.documentElement;
+
+  /* THE FLAG, AND IT IS THE FIRST ACT ON PURPOSE. Everything in home.css's
+     motion block is scoped under html.ks-motion. Set it late, or behind a
+     condition, and there is a window where the page paints hidden. */
+  HTML.classList.add('ks-motion');
+
+  var HERO =
+    '.hero-section .hero-tagline,' +
+    '.hero-section .h1-light-leftaligned,' +
+    '.hero-section .hero-subhead,' +
+    '.hero-section .hero-highlights,' +
+    '.hero-section .hero-buttons';
+
+  var CARDS = '.pricing-preview-section .pricing-card';
+
+  var STARS =
+    '.home-hero-star-upper,' +
+    '.home-hero-star-lower,' +
+    '.closet-preview-star,' +
+    '.closet-standard-star,' +
+    '.closet-standard-star-two';
+
+  function revealAll(sel) {
+    var n = document.querySelectorAll(sel), i;
+    for (i = 0; i < n.length; i++) n[i].classList.add('ks-in');
+  }
+
+  /* THE ESCAPE HATCH, USED BY EVERY FAILURE PATH BELOW. */
+  function revealEverything() {
+    revealAll(HERO);
+    revealAll(CARDS);
+    revealAll(STARS);
+  }
+
+  function start() {
+    var reduced = window.matchMedia &&
+                  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    /* Reduced motion, or a browser with no IntersectionObserver: reveal
+       everything at once and stop. Nothing hidden, nothing animated. */
+    if (reduced || !('IntersectionObserver' in window)) {
+      revealEverything();
+      return;
+    }
+
+    /* THE HERO RUNS ON LOAD, NOT ON SCROLL — it is already on screen, so there
+       is nothing to wait for. ⚠ THE DOUBLE requestAnimationFrame IS LOAD-BEARING:
+       the browser must PAINT the start state before the class lands, or it
+       collapses both states into one frame and no transition runs at all. */
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { revealAll(HERO); });
+    });
+
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('ks-in');
+        io.unobserve(e.target);          /* ONE SHOT — scrolling back up never replays */
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -8% 0px' });
+
+    var watched = document.querySelectorAll(CARDS + ',' + STARS), i;
+    for (i = 0; i < watched.length; i++) io.observe(watched[i]);
+
+    /* WATCHDOG. If anything at all goes wrong — an observer that never fires, a
+       backgrounded tab, an element that never reaches the threshold — every
+       element is revealed after 6 seconds. A member can never be left looking
+       at a hole. */
+    setTimeout(revealEverything, 6000);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+  } else {
+    start();
+  }
+})();
