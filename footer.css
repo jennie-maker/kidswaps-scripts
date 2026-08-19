@@ -137,10 +137,30 @@
   margin: 12px 0 16px;
 }
 
+/* ⚠⚠⚠ THE ORDER IS STATED HERE BECAUSE .footer-brand IS A FLEX COLUMN AND I DID
+   NOT KNOW IT — v4 (S253). Webflow sets display:flex + flex-direction:column on
+   that element; this file never set a direction, so it inherited one. In a flex
+   column the children order by `order`, all three sat at 0, and they fell back
+   to DOM order — where .footer-social comes BEFORE .footer-tagline. That is why
+   the icon rendered ABOVE the phrase on the live page while the markup and this
+   file both read the other way. Measured: tagline top 1462, social top 1412.
+   ▶ THE LESSON, AND IT HAS NOW COST FOUR SEPARATE FAULTS ON THIS ONE FILE: ON A
+   SURFACE WEBFLOW ALREADY STYLES, READ THE COMPUTED VALUES BEFORE WRITING THE
+   RULE. Every one of these was a property something else already owned. */
+.footer-section .footer-logo {
+  order: 1;
+}
+
+.footer-section .footer-tagline {
+  order: 2;
+}
+
 .footer-section .footer-social {
+  order: 3;
   display: flex;
   justify-content: flex-start;
   gap: 16px;
+  margin-top: 4px;
 }
 
 /* ---- THE LINK COLUMNS ---------------------------------------------------- */
@@ -304,8 +324,13 @@
    where one group holds two items. Both were mocked and rejected.
    ========================================================================== */
 @media screen and (max-width: 767px) {
+  /* ⚠⚠ 28px, NOT 44 — v4. On the phone the footer's own top padding plus the
+     brand's spacing was landing the wordmark ~97px below the section's top
+     edge (footer top 1227, logo top 1324), which reads as an empty band of a
+     different colour rather than as breathing room. It is NOT a second cream:
+     body and footer both compute #EDECE0, measured. */
   .footer-section {
-    padding: 44px 0 24px;
+    padding: 28px 0 24px;
   }
   .footer-section .footer-container {
     padding: 0 20px;
@@ -349,3 +374,30 @@
    Nothing is set there on purpose — the phone block above already stacks
    everything to full width, and there is no layout left to break. If a value
    ever misbehaves under 479, this is the block that does not exist yet. */
+
+/* ==========================================================================
+   THE RIBBON EMBED'S FLOW STRIP  —  v4 (S253)
+
+   ⚠⚠⚠ THIS RULE IS IN footer.css AND NOT IN home.css ON PURPOSE, AND THE REASON
+   MATTERS: the embed sits BETWEEN the Instagram section and the GLOBAL FOOTER,
+   so the strip it reserves is a footer-seam problem. home.css is page-linked to
+   /old-home only; this file is site-wide, which is where the seam lives.
+
+   THE FAULT IT FIXES: the embed occupies 22px of real flow height with a
+   TRANSPARENT background, so a 22px strip of whatever is behind it sits between
+   the two sections. That was the pale sliver hunted for three commits, and the
+   body-colour fix only made it invisible rather than absent — the strip is
+   still there, still 22px, and it is why the footer appears to start ~100px
+   above its own content.
+
+   ⚠⚠ height:0 AND NOT display:none. The ribbon inside must still render and
+   still hang half its height below; display:none would take the band with it.
+   The child is already position:relative with a negative bottom margin, so it
+   floats over the join once its parent stops reserving space.
+   ⚠ overflow:visible IS REQUIRED or a zero-height box clips its own child.
+   ========================================================================== */
+
+.w-embed:has(> .instagram-preview-ribbon) {
+  height: 0;
+  overflow-y: visible;
+}
