@@ -286,6 +286,38 @@
   overflow-y: visible;
 }
 
+/* ⚠⚠⚠ THE 60px GAP ABOVE THE FOOTER — MEASURED, NOT DERIVED. With the embed
+   correctly collapsed to zero, the Instagram section still ended at 1366 and the
+   footer still began at 1426: SIXTY PIXELS OF NOTHING between two sections that
+   should butt together, showing the body's background through the join.
+
+   ⚠⚠ IT IS INVISIBLE ON DESKTOP AND VISIBLE ON HER PHONE, AND BOTH ARE TRUE.
+   Body and footer both compute #EDECE0, so on a Mac the strip is the same colour
+   as its neighbours and cannot be seen. iOS renders one of those blocks on its
+   own compositing layer — there is a marquee and a turning wordmark in the tree —
+   and two identical hex values on different layers come out a shade apart across
+   a hard edge. THE SHADE IS THE PHONE. THE SEAM IS REAL, and closing it removes
+   both.
+   ▶ THE LESSON: "I can only see it on my phone" DID NOT MEAN THE PHONE WAS
+   WRONG. It meant the phone was the only instrument sensitive enough to show a
+   gap that the desktop was hiding behind a colour match.
+
+   ⚠⚠ BOTH SIDES ARE ZEROED BECAUSE ADJACENT SIBLING MARGINS COLLAPSE — the 60
+   could be the footer's margin-top or the section's margin-bottom, and the
+   collapsed result is identical either way. Setting one and guessing wrong
+   leaves the gap and looks like the rule did nothing.
+   ⚠ margin-top:0 ON THE FOOTER IS SITE-WIDE AND SAFE: a footer should sit flush
+   against whatever precedes it, and its own 60px top padding carries the air.
+   ⚠ The Instagram rule can only ever match /old-home; that class exists nowhere
+   else. */
+.footer-section {
+  margin-top: 0;
+}
+
+.instagram-preview-section {
+  margin-bottom: 0;
+}
+
 
 /* ============================================================================
    TABLET
