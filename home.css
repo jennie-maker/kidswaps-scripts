@@ -2948,19 +2948,26 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
    ending on two light blocks with no edge between them. HER RULING S253 — a new
    section rather than recolouring sources.
 
-   ⚠⚠⚠ GREEN #309359 AND **NOT** CORAL, AND THE REASON IS THE PHOTOGRAPHY.
+   ⚠⚠⚠ THE BAND IS #1F5C38 AS OF v46 (S253), NOT #309359, AND IT IS THE PAGE'S
+   ONE BAND GREEN. HER RULING: the pricing band keeps its dark green and this
+   one matches it, rather than the page carrying two greens. IT ALSO BOUGHT
+   REAL CONTRAST — cream on #1F5C38 reads 6.67 where it read 3.25 on #309359.
+   ⚠⚠ #309359 IS STILL LIVE ON THIS PAGE AS A **TEXT** COLOUR (the how-it-works
+   header). Band green and text green are two jobs; do not unify them.
+   ⚠⚠⚠ GREEN AND **NOT** CORAL, AND THE REASON IS THE PHOTOGRAPHY.
    The tiles are her listing shots, which are taken on white. White-ish tiles on
    a coral ground is the closet-preview band's exact recipe, so coral would end
    the page by repeating a block it already does — the same complaint that moved
    the FAQ photo panel at v43. Green is the one band colour this page does not
    already carry.
 
-   ⚠⚠⚠ EVERY MARK ON THIS BAND IS INK OR CREAM, NEVER PINK AND NEVER AMBER-ON-
-   GREEN, AND THAT IS MEASURED. Against #309359: her placeholder star pink
-   #E796A9 reads 1.75 and amber #E5AD43 reads 1.91, both far under the 3.0 bar
-   for a graphical mark, so a pink star here would sit as a smudge. Cream reads
-   3.25 and ink 4.38. THE STARS ARE CREAM ON THIS SECTION ONLY — every other
-   star on the page stays the placeholder pink.
+   ⚠⚠⚠ EVERY MARK AND EVERY WORD ON THIS BAND IS CREAM, AND THAT IS MEASURED.
+   On #1F5C38 cream reads 6.67 and INK READS 2.18 — dark on dark. So the v44
+   ink heading and the v44 ink pill BOTH HAD TO FLIP when the band darkened,
+   and an ink anything here now is a legibility bug rather than a taste call.
+   ⚠ THE PLACEHOLDER STAR PINK #E796A9 STILL DOES NOT WORK HERE (1.95, under
+   the 3.0 bar for a graphical mark). THE STARS ARE CREAM ON THIS SECTION ONLY
+   — every other star on the page stays the placeholder pink.
 
    ⚠⚠ THE TILES ARE DRAWN DIVS WITH A PLACEHOLDER FILL, exactly like the
    closet-standard photo panel and the seam stars. When her images land it is
@@ -2974,7 +2981,7 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
    ========================================================================== */
 
 .instagram-preview-section {
-  background-color: #309359;
+  background-color: #1F5C38;
   /* ⚠⚠⚠ THE BOTTOM PADDING IS ARITHMETIC, NOT A NUMBER. The ribbon straddles
      the seam by hanging half its own height below this section, so the VISIBLE
      cream between the words and the footer is padding minus ribbon-height/2.
@@ -3007,7 +3014,8 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   font-weight: 400;
   font-size: 44px;
   line-height: 1.05;
-  color: #1E1A19;
+  /* CREAM, NOT INK — v46. Ink on this band reads 2.18. */
+  color: #EDECE0;
   margin: 0 0 26px;
 }
 
@@ -3034,8 +3042,12 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
 .instagram-preview-follow-button,
 .instagram-preview-follow-button.w-inline-block {
   display: inline-block;
-  background-color: #1E1A19;
-  color: #EDECE0;
+  /* INVERTED AT v46. An ink pill on #1F5C38 separates at 2.18 and reads as a
+     hole rather than a button; cream on the band is 6.67 and its ink label is
+     ~14. The closet preview's ink-on-coral pill is UNAFFECTED — that ground is
+     light enough for ink, this one is not. */
+  background-color: #EDECE0;
+  color: #1E1A19;
   font-family: Quicksand, sans-serif;
   font-weight: 500;
   font-size: 15px;
@@ -3108,7 +3120,8 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
      v39 raised this ribbon's cousin to 120 and laid a bar across her products.
      ⚠⚠⚠ TWO SHADOWS, NOT ONE — v45 (S253). A TILTED BAND CROSSING A HORIZONTAL
      SEAM MAKES **TWO** WEDGES AND ONE SHADOW CAN ONLY FILL ONE. On the side
-     where the band has risen above the seam, the green section is still
+     where the band has risen above the seam, the green section (#1F5C38 as of
+     v46 — THIS VALUE TRACKS THE BAND AND MUST MOVE WITH IT) is still
      painting BELOW it; on the side where it has dipped, the section has
      already stopped ABOVE it. So the upward shadow carries the section's green
      and the downward one carries the footer's cream, and each wedge gets the
@@ -3120,7 +3133,7 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
      correct by construction and UNPROVEN BY EFFECT. If the wrong colour is
      still showing on the live render, the cause is something else and a third
      shadow is not the answer. */
-  box-shadow: 0 -40px 0 0 #309359, 0 40px 0 0 #EDECE0;
+  box-shadow: 0 -40px 0 0 #1F5C38, 0 40px 0 0 #EDECE0;
   transform: rotate(-2.8deg);
   overflow: hidden;
 }
@@ -3278,5 +3291,77 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   .faq-section {
     margin: calc(var(--section-gap) + 24px) 16px var(--section-gap);
     border-radius: 24px;
+  }
+}
+
+/* ==========================================================================
+   v46 (S253) — THE INSTAGRAM BAND'S TOP SCALLOP, AND THE FAQ PHOTO'S MARGIN
+
+   ⚠⚠⚠ THE SCALLOP IS THE PRICING SECTION'S, INVERTED. Same radius, same tile,
+   same colour — the circles are centred on this section's TOP edge instead of
+   a bottom edge, so only their UPPER halves show and they rise into the cream
+   above. RADIUS, TILE AND OFFSET ARE ONE NUMBER IN THREE PLACES, exactly as
+   they are on the pricing one: tile = radius x 2, height = radius, top = minus
+   radius, and the circle's y-centre = radius. Change one, change all four.
+   ⚠⚠ IT ONLY WORKS BECAUSE THE BAND IS #1F5C38. A scallop is cut from the
+   section's own colour; if this band is ever recoloured, this gradient moves
+   with it or the bumps stop matching the thing they are supposed to be part of.
+   ⚠ NO z-index WAR HERE, UNLIKE THE PRICING ONE. The sources section comes
+   EARLIER in the DOM, so this section paints over it by default. The pricing
+   scallop needs its z-index pair precisely because what follows it comes later
+   and carries its own background.
+   ⚠ THE BUMPS RISE 27px INTO THE SOURCES SECTION'S BOTTOM PADDING. Nobody has
+   measured what is down there — if the citations sit close to that edge, this
+   wants more room below them rather than a smaller scallop.
+   ========================================================================== */
+
+.instagram-preview-section::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -27px;
+  height: 27px;
+  pointer-events: none;
+  background-image: radial-gradient(circle at 28px 27px, #1F5C38 27px, transparent 27.5px);
+  background-size: 56px 56px;
+  background-repeat: repeat-x;
+}
+
+/* ⚠⚠ HER ASK: the photo's LEFT edge should be inset to match the other side of
+   the section. IT IS TWO NUMBERS, NOT ONE — the star is positioned by
+   arithmetic off the photo's RIGHT edge, and a left margin pushes that edge
+   right by the same amount, so the star travels with it or it comes off the
+   seam it exists to sit on. 60px is the spine measure the text column already
+   uses on its right. */
+.faq-section .faq-photo-panel {
+  margin-left: 60px;
+}
+
+.faq-section .faq-star {
+  margin-left: 60px;
+}
+
+@media screen and (max-width: 991px) {
+  .instagram-preview-section::before {
+    top: -21px;
+    height: 21px;
+    background-image: radial-gradient(circle at 22px 21px, #1F5C38 21px, transparent 21.5px);
+    background-size: 44px 44px;
+  }
+  /* THE STACK PUTS THE PHOTO BELOW THE QUESTIONS AND FULL WIDTH, so the inset
+     and the star offset both come off — the 991 block already resets order. */
+  .faq-section .faq-photo-panel,
+  .faq-section .faq-star {
+    margin-left: 0;
+  }
+}
+
+@media screen and (max-width: 767px) {
+  .instagram-preview-section::before {
+    top: -15px;
+    height: 15px;
+    background-image: radial-gradient(circle at 16px 15px, #1F5C38 15px, transparent 15.5px);
+    background-size: 32px 32px;
   }
 }
