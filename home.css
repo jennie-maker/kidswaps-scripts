@@ -2249,7 +2249,7 @@
 }
 
 /* ============================================================================
-   THE FAQ  —  v42 (S251)
+   THE FAQ  —  v43 (S252)
    ----------------------------------------------------------------------------
    The markup was built by hand in the Designer and PUBLISHED first, then read
    back off HER OWN CONSOLE before a line of this was written (§0: read the
@@ -2257,11 +2257,22 @@
    file learning that). Every selector below was confirmed present in the served
    page. Nothing here is aimed at an element we hope exists.
 
-   HER RULINGS S249/S250: ground #1C4A91 · photo panel #211B1A ON THE RIGHT with
+   HER RULINGS S249/S250: ground #1C4A91 · photo panel #211B1A (v43: ON THE LEFT) with
    THE SAME EDGES AS THE HERO IMAGE · chevrons and CTA pill #EDA920 · star
    #F491A9 · ALL TEXT LIGHT #EDECE0. Layout option C, so the teaser line stays
    VISIBLE under every question whether the row is open or shut. ONE row open at
    a time. ONE CTA for the whole section.
+
+   ⚠⚠ v43 (S252) MOVES THE PHOTO PANEL TO THE **LEFT** — HERS, OFF THE LIVE PAGE:
+   with the photo on the right this section read as almost the same layout as the
+   pricing band directly above it. It is ONE `order` line plus its mirror on the
+   star. ⚠ IT KNOWINGLY TAKES THIS SECTION'S TYPE OFF THE SPINE: every other
+   section on this page starts its text at the 1240 measure's left edge (S244),
+   and the type now sits in the RIGHT half, so only its right edge lands on that
+   measure. THAT IS WHAT SHE RULED — do not "correct" it back to the spine.
+   ⚠ THE STACKED ORDER BELOW 991 IS UNCHANGED, photo still BELOW the questions.
+   CLAUDE'S CALL, REVERSIBLE IN ONE `order` LINE: her complaint was about the
+   desktop side-by-side, and the stack never resembled the pricing band.
 
    ⚠⚠⚠ THE CLOSED STATE IS SCOPED UNDER html.ks-motion AND SITS AT TOP LEVEL,
    DELIBERATELY OUTSIDE THE prefers-reduced-motion: no-preference BLOCK AT THE
@@ -2312,10 +2323,13 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  /* the 60 is the spine. text-align beats the centred inheritance the canvas
-     showed before this file existed — set on the COLUMN so anything added later
-     inherits it too, the same way .hero-left does it. */
-  padding: 0 64px 0 60px;
+  /* v43: THE 60 AND THE 64 SWAPPED SIDES WITH THE PHOTO. The 60 is the spine
+     measure and now sits on the RIGHT, because that is the edge of this column
+     that still touches it; the 64 is the gap to the photo panel. text-align
+     beats the centred inheritance the canvas showed before this file existed —
+     set on the COLUMN so anything added later inherits it too, the same way
+     .hero-left does it. */
+  padding: 0 60px 0 64px;
   text-align: left;
 }
 
@@ -2332,9 +2346,13 @@
   min-height: 0;
   background-color: #211B1A;
   border-radius: 24px;
+  /* v43: THE PHOTO IS ON THE LEFT, HERS. One line, and it is reset to 0 in the
+     991 block — without that reset the stack would put a near-black block ABOVE
+     the questions, which is a different decision and not the one she made. */
+  order: -1;
 }
 
-/* THE STAR SITS ON THE SEAM, and the seam is the photo's left edge, so its offset
+/* THE STAR SITS ON THE SEAM — as of v43 the seam is the photo's RIGHT edge, so
    is arithmetic rather than a guessed number: the gutter, plus 38% of the row
    inside it, minus half the star. Change --faq-photo and the star follows.
    ⚠⚠ THE SPIN IS NOT HERE AND MUST NOT BE. home.js writes an inline `rotate:` on
@@ -2352,7 +2370,11 @@
   width: 68px;
   aspect-ratio: 1 / 1;
   top: 56px;
-  right: calc(var(--faq-gutter) + (100% - var(--faq-gutter) * 2) * 0.38 - 34px);
+  /* v43: MIRRORED WITH THE PHOTO. Identical arithmetic, measured from the other
+     edge. ⚠⚠ THE 991 BLOCK MUST SET `left: auto` — it sets its own `right`, and
+     a star carrying BOTH offsets plus a width is over-constrained and lands in
+     the wrong place with nothing erroring. */
+  left: calc(var(--faq-gutter) + (100% - var(--faq-gutter) * 2) * 0.38 - 34px);
   background-color: #F491A9;
   clip-path: polygon(50% 2%, 61% 36%, 97% 36%, 68% 57%, 79% 92%, 50% 71%, 21% 92%, 32% 57%, 3% 36%, 39% 36%);
 }
@@ -2483,9 +2505,12 @@ html.ks-motion .faq-section .faq-answer-wrap {
      0-height track, and when it did, the leak spilled straight out of a wrap
      that had no clip of its own. The wrap is 0 tall whenever the track is 0, so
      clipping here is unconditional and does not care why the item misbehaved.
-     ⚠ THE PADDING STAYS ON THE ANSWER, NEVER ON THIS WRAP. Padding on a
+     ⚠⚠⚠ AND v42 WAS STILL NOT ENOUGH — READ .faq-answer-text BELOW. The clip is
+     in the right place and the padding v42 deliberately LEFT on the answer was
+     the floor. THE PADDING STILL NEVER COMES ONTO THIS WRAP: padding on a
      zero-height grid container is not clipped by its own track and would leave a
-     26px ghost gap under every closed row. */
+     26px ghost gap under every closed row. It moved INSIDE the answer instead,
+     as a spacer the clip can actually eat. */
   overflow: hidden;
   transition: grid-template-rows .45s cubic-bezier(.4, 0, .2, 1);
 }
@@ -2503,6 +2528,25 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   rotate: 180deg;
 }
 
+/* ⚠⚠⚠ THE ANSWER CARRIES NO PADDING AND NO MARGIN, AND THAT IS THE v43 FIX.
+   MEASURED ON HER LIVE PAGE, NOT DERIVED: with v42 deployed and verified, the
+   first line of every closed answer STILL showed. The probe printed the wrap at
+   `grid-template-rows: 26px` where 0fr was expected, and 26px was THIS RULE'S
+   OWN padding-bottom, to the pixel.
+   THE MECHANISM, SO IT IS NOT RE-DERIVED:
+   (1) AN `fr` TRACK IS minmax(auto, <flex>), so `0fr` FLOORS AT THE ITEM'S
+       MINIMUM CONTRIBUTION rather than at zero.
+   (2) min-height:0 takes the item's CONTENT minimum to zero AND CANNOT TOUCH
+       PADDING, which is not shrinkable — so the contribution was 0 + 26.
+   (3) overflow:hidden CLIPS AT THE PADDING BOX, NOT THE CONTENT BOX, so those
+       26px were a visible window. One line here is 25.6px, which is exactly why
+       it was always exactly one line and never two.
+   ⚠ 26 IS THE DISCRIMINATOR AND IT IS WHY THIS WAS SETTLED IN ONE READ: a leaked
+   line box would have measured 25.6. It measured a flat 26.
+   ▶▶ THE RULE, GENERAL: ON A 0fr COLLAPSE THE GRID ITEM MUST CARRY NO PADDING
+   AND NO MARGIN. Both are unshrinkable, both floor the track, and a margin would
+   have moved the leak rather than fixing it. Put the spacing INSIDE the item,
+   where the clip can reach it. */
 .faq-section .faq-answer-text {
   font-family: Quicksand, sans-serif;
   font-weight: 400;
@@ -2510,8 +2554,19 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   line-height: 1.6;
   color: #EDECE0;
   margin: 0;
-  padding: 0 0 26px;
+  padding: 0;
   max-width: 56ch;
+}
+
+/* The answer's bottom breathing room, moved inside the content box so the clip
+   eats it while the row is shut. ⚠ NOT DECORATION: delete it and every open
+   answer sits hard on its hairline. ⚠ AND IT IS DELIBERATELY NOT SCOPED TO
+   html.ks-motion — script never arrives means no collapse and all four answers
+   sit open, and they still need the space. */
+.faq-section .faq-answer-text::after {
+  content: "";
+  display: block;
+  height: 26px;
 }
 
 /* A visible focus ring for anyone tabbing. home.js gives the header a tabindex
@@ -2582,6 +2637,8 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   }
 
   .faq-section .faq-photo-panel {
+    /* the v43 desktop flip is DESKTOP ONLY. Stacked, the photo stays BELOW. */
+    order: 0;
     flex: 0 0 auto;
     height: var(--faq-photo-height);
     margin: 48px 40px 0;
@@ -2590,6 +2647,8 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   .faq-section .faq-star {
     width: 56px;
     top: auto;
+    /* clears v43's desktop `left`. Both offsets at once over-constrain it. */
+    left: auto;
     right: 56px;
     /* 64 = the section's bottom padding, so this lands the star's centre on the
        photo's TOP edge — the horizontal seam the stack creates. */
