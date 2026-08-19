@@ -861,7 +861,11 @@
      NUMBER — the ceiling is 44. It is a tilted coral wedge on
      .closet-standard-section's own top edge, painting DOWNWARD into the photo
      instead of upward into the cards. Scoped, never built. */
-  box-shadow: 0 -40px 0 0 #E54F25;
+  /* ⚠⚠⚠ SHADOW DELETED v48 (S253), SAME REASON AS THE INSTAGRAM RIBBON: the
+     wedge grows with viewport width and 40px runs out past ~1500px, which is
+     the pale sliver visible at this ribbon's left end on her 2560 screenshot.
+     THIS REVERSES v31, WHICH WAS APPROVED WORK — reversible in one line, and
+     the 44px ceiling note above stays true for anyone who restores it. */
   transform: rotate(2.8deg);
   overflow: hidden;
 }
@@ -3133,7 +3137,18 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
      correct by construction and UNPROVEN BY EFFECT. If the wrong colour is
      still showing on the live render, the cause is something else and a third
      shadow is not the answer. */
-  box-shadow: 0 -40px 0 0 #1F5C38, 0 40px 0 0 #EDECE0;
+  /* ⚠⚠⚠ NO SHADOW HERE, AND IT IS NOT AN OVERSIGHT — v48 (S253) DELETED BOTH.
+     A SHADOW CAN NEVER FILL THIS WEDGE, BECAUSE THE WEDGE IS NOT A FIXED SIZE:
+     it is width x tan(2.8deg), so each end sits ~35px off the seam on a 1440
+     screen and ~63px off on a 2560 one. A 40px shadow covers the first and runs
+     out on the second, which is the pale sliver she photographed at the left
+     end. THERE IS NO NUMBER THAT WINS, and 44px is a ceiling anyway.
+     ▶ SO THE SEAM IS NOW JUST THE SEAM: the section above paints to its own
+     horizontal bottom edge, the footer paints from its top edge, and the band
+     lies ACROSS the join. Correct at every width by construction.
+     ⚠ IF THE BAND SHOULD EVER LOOK EMBEDDED IN THE SECTION RATHER THAN LAID
+     OVER IT, THAT IS A clip-path WEDGE ON THE SECTION'S OWN EDGE — it scales
+     with the viewport the way a shadow cannot. Scoped, never built. */
   transform: rotate(-2.8deg);
   overflow: hidden;
 }
@@ -3352,12 +3367,18 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
    right by the same amount, so the star travels with it or it comes off the
    seam it exists to sit on. 60px is the spine measure the text column already
    uses on its right. */
-.faq-section .faq-photo-panel {
-  margin-left: 60px;
-}
-
-.faq-section .faq-star {
-  margin-left: 60px;
+/* ⚠⚠⚠ min-width, NOT max-width — v48 FIXED A REAL BUG HERE. v46 wrote this as a
+   plain rule with a reset in the 991 block, and below 767 BOTH media queries
+   apply: the appended reset sits later in the file, so it beat the 767 rule's
+   `margin: 36px 20px 0` ON THE LEFT ONLY, leaving the phone photo at left 0 /
+   right 20 — off centre by exactly 20px, which she spotted on a render.
+   A MEDIA QUERY ADDS NO SPECIFICITY; SOURCE ORDER DECIDED IT. Scoping the
+   inset so it can never reach the phone is the fix, not another reset. */
+@media screen and (min-width: 992px) {
+  .faq-section .faq-photo-panel,
+  .faq-section .faq-star {
+    margin-left: 60px;
+  }
 }
 
 @media screen and (max-width: 991px) {
@@ -3367,12 +3388,6 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
     background-image: radial-gradient(circle at 22px 21px, #1F5C38 21px, transparent 21.5px);
     background-size: 44px 44px;
   }
-  /* THE STACK PUTS THE PHOTO BELOW THE QUESTIONS AND FULL WIDTH, so the inset
-     and the star offset both come off — the 991 block already resets order. */
-  .faq-section .faq-photo-panel,
-  .faq-section .faq-star {
-    margin-left: 0;
-  }
 }
 
 @media screen and (max-width: 767px) {
@@ -3381,5 +3396,36 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
     height: 15px;
     background-image: radial-gradient(circle at 16px 15px, #1F5C38 15px, transparent 15.5px);
     background-size: 32px 32px;
+  }
+}
+
+/* ==========================================================================
+   v48 (S253) — THE CLOSET STANDARD PHOTO MOVES TO THE BOTTOM ON THE PHONE
+
+   HER RULING, AND IT IS A RHYTHM FIX RATHER THAN A LAYOUT ONE: on a phone this
+   section and the pricing section beneath it both read heading / body / coral
+   button in the same order, so they blur together. Dropping the photo to the
+   foot of this section separates them AND lets the coral "What you'll find"
+   band above run straight into the closet-standard TEXT instead of into a grey
+   rectangle.
+   ⚠⚠ DESKTOP IS UNTOUCHED — the photo stays LEFT there, which is her v43
+   ruling, and this block never fires above 767.
+   ⚠ THE 767 BLOCK ALREADY SETS display:block ON THE CONTAINER; flex plus an
+   explicit order is what makes the photo movable at all, since block stacking
+   can only ever follow DOM order and the photo is first in the markup.
+   ========================================================================== */
+
+@media screen and (max-width: 767px) {
+  .closet-standard-container {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .closet-standard-photo {
+    order: 2;
+  }
+
+  .closet-standard-text {
+    order: 1;
   }
 }
