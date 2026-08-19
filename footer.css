@@ -45,9 +45,19 @@
 /* ---- THE WORDMARK, THE TAGLINE AND THE SOCIALS ----------------------------
    .footer-brand already holds the logo, the tagline and the social row, so
    putting it FIRST in a column flex is what moves the wordmark to the top.
-   NO MARKUP CHANGE. */
+   NO MARKUP CHANGE.
+   ⚠⚠⚠ flex:0 0 auto AND width:100% ARE THE v2 FIX AND THEY ARE NOT TIDINESS.
+   Webflow sets `flex: 1 1 0%` on this from when .footer-main was a two-across
+   ROW — brand left, links right. Turning the parent into a COLUMN moved the
+   wordmark to the top and left that grow value alive, so this element kept
+   competing for space and starved the links: measured 621px here against 473
+   for all three link columns, on a 1120 container. THAT WAS THE "everything is
+   straddling the left side" FAULT, and it is a leftover from a layout that no
+   longer exists rather than anything in this file. */
 .footer-section .footer-brand {
   order: 1;
+  flex: 0 0 auto;
+  width: 100%;
   text-align: center;
   margin-bottom: 52px;
   /* ⚠⚠⚠ THE PERSPECTIVE LIVES ON THE PARENT, NOT ON THE LOGO. Without it a
@@ -64,8 +74,14 @@
    swap the keyframes for ks-footer-mark-rest below; it is one word. */
 .footer-section .footer-logo {
   display: inline-block;
-  width: min(1120px, 100%);
+  /* ⚠ HER RULING: a third smaller. It rendered at 373px inside a 621px box —
+     constrained by its own aspect ratio, not by the old min(1120px,100%), which
+     is why that value looked like it was doing nothing. Capping it explicitly
+     is what actually moves it. ⚠ AND margin-top:0 OVERRIDES A WEBFLOW 60px that
+     was pushing the wordmark down inside its own block. */
+  width: min(250px, 60%);
   height: auto;
+  margin-top: 0;
   animation: ks-footer-mark-turn 16s linear infinite;
 }
 
@@ -109,14 +125,25 @@
 }
 
 /* ---- THE LINK COLUMNS ---------------------------------------------------- */
+/* ⚠⚠ SAME LEFTOVER AS .footer-brand — this also carries Webflow's `flex: 1 1 0%`
+   and has to opt out of it, or the two siblings share the column's cross size
+   between them instead of each taking the full width. */
 .footer-section .footer-columns {
   order: 2;
+  flex: 0 0 auto;
+  width: 100%;
   display: flex;
   align-items: flex-start;
   gap: 32px;
 }
 
+/* ⚠⚠⚠ display:block IS LOAD-BEARING. Webflow has this as a FLEX container with
+   no direction set, i.e. a ROW, so the links were laying out side by side and
+   squashing to 136px each — which is what broke "Browse The Closet" onto two
+   lines and made the phone list look like it had enormous gaps. The links are
+   plain stacked blocks; nothing here needs flex at all. */
 .footer-section .footer-column {
+  display: block;
   flex: 1 1 0;
   /* minmax's flexbox equivalent — without this a long link name can push a
      column past its share instead of wrapping. */
@@ -138,6 +165,12 @@
   text-transform: uppercase;
   color: #309359;
   margin: 0 0 10px;
+  /* ⚠⚠⚠ THE DESIGNER HIDES THESE ON MOBILE — .footer-heading computes
+     display:none below 767, which is why the groups vanished on the phone and
+     eighteen links ran as one undifferentiated list. This is the override, and
+     it is set at EVERY width deliberately so a future Designer hide cannot
+     silently take the groups away again. */
+  display: block;
 }
 
 /* ⚠⚠ WRITTEN AT TWO CLASSES so it beats the `All Links` TAG selector, which
@@ -156,6 +189,13 @@
   line-height: 2.6;
   color: #1E1A19;
   text-decoration: none;
+  /* ⚠⚠ BOTH OF THESE OVERRIDE WEBFLOW. The links compute text-align:center on
+     mobile — a centred list reads as a menu, and a footer is a directory you
+     scan. And they carry a margin-bottom (20px on mobile, 8 on desktop) ON TOP
+     of the 41.6px line-height, which is where the enormous phone gaps came
+     from. LINE-HEIGHT IS THE TAP TARGET HERE; the margin is double-spacing it. */
+  text-align: left;
+  margin-bottom: 0;
 }
 
 .footer-section .footer-link:hover {
