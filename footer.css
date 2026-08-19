@@ -37,9 +37,16 @@
   padding: 0 60px;
 }
 
+/* ⚠⚠⚠ A ROW AGAIN AS OF v3 (S253), AND IT REVERSES v1/v2's COLUMN. Her ruling
+   off the live render: the column layout put the logo left, the tagline and
+   socials centred and the links below, i.e. THREE ALIGNMENTS IN ONE FOOTER with
+   ~200px of dead space between the brand and the columns. One row, brand left,
+   three link columns right, everything left-aligned. */
 .footer-section .footer-main {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 40px;
 }
 
 /* ---- THE WORDMARK, THE TAGLINE AND THE SOCIALS ----------------------------
@@ -54,12 +61,19 @@
    for all three link columns, on a 1120 container. THAT WAS THE "everything is
    straddling the left side" FAULT, and it is a leftover from a layout that no
    longer exists rather than anything in this file. */
+/* ⚠⚠ flex IS PINNED HERE RATHER THAN LEFT TO WEBFLOW. The Designer sets
+   `flex: 1 1 0%` on this, which in a row makes the brand and the columns split
+   the width evenly — the brand measured 621px against 473 for all three link
+   columns. 32% is the share, explicitly.
+   ⚠ text-align REVERTS TO LEFT at v3. It was centred for the rotating wordmark
+   while this was a column; in a row it made the tagline and socials centre
+   under a left-aligned logo, which read as a fault rather than a choice. */
 .footer-section .footer-brand {
   order: 1;
-  flex: 0 0 auto;
-  width: 100%;
-  text-align: center;
-  margin-bottom: 52px;
+  flex: 0 0 32%;
+  width: auto;
+  text-align: left;
+  margin-bottom: 0;
   /* ⚠⚠⚠ THE PERSPECTIVE LIVES ON THE PARENT, NOT ON THE LOGO. Without it a
      rotateY has no depth and the wordmark just squashes horizontally, which
      reads as a glitch rather than a turn. */
@@ -79,7 +93,10 @@
      is why that value looked like it was doing nothing. Capping it explicitly
      is what actually moves it. ⚠ AND margin-top:0 OVERRIDES A WEBFLOW 60px that
      was pushing the wordmark down inside its own block. */
-  width: min(250px, 60%);
+  /* ⚠ SMALLER AGAIN AT v3 — the wordmark now sits in a 32% column beside the
+     links rather than alone above them, so the turn is a detail rather than the
+     footer's centrepiece. ONE NUMBER if it should be bigger. */
+  width: min(230px, 100%);
   height: auto;
   margin-top: 0;
   animation: ks-footer-mark-turn 16s linear infinite;
@@ -111,16 +128,18 @@
   /* 400 IS THE ONLY WEIGHT THIS FAMILY SHIPS — anything heavier is a browser fake. */
   font-weight: 400;
   font-style: italic;
-  font-size: 24px;
+  font-size: 19px;
   line-height: 1.35;
   color: #1E1A19;
-  max-width: 34ch;
-  margin: 10px auto 22px;
+  max-width: 30ch;
+  /* auto MARGINS REMOVED — they centred the block inside a left-aligned column,
+     which is half of what made the old layout read as three alignments. */
+  margin: 12px 0 16px;
 }
 
 .footer-section .footer-social {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 16px;
 }
 
@@ -130,8 +149,12 @@
    between them instead of each taking the full width. */
 .footer-section .footer-columns {
   order: 2;
-  flex: 0 0 auto;
-  width: 100%;
+  /* GROWS TO FILL WHATEVER THE BRAND COLUMN LEAVES. Webflow's own
+     `flex: 1 1 0%` happens to be right here, but it is written explicitly so
+     the two siblings' shares are both stated in this file rather than one being
+     inherited and invisible. */
+  flex: 1 1 auto;
+  width: auto;
   display: flex;
   align-items: flex-start;
   gap: 32px;
@@ -259,11 +282,17 @@
   .footer-section .footer-container {
     padding: 0 40px;
   }
+  .footer-section .footer-main {
+    gap: 28px;
+  }
+  .footer-section .footer-brand {
+    flex: 0 0 28%;
+  }
   .footer-section .footer-columns {
     gap: 24px;
   }
-  .footer-section .footer-tagline {
-    font-size: 22px;
+  .footer-section .footer-logo {
+    width: min(190px, 100%);
   }
 }
 
@@ -281,12 +310,23 @@
   .footer-section .footer-container {
     padding: 0 20px;
   }
+  /* THE ROW BECOMES A COLUMN ON THE PHONE — there is no room for a brand
+     column beside three link columns. Everything stays LEFT aligned. */
+  .footer-section .footer-main {
+    flex-direction: column;
+    gap: 0;
+  }
   .footer-section .footer-brand {
+    flex: 0 0 auto;
+    width: 100%;
     margin-bottom: 34px;
   }
+  .footer-section .footer-logo {
+    width: min(210px, 70%);
+  }
   .footer-section .footer-tagline {
-    font-size: 19px;
-    margin: 8px auto 20px;
+    font-size: 18px;
+    margin: 10px 0 18px;
   }
   /* THE COLUMNS BECOME ROWS. Links stay LEFT aligned even though the wordmark
      above them is centred — a centred link list reads as a menu, and a footer
