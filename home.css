@@ -3105,8 +3105,22 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
      ribbon's top edge to the content above is exactly --section-gap, because
      the section's bottom padding is gap + ribbon-height/2. GO PAST 44 AND THE
      GREEN PAINTS OVER THE FOLLOW BUTTON. A bigger number is never the answer;
-     v39 raised this ribbon's cousin to 120 and laid a bar across her products. */
-  box-shadow: 0 -40px 0 0 #309359;
+     v39 raised this ribbon's cousin to 120 and laid a bar across her products.
+     ⚠⚠⚠ TWO SHADOWS, NOT ONE — v45 (S253). A TILTED BAND CROSSING A HORIZONTAL
+     SEAM MAKES **TWO** WEDGES AND ONE SHADOW CAN ONLY FILL ONE. On the side
+     where the band has risen above the seam, the green section is still
+     painting BELOW it; on the side where it has dipped, the section has
+     already stopped ABOVE it. So the upward shadow carries the section's green
+     and the downward one carries the footer's cream, and each wedge gets the
+     colour of whatever it actually sits against.
+     ⚠⚠ THE DOWNWARD 40px ALSO PAINTS CREAM ACROSS THE TOP OF THE FOOTER, which
+     is invisible ONLY BECAUSE THE FOOTER IS THAT EXACT CREAM. If the footer is
+     ever recoloured, this value changes with it or a cream bar appears.
+     ⚠ NEITHER SHE NOR CLAUDE COULD SEE A DIFFERENCE IN THE MOCKUP, so this is
+     correct by construction and UNPROVEN BY EFFECT. If the wrong colour is
+     still showing on the live render, the cause is something else and a third
+     shadow is not the answer. */
+  box-shadow: 0 -40px 0 0 #309359, 0 40px 0 0 #EDECE0;
   transform: rotate(-2.8deg);
   overflow: hidden;
 }
@@ -3210,5 +3224,59 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   .instagram-preview-follow-button.w-inline-block {
     font-size: 14px;
     padding: 12px 24px;
+  }
+}
+
+/* ==========================================================================
+   THE FAQ AS A PANEL  —  v45 (S253)
+
+   HER RULING: the navy stops being a full-bleed band and becomes an inset
+   panel on cream, so the dark green and the navy NEVER TOUCH ANYWHERE. It is
+   not a seam treatment — it removes the seam.
+   ⚠⚠⚠ AND IT IS WHAT LETS THE SCALLOP STAY. Her words: "if the blue becomes a
+   panel, the green can keep its scallops." The scallop was never the fault;
+   the colour it was landing on was. Its bumps now hang into cream, which is
+   the background they were drawn against. THE PRICING SECTION IS NOT TOUCHED
+   BY THIS COMMIT and its radius is still unruled.
+
+   ⚠⚠ ZERO MARKUP. .faq-section is already the flex row carrying the photo
+   panel and the text column, and the navy already sits on it, so a panel is
+   margin plus a radius on that one selector. No wrapper, no Designer trip.
+   Its existing 88px padding becomes the panel's inner padding for free.
+
+   ⚠⚠⚠ THE TOP MARGIN IS CLEARANCE FOR THE SCALLOP, NOT RHYTHM. The pricing
+   section's bumps hang 28px BELOW its own box, so anything under
+   28px here puts the panel under the bumps and the scallop lands on navy
+   again — the exact fault this change exists to remove. It is written as
+   calc(--section-gap + 32px) so it tracks the token instead of going stale.
+
+   ⚠⚠ NO overflow:hidden ON THIS SECTION. The star hangs outside the panel on
+   purpose, and clipping would take it. The photo panel cannot foul the rounded
+   corners because 88px of vertical padding holds it well clear of them.
+
+   ⚠ THE INSET AND THE RADIUS ARE CLAUDE'S CALL, REVERSIBLE, one number each —
+   she ruled the shape, not the values. 32px is the page's largest curve by a
+   distance (the hero card is 24), so THIS SECTION NOW SETS A PRECEDENT the
+   rest of the page either follows or reads as inconsistent with.
+   ⚠ NAMED COST, ACCEPTED: the FAQ photo no longer bleeds to the page edge.
+   Some of what made that section feel generous came from exactly that.
+   ========================================================================== */
+
+.faq-section {
+  margin: calc(var(--section-gap) + 32px) 28px var(--section-gap);
+  border-radius: 32px;
+}
+
+@media screen and (max-width: 991px) {
+  .faq-section {
+    margin: calc(var(--section-gap) + 28px) 24px var(--section-gap);
+    border-radius: 28px;
+  }
+}
+
+@media screen and (max-width: 767px) {
+  .faq-section {
+    margin: calc(var(--section-gap) + 24px) 16px var(--section-gap);
+    border-radius: 24px;
   }
 }
