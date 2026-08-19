@@ -3429,3 +3429,86 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
     order: 1;
   }
 }
+
+/* ==========================================================================
+   v49 (S253) — THE MOBILE PASS. PHONE ONLY, NOTHING ABOVE 767 MOVES.
+
+   Five of her asks off one live render at 390px, every value measured rather
+   than guessed. EVERY RULE HERE IS INSIDE THE 767 BLOCK ON PURPOSE — the
+   desktop type, the hero frame and the seam spacing are all approved work and
+   this pass must not reach any of them.
+   ========================================================================== */
+
+@media screen and (max-width: 767px) {
+
+  /* ---- 1. THE HERO'S NAVY FRAME, ROUGHLY DOUBLED --------------------------
+     16/20 → 32/40. HER RULING: the stripe of blue around the cream card reads
+     too thin on a phone.
+     ⚠⚠⚠ THIS IS THE PHONE ONLY AND MUST STAY THAT WAY. The DESKTOP frame is her
+     own S240 ruling, arrived at out loud — "44 navy + 35 cream = 79" — after
+     she was shown that the navy is the HERO CARD'S FRAME and not a section gap.
+     Pointing this at --section-gap, or letting it out of this block, erases a
+     decision she made deliberately. */
+  .hero-section {
+    padding: 32px 16px 40px;
+  }
+
+  /* ---- 2. THE HEADINGS GO LARGER — "that editorial feel" ------------------
+     Measured at 390: closet standard 44, pricing 44, sources 48.75, FAQ 32,
+     Instagram 28. The last two were the odd ones out and now match.
+     ⚠ how-it-works is NOT in this list and must not be. It is 16px/700 because
+     it is an EYEBROW, not a section heading — her S236 ruling, where she picked
+     the eyebrow over a serif title and was shown the contrast cost. */
+  .instagram-preview-heading {
+    font-size: 44px;
+  }
+
+  .faq-section .faq-heading {
+    font-size: 40px;
+  }
+
+  /* ---- 3. THE FAQ / SOURCES SEAM -----------------------------------------
+     88px of cream between two cream blocks: the FAQ's own 44px bottom margin
+     plus a 44px collapsed gap. The sources embed carries zero top padding of
+     its own here, so ALL of the space was the FAQ's.
+     ⚠ ZEROED RATHER THAN REDUCED. The embed's own clamp(48px,7vw,88px) top
+     padding is what should be spacing that seam — it is the block's own air,
+     and stacking a section margin on top of it is what made the gap read as a
+     blank screen rather than as a break. */
+  .faq-section {
+    margin-bottom: 0;
+  }
+
+  /* ---- 4. THE PRICING ROWS, LARGER AND BOLDER -----------------------------
+     ⚠⚠⚠ THE ROWS ARE ALREADY FULL WIDTH — measured, and it corrects how this
+     was described. "6 clothing swaps" spans 350px of a 350px column; the blank
+     space on the right is INSIDE that line, after the text ends, not a column
+     failing to fill. So the fix is type size, and only type size. Widening
+     anything here would do nothing.
+     ⚠⚠ THESE OVERRIDE THE FLOORS OF THREE clamp() DECLARATIONS, never the
+     clamps themselves. The vw factors and their caps are derived from where
+     .pricing-preview-container hits its max-width and MUST NOT BE TOUCHED —
+     past that point the longest row overflows, silently, and it wraps first.
+     Raising a floor inside this block cannot reach any of that. */
+  .pricing-preview-section .pricing-card > .footer-tagline-dark {
+    font-size: 26px;
+  }
+
+  .pricing-preview-section .pricing-card > .body-text-dark,
+  .pricing-preview-section .pricing-card > .h3 {
+    font-size: 20px;
+    font-weight: 500;
+  }
+
+  .pricing-preview-section .pricing-card > .savings-text {
+    font-size: 18px;
+  }
+
+  /* THE SEPARATOR DOT TRACKS THE LINE IT SITS ON, or it strands at the old
+     size beside bigger type. Same rule, same value. */
+  .pricing-preview-section .pricing-card > .footer-tagline-dark::after,
+  .pricing-preview-section .pricing-card > .body-text-dark::after,
+  .pricing-preview-section .pricing-card > .h3::after {
+    font-size: 20px;
+  }
+}
