@@ -3211,8 +3211,26 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
     width: 26px;
     height: 26px;
   }
+  /* ⚠⚠⚠ THE PHONE RIBBON IS TALLER THAN THE OTHER TWO, ON PURPOSE — v47 (S253),
+     HERS, OFF A LIVE PHONE RENDER WHERE THE FOOTER CREAM SHOWED ABOVE THE BAND.
+     THE CAUSE IS THE TILT, NOT THE SHADOWS. 2.8deg across a 382px screen is
+     ~19px of rise, against a band only 30px tall — so the band barely spans its
+     own seam and the wedges swallow it. Height is what buys the overlap back.
+     ⚠⚠ SET HERE AND NEVER ON :root. --ribbon-height is SHARED BY ALL THREE
+     RIBBONS; raising it globally fattens the pricing and closing ones too, and
+     they are correct as they are.
+     ⚠⚠ THE SECTION'S BOTTOM PADDING IS PART OF THIS EDIT, NOT SEPARATE. It is
+     gap + half the ribbon, so a 44px band needs 22px there where the root value
+     would give 15 — leave it and the follow button loses 7px of clearance to
+     the band. CHANGE THE HEIGHT, CHANGE BOTH NUMBERS. */
+  .instagram-preview-section {
+    padding-bottom: calc(var(--section-gap) + 22px);
+  }
+
   .instagram-preview-ribbon {
     --ribbon-gap: 18px;
+    height: 44px;
+    margin-bottom: -22px;
   }
 }
 
