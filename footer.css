@@ -1,0 +1,271 @@
+/* footer.css — SITE-WIDE, linked from Site Settings → Custom Code → Head code.
+   The Global Footer component is on all 20 pages, so EVERY RULE HERE LANDS ON
+   ALL OF THEM AT ONCE. Same shape as header.css: markup by hand in Webflow,
+   every visual decision in this pinned file with a SHA and a pin-bump rollback.
+
+   ⚠⚠⚠ EVERY SELECTOR IS NAMESPACED UNDER .footer-section OR .footer-*. Nothing
+   here can reach /signup, /dashboard, /browse or /admin/grading. Check that
+   before adding a rule — a bare class name in a site-wide file is the hazard
+   that caused the S228 outage.
+
+   ⚠⚠ THIS FILE HAS NO SCRIPT HALF, DELIBERATELY. header.css's behaviour lives in
+   a separate Footer-code field and the two halves came apart once. The wordmark
+   turn here is a CSS animation, so there is nothing to strand.
+
+   ⚠ WHAT THIS FILE DOES NOT SET, WEBFLOW STILL OWNS. Anything not written here
+   is whatever the Designer has on the class. If a value looks wrong and is not
+   in this file, it is in the Style panel.
+   ========================================================================== */
+
+/* ---- THE BAND -------------------------------------------------------------
+   ⚠ 60/24 IS THE FOOTER CONVENTION AND NOT THIS PAGE'S 44 TOKEN, KNOWINGLY.
+   /old-home runs on --section-gap 44 everywhere else; footers are conventionally
+   60-80 top. HER CALL, one number. It is written literally rather than as
+   var(--section-gap) because this file is SITE-WIDE and that token is defined
+   in home.css, which only /old-home loads — a var() here would resolve to
+   nothing on the other 19 pages. DO NOT "TIDY" IT INTO A TOKEN. */
+.footer-section {
+  background-color: #EDECE0;
+  padding: 60px 0 24px;
+}
+
+.footer-section .footer-container {
+  max-width: 1240px;
+  margin: 0 auto;
+  /* THE SPINE — 60 / 40 / 20, the same text edge every section on /old-home
+     uses. On the other 19 pages it simply reads as sane gutters. */
+  padding: 0 60px;
+}
+
+.footer-section .footer-main {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- THE WORDMARK, THE TAGLINE AND THE SOCIALS ----------------------------
+   .footer-brand already holds the logo, the tagline and the social row, so
+   putting it FIRST in a column flex is what moves the wordmark to the top.
+   NO MARKUP CHANGE. */
+.footer-section .footer-brand {
+  order: 1;
+  text-align: center;
+  margin-bottom: 52px;
+  /* ⚠⚠⚠ THE PERSPECTIVE LIVES ON THE PARENT, NOT ON THE LOGO. Without it a
+     rotateY has no depth and the wordmark just squashes horizontally, which
+     reads as a glitch rather than a turn. */
+  perspective: 1600px;
+}
+
+/* ⚠⚠ THE LOGO IS AN <img>, NOT TEXT — so this is a width, never a font-size,
+   and the turn has no font dependency at all.
+   ⚠⚠⚠ THE TURN IS CONTINUOUS, HERS, AND THE COST IS NAMED: a full rotateY
+   means the wordmark is MIRROR-REVERSED for half of every cycle — 8 seconds
+   out of 16. She chose that knowing it. To make it rest between turns instead,
+   swap the keyframes for ks-footer-mark-rest below; it is one word. */
+.footer-section .footer-logo {
+  display: inline-block;
+  width: min(1120px, 100%);
+  height: auto;
+  animation: ks-footer-mark-turn 16s linear infinite;
+}
+
+@keyframes ks-footer-mark-turn {
+  from { transform: rotateY(0deg); }
+  to   { transform: rotateY(360deg); }
+}
+
+/* BANKED, NOT LIVE — the resting version. Point .footer-logo's animation-name
+   at this and it turns once every 11 seconds instead of never stopping. */
+@keyframes ks-footer-mark-rest {
+  0%, 78% { transform: rotateY(0deg); }
+  100%    { transform: rotateY(360deg); }
+}
+
+/* ⚠⚠⚠ MOTION IS ADDED, NEVER USED TO HIDE. The wordmark is fully visible with
+   no animation running at all, so reduced motion, an old browser or a failed
+   stylesheet all end with it sitting still rather than missing. Her S224 rule. */
+@media (prefers-reduced-motion: reduce) {
+  .footer-section .footer-logo {
+    animation: none;
+  }
+}
+
+.footer-section .footer-tagline {
+  font-family: "Instrument Serif", Georgia, serif;
+  /* 400 IS THE ONLY WEIGHT THIS FAMILY SHIPS — anything heavier is a browser fake. */
+  font-weight: 400;
+  font-style: italic;
+  font-size: 24px;
+  line-height: 1.35;
+  color: #1E1A19;
+  max-width: 34ch;
+  margin: 10px auto 22px;
+}
+
+.footer-section .footer-social {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+/* ---- THE LINK COLUMNS ---------------------------------------------------- */
+.footer-section .footer-columns {
+  order: 2;
+  display: flex;
+  align-items: flex-start;
+  gap: 32px;
+}
+
+.footer-section .footer-column {
+  flex: 1 1 0;
+  /* minmax's flexbox equivalent — without this a long link name can push a
+     column past its share instead of wrapping. */
+  min-width: 0;
+}
+
+/* ⚠⚠ THE HEADINGS ARE GREEN AND THAT IS MEASURED, NOT PICKED. On this cream,
+   her amber #EDA920 reads 1.9 and is unusable for text; green #309359 reads
+   3.25, which is the same value she knowingly accepted for the how-it-works
+   header at S236. THIS IS THE PAGE'S EYEBROW TREATMENT — Quicksand 700,
+   uppercase, letterspaced — reused rather than invented.
+   ⚠ 3.25 IS UNDER THE 4.5 AA BAR FOR NORMAL TEXT. Accepted, consistent with
+   that ruling. Do not silently darken the green to "fix" it. */
+.footer-section .footer-heading {
+  font-family: Quicksand, sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #309359;
+  margin: 0 0 10px;
+}
+
+/* ⚠⚠ WRITTEN AT TWO CLASSES so it beats the `All Links` TAG selector, which
+   styles every <a> on all 20 pages and which this doc says to read and never
+   edit. A single class would win too, but two is the house pattern here. */
+.footer-section .footer-link,
+.footer-section a.footer-link {
+  display: block;
+  font-family: Quicksand, sans-serif;
+  font-weight: 400;
+  /* 16px MINIMUM AND ~44px OF VERTICAL ROOM PER LINK — the documented mobile
+     tap-target floor, applied at every width because there is no reason for
+     desktop to be worse. line-height IS the tap target here; do not trade it
+     back for a shorter footer. */
+  font-size: 16px;
+  line-height: 2.6;
+  color: #1E1A19;
+  text-decoration: none;
+}
+
+.footer-section .footer-link:hover {
+  color: #E54F25;
+}
+
+.footer-section .footer-link:focus-visible {
+  outline: 2px solid #E54F25;
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ---- THE JOIN BUTTON ------------------------------------------------------
+   ⚠⚠ THIS ELEMENT DOES NOT EXIST IN THE MARKUP YET. The rule is written now so
+   that adding a Link Block classed footer-join in the Designer needs no second
+   commit. UNTIL THEN IT MATCHES NOTHING AND PAINTS NOTHING, which is the safe
+   direction. ⚠ HER HEADER ALREADY CARRIES A STICKY JOIN ON EVERY PAGE, so this
+   would be the second one on screen — that is why it is optional. */
+.footer-section .footer-join,
+.footer-section a.footer-join {
+  display: inline-block;
+  background-color: #E54F25;
+  color: #FFFFFF;
+  font-family: Quicksand, sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  padding: 13px 28px;
+  border-radius: 50px;
+  text-decoration: none;
+  margin-bottom: 18px;
+}
+
+.footer-section .footer-join:hover {
+  background-color: #B23D22;
+}
+
+/* ---- THE BOTTOM ROW ------------------------------------------------------- */
+.footer-section .footer-bottom {
+  border-top: 1px solid #C9C7BC;
+  margin-top: 44px;
+  padding-top: 20px;
+  text-align: center;
+}
+
+/* ⚠ #75736E READS 4.0 ON THIS CREAM — under the 4.5 bar, and the exact value
+   she ruled for the email footers at S158 for the same reason. Consistent,
+   knowingly. It was previously so light it was unreadable in a screenshot. */
+.footer-section .footer-copyright,
+.footer-section a.footer-copyright {
+  font-family: Quicksand, sans-serif;
+  font-size: 13px;
+  line-height: 1.9;
+  color: #75736E;
+  text-decoration: none;
+}
+
+/* ==========================================================================
+   TABLET
+   ========================================================================== */
+@media screen and (max-width: 991px) {
+  .footer-section .footer-container {
+    padding: 0 40px;
+  }
+  .footer-section .footer-columns {
+    gap: 24px;
+  }
+  .footer-section .footer-tagline {
+    font-size: 22px;
+  }
+}
+
+/* ==========================================================================
+   PHONE — the three groups stack, one at a time.
+   ⚠ NOT two columns and NOT accordions. Two columns halves the height and
+   makes you read across; accordions are the documented pattern for footers
+   with forty links across six groups, and this one has eighteen across three,
+   where one group holds two items. Both were mocked and rejected.
+   ========================================================================== */
+@media screen and (max-width: 767px) {
+  .footer-section {
+    padding: 44px 0 24px;
+  }
+  .footer-section .footer-container {
+    padding: 0 20px;
+  }
+  .footer-section .footer-brand {
+    margin-bottom: 34px;
+  }
+  .footer-section .footer-tagline {
+    font-size: 19px;
+    margin: 8px auto 20px;
+  }
+  /* THE COLUMNS BECOME ROWS. Links stay LEFT aligned even though the wordmark
+     above them is centred — a centred link list reads as a menu, and a footer
+     is a directory you scan. */
+  .footer-section .footer-columns {
+    flex-direction: column;
+    gap: 26px;
+  }
+  .footer-section .footer-column {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+  .footer-section .footer-bottom {
+    margin-top: 32px;
+  }
+}
+
+/* ⚠⚠ WEBFLOW HAS FOUR BREAKPOINTS AND THIS FILE SPEAKS AT THREE. Below 479
+   Webflow's own rules run unopposed unless something here says otherwise.
+   Nothing is set there on purpose — the phone block above already stacks
+   everything to full width, and there is no layout left to break. If a value
+   ever misbehaves under 479, this is the block that does not exist yet. */
