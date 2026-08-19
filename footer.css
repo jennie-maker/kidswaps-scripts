@@ -1,47 +1,70 @@
-/* footer.css — SITE-WIDE, linked from Site Settings → Custom Code → Head code.
-   The Global Footer component is on all 20 pages, so EVERY RULE HERE LANDS ON
-   ALL OF THEM AT ONCE. Same shape as header.css: markup by hand in Webflow,
-   every visual decision in this pinned file with a SHA and a pin-bump rollback.
+/* ============================================================================
+   footer.css  —  SITE-WIDE
+   Linked from Site Settings → Custom Code → Head code. The Global Footer is a
+   component on all 20 pages, so EVERY RULE HERE LANDS ON ALL OF THEM AT ONCE.
 
-   ⚠⚠⚠ EVERY SELECTOR IS NAMESPACED UNDER .footer-section OR .footer-*. Nothing
-   here can reach /signup, /dashboard, /browse or /admin/grading. Check that
-   before adding a rule — a bare class name in a site-wide file is the hazard
-   that caused the S228 outage.
+   Rewritten whole at S253 after four patch commits. The earlier versions were
+   correct CSS aimed at a surface nobody had read: every fault in this file's
+   history was a value WEBFLOW ALREADY SET that this file did not know about.
+   ▶▶ THE STANDING RULE, PAID FOR SIX TIMES IN ONE SESSION: ON A SURFACE THE
+   DESIGNER ALREADY STYLES, READ THE COMPUTED VALUES BEFORE WRITING THE RULE.
+   Structure alone is not enough — display, flex, order, text-align and margin
+   were every one of them owned by something else.
 
-   ⚠⚠ THIS FILE HAS NO SCRIPT HALF, DELIBERATELY. header.css's behaviour lives in
-   a separate Footer-code field and the two halves came apart once. The wordmark
-   turn here is a CSS animation, so there is nothing to strand.
+   ⚠⚠ THE SEVEN WEBFLOW VALUES THIS FILE EXISTS TO OVERRIDE, ALL MEASURED LIVE.
+   Remove any one of these rules and the matching fault returns:
+     .footer-brand    flex: 1 1 0%     → brand and links split the width evenly
+                                         (621px against 473px for all three
+                                         columns on a 1120 container)
+     .footer-brand    flex-direction: column
+                                       → children order by `order`, all sat at
+                                         0, so they fell back to DOM order and
+                                         the social row rendered ABOVE the phrase
+     .footer-columns  flex: 1 1 0%     → the same starvation from the other side
+     .footer-column   display: flex    → a ROW, so links laid out side by side
+                                         and squashed to 136px each
+     .footer-heading  display:none @767→ the group headings vanished on phones
+     .footer-link     text-align:center + margin-bottom
+                                       → a centred list, and the margin stacked
+                                         on top of a 41.6px line-height
+     .footer-logo     margin-top: 60px → dead space above the wordmark
 
-   ⚠ WHAT THIS FILE DOES NOT SET, WEBFLOW STILL OWNS. Anything not written here
-   is whatever the Designer has on the class. If a value looks wrong and is not
-   in this file, it is in the Style panel.
-   ========================================================================== */
+   ⚠⚠⚠ EVERY SELECTOR IS NAMESPACED UNDER .footer-* OR .instagram-preview-ribbon.
+   Nothing here can reach /signup, /dashboard, /browse or /admin/grading. Check
+   that before adding a rule — a bare class name in a site-wide file is what
+   caused the S228 outage.
+
+   ⚠ NO SCRIPT HALF, DELIBERATELY. header.css's behaviour lives in a separate
+   Footer-code field and the two halves came apart once. The wordmark's turn is
+   a CSS animation, so there is nothing to strand.
+
+   ⚠ NO var() TOKENS. --section-gap and friends are defined in home.css, which
+   only /old-home loads; a var() here would resolve to nothing on 19 pages.
+   Values are literal on purpose. DO NOT "TIDY" THEM INTO TOKENS.
+   ============================================================================ */
+
 
 /* ---- THE BAND -------------------------------------------------------------
-   ⚠ 60/24 IS THE FOOTER CONVENTION AND NOT THIS PAGE'S 44 TOKEN, KNOWINGLY.
-   /old-home runs on --section-gap 44 everywhere else; footers are conventionally
-   60-80 top. HER CALL, one number. It is written literally rather than as
-   var(--section-gap) because this file is SITE-WIDE and that token is defined
-   in home.css, which only /old-home loads — a var() here would resolve to
-   nothing on the other 19 pages. DO NOT "TIDY" IT INTO A TOKEN. */
+   60/24 is the footer convention rather than this page's 44 rhythm, knowingly. */
 .footer-section {
   background-color: #EDECE0;
   padding: 60px 0 24px;
 }
 
+/* THE SPINE — 60 / 40 / 20, the same text edge every section on /old-home uses.
+   On the other 19 pages it simply reads as sane gutters. */
 .footer-section .footer-container {
   max-width: 1240px;
   margin: 0 auto;
-  /* THE SPINE — 60 / 40 / 20, the same text edge every section on /old-home
-     uses. On the other 19 pages it simply reads as sane gutters. */
   padding: 0 60px;
 }
 
-/* ⚠⚠⚠ A ROW AGAIN AS OF v3 (S253), AND IT REVERSES v1/v2's COLUMN. Her ruling
-   off the live render: the column layout put the logo left, the tagline and
-   socials centred and the links below, i.e. THREE ALIGNMENTS IN ONE FOOTER with
-   ~200px of dead space between the brand and the columns. One row, brand left,
-   three link columns right, everything left-aligned. */
+
+/* ---- THE ROW --------------------------------------------------------------
+   Brand left, three link columns right. HER RULING off the live render: the
+   column version put the logo left, the phrase and socials centred and the
+   links below — three alignments in one footer, with ~200px of dead space
+   between the brand and the columns. */
 .footer-section .footer-main {
   display: flex;
   flex-direction: row;
@@ -49,53 +72,33 @@
   gap: 40px;
 }
 
-/* ---- THE WORDMARK, THE TAGLINE AND THE SOCIALS ----------------------------
-   .footer-brand already holds the logo, the tagline and the social row, so
-   putting it FIRST in a column flex is what moves the wordmark to the top.
-   NO MARKUP CHANGE.
-   ⚠⚠⚠ flex:0 0 auto AND width:100% ARE THE v2 FIX AND THEY ARE NOT TIDINESS.
-   Webflow sets `flex: 1 1 0%` on this from when .footer-main was a two-across
-   ROW — brand left, links right. Turning the parent into a COLUMN moved the
-   wordmark to the top and left that grow value alive, so this element kept
-   competing for space and starved the links: measured 621px here against 473
-   for all three link columns, on a 1120 container. THAT WAS THE "everything is
-   straddling the left side" FAULT, and it is a leftover from a layout that no
-   longer exists rather than anything in this file. */
-/* ⚠⚠ flex IS PINNED HERE RATHER THAN LEFT TO WEBFLOW. The Designer sets
-   `flex: 1 1 0%` on this, which in a row makes the brand and the columns split
-   the width evenly — the brand measured 621px against 473 for all three link
-   columns. 32% is the share, explicitly.
-   ⚠ text-align REVERTS TO LEFT at v3. It was centred for the rotating wordmark
-   while this was a column; in a row it made the tagline and socials centre
-   under a left-aligned logo, which read as a fault rather than a choice. */
+/* flex IS PINNED, NOT INHERITED. Webflow's `1 1 0%` here makes the brand and the
+   links split the row evenly; 32% is the share, stated. */
 .footer-section .footer-brand {
-  order: 1;
   flex: 0 0 32%;
   width: auto;
   text-align: left;
   margin-bottom: 0;
-  /* ⚠⚠⚠ THE PERSPECTIVE LIVES ON THE PARENT, NOT ON THE LOGO. Without it a
-     rotateY has no depth and the wordmark just squashes horizontally, which
-     reads as a glitch rather than a turn. */
+  /* THE PERSPECTIVE BELONGS ON THE PARENT. Without it a rotateY has no depth and
+     the wordmark squashes horizontally, which reads as a glitch, not a turn. */
   perspective: 1600px;
 }
 
-/* ⚠⚠ THE LOGO IS AN <img>, NOT TEXT — so this is a width, never a font-size,
-   and the turn has no font dependency at all.
-   ⚠⚠⚠ THE TURN IS CONTINUOUS, HERS, AND THE COST IS NAMED: a full rotateY
-   means the wordmark is MIRROR-REVERSED for half of every cycle — 8 seconds
-   out of 16. She chose that knowing it. To make it rest between turns instead,
-   swap the keyframes for ks-footer-mark-rest below; it is one word. */
+/* ⚠⚠⚠ .footer-brand IS A WEBFLOW FLEX COLUMN, so these three order by `order`.
+   All compute 0 by default and fall back to DOM order, where the social row sits
+   BEFORE the phrase. STATE THE SEQUENCE — never rely on the markup here. */
+.footer-section .footer-logo    { order: 1; }
+.footer-section .footer-tagline { order: 2; }
+.footer-section .footer-social  { order: 3; }
+
+
+/* ---- THE WORDMARK ---------------------------------------------------------
+   ⚠ IT IS AN <img>, NOT TEXT — so this is a width, never a font-size, and the
+   turn has no font dependency. It renders constrained by its own aspect ratio,
+   which is why an over-generous max-width appears to do nothing. Cap it.
+   ⚠ margin-top:0 OVERRIDES A WEBFLOW 60px that pushed it down inside its block. */
 .footer-section .footer-logo {
   display: inline-block;
-  /* ⚠ HER RULING: a third smaller. It rendered at 373px inside a 621px box —
-     constrained by its own aspect ratio, not by the old min(1120px,100%), which
-     is why that value looked like it was doing nothing. Capping it explicitly
-     is what actually moves it. ⚠ AND margin-top:0 OVERRIDES A WEBFLOW 60px that
-     was pushing the wordmark down inside its own block. */
-  /* ⚠ SMALLER AGAIN AT v3 — the wordmark now sits in a 32% column beside the
-     links rather than alone above them, so the turn is a detail rather than the
-     footer's centrepiece. ONE NUMBER if it should be bigger. */
   width: min(230px, 100%);
   height: auto;
   margin-top: 0;
@@ -107,72 +110,48 @@
   to   { transform: rotateY(360deg); }
 }
 
-/* BANKED, NOT LIVE — the resting version. Point .footer-logo's animation-name
-   at this and it turns once every 11 seconds instead of never stopping. */
+/* BANKED, NOT LIVE — the resting version. Point animation-name at this and it
+   turns once every 11 seconds instead of never stopping. HER CHOICE WAS
+   CONTINUOUS, and the named cost is that a full rotateY leaves the wordmark
+   MIRROR-REVERSED for half of every cycle: 8 seconds out of 16. */
 @keyframes ks-footer-mark-rest {
   0%, 78% { transform: rotateY(0deg); }
   100%    { transform: rotateY(360deg); }
 }
 
-/* ⚠⚠⚠ MOTION IS ADDED, NEVER USED TO HIDE. The wordmark is fully visible with
-   no animation running at all, so reduced motion, an old browser or a failed
-   stylesheet all end with it sitting still rather than missing. Her S224 rule. */
+/* ⚠⚠ MOTION IS ADDED, NEVER USED TO HIDE. With no animation the wordmark is
+   fully visible and still, so reduced motion, an old browser or a stylesheet
+   that never arrives all end in the same safe place. Her S224 rule. */
 @media (prefers-reduced-motion: reduce) {
-  .footer-section .footer-logo {
-    animation: none;
-  }
+  .footer-section .footer-logo { animation: none; }
 }
 
+
+/* ---- THE PHRASE AND THE SOCIAL LINK --------------------------------------- */
 .footer-section .footer-tagline {
   font-family: "Instrument Serif", Georgia, serif;
-  /* 400 IS THE ONLY WEIGHT THIS FAMILY SHIPS — anything heavier is a browser fake. */
+  /* 400 IS THE ONLY WEIGHT THIS FAMILY SHIPS. Anything heavier is a fake. */
   font-weight: 400;
   font-style: italic;
   font-size: 19px;
   line-height: 1.35;
   color: #1E1A19;
   max-width: 30ch;
-  /* auto MARGINS REMOVED — they centred the block inside a left-aligned column,
-     which is half of what made the old layout read as three alignments. */
+  /* NO auto MARGINS — they centred this inside a left-aligned column. */
   margin: 12px 0 16px;
 }
 
-/* ⚠⚠⚠ THE ORDER IS STATED HERE BECAUSE .footer-brand IS A FLEX COLUMN AND I DID
-   NOT KNOW IT — v4 (S253). Webflow sets display:flex + flex-direction:column on
-   that element; this file never set a direction, so it inherited one. In a flex
-   column the children order by `order`, all three sat at 0, and they fell back
-   to DOM order — where .footer-social comes BEFORE .footer-tagline. That is why
-   the icon rendered ABOVE the phrase on the live page while the markup and this
-   file both read the other way. Measured: tagline top 1462, social top 1412.
-   ▶ THE LESSON, AND IT HAS NOW COST FOUR SEPARATE FAULTS ON THIS ONE FILE: ON A
-   SURFACE WEBFLOW ALREADY STYLES, READ THE COMPUTED VALUES BEFORE WRITING THE
-   RULE. Every one of these was a property something else already owned. */
-.footer-section .footer-logo {
-  order: 1;
-}
-
-.footer-section .footer-tagline {
-  order: 2;
-}
-
 .footer-section .footer-social {
-  order: 3;
   display: flex;
   justify-content: flex-start;
+  align-items: center;
   gap: 16px;
   margin-top: 4px;
 }
 
-/* ---- THE LINK COLUMNS ---------------------------------------------------- */
-/* ⚠⚠ SAME LEFTOVER AS .footer-brand — this also carries Webflow's `flex: 1 1 0%`
-   and has to opt out of it, or the two siblings share the column's cross size
-   between them instead of each taking the full width. */
+
+/* ---- THE LINK COLUMNS ----------------------------------------------------- */
 .footer-section .footer-columns {
-  order: 2;
-  /* GROWS TO FILL WHATEVER THE BRAND COLUMN LEAVES. Webflow's own
-     `flex: 1 1 0%` happens to be right here, but it is written explicitly so
-     the two siblings' shares are both stated in this file rather than one being
-     inherited and invisible. */
   flex: 1 1 auto;
   width: auto;
   display: flex;
@@ -180,65 +159,53 @@
   gap: 32px;
 }
 
-/* ⚠⚠⚠ display:block IS LOAD-BEARING. Webflow has this as a FLEX container with
-   no direction set, i.e. a ROW, so the links were laying out side by side and
-   squashing to 136px each — which is what broke "Browse The Closet" onto two
-   lines and made the phone list look like it had enormous gaps. The links are
-   plain stacked blocks; nothing here needs flex at all. */
+/* ⚠⚠⚠ display:block IS LOAD-BEARING. Webflow has this as a flex container with
+   no direction set, i.e. a ROW — links side by side, squashed to 136px, and
+   "Browse The Closet" breaking onto two lines. The links are plain stacked
+   blocks; nothing here needs flex at all. */
 .footer-section .footer-column {
   display: block;
   flex: 1 1 0;
-  /* minmax's flexbox equivalent — without this a long link name can push a
-     column past its share instead of wrapping. */
   min-width: 0;
 }
 
-/* ⚠⚠ THE HEADINGS ARE GREEN AND THAT IS MEASURED, NOT PICKED. On this cream,
-   her amber #EDA920 reads 1.9 and is unusable for text; green #309359 reads
-   3.25, which is the same value she knowingly accepted for the how-it-works
-   header at S236. THIS IS THE PAGE'S EYEBROW TREATMENT — Quicksand 700,
-   uppercase, letterspaced — reused rather than invented.
-   ⚠ 3.25 IS UNDER THE 4.5 AA BAR FOR NORMAL TEXT. Accepted, consistent with
-   that ruling. Do not silently darken the green to "fix" it. */
+/* ⚠⚠ GREEN IS MEASURED, NOT PICKED. On this cream her amber #EDA920 reads 1.9
+   and is unusable for text; green #309359 reads 3.25 — the same value she
+   knowingly accepted for the how-it-works header at S236. It is the page's own
+   eyebrow treatment reused rather than a new one invented.
+   ⚠ display:block OVERRIDES A DESIGNER HIDE AT ≤767 that removed the group
+   headings on phones and left eighteen links as one undifferentiated list. Set
+   at every width so a future hide cannot silently take the groups away again. */
 .footer-section .footer-heading {
+  display: block;
   font-family: Quicksand, sans-serif;
   font-weight: 700;
   font-size: 13px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #309359;
-  margin: 0 0 10px;
-  /* ⚠⚠⚠ THE DESIGNER HIDES THESE ON MOBILE — .footer-heading computes
-     display:none below 767, which is why the groups vanished on the phone and
-     eighteen links ran as one undifferentiated list. This is the override, and
-     it is set at EVERY width deliberately so a future Designer hide cannot
-     silently take the groups away again. */
-  display: block;
+  margin: 0 0 8px;
 }
 
-/* ⚠⚠ WRITTEN AT TWO CLASSES so it beats the `All Links` TAG selector, which
-   styles every <a> on all 20 pages and which this doc says to read and never
-   edit. A single class would win too, but two is the house pattern here. */
+/* ⚠⚠ TWO CLASSES so it beats the `All Links` TAG selector, which styles every
+   <a> on all 20 pages and which this project reads and never edits.
+   ⚠ 16px AND ~44px OF VERTICAL ROOM PER LINK is the documented tap-target
+   floor, applied at every width because there is no reason for desktop to be
+   worse. LINE-HEIGHT IS THE TAP TARGET — do not trade it for a shorter footer.
+   ⚠ text-align AND margin-bottom BOTH OVERRIDE WEBFLOW: the links compute
+   centred on mobile, and carry a margin (20px there, 8 on desktop) ON TOP of a
+   41.6px line-height, which double-spaced the entire list. */
 .footer-section .footer-link,
 .footer-section a.footer-link {
   display: block;
   font-family: Quicksand, sans-serif;
   font-weight: 400;
-  /* 16px MINIMUM AND ~44px OF VERTICAL ROOM PER LINK — the documented mobile
-     tap-target floor, applied at every width because there is no reason for
-     desktop to be worse. line-height IS the tap target here; do not trade it
-     back for a shorter footer. */
   font-size: 16px;
   line-height: 2.6;
   color: #1E1A19;
-  text-decoration: none;
-  /* ⚠⚠ BOTH OF THESE OVERRIDE WEBFLOW. The links compute text-align:center on
-     mobile — a centred list reads as a menu, and a footer is a directory you
-     scan. And they carry a margin-bottom (20px on mobile, 8 on desktop) ON TOP
-     of the 41.6px line-height, which is where the enormous phone gaps came
-     from. LINE-HEIGHT IS THE TAP TARGET HERE; the margin is double-spacing it. */
   text-align: left;
   margin-bottom: 0;
+  text-decoration: none;
 }
 
 .footer-section .footer-link:hover {
@@ -251,12 +218,13 @@
   border-radius: 2px;
 }
 
+
 /* ---- THE JOIN BUTTON ------------------------------------------------------
-   ⚠⚠ THIS ELEMENT DOES NOT EXIST IN THE MARKUP YET. The rule is written now so
-   that adding a Link Block classed footer-join in the Designer needs no second
-   commit. UNTIL THEN IT MATCHES NOTHING AND PAINTS NOTHING, which is the safe
-   direction. ⚠ HER HEADER ALREADY CARRIES A STICKY JOIN ON EVERY PAGE, so this
-   would be the second one on screen — that is why it is optional. */
+   ⚠ THIS ELEMENT DOES NOT EXIST IN THE MARKUP. The rule is here so that adding
+   a Link Block classed footer-join needs no second commit; until then it matches
+   nothing and paints nothing, which is the safe direction.
+   ⚠ Her header already carries a sticky Join on every page, so this would be the
+   second one on screen — that is why it is optional. */
 .footer-section .footer-join,
 .footer-section a.footer-join {
   display: inline-block;
@@ -275,7 +243,11 @@
   background-color: #B23D22;
 }
 
-/* ---- THE BOTTOM ROW ------------------------------------------------------- */
+
+/* ---- THE BOTTOM ROW -------------------------------------------------------
+   ⚠ #75736E reads 4.0 on this cream — under the 4.5 bar, and the exact value she
+   ruled for the email footers at S158 for the same reason. Knowingly. It was
+   previously so light it was unreadable in a screenshot. */
 .footer-section .footer-bottom {
   border-top: 1px solid #C9C7BC;
   margin-top: 44px;
@@ -283,9 +255,6 @@
   text-align: center;
 }
 
-/* ⚠ #75736E READS 4.0 ON THIS CREAM — under the 4.5 bar, and the exact value
-   she ruled for the email footers at S158 for the same reason. Consistent,
-   knowingly. It was previously so light it was unreadable in a screenshot. */
 .footer-section .footer-copyright,
 .footer-section a.footer-copyright {
   font-family: Quicksand, sans-serif;
@@ -295,9 +264,32 @@
   text-decoration: none;
 }
 
-/* ==========================================================================
+
+/* ---- THE RIBBON SEAM ------------------------------------------------------
+   ⚠⚠⚠ THE ONE RULE HERE THAT IS NOT ABOUT THE FOOTER'S CONTENTS, and it lives in
+   this file rather than home.css because the seam sits between a section and the
+   GLOBAL footer — home.css is page-linked to /old-home only.
+
+   THE FAULT: the embed reserves 22px of real flow height with a transparent
+   background, so a 22px strip of whatever is behind it sits between the two
+   sections. That was the pale sliver hunted across three commits; setting the
+   body colour made it invisible rather than absent.
+
+   ⚠⚠ height:0 AND NOT display:none — the ribbon inside must still render and
+   still hang half its own height below. overflow-y:visible is required or a
+   zero-height box clips its own child, and overflow-x:clip contains the band's
+   deliberate 6% bleed, which otherwise drags the page sideways.
+   ⚠ The class exists only on /old-home, so this can match nowhere else. */
+.w-embed:has(> .instagram-preview-ribbon) {
+  height: 0;
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+
+/* ============================================================================
    TABLET
-   ========================================================================== */
+   ============================================================================ */
 @media screen and (max-width: 991px) {
   .footer-section .footer-container {
     padding: 0 40px;
@@ -308,35 +300,33 @@
   .footer-section .footer-brand {
     flex: 0 0 28%;
   }
-  .footer-section .footer-columns {
-    gap: 24px;
-  }
   .footer-section .footer-logo {
     width: min(190px, 100%);
   }
+  .footer-section .footer-columns {
+    gap: 24px;
+  }
 }
 
-/* ==========================================================================
-   PHONE — the three groups stack, one at a time.
-   ⚠ NOT two columns and NOT accordions. Two columns halves the height and
-   makes you read across; accordions are the documented pattern for footers
-   with forty links across six groups, and this one has eighteen across three,
-   where one group holds two items. Both were mocked and rejected.
-   ========================================================================== */
+
+/* ============================================================================
+   PHONE — the row becomes a column and the three groups stack, one at a time.
+   ⚠ NOT two columns and NOT accordions. Two columns makes you read across;
+   accordions are the documented pattern for footers with forty links across six
+   groups, and this has eighteen across three, one of which holds two items.
+   Both were mocked and rejected.
+   ============================================================================ */
 @media screen and (max-width: 767px) {
-  /* ⚠⚠ 28px, NOT 44 — v4. On the phone the footer's own top padding plus the
-     brand's spacing was landing the wordmark ~97px below the section's top
-     edge (footer top 1227, logo top 1324), which reads as an empty band of a
-     different colour rather than as breathing room. It is NOT a second cream:
-     body and footer both compute #EDECE0, measured. */
+  /* 28px, NOT 44 — the footer's own top padding plus the brand's spacing was
+     landing the wordmark ~97px below the section's top edge, which reads as an
+     empty band of a different colour. IT IS NOT A SECOND CREAM: body and footer
+     both compute #EDECE0, measured. */
   .footer-section {
     padding: 28px 0 24px;
   }
   .footer-section .footer-container {
     padding: 0 20px;
   }
-  /* THE ROW BECOMES A COLUMN ON THE PHONE — there is no room for a brand
-     column beside three link columns. Everything stays LEFT aligned. */
   .footer-section .footer-main {
     flex-direction: column;
     gap: 0;
@@ -353,9 +343,8 @@
     font-size: 18px;
     margin: 10px 0 18px;
   }
-  /* THE COLUMNS BECOME ROWS. Links stay LEFT aligned even though the wordmark
-     above them is centred — a centred link list reads as a menu, and a footer
-     is a directory you scan. */
+  /* Links stay LEFT aligned even in one column — a centred list reads as a menu,
+     and a footer is a directory you scan. */
   .footer-section .footer-columns {
     flex-direction: column;
     gap: 26px;
@@ -369,35 +358,8 @@
   }
 }
 
-/* ⚠⚠ WEBFLOW HAS FOUR BREAKPOINTS AND THIS FILE SPEAKS AT THREE. Below 479
-   Webflow's own rules run unopposed unless something here says otherwise.
-   Nothing is set there on purpose — the phone block above already stacks
-   everything to full width, and there is no layout left to break. If a value
-   ever misbehaves under 479, this is the block that does not exist yet. */
-
-/* ==========================================================================
-   THE RIBBON EMBED'S FLOW STRIP  —  v4 (S253)
-
-   ⚠⚠⚠ THIS RULE IS IN footer.css AND NOT IN home.css ON PURPOSE, AND THE REASON
-   MATTERS: the embed sits BETWEEN the Instagram section and the GLOBAL FOOTER,
-   so the strip it reserves is a footer-seam problem. home.css is page-linked to
-   /old-home only; this file is site-wide, which is where the seam lives.
-
-   THE FAULT IT FIXES: the embed occupies 22px of real flow height with a
-   TRANSPARENT background, so a 22px strip of whatever is behind it sits between
-   the two sections. That was the pale sliver hunted for three commits, and the
-   body-colour fix only made it invisible rather than absent — the strip is
-   still there, still 22px, and it is why the footer appears to start ~100px
-   above its own content.
-
-   ⚠⚠ height:0 AND NOT display:none. The ribbon inside must still render and
-   still hang half its height below; display:none would take the band with it.
-   The child is already position:relative with a negative bottom margin, so it
-   floats over the join once its parent stops reserving space.
-   ⚠ overflow:visible IS REQUIRED or a zero-height box clips its own child.
-   ========================================================================== */
-
-.w-embed:has(> .instagram-preview-ribbon) {
-  height: 0;
-  overflow-y: visible;
-}
+/* ⚠⚠ WEBFLOW HAS FOUR BREAKPOINTS AND THIS FILE SPEAKS AT THREE. Below 479 its
+   own rules run unopposed unless something here says otherwise. Nothing is set
+   there deliberately — the phone block already stacks everything to full width
+   and there is no layout left to break. If a value ever misbehaves under 479,
+   this is the block that does not exist yet. */
