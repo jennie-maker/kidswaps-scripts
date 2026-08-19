@@ -330,7 +330,16 @@
        explicit and each entry is read with querySelector, so a new star wearing a
        new class spins for exactly no reason until it is named. ITS OWN RATE AND
        ITS OWN SIGN, so six stars still never read as one mechanism. */
-    { sel: '.faq-star',                 rate: -0.070 }
+    { sel: '.faq-star',                 rate: -0.070 },
+    /* THE SEVENTH AND EIGHTH, S253 — the Instagram band. Same rule as the sixth:
+       A STAR JOINS THIS ONLY BY A LINE HERE. Each keeps its own rate and its own
+       sign so eight stars still never read as one mechanism.
+       ⚠ .instagram-preview-star-lower is display:none below 767. That is fine and
+       needs no guard — querySelector still finds it, and writing `rotate:` to a
+       hidden element is a no-op rather than a throw. Do NOT "fix" it by removing
+       the entry; the desktop star would stop turning. */
+    { sel: '.instagram-preview-star-upper', rate:  0.052 },
+    { sel: '.instagram-preview-star-lower', rate: -0.084 }
   ];
 
   function startSpin() {

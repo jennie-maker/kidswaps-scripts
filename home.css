@@ -2939,3 +2939,276 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   html.ks-motion .faq-section .faq-question-list .faq-question-row:nth-child(4) { transition-delay: .42s; }
 
 }
+
+/* ==========================================================================
+   THE INSTAGRAM PREVIEW BAND  —  v44 (S253)
+
+   Sits between the sources section and the global footer, and its FIRST job is
+   structural rather than decorative: both of those are cream, so the page was
+   ending on two light blocks with no edge between them. HER RULING S253 — a new
+   section rather than recolouring sources.
+
+   ⚠⚠⚠ GREEN #309359 AND **NOT** CORAL, AND THE REASON IS THE PHOTOGRAPHY.
+   The tiles are her listing shots, which are taken on white. White-ish tiles on
+   a coral ground is the closet-preview band's exact recipe, so coral would end
+   the page by repeating a block it already does — the same complaint that moved
+   the FAQ photo panel at v43. Green is the one band colour this page does not
+   already carry.
+
+   ⚠⚠⚠ EVERY MARK ON THIS BAND IS INK OR CREAM, NEVER PINK AND NEVER AMBER-ON-
+   GREEN, AND THAT IS MEASURED. Against #309359: her placeholder star pink
+   #E796A9 reads 1.75 and amber #E5AD43 reads 1.91, both far under the 3.0 bar
+   for a graphical mark, so a pink star here would sit as a smudge. Cream reads
+   3.25 and ink 4.38. THE STARS ARE CREAM ON THIS SECTION ONLY — every other
+   star on the page stays the placeholder pink.
+
+   ⚠⚠ THE TILES ARE DRAWN DIVS WITH A PLACEHOLDER FILL, exactly like the
+   closet-standard photo panel and the seam stars. When her images land it is
+   ONE PROPERTY on the same elements — background-image on each tile. NO
+   DESIGNER WORK, no markup change. #CCCAC5 is deliberately OUTSIDE her seven
+   palette colours so nobody later reads it as a design decision.
+
+   ⚠ THE COPY IN THE MARKUP IS PLACEHOLDER AND IS NOT HERS YET — the heading,
+   the button label and the ribbon string all need her approval (§0). They ship
+   under the same rule the FAQ shipped under: every line is TRUE as written.
+   ========================================================================== */
+
+.instagram-preview-section {
+  background-color: #309359;
+  /* ⚠⚠⚠ THE BOTTOM PADDING IS ARITHMETIC, NOT A NUMBER. The ribbon straddles
+     the seam by hanging half its own height below this section, so the VISIBLE
+     cream between the words and the footer is padding minus ribbon-height/2.
+     A literal --section-gap here renders as gap-minus-half-a-ribbon, which is
+     the same trap the closet preview's two edges already document. */
+  padding: var(--section-gap) 0 calc(var(--section-gap) + var(--ribbon-height) / 2);
+  overflow-x: clip;
+  position: relative;
+}
+
+.instagram-preview-container {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 60px;
+  /* LOAD-BEARING: the two stars are absolutely positioned against THIS, not
+     against the section, so their offsets are percentages of the 1240 measure
+     and stay put when the viewport grows. Name the relative ancestor before
+     ever calling a star's position a fault. */
+  position: relative;
+  text-align: center;
+}
+
+/* ⚠ THE TYPE IS CENTRED, SO IT DOES NOT SIT ON THE S244 SPINE and cannot —
+   centred content has no left edge to align. Its 1240 measure is the same one
+   every other section uses, which is what keeps the band the same width. */
+.instagram-preview-heading {
+  font-family: "Instrument Serif", Georgia, serif;
+  /* 400 IS THE ONLY WEIGHT THIS FAMILY SHIPS. Anything heavier is a browser
+     fake, which is what was happening to .ks-wz-h before it was pinned. */
+  font-weight: 400;
+  font-size: 44px;
+  line-height: 1.05;
+  color: #1E1A19;
+  margin: 0 0 26px;
+}
+
+.instagram-preview-grid {
+  display: grid;
+  /* minmax(0, 1fr) AND NEVER 1fr — a bare 1fr track has min-width:auto, so a
+     tile with a large min-content pushes the column past the container. */
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 28px;
+}
+
+.instagram-preview-tile {
+  aspect-ratio: 1 / 1;
+  background-color: #CCCAC5;
+  background-size: cover;
+  background-position: center;
+  border-radius: 4px;
+}
+
+/* ⚠⚠ WRITTEN AT TWO CLASSES ON PURPOSE. Every <a> on all 20 pages inherits the
+   `All Links` TAG selector, and the Link Block also wears .w-inline-block, so
+   the pair beats both outright instead of winning on source order. */
+.instagram-preview-follow-button,
+.instagram-preview-follow-button.w-inline-block {
+  display: inline-block;
+  background-color: #1E1A19;
+  color: #EDECE0;
+  font-family: Quicksand, sans-serif;
+  font-weight: 500;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  padding: 13px 28px;
+  border-radius: 50px;
+  text-decoration: none;
+}
+
+/* ⚠⚠⚠ NO `transform` ON A STAR, EVER — NOT EVEN TO POSITION IT. home.js writes
+   the scroll spin as an inline `rotate:`, and the two properties are separate,
+   but a transform written HERE would still be the thing that positions it and
+   the two hero stars are the precedent: they are placed with translateX, which
+   is exactly why the spin had to be `rotate:` rather than transform:rotate().
+   These are placed with top/left/right/bottom alone so nothing can collide. */
+.instagram-preview-star-upper,
+.instagram-preview-star-lower {
+  position: absolute;
+  background-color: #EDECE0;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  pointer-events: none;
+}
+
+/* THE FOUR OFFSETS AND THE TWO SIZES ARE CLAUDE'S CALL, REVERSIBLE, one number
+   each. They are kept OFF the type rather than crossing it, because the heading
+   is short and the grid starts directly beneath it. */
+.instagram-preview-star-upper {
+  top: -4px;
+  left: 46px;
+  width: 34px;
+  height: 34px;
+}
+
+.instagram-preview-star-lower {
+  right: 38px;
+  bottom: 84px;
+  width: 52px;
+  height: 52px;
+}
+
+/* ⚠⚠⚠ THE THIRD RIBBON ON THIS PAGE, AND IT REUSES THE FIRST ONE'S INNARDS.
+   .closet-preview-ribbon-track / -set / -word / -star are shared, so the
+   marquee, the 42s keyframes, the type ladder and the drawn star all come free
+   and step per breakpoint on their own. ONLY THE BAND DIFFERS.
+   ⚠⚠ AMBER WITH INK TEXT NEEDS **NO** COLOUR OVERRIDE — ink is what -word and
+   -star already set, and ink on amber measures 8.54. The closing ribbon needs
+   two override rules precisely because its band is dark; this one does not.
+   ⚠⚠⚠ TWELVE SETS SLIDING -8.3333%, i.e. 100/12, AND THE TWO ARE LOCKED TO EACH
+   OTHER. The pasted embed carries twelve. Drop any and the strip jumps once per
+   cycle — silently, and only on a screen wide enough to show the seam.
+   ⚠ THE TILT SIGN IS CLAUDE'S CALL: -2.8deg puts the RIGHT END UP, against the
+   closing ribbon's +2.8. One character to reverse. */
+.instagram-preview-ribbon {
+  --ribbon-gap: 30px;
+  position: relative;
+  z-index: 3;
+  /* 112% with -6% margin so both ends are always off-screen — her S231 rule
+     that a banner never shows a start or a stop. */
+  width: 112%;
+  margin-left: -6%;
+  height: var(--ribbon-height);
+  margin-bottom: calc(var(--ribbon-height) / -2);
+  background-color: #E5AD43;
+  /* THE SHADOW FILLS THE TILTED WEDGE ABOVE THE BAND, and it is GREEN here
+     because green is what sits above it. 40px, and 44px IS A HARD CEILING for
+     the same arithmetic the closing ribbon documents: the clearance from this
+     ribbon's top edge to the content above is exactly --section-gap, because
+     the section's bottom padding is gap + ribbon-height/2. GO PAST 44 AND THE
+     GREEN PAINTS OVER THE FOLLOW BUTTON. A bigger number is never the answer;
+     v39 raised this ribbon's cousin to 120 and laid a bar across her products. */
+  box-shadow: 0 -40px 0 0 #309359;
+  transform: rotate(-2.8deg);
+  overflow: hidden;
+}
+
+/* ⚠⚠⚠ `overflow-x: clip`, NEVER `overflow: hidden`. The ribbon hangs half its
+   own height BELOW its box on purpose; hidden clips BOTH axes and would slice
+   that overhang off, which is exactly what v37 shipped and what cut the closing
+   ribbon in half on the live page. AND `overflow-x: hidden` is not the fix
+   either — per spec, hidden on one axis forces the other to `auto`, making a
+   scroll container that clips the overhang all over again. `clip` is the only
+   value that leaves the other axis genuinely `visible`.
+   ⚠⚠ WITHOUT THIS, THE 6% BLEED ESCAPES TO THE DOCUMENT and drags the whole
+   page sideways — 19px of horizontal scroll on a phone, found by measurement.
+   ⚠ :has SCOPES IT TO THIS ONE EMBED. A bare .w-embed rule would clip every
+   embed on the page, including the hero marquee, whose clipping is already
+   correctly owned by hero-container.
+   ⚠ Old Safari ignores `clip` and falls back to visible, which returns the
+   sideways scroll and breaks nothing. Correct failure direction. */
+.w-embed:has(> .instagram-preview-ribbon) {
+  overflow-x: clip;
+}
+
+@media screen and (max-width: 991px) {
+  .instagram-preview-container {
+    padding: 0 40px;
+  }
+  .instagram-preview-heading {
+    font-size: 38px;
+    margin: 0 0 22px;
+  }
+  .instagram-preview-grid {
+    gap: 10px;
+  }
+  .instagram-preview-star-upper {
+    left: 30px;
+    width: 30px;
+    height: 30px;
+  }
+  .instagram-preview-star-lower {
+    right: 26px;
+    bottom: 72px;
+    width: 44px;
+    height: 44px;
+  }
+  .instagram-preview-ribbon {
+    --ribbon-gap: 22px;
+  }
+}
+
+@media screen and (max-width: 767px) {
+  .instagram-preview-container {
+    padding: 0 20px;
+  }
+  .instagram-preview-heading {
+    font-size: 32px;
+    margin: 0 0 20px;
+  }
+  /* SIX ACROSS SURVIVES TO HERE at roughly 113px a tile and breaks to three
+     below it. Left as one row on a phone each tile is about 55px, which is
+     smaller than a thumbnail, and a photograph at that size stops being one. */
+  .instagram-preview-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  /* ONE STAR, NOT TWO — the same call the hero makes, where the lower star is
+     hidden below 991 rather than squeezed in. Two stars in a ~350px column with
+     a grid under them reads as clutter rather than as scatter. */
+  .instagram-preview-star-lower {
+    display: none;
+  }
+  .instagram-preview-star-upper {
+    top: -2px;
+    left: auto;
+    right: 18px;
+    width: 26px;
+    height: 26px;
+  }
+  .instagram-preview-ribbon {
+    --ribbon-gap: 18px;
+  }
+}
+
+/* ⚠⚠ WEBFLOW HAS FOUR BREAKPOINTS AND THIS FILE SPEAKS AT THREE, so below 479
+   Webflow's own rules run unopposed unless this section says otherwise. HER
+   RULING S253: four big tiles on a phone. */
+@media screen and (max-width: 479px) {
+  .instagram-preview-heading {
+    font-size: 28px;
+  }
+  .instagram-preview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0 0 24px;
+  }
+  /* TILES FIVE AND SIX COME OFF rather than shrinking. Four at ~165px each is a
+     photograph; six at ~110px is a swatch. The markup is unchanged, so raising
+     it back to six is deleting this one rule. */
+  .instagram-preview-tile:nth-child(n + 5) {
+    display: none;
+  }
+  .instagram-preview-follow-button,
+  .instagram-preview-follow-button.w-inline-block {
+    font-size: 14px;
+    padding: 12px 24px;
+  }
+}
