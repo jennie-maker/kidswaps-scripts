@@ -3512,3 +3512,311 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
     font-size: 20px;
   }
 }
+
+/* ============================================================================
+   v50 (S255) — /faq's OWN LAYOUT: A NAVY MASTHEAD OVER A CREAM BODY
+
+   HER RULING S254, OPTION A. Every rule below is written at .faq-section.faq-page
+   — TWO CLASSES ON THE SECTION — because faq-page is a combo class that exists
+   ONLY on /faq. That is what lets this file serve two pages off one SHA.
+   ⚠⚠⚠ THE SPECIFICITY IS THE WHOLE MECHANISM AND IT CUTS BOTH WAYS. The shared
+   rules above are written .faq-section .faq-container (0,2,0), so an override
+   here needs THREE classes to win. And because a 3-class rule beats a 2-class
+   rule INSIDE ANY MEDIA QUERY — a media query adds no specificity — anything set
+   here reaches every width, INCLUDING the phone, whether that was intended or
+   not. So every value that must differ at a breakpoint carries its own guarded
+   twin below. Where /old-home's breakpoint rule is still correct for /faq, no
+   twin is written and the 2-class rule keeps governing.
+
+   ⚠⚠ THE SECTION STOPS BEING AN INSET PANEL HERE, AND THAT IS DELIBERATE. v45
+   gave .faq-section a 28px side margin and a 32px radius so it reads as a panel
+   sitting inside the home page. On /faq the section IS the page, and a masthead
+   that stops short of the edge with rounded corners reads as a card floating on
+   nothing. Three values undo it — margin, radius and the flex row — and putting
+   them back is the same three.
+
+   ⚠ THE PHOTO PANEL IS HIDDEN, NOT DELETED. A masthead page has no right-hand
+   photo column, but the element is one line from returning and she may want an
+   image here once she has seen it. Deleting it in the Designer would take it off
+   /old-home too, since both pages share the markup lineage.
+   ========================================================================== */
+
+.faq-section.faq-page {
+  display: block;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+  /* the cream is the page's base, so the body band and the CTA below it share
+     one ground and their seam cannot show. The masthead paints navy over it. */
+  background-color: #EDECE0;
+}
+
+/* (0,3,0) — beats .faq-section .faq-container's padding at EVERY width, so the
+   two 2-class breakpoint rules above need no twins here. The bands carry the
+   padding now, because only a full-width child can paint a full-width band. */
+.faq-section.faq-page .faq-container {
+  display: block;
+  padding: 0;
+}
+
+.faq-section.faq-page .faq-photo-panel {
+  display: none;
+}
+
+/* THE STAR MOVES INTO THE MASTHEAD. Its shared rule positions it by arithmetic
+   off the photo panel's edge, and that panel is gone here, so both offsets are
+   restated rather than nudged. ⚠ left:auto IS LOAD-BEARING — a star carrying a
+   left AND a right AND a width is over-constrained and lands wrong with nothing
+   erroring, which is the note the shared rule already carries for the 991 block.
+   ⚠ margin-left:0 clears the min-992 rule that insets it with the photo. */
+.faq-section.faq-page .faq-star {
+  width: 72px;
+  top: 104px;
+  left: auto;
+  right: calc(var(--faq-gutter) + 60px);
+  bottom: auto;
+  margin-left: 0;
+}
+
+/* ---- THE TWO BANDS ------------------------------------------------------ */
+/* THE TYPE LANDS ON THE SAME SPINE AS EVERY OTHER SECTION ON THE SITE, and it is
+   the section's own arithmetic reused rather than a new number: the gutter
+   centres a 1240 measure, the 60 is the spine inset (S244). That is why neither
+   band needs an inner wrapper div — the padding does the centring. */
+.faq-section.faq-page .faq-masthead {
+  background-color: #1C4A91;
+  padding: 96px calc(var(--faq-gutter) + 60px) 88px;
+}
+
+.faq-section.faq-page .faq-body {
+  background-color: #EDECE0;
+  padding: 64px calc(var(--faq-gutter) + 60px) 40px;
+}
+
+/* ---- MASTHEAD TYPE ------------------------------------------------------ */
+/* THIS IS THE PAGE'S H1, NOT A SECTION HEADING, SO IT GOES UP. 52 is the size it
+   wears inside the home page where it competes with four other sections; here it
+   is the only thing on a navy field. ⚠ INSTRUMENT SERIF LOADS AT 400 ONLY —
+   the size does the work and a weight would be faked. */
+.faq-section.faq-page .faq-heading {
+  font-size: 60px;
+  max-width: 20ch;
+  margin: 0 0 22px;
+}
+
+.faq-section.faq-page .faq-masthead-line {
+  font-family: Quicksand, sans-serif;
+  font-weight: 400;
+  font-size: 19px;
+  line-height: 1.55;
+  color: #EDECE0;
+  margin: 0;
+  max-width: 52ch;
+}
+
+/* ---- THE PILLS ---------------------------------------------------------- */
+/* JUMP LINKS, NOT FILTERS — every group stays on the page and the pill only
+   scrolls to it, so nothing here can hide a question from anyone.
+   ⚠ NOT STICKY IN v50, AND THAT IS A DELIBERATE HOLD. .site-header is sticky
+   site-wide, so a sticky pill row would need to know its height, and nobody has
+   measured it. Ship it still, look at it, then decide — position:sticky plus a
+   top offset is two lines whenever she wants it.
+   ⚠ :visited is matched for the same reason the CTA matches it — `All Links` is
+   a TAG selector on all twenty pages and would otherwise recolour a visited pill. */
+.faq-section.faq-page .faq-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 56px;
+}
+
+.faq-section.faq-page .faq-pill,
+.faq-section.faq-page .faq-pill:visited {
+  display: inline-block;
+  font-family: Quicksand, sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  color: #1E1A19;
+  background-color: transparent;
+  /* an INK TINT, never a faded brand hex (§2) — the same device the shared rules
+     use for their hairlines, arriving on cream instead of navy. */
+  border: 1px solid rgba(30, 26, 25, 0.25);
+  border-radius: 50px;
+  padding: 10px 18px;
+  text-decoration: none;
+  transition: background-color .18s ease, border-color .18s ease, color .18s ease;
+}
+
+.faq-section.faq-page .faq-pill:hover {
+  background-color: #1C4A91;
+  border-color: #1C4A91;
+  color: #EDECE0;
+}
+
+/* ---- THE GROUPS --------------------------------------------------------- */
+/* ⚠⚠ scroll-margin-top IS NOT SPACING — it is what stops a jump link parking the
+   group heading UNDERNEATH the sticky site header. Without it every pill lands
+   on a heading nobody can see and reads as a broken link. */
+.faq-section.faq-page .faq-group {
+  margin: 0 0 56px;
+  scroll-margin-top: 96px;
+}
+
+.faq-section.faq-page .faq-group:last-child {
+  margin-bottom: 0;
+}
+
+/* NAVY, NOT GREEN AND NOT AMBER, AND IT WAS MEASURED. On this cream, #1C4A91
+   reads 8.6:1 while her green reads 3.25 and the amber 1.9 — and this is small
+   uppercase text, the worst case for a low ratio. It also ties the body back to
+   the masthead it sits under. */
+.faq-section.faq-page .faq-group-heading {
+  font-family: Quicksand, sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #1C4A91;
+  margin: 0 0 14px;
+}
+
+/* ---- THE ROWS, REPOINTED FOR CREAM -------------------------------------- */
+/* ⚠⚠⚠ EVERY ONE OF THESE IS A COLOUR THE SHARED RULES SET FOR NAVY. Left alone
+   the questions would be amber on cream (1.9:1), the teaser and the answer cream
+   on cream (invisible), and the hairlines a white tint on cream (invisible).
+   NOTHING HERE CHANGES A SIZE, A WEIGHT OR A LAYOUT — the section she approved
+   on /old-home is untouched and only its ground has moved. */
+.faq-section.faq-page .faq-question-list {
+  border-top-color: rgba(30, 26, 25, 0.18);
+}
+
+.faq-section.faq-page .faq-question-row {
+  border-bottom-color: rgba(30, 26, 25, 0.18);
+}
+
+.faq-section.faq-page .faq-question-text {
+  color: #1E1A19;
+}
+
+/* the house muted grey, already the secondary text on /signup and in every email
+   footer. It reads 4.0:1 on this cream — under the 4.5 bar, the same trade she
+   took knowingly on the footer text at S158. */
+.faq-section.faq-page .faq-question-teaser {
+  color: #75736E;
+}
+
+.faq-section.faq-page .faq-answer-text {
+  color: #1E1A19;
+}
+
+.faq-section.faq-page .faq-question-chevron {
+  background-color: #1C4A91;
+}
+
+.faq-section.faq-page .faq-question-header:focus-visible {
+  outline-color: #1C4A91;
+}
+
+/* ---- THE CTA ------------------------------------------------------------ */
+/* IT SITS OUTSIDE faq-body IN THE MARKUP, so with the container un-padded it
+   would otherwise start at the page edge. The same spine arithmetic puts it back
+   under the questions, and its bottom margin is the page's closing space — which
+   is why faq-body's own bottom padding is only 40. */
+.faq-section.faq-page .faq-cta-button,
+.faq-section.faq-page .faq-cta-button:visited {
+  margin: 0 0 96px calc(var(--faq-gutter) + 60px);
+}
+
+/* ---- /faq, TABLET ------------------------------------------------------- */
+/* ⚠ EVERY RULE HERE EXISTS ONLY BECAUSE ITS DESKTOP TWIN ABOVE IS 3 CLASSES AND
+   WOULD OTHERWISE REACH THIS WIDTH. Nothing is restyled for its own sake. */
+@media screen and (max-width: 991px) {
+
+  .faq-section.faq-page .faq-masthead {
+    padding: 72px 40px 64px;
+  }
+
+  .faq-section.faq-page .faq-body {
+    padding: 48px 40px 32px;
+  }
+
+  .faq-section.faq-page .faq-heading {
+    font-size: 44px;
+  }
+
+  .faq-section.faq-page .faq-star {
+    width: 56px;
+    top: 72px;
+    right: 40px;
+  }
+
+  .faq-section.faq-page .faq-group {
+    margin-bottom: 48px;
+  }
+
+  .faq-section.faq-page .faq-cta-button,
+  .faq-section.faq-page .faq-cta-button:visited {
+    margin: 0 0 72px 40px;
+  }
+}
+
+/* ---- /faq, PHONE -------------------------------------------------------- */
+@media screen and (max-width: 767px) {
+
+  .faq-section.faq-page .faq-masthead {
+    padding: 56px 20px 48px;
+  }
+
+  .faq-section.faq-page .faq-body {
+    padding: 36px 20px 24px;
+  }
+
+  .faq-section.faq-page .faq-heading {
+    font-size: 36px;
+  }
+
+  .faq-section.faq-page .faq-masthead-line {
+    font-size: 17px;
+  }
+
+  .faq-section.faq-page .faq-star {
+    width: 44px;
+    top: 44px;
+    right: 20px;
+  }
+
+  .faq-section.faq-page .faq-pill-row {
+    gap: 8px;
+    margin-bottom: 40px;
+  }
+
+  .faq-section.faq-page .faq-pill,
+  .faq-section.faq-page .faq-pill:visited {
+    font-size: 13px;
+    padding: 9px 15px;
+  }
+
+  .faq-section.faq-page .faq-group {
+    margin-bottom: 40px;
+  }
+
+  .faq-section.faq-page .faq-cta-button,
+  .faq-section.faq-page .faq-cta-button:visited {
+    margin: 0 0 56px 20px;
+  }
+}
+
+/* ---- /faq, SMALL PHONE --------------------------------------------------- */
+/* ⚠ WEBFLOW HAS FOUR BREAKPOINTS AND THIS FILE SPEAKS AT THREE. Below 479 the
+   Designer's own rules are unopposed unless this file says otherwise. */
+@media screen and (max-width: 479px) {
+
+  .faq-section.faq-page .faq-heading {
+    font-size: 32px;
+  }
+
+  .faq-section.faq-page .faq-group-heading {
+    font-size: 15px;
+  }
+}

@@ -224,10 +224,22 @@
      attribute typed into the Designer is one more unversioned thing to keep
      right — this way the whole control ships with the file. */
   (function () {
-    var list = document.querySelector('.faq-section .faq-question-list');
-    if (!list) return;
+    /* v50 (S255): SCOPED TO THE SECTION, NOT TO ONE LIST. /faq groups its
+       questions into FIVE faq-question-list wrappers, and this used to bind
+       document.querySelector — SINGULAR — so groups two to five would have got
+       no tabindex, no role, no click and no keyboard while home.css still
+       collapsed them: fifteen questions that cannot open, which is exactly the
+       dead Webflow dropdown /faq was rebuilt to escape.
+       ⚠⚠ THE SECTION, NOT A LOOP OVER THE WRAPPERS. Five per-wrapper bindings
+       would each close only their own rows, so a row open in group 1 and
+       another in group 3 could sit open together — breaking her S249 ruling
+       that ONE ROW IS OPEN AT A TIME. Scoping to the section keeps that ruling
+       across groups, and on /old-home (one section, one wrapper) the behaviour
+       is byte-for-byte what it was. */
+    var scope = document.querySelector('.faq-section');
+    if (!scope) return;
 
-    var rows = list.querySelectorAll('.faq-question-row'), i, hdr;
+    var rows = scope.querySelectorAll('.faq-question-row'), i, hdr;
 
     for (i = 0; i < rows.length; i++) {
       hdr = rows[i].querySelector('.faq-question-header');
@@ -251,17 +263,17 @@
       }
     }
 
-    list.addEventListener('click', function (e) {
+    scope.addEventListener('click', function (e) {
       var hit = e.target.closest && e.target.closest('.faq-question-header');
-      if (!hit || !list.contains(hit)) return;
+      if (!hit || !scope.contains(hit)) return;
       var row = hit.closest('.faq-question-row');
       if (row) toggle(row);
     });
 
-    list.addEventListener('keydown', function (e) {
+    scope.addEventListener('keydown', function (e) {
       if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
       var hit = e.target.closest && e.target.closest('.faq-question-header');
-      if (!hit || !list.contains(hit)) return;
+      if (!hit || !scope.contains(hit)) return;
       e.preventDefault();                /* Space would scroll the page */
       var row = hit.closest('.faq-question-row');
       if (row) toggle(row);
