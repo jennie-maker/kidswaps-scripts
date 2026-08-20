@@ -3514,7 +3514,7 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
 }
 
 /* ============================================================================
-   v52 (S255) — /faq's OWN LAYOUT, BUILT TO THE MOCKUP SHE APPROVED
+   v54 (S255) — /faq's OWN LAYOUT, BUILT TO THE MOCKUP SHE APPROVED
 
    HER RULING S254, OPTION A. Every rule below is written at .faq-section.faq-page
    — TWO CLASSES ON THE SECTION — because faq-page is a combo class that exists
@@ -3611,6 +3611,15 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   font-size: 72px;
   max-width: 20ch;
   margin: 0 0 20px;
+  /* ⚠⚠⚠ v54: STATED HERE, ON THE ELEMENT, AND NOT ON THE BAND — v52 SET IT ON
+     .faq-masthead AND IT DID NOTHING. INHERITANCE ALWAYS LOSES TO A DIRECT RULE
+     ON THE ELEMENT, whatever the specificity of the parent's: the masthead
+     computed left, the eyebrow computed left, and the H1 computed CENTRE,
+     because Webflow styles this heading directly and inherited values are only
+     consulted when nothing matches. The shared .faq-section .faq-heading rule
+     sets no alignment at all, so /old-home is unaffected either way.
+     ▶ WHEN A PARENT'S text-align APPEARS TO BE IGNORED, THE CHILD HAS ITS OWN. */
+  text-align: left;
 }
 
 .faq-section.faq-page .faq-masthead-line {
@@ -3725,22 +3734,20 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   color: #1C4A91;
 }
 
-/* v52, HERS: THE TEASER IS ITALIC — AND THAT MEANS IT CANNOT STAY QUICKSAND.
+/* v54, HERS: THE TEASER IS PLAIN QUICKSAND AGAIN — SO IT IS NOT ITALIC, AND
+   THAT IS NOT A COMPROMISE, IT IS THE ONLY VERSION OF THAT FAMILY THAT EXISTS.
    ⚠⚠⚠ QUICKSAND SHIPS NO ITALIC AT ANY WEIGHT (read off document.fonts at S196:
    normal 300/400/500/600/700 and nothing else), so font-style:italic on it is a
-   BROWSER-SYNTHESISED SLANT, which shears the rounds of a geometric face. The
-   doc forbids it on this project for exactly that reason. So the teaser takes
-   Instrument Serif italic — a REAL face — which also rhymes with the group
-   heading directly above it.
+   BROWSER-SYNTHESISED SLANT that shears the rounds of a geometric face. v52
+   moved the teaser to Instrument Serif italic to get a REAL italic; she asked
+   for Quicksand back, which spends the italic. Do not "restore" the slant.
+   ⚠ ONLY THE COLOUR IS SET HERE — family, weight, size and leading all come
+   from the shared rule, so this teaser is byte-for-byte /old-home's apart from
+   the ground it sits on.
    ⚠ the colour is the house muted grey, already the secondary text on /signup
    and in every email footer. It reads 4.0:1 on this cream — under the 4.5 bar,
    the same trade she took knowingly on the footer text at S158. */
 .faq-section.faq-page .faq-question-teaser {
-  font-family: "Instrument Serif", Georgia, serif;
-  font-style: italic;
-  font-weight: 400;
-  font-size: 18px;
-  line-height: 1.4;
   color: #75736E;
 }
 
@@ -3842,10 +3849,6 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
 
   .faq-section.faq-page .faq-group-heading {
     font-size: 40px;
-  }
-
-  .faq-section.faq-page .faq-question-teaser {
-    font-size: 17px;
   }
 
   .faq-section.faq-page .faq-cta-button,
