@@ -3514,7 +3514,7 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
 }
 
 /* ============================================================================
-   v51 (S255) — /faq's OWN LAYOUT, BUILT TO THE MOCKUP SHE APPROVED
+   v52 (S255) — /faq's OWN LAYOUT, BUILT TO THE MOCKUP SHE APPROVED
 
    HER RULING S254, OPTION A. Every rule below is written at .faq-section.faq-page
    — TWO CLASSES ON THE SECTION — because faq-page is a combo class that exists
@@ -3587,19 +3587,29 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
 .faq-section.faq-page .faq-masthead {
   background-color: #1C4A91;
   padding: 72px 64px 60px;
+  /* v52: EXPLICIT, HERS. The masthead type was rendering CENTRED on the live
+     page — the shared .faq-section .faq-container rule sets text-align:left and
+     it was being beaten by something outside this file, so the alignment is
+     stated here rather than inherited and left to argue. */
+  text-align: left;
 }
 
 .faq-section.faq-page .faq-body {
   background-color: #EDECE0;
   padding: 56px 64px 40px;
+  text-align: left;
 }
 
 /* ---- MASTHEAD TYPE ------------------------------------------------------ */
 /* ⚠ INSTRUMENT SERIF LOADS AT 400 ONLY. Anything heavier is a browser-faked bold
    on this page — the size does the work, never a weight. */
 .faq-section.faq-page .faq-heading {
-  font-size: 56px;
-  max-width: 22ch;
+  /* v52: 56 -> 72. THE GROUP HEADINGS WENT TO 60 AT HER ASK, AND A 56px PAGE
+     TITLE UNDER 60px SECTION HEADINGS INVERTS THE HIERARCHY. Raising the H1 was
+     CLAUDE'S CALL, REVERSIBLE IN ONE VALUE — she asked for 60 on the headings,
+     not for 72 here. */
+  font-size: 72px;
+  max-width: 20ch;
   margin: 0 0 20px;
 }
 
@@ -3682,12 +3692,18 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
 .faq-section.faq-page .faq-group-heading {
   font-family: "Instrument Serif", Georgia, serif;
   font-weight: 400;
-  font-size: 30px;
-  line-height: 1.15;
+  /* v52, HERS: ITALIC AND 60px. ⚠⚠ THIS ASSUMES THE ITALIC FACE IS LOADED ON
+     THIS PAGE. Instrument Serif italic 400 is PROVEN loaded on /signup (measured
+     S196, not declared), but font links are PER PAGE and /faq's have never been
+     read. If the face is absent the browser SYNTHESISES a shear, which is a
+     different thing and looks it. CONFIRM WITH document.fonts ON /faq. */
+  font-style: italic;
+  font-size: 60px;
+  line-height: 1.05;
   letter-spacing: normal;
   text-transform: none;
   color: #1E1A19;
-  margin: 0 0 10px;
+  margin: 0 0 16px;
 }
 
 /* ---- THE ROWS, REPOINTED FOR CREAM -------------------------------------- */
@@ -3709,10 +3725,22 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   color: #1C4A91;
 }
 
-/* the house muted grey, already the secondary text on /signup and in every email
-   footer. It reads 4.0:1 on this cream — under the 4.5 bar, the same trade she
-   took knowingly on the footer text at S158. */
+/* v52, HERS: THE TEASER IS ITALIC — AND THAT MEANS IT CANNOT STAY QUICKSAND.
+   ⚠⚠⚠ QUICKSAND SHIPS NO ITALIC AT ANY WEIGHT (read off document.fonts at S196:
+   normal 300/400/500/600/700 and nothing else), so font-style:italic on it is a
+   BROWSER-SYNTHESISED SLANT, which shears the rounds of a geometric face. The
+   doc forbids it on this project for exactly that reason. So the teaser takes
+   Instrument Serif italic — a REAL face — which also rhymes with the group
+   heading directly above it.
+   ⚠ the colour is the house muted grey, already the secondary text on /signup
+   and in every email footer. It reads 4.0:1 on this cream — under the 4.5 bar,
+   the same trade she took knowingly on the footer text at S158. */
 .faq-section.faq-page .faq-question-teaser {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 1.4;
   color: #75736E;
 }
 
@@ -3720,17 +3748,17 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   color: #1E1A19;
 }
 
-/* ⚠⚠ AMBER, HERS S255, TO MATCH THE FILLED PILL — AND THE CONTRAST WAS MEASURED
-   AND FLAGGED BEFORE SHE RULED: #EDA920 on this cream reads about 1.9:1 against
-   a 3.0 bar for a non-text graphical mark. IT IS THE SAME TRADE SHE HAS TAKEN
-   KNOWINGLY TWICE ON THE NAVY (the eyebrow and the question text at 4.22).
-   ⚠ THE LEVER, IF IT IS EVER WANTED, IS ONE VALUE: the dark gold #A67C0A reads
-   3.37 and passes. DO NOT SWAP IT SILENTLY — it is hers to ask for.
+/* ⚠⚠ CORAL, HERS S255, AFTER SHE SAW THE AMBER LIVE — "the chevrons are
+   disappearing in yellow", which is the measurement arriving through her eye
+   rather than through a probe: #EDA920 on this cream reads about 1.9:1 against a
+   3.0 bar for a non-text graphical mark. #E54F25 reads about 4.4 and clears it
+   with room. THE AMBER STAYS ON THE FILLED PILL, where ink text sits on top of
+   it at 8.5 and it is doing a different job.
    ⚠ AND THE CHEVRON IS WHY THE ROWS READ AS OPENABLE AT ALL. Her mockup shows
    none, because a still image cannot show a row opening; she ruled it back in
    when that was put to her. Do not remove it on the strength of the mockup. */
 .faq-section.faq-page .faq-question-chevron {
-  background-color: #EDA920;
+  background-color: #E54F25;
 }
 
 .faq-section.faq-page .faq-question-header:focus-visible {
@@ -3761,7 +3789,7 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   }
 
   .faq-section.faq-page .faq-heading {
-    font-size: 44px;
+    font-size: 52px;
   }
 
   .faq-section.faq-page .faq-group {
@@ -3769,7 +3797,7 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   }
 
   .faq-section.faq-page .faq-group-heading {
-    font-size: 27px;
+    font-size: 48px;
   }
 
   .faq-section.faq-page .faq-cta-button,
@@ -3813,7 +3841,11 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   }
 
   .faq-section.faq-page .faq-group-heading {
-    font-size: 25px;
+    font-size: 40px;
+  }
+
+  .faq-section.faq-page .faq-question-teaser {
+    font-size: 17px;
   }
 
   .faq-section.faq-page .faq-cta-button,
@@ -3840,7 +3872,7 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   }
 
   .faq-section.faq-page .faq-group-heading {
-    font-size: 23px;
+    font-size: 34px;
   }
 
   .faq-section.faq-page .faq-cta-button,

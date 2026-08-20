@@ -333,6 +333,55 @@
     mark();
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onScroll);
+
+    /* ----------------------------------------------------------------------
+       v53 (S255): THE PILLS DO THEIR OWN SCROLLING, HERS — "it goes too far
+       down on mobile, and the heading of that section is out of view."
+
+       ⚠⚠⚠ CSS scroll-margin-top DID NOT FIX IT AND THAT IS THE FINDING:
+       WEBFLOW'S OWN SCRIPT INTERCEPTS IN-PAGE ANCHOR CLICKS, animates its own
+       smooth scroll and sets the hash through the History API — and a scroll it
+       performs itself does not honour scroll-margin-top. This project already
+       proved that interception once, on the header drawer at S227, where a
+       :target rule could never fire for the same reason. THE ONLY WAY TO WIN IS
+       TO CANCEL THE DEFAULT AND SCROLL OURSELVES.
+
+       ⚠⚠ THE OFFSET IS MEASURED, NEVER HARDCODED. .site-header is sticky
+       site-wide and it SHRINKS ON SCROLL, so its height differs between mobile
+       and desktop and between the top of the page and anywhere else. Reading it
+       at click time is also the SAFE direction: the header is at its TALLEST
+       when the click happens, so any later shrink leaves the heading further
+       down the viewport rather than tucked under the bar.
+
+       ✅ THE FLOOR IS THE CSS. scroll-margin-top stays in home.css, so if this
+       script never arrives the native anchor still lands in roughly the right
+       place — this makes the jump exact, it is not what makes it work.
+       ⚠ replaceState, NOT a hash assignment: writing location.hash would make
+       the browser jump again and undo the scroll we just performed. */
+    var HEADER_GAP = 16;
+
+    row.addEventListener('click', function (e) {
+      var hit = e.target.closest && e.target.closest('.faq-pill');
+      if (!hit || !row.contains(hit)) return;
+
+      var id = (hit.getAttribute('href') || '').replace(/^#/, '');
+      var el = id ? document.getElementById(id) : null;
+      if (!el) return;
+
+      e.preventDefault();
+
+      var header = document.querySelector('.site-header');
+      var offset = (header ? header.getBoundingClientRect().height : 0) + HEADER_GAP;
+      var y = window.pageYOffset + el.getBoundingClientRect().top - offset;
+      if (y < 0) y = 0;
+
+      var reduce = window.matchMedia &&
+                   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      window.scrollTo({ top: y, behavior: reduce ? 'auto' : 'smooth' });
+
+      if (history.replaceState) history.replaceState(null, '', '#' + id);
+      mark();
+    });
   })();
 
   var HERO =
