@@ -360,7 +360,29 @@
        the browser jump again and undo the scroll we just performed. */
     var HEADER_GAP = 16;
 
-    row.addEventListener('click', function (e) {
+    function headerH() {
+      var h = document.querySelector('.site-header');
+      return h ? h.getBoundingClientRect().height : 0;
+    }
+
+    function targetFor(el) {
+      var y = window.pageYOffset + el.getBoundingClientRect().top - headerH() - HEADER_GAP;
+      return y < 0 ? 0 : y;
+    }
+
+    /* ⚠⚠⚠ CAPTURE PHASE ON document, AND stopPropagation — v55 (S255), AND THE
+       TWO EARLIER VERSIONS OF THIS ARE WHY. v51 relied on CSS scroll-margin-top
+       and v53 added preventDefault on a bubbling listener; BOTH LANDED THE PAGE
+       ON THE GROUP'S RAW TOP EDGE, measured at groupTop -4 with the heading
+       running -4 to 38 underneath a 57px header. THE FINDING: preventDefault
+       stops the BROWSER'S jump, it does NOT stop another script's listener, and
+       Webflow's own in-page anchor handler was scrolling again after ours and
+       winning by going last. Capture on document runs before it and
+       stopPropagation means it never receives the event at all.
+       ⚠ THE SAME INTERCEPTION IS ON RECORD AT S227, where Webflow's smooth
+       scroll set the hash through the History API and :target could never fire.
+       DO NOT "SIMPLIFY" THIS BACK TO A BUBBLING LISTENER ON THE PILL ROW. */
+    document.addEventListener('click', function (e) {
       var hit = e.target.closest && e.target.closest('.faq-pill');
       if (!hit || !row.contains(hit)) return;
 
@@ -369,19 +391,33 @@
       if (!el) return;
 
       e.preventDefault();
-
-      var header = document.querySelector('.site-header');
-      var offset = (header ? header.getBoundingClientRect().height : 0) + HEADER_GAP;
-      var y = window.pageYOffset + el.getBoundingClientRect().top - offset;
-      if (y < 0) y = 0;
+      e.stopPropagation();
 
       var reduce = window.matchMedia &&
                    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      window.scrollTo({ top: y, behavior: reduce ? 'auto' : 'smooth' });
+      window.scrollTo({ top: targetFor(el), behavior: reduce ? 'auto' : 'smooth' });
+
+      /* THE SETTLE CHECK. It exists for two reasons and neither is paranoia.
+         (1) IT IS THE BACKSTOP FOR ANY OTHER SCROLLER — if something still
+         scrolls after us, this puts the page back where it belongs and the fault
+         cannot present as "the heading is hidden" again.
+         (2) THE HEADER SHRINKS ON SCROLL — measured 61px at the top of the page
+         and 57px once moving — so an offset computed at CLICK time is stale by
+         the time the scroll ends. This measures at the END, with the header at
+         its final height.
+         ⚠ THE 8px DEAD ZONE IS LOAD-BEARING: without it this would re-scroll on
+         every sub-pixel difference and fight the reader. */
+      setTimeout(function () {
+        var want = targetFor(el);
+        if (Math.abs(window.pageYOffset - want) > 8) {
+          window.scrollTo({ top: want, behavior: 'auto' });
+        }
+      }, 700);
 
       if (history.replaceState) history.replaceState(null, '', '#' + id);
       mark();
-    });
+    }, true);
+
   })();
 
   var HERO =

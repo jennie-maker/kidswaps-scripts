@@ -3514,7 +3514,7 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
 }
 
 /* ============================================================================
-   v54 (S255) — /faq's OWN LAYOUT, BUILT TO THE MOCKUP SHE APPROVED
+   v55 (S255) — /faq's OWN LAYOUT, BUILT TO THE MOCKUP SHE APPROVED
 
    HER RULING S254, OPTION A. Every rule below is written at .faq-section.faq-page
    — TWO CLASSES ON THE SECTION — because faq-page is a combo class that exists
@@ -3780,6 +3780,28 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
 .faq-section.faq-page .faq-cta-button,
 .faq-section.faq-page .faq-cta-button:visited {
   margin: 0 0 72px 64px;
+}
+
+/* ---- THE CARD'S WIDTH, DESKTOP ONLY ------------------------------------- */
+/* HERS S255: CAP /faq AT 1400. IT HAD NO CAP AT ALL — the shared rule gives the
+   section a 28px side margin and nothing else, so the card was simply the
+   viewport minus 56px: measured at 1095 in a 1151 window, and around 1844 on a
+   wide monitor, which is what made it read as sprawling.
+   ⚠⚠ width PLUS max-width, NOT margin:auto ALONE. Auto side margins with no
+   width would give the card the full viewport below 1400 and put it hard against
+   both screen edges — the 28px gutter would silently vanish exactly where it
+   matters most. calc(100% - 56px) keeps that gutter at every width and the cap
+   only bites once there is room to spare.
+   ⚠ SCOPED min-width:992 ON PURPOSE, so the tablet and phone margins in the
+   shared rules are left completely alone. Nothing below 992 changes. */
+@media screen and (min-width: 992px) {
+
+  .faq-section.faq-page {
+    width: calc(100% - 56px);
+    max-width: 1400px;
+    margin-left: auto;
+    margin-right: auto;
+  }
 }
 
 /* ---- /faq, TABLET ------------------------------------------------------- */
