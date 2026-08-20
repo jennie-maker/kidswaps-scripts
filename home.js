@@ -280,6 +280,61 @@
     });
   })();
 
+  /* ==========================================================================
+     THE FAQ PILL SCROLL SPY — /faq ONLY, v51 (S255), HERS
+     --------------------------------------------------------------------------
+     A jump link cannot know which group you are looking at, so the amber
+     "current" pill in her mockup needs a reader of scroll position. This is it.
+
+     ⚠⚠ IT IS PURE ADDITION AND ITS FAILURE FLOOR IS THE WHOLE DESIGN. The class
+     it writes is the ONLY thing home.css styles as current; script gone means no
+     class, and every pill renders as the plain navy outline and STILL WORKS as a
+     jump link. Nothing here is load-bearing for navigation.
+     ⚠ IT BINDS NOTHING ON /old-home — there is no .faq-pill-row there, so it
+     returns on the first line.
+     ⚠ THE MATCH IS href -> id, so the pills and the group IDs stay in step with
+     no second list to keep right. A pill pointing at an id that does not exist
+     is simply skipped rather than throwing.
+     ⚠ 140 IS THE TRIGGER LINE, NOT A GUESS AT THE HEADER'S HEIGHT: a group
+     counts as current once its top has passed that far down the viewport, which
+     is what stops the last group flickering as you reach the foot of the page. */
+  (function () {
+    var row = document.querySelector('.faq-pill-row');
+    if (!row) return;
+
+    var pills = row.querySelectorAll('.faq-pill');
+    var map = [], i, id, el;
+
+    for (i = 0; i < pills.length; i++) {
+      id = (pills[i].getAttribute('href') || '').replace(/^#/, '');
+      el = id ? document.getElementById(id) : null;
+      if (el) map.push({ pill: pills[i], group: el });
+    }
+    if (!map.length) return;
+
+    function mark() {
+      var k = 0, j;
+      for (j = 0; j < map.length; j++) {
+        if (map[j].group.getBoundingClientRect().top <= 140) k = j;
+      }
+      for (j = 0; j < map.length; j++) {
+        map[j].pill.classList.toggle('is-current', j === k);
+      }
+    }
+
+    /* rAF-throttled: a scroll listener that measures on every event forces a
+       layout read per frame on a nineteen-row page. */
+    var queued = 0;
+    function onScroll() {
+      if (queued) return;
+      queued = requestAnimationFrame(function () { queued = 0; mark(); });
+    }
+
+    mark();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+  })();
+
   var HERO =
     '.hero-section .hero-tagline,' +
     '.hero-section .h1-light-leftaligned,' +

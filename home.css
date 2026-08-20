@@ -3514,7 +3514,7 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
 }
 
 /* ============================================================================
-   v50 (S255) — /faq's OWN LAYOUT: A NAVY MASTHEAD OVER A CREAM BODY
+   v51 (S255) — /faq's OWN LAYOUT, BUILT TO THE MOCKUP SHE APPROVED
 
    HER RULING S254, OPTION A. Every rule below is written at .faq-section.faq-page
    — TWO CLASSES ON THE SECTION — because faq-page is a combo class that exists
@@ -3525,83 +3525,82 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
    rule INSIDE ANY MEDIA QUERY — a media query adds no specificity — anything set
    here reaches every width, INCLUDING the phone, whether that was intended or
    not. So every value that must differ at a breakpoint carries its own guarded
-   twin below. Where /old-home's breakpoint rule is still correct for /faq, no
-   twin is written and the 2-class rule keeps governing.
+   twin below.
 
-   ⚠⚠ THE SECTION STOPS BEING AN INSET PANEL HERE, AND THAT IS DELIBERATE. v45
-   gave .faq-section a 28px side margin and a 32px radius so it reads as a panel
-   sitting inside the home page. On /faq the section IS the page, and a masthead
-   that stops short of the edge with rounded corners reads as a card floating on
-   nothing. Three values undo it — margin, radius and the flex row — and putting
-   them back is the same three.
+   ⚠⚠⚠ v50 STRIPPED THE INSET PANEL AND THAT WAS WRONG. It made the section full
+   width on the argument that "on /faq the section IS the page" — which was
+   CLAUDE'S ARGUMENT AND NOT HERS. She had already approved the rounded card in a
+   mockup, and the override was put to her as a fresh decision rather than as a
+   reversal of one she had made. THE PANEL IS RESTORED HERE.
+   ▶ THE RULE IT COST: BEFORE OVERRIDING A SHAPE, ASK WHAT THE MOCKUP SHE
+   APPROVED ACTUALLY SHOWED. A shared rule that looks wrong on a new page is
+   sometimes a ruling arriving from another page, not a leftover.
 
-   ⚠ THE PHOTO PANEL IS HIDDEN, NOT DELETED. A masthead page has no right-hand
-   photo column, but the element is one line from returning and she may want an
-   image here once she has seen it. Deleting it in the Designer would take it off
-   /old-home too, since both pages share the markup lineage.
+   ⚠⚠ overflow:hidden IS SAFE **HERE AND ONLY HERE**, and the shared rule above
+   forbids it for a reason that does not apply on this page: on /old-home the
+   star hangs outside the panel and a clip would take it. On /faq the star is
+   hidden (her mockup has none), so nothing crosses the boundary — and the clip
+   is what makes the navy masthead take the card's own rounded top corners with
+   no second radius to keep in sync.
    ========================================================================== */
 
+/* THE MARGIN AND THE RADIUS ARE NOT RESTATED — they come from the shared rule
+   and are correct as they are. Only the flex row and the section's own padding
+   are undone, because the two bands must be full-bleed INSIDE the card. */
 .faq-section.faq-page {
   display: block;
-  margin: 0;
   padding: 0;
-  border-radius: 0;
-  /* the cream is the page's base, so the body band and the CTA below it share
+  overflow: hidden;
+  /* the cream is the card's base, so the body band and the CTA below it share
      one ground and their seam cannot show. The masthead paints navy over it. */
   background-color: #EDECE0;
 }
 
-/* (0,3,0) — beats .faq-section .faq-container's padding at EVERY width, so the
-   two 2-class breakpoint rules above need no twins here. The bands carry the
-   padding now, because only a full-width child can paint a full-width band. */
+/* (0,3,0) — beats .faq-section .faq-container at EVERY width, so the two 2-class
+   breakpoint rules above need no twins here.
+   ⚠⚠ max-width:none IS THE LINE v50 WAS MISSING, and it is what caused BOTH
+   faults she saw: the Designer sets 800px on this class, so the navy band
+   stopped at 800 with cream either side, and the star — positioned against the
+   SECTION, which was far wider — landed out on that cream. ONE CAUSE, TWO
+   SYMPTOMS. It read clean on a console probe taken at 684px because below 800
+   the cap does nothing. A MEASUREMENT TAKEN BELOW A max-width CANNOT SEE IT. */
 .faq-section.faq-page .faq-container {
   display: block;
+  max-width: none;
   padding: 0;
+}
+
+/* HER MOCKUP HAS NO STAR ON THIS PAGE. One line, and it is also what makes the
+   clip above safe — put the star back and the clip must go with it. */
+.faq-section.faq-page .faq-star {
+  display: none;
 }
 
 .faq-section.faq-page .faq-photo-panel {
   display: none;
 }
 
-/* THE STAR MOVES INTO THE MASTHEAD. Its shared rule positions it by arithmetic
-   off the photo panel's edge, and that panel is gone here, so both offsets are
-   restated rather than nudged. ⚠ left:auto IS LOAD-BEARING — a star carrying a
-   left AND a right AND a width is over-constrained and lands wrong with nothing
-   erroring, which is the note the shared rule already carries for the 991 block.
-   ⚠ margin-left:0 clears the min-992 rule that insets it with the photo. */
-.faq-section.faq-page .faq-star {
-  width: 72px;
-  top: 104px;
-  left: auto;
-  right: calc(var(--faq-gutter) + 60px);
-  bottom: auto;
-  margin-left: 0;
-}
-
 /* ---- THE TWO BANDS ------------------------------------------------------ */
-/* THE TYPE LANDS ON THE SAME SPINE AS EVERY OTHER SECTION ON THE SITE, and it is
-   the section's own arithmetic reused rather than a new number: the gutter
-   centres a 1240 measure, the 60 is the spine inset (S244). That is why neither
-   band needs an inner wrapper div — the padding does the centring. */
+/* THE PADDING MEASURES FROM THE CARD'S EDGE, NOT THE PAGE'S — the section is an
+   inset panel, so the spine arithmetic every other section uses does not apply
+   here and a plain inset is the honest number. */
 .faq-section.faq-page .faq-masthead {
   background-color: #1C4A91;
-  padding: 96px calc(var(--faq-gutter) + 60px) 88px;
+  padding: 72px 64px 60px;
 }
 
 .faq-section.faq-page .faq-body {
   background-color: #EDECE0;
-  padding: 64px calc(var(--faq-gutter) + 60px) 40px;
+  padding: 56px 64px 40px;
 }
 
 /* ---- MASTHEAD TYPE ------------------------------------------------------ */
-/* THIS IS THE PAGE'S H1, NOT A SECTION HEADING, SO IT GOES UP. 52 is the size it
-   wears inside the home page where it competes with four other sections; here it
-   is the only thing on a navy field. ⚠ INSTRUMENT SERIF LOADS AT 400 ONLY —
-   the size does the work and a weight would be faked. */
+/* ⚠ INSTRUMENT SERIF LOADS AT 400 ONLY. Anything heavier is a browser-faked bold
+   on this page — the size does the work, never a weight. */
 .faq-section.faq-page .faq-heading {
-  font-size: 60px;
-  max-width: 20ch;
-  margin: 0 0 22px;
+  font-size: 56px;
+  max-width: 22ch;
+  margin: 0 0 20px;
 }
 
 .faq-section.faq-page .faq-masthead-line {
@@ -3617,17 +3616,15 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
 /* ---- THE PILLS ---------------------------------------------------------- */
 /* JUMP LINKS, NOT FILTERS — every group stays on the page and the pill only
    scrolls to it, so nothing here can hide a question from anyone.
-   ⚠ NOT STICKY IN v50, AND THAT IS A DELIBERATE HOLD. .site-header is sticky
-   site-wide, so a sticky pill row would need to know its height, and nobody has
-   measured it. Ship it still, look at it, then decide — position:sticky plus a
-   top offset is two lines whenever she wants it.
    ⚠ :visited is matched for the same reason the CTA matches it — `All Links` is
-   a TAG selector on all twenty pages and would otherwise recolour a visited pill. */
+   a TAG selector on all twenty pages and would otherwise recolour a visited pill.
+   ⚠ NOT STICKY. .site-header is sticky site-wide and nobody has measured its
+   height, so a sticky pill row would be guesswork. Two lines whenever she asks. */
 .faq-section.faq-page .faq-pill-row {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin: 0 0 56px;
+  margin: 0 0 44px;
 }
 
 .faq-section.faq-page .faq-pill,
@@ -3635,23 +3632,32 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   display: inline-block;
   font-family: Quicksand, sans-serif;
   font-weight: 600;
-  font-size: 14px;
-  letter-spacing: 0.02em;
-  color: #1E1A19;
+  font-size: 15px;
+  letter-spacing: 0.01em;
+  color: #1C4A91;
   background-color: transparent;
-  /* an INK TINT, never a faded brand hex (§2) — the same device the shared rules
-     use for their hairlines, arriving on cream instead of navy. */
-  border: 1px solid rgba(30, 26, 25, 0.25);
+  border: 1px solid #1C4A91;
   border-radius: 50px;
-  padding: 10px 18px;
+  padding: 10px 20px;
   text-decoration: none;
   transition: background-color .18s ease, border-color .18s ease, color .18s ease;
 }
 
+/* THE CURRENT PILL — AMBER FILL, INK TEXT, HERS. home.js sets .is-current from
+   scroll position; see the SCROLL SPY there.
+   ⚠⚠ THE INK TEXT IS NOT A DETAIL: ink on this amber reads 8.5:1 while cream on
+   it reads 1.7, so amber can only ever be a fill with DARK text (§2). */
+.faq-section.faq-page .faq-pill.is-current,
+.faq-section.faq-page .faq-pill.is-current:visited {
+  background-color: #EDA920;
+  border-color: #EDA920;
+  color: #1E1A19;
+}
+
 .faq-section.faq-page .faq-pill:hover {
-  background-color: #1C4A91;
-  border-color: #1C4A91;
-  color: #EDECE0;
+  background-color: #EDA920;
+  border-color: #EDA920;
+  color: #1E1A19;
 }
 
 /* ---- THE GROUPS --------------------------------------------------------- */
@@ -3659,26 +3665,29 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
    group heading UNDERNEATH the sticky site header. Without it every pill lands
    on a heading nobody can see and reads as a broken link. */
 .faq-section.faq-page .faq-group {
-  margin: 0 0 56px;
-  scroll-margin-top: 96px;
+  margin: 0 0 52px;
+  scroll-margin-top: 120px;
 }
 
 .faq-section.faq-page .faq-group:last-child {
   margin-bottom: 0;
 }
 
-/* NAVY, NOT GREEN AND NOT AMBER, AND IT WAS MEASURED. On this cream, #1C4A91
-   reads 8.6:1 while her green reads 3.25 and the amber 1.9 — and this is small
-   uppercase text, the worst case for a low ratio. It also ties the body back to
-   the masthead it sits under. */
+/* SERIF, SENTENCE CASE, INK — HER MOCKUP. It is deliberately NOT the uppercase
+   sans eyebrow treatment: that job is already taken by "QUESTIONS" in the
+   masthead, and two uppercase sans labels on one screen would read as the same
+   thing said twice. text-transform is reset explicitly because the shared
+   eyebrow rule is not what governs here — nothing inherits it — but a future
+   session copying this block to another page would carry the assumption. */
 .faq-section.faq-page .faq-group-heading {
-  font-family: Quicksand, sans-serif;
-  font-weight: 700;
-  font-size: 16px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #1C4A91;
-  margin: 0 0 14px;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1.15;
+  letter-spacing: normal;
+  text-transform: none;
+  color: #1E1A19;
+  margin: 0 0 10px;
 }
 
 /* ---- THE ROWS, REPOINTED FOR CREAM -------------------------------------- */
@@ -3695,8 +3704,9 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   border-bottom-color: rgba(30, 26, 25, 0.18);
 }
 
+/* NAVY, HERS. It reads 8.6:1 on this cream. */
 .faq-section.faq-page .faq-question-text {
-  color: #1E1A19;
+  color: #1C4A91;
 }
 
 /* the house muted grey, already the secondary text on /signup and in every email
@@ -3710,8 +3720,17 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   color: #1E1A19;
 }
 
+/* ⚠⚠ AMBER, HERS S255, TO MATCH THE FILLED PILL — AND THE CONTRAST WAS MEASURED
+   AND FLAGGED BEFORE SHE RULED: #EDA920 on this cream reads about 1.9:1 against
+   a 3.0 bar for a non-text graphical mark. IT IS THE SAME TRADE SHE HAS TAKEN
+   KNOWINGLY TWICE ON THE NAVY (the eyebrow and the question text at 4.22).
+   ⚠ THE LEVER, IF IT IS EVER WANTED, IS ONE VALUE: the dark gold #A67C0A reads
+   3.37 and passes. DO NOT SWAP IT SILENTLY — it is hers to ask for.
+   ⚠ AND THE CHEVRON IS WHY THE ROWS READ AS OPENABLE AT ALL. Her mockup shows
+   none, because a still image cannot show a row opening; she ruled it back in
+   when that was put to her. Do not remove it on the strength of the mockup. */
 .faq-section.faq-page .faq-question-chevron {
-  background-color: #1C4A91;
+  background-color: #EDA920;
 }
 
 .faq-section.faq-page .faq-question-header:focus-visible {
@@ -3720,12 +3739,12 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
 
 /* ---- THE CTA ------------------------------------------------------------ */
 /* IT SITS OUTSIDE faq-body IN THE MARKUP, so with the container un-padded it
-   would otherwise start at the page edge. The same spine arithmetic puts it back
-   under the questions, and its bottom margin is the page's closing space — which
-   is why faq-body's own bottom padding is only 40. */
+   would otherwise start at the card's edge. The same inset puts it back under
+   the questions, and its bottom margin is the card's closing space — which is
+   why faq-body's own bottom padding is only 40. */
 .faq-section.faq-page .faq-cta-button,
 .faq-section.faq-page .faq-cta-button:visited {
-  margin: 0 0 96px calc(var(--faq-gutter) + 60px);
+  margin: 0 0 72px 64px;
 }
 
 /* ---- /faq, TABLET ------------------------------------------------------- */
@@ -3734,30 +3753,28 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
 @media screen and (max-width: 991px) {
 
   .faq-section.faq-page .faq-masthead {
-    padding: 72px 40px 64px;
+    padding: 56px 44px 48px;
   }
 
   .faq-section.faq-page .faq-body {
-    padding: 48px 40px 32px;
+    padding: 44px 44px 32px;
   }
 
   .faq-section.faq-page .faq-heading {
     font-size: 44px;
   }
 
-  .faq-section.faq-page .faq-star {
-    width: 56px;
-    top: 72px;
-    right: 40px;
+  .faq-section.faq-page .faq-group {
+    margin-bottom: 44px;
   }
 
-  .faq-section.faq-page .faq-group {
-    margin-bottom: 48px;
+  .faq-section.faq-page .faq-group-heading {
+    font-size: 27px;
   }
 
   .faq-section.faq-page .faq-cta-button,
   .faq-section.faq-page .faq-cta-button:visited {
-    margin: 0 0 72px 40px;
+    margin: 0 0 56px 44px;
   }
 }
 
@@ -3765,11 +3782,11 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
 @media screen and (max-width: 767px) {
 
   .faq-section.faq-page .faq-masthead {
-    padding: 56px 20px 48px;
+    padding: 40px 24px 36px;
   }
 
   .faq-section.faq-page .faq-body {
-    padding: 36px 20px 24px;
+    padding: 32px 24px 24px;
   }
 
   .faq-section.faq-page .faq-heading {
@@ -3780,30 +3797,28 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
     font-size: 17px;
   }
 
-  .faq-section.faq-page .faq-star {
-    width: 44px;
-    top: 44px;
-    right: 20px;
-  }
-
   .faq-section.faq-page .faq-pill-row {
     gap: 8px;
-    margin-bottom: 40px;
+    margin-bottom: 32px;
   }
 
   .faq-section.faq-page .faq-pill,
   .faq-section.faq-page .faq-pill:visited {
-    font-size: 13px;
-    padding: 9px 15px;
+    font-size: 14px;
+    padding: 9px 16px;
   }
 
   .faq-section.faq-page .faq-group {
-    margin-bottom: 40px;
+    margin-bottom: 36px;
+  }
+
+  .faq-section.faq-page .faq-group-heading {
+    font-size: 25px;
   }
 
   .faq-section.faq-page .faq-cta-button,
   .faq-section.faq-page .faq-cta-button:visited {
-    margin: 0 0 56px 20px;
+    margin: 0 0 44px 24px;
   }
 }
 
@@ -3812,11 +3827,24 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
    Designer's own rules are unopposed unless this file says otherwise. */
 @media screen and (max-width: 479px) {
 
+  .faq-section.faq-page .faq-masthead {
+    padding: 36px 20px 32px;
+  }
+
+  .faq-section.faq-page .faq-body {
+    padding: 28px 20px 20px;
+  }
+
   .faq-section.faq-page .faq-heading {
     font-size: 32px;
   }
 
   .faq-section.faq-page .faq-group-heading {
-    font-size: 15px;
+    font-size: 23px;
+  }
+
+  .faq-section.faq-page .faq-cta-button,
+  .faq-section.faq-page .faq-cta-button:visited {
+    margin: 0 0 40px 20px;
   }
 }
