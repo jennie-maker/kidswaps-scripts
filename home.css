@@ -3514,7 +3514,7 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
 }
 
 /* ============================================================================
-   v55 (S255) — /faq's OWN LAYOUT, BUILT TO THE MOCKUP SHE APPROVED
+   v56 (S255) — /faq's OWN LAYOUT, BUILT TO THE MOCKUP SHE APPROVED
 
    HER RULING S254, OPTION A. Every rule below is written at .faq-section.faq-page
    — TWO CLASSES ON THE SECTION — because faq-page is a combo class that exists
@@ -3551,6 +3551,14 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   display: block;
   padding: 0;
   overflow: hidden;
+  /* ⚠⚠ v56, HERS: THE TOP GAP IS HALVED — AND IT WAS TWO NUMBERS STACKED, NOT
+     ONE. The distance from the top of the page content to the heading is the
+     section's own top margin (76px, from calc(--section-gap + 32px)) PLUS the
+     masthead's top padding (72px) = 148px. Both are halved so the proportion
+     between them survives: 38 + 36 = 74, exactly half.
+     ▶ A SESSION CHANGING ONLY ONE OF THEM WILL MOVE THE GAP BY A QUARTER AND
+     READ IT AS THE VALUE NOT TAKING. */
+  margin-top: 38px;
   /* the cream is the card's base, so the body band and the CTA below it share
      one ground and their seam cannot show. The masthead paints navy over it. */
   background-color: #EDECE0;
@@ -3586,7 +3594,7 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
    here and a plain inset is the honest number. */
 .faq-section.faq-page .faq-masthead {
   background-color: #1C4A91;
-  padding: 72px 64px 60px;
+  padding: 36px 64px 60px;
   /* v52: EXPLICIT, HERS. The masthead type was rendering CENTRED on the live
      page — the shared .faq-section .faq-container rule sets text-align:left and
      it was being beaten by something outside this file, so the alignment is
@@ -3797,6 +3805,9 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
 @media screen and (min-width: 992px) {
 
   .faq-section.faq-page {
+    /* margin-top is inherited from the base guarded rule above; only the side
+       margins become auto here, and margin-top must NOT be restated or the
+       shorthand would wipe it. */
     width: calc(100% - 56px);
     max-width: 1400px;
     margin-left: auto;
@@ -3810,7 +3821,7 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
 @media screen and (max-width: 991px) {
 
   .faq-section.faq-page .faq-masthead {
-    padding: 56px 44px 48px;
+    padding: 28px 44px 48px;
   }
 
   .faq-section.faq-page .faq-body {
@@ -3838,8 +3849,12 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
 /* ---- /faq, PHONE -------------------------------------------------------- */
 @media screen and (max-width: 767px) {
 
+  .faq-section.faq-page {
+    margin-top: 34px;
+  }
+
   .faq-section.faq-page .faq-masthead {
-    padding: 40px 24px 36px;
+    padding: 20px 24px 36px;
   }
 
   .faq-section.faq-page .faq-body {
@@ -3885,7 +3900,7 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
 @media screen and (max-width: 479px) {
 
   .faq-section.faq-page .faq-masthead {
-    padding: 36px 20px 32px;
+    padding: 18px 20px 32px;
   }
 
   .faq-section.faq-page .faq-body {
