@@ -347,10 +347,32 @@
          amber. Same device, this project's value.
          ⚠ IT IS A MARK, NOT TEXT, so it carries no contrast obligation -- which is the
          whole reason this answer works where the two colours did not. */
-      '#ks-filter-rail .ks-flt-group > .ks-flt-grouplabel{font-size:12px;font-weight:700;' +
-        'letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px;color:#1E1A19;' +
-        'padding-bottom:8px;background-image:linear-gradient(#EDA920,#EDA920);' +
-        'background-size:34px 3px;background-repeat:no-repeat;background-position:left bottom;}' +
+      '#ks-filter-rail .ks-flt-group > .ks-flt-grouplabel{margin-bottom:10px;}' +
+      /* THE HEADING IS INSTRUMENT SERIF -- HER RULING S266, HER OPTION R1.
+         ⚠⚠ IT CANNOT BE BOLD AND THAT IS WHY IT IS 20px. Instrument Serif SHIPS ONE
+         WEIGHT (400, measured off document.fonts), so any weight above that is a
+         browser-SYNTHESISED bold -- the exact fault that sat on .ks-wz-h for months
+         before S196 pinned it to 400. The size and the face do the separating that
+         weight, uppercase and tracking used to do, so all three of those come off.
+         DO NOT ADD font-weight HERE, and do not restore the uppercase: a serif at 12px
+         uppercase is the weakest version of both ideas.
+         ⚠ ROMAN, NOT ITALIC. The italic face is confirmed loaded on /signup and FONT
+         LINKS ARE PER PAGE -- nobody has read whether /browse loads it, so an italic
+         here risks a synthesised shear for no gain. R3 was offered and not taken.
+         ⚠⚠ THE RULE IS PAINTED ON THE TITLE SPAN, NOT ON THE LABEL, AND background-size
+         IS 100% RATHER THAN A FIXED WIDTH. The label is a flex row carrying the chevron
+         too, so a rule on it measures the whole rail; on the span it measures the word,
+         which is what she asked for after seeing Occasion and Condition look stubby.
+         ⚠ IT STAYS A BACKGROUND RATHER THAN A ::after -- a pseudo element on a flex row
+         becomes a third flex item and lands beside the chevron instead of under the text.
+         ⚠ #EDA920 IS THE PALETTE YELLOW FROM HER S249 LIST, not the home page's #E5AD43.
+         It is a MARK, not text, so it carries no contrast obligation -- which is the
+         whole reason this answer works where green and coral both failed on a render. */
+      '#ks-filter-rail .ks-flt-grouptitle{display:inline-block;' +
+        'font-family:"Instrument Serif",Georgia,serif;font-weight:400;font-size:20px;' +
+        'line-height:1.15;letter-spacing:0;text-transform:none;color:#1E1A19;' +
+        'padding-bottom:7px;background-image:linear-gradient(#EDA920,#EDA920);' +
+        'background-size:100% 3px;background-repeat:no-repeat;background-position:left bottom;}' +
       '#ks-filter-rail .ks-flt-group.ks-flt-collapsed > .ks-flt-grouplabel{margin-bottom:0;}' +
       '#ks-filter-rail .ks-flt-group > .ks-flt-groupbody .ks-flt-row{padding-left:12px;}' +
       '#ks-filter-rail .ks-flt-group > .ks-flt-groupbody .ks-flt-rowtext{font-weight:400;color:#75736E;}' +
@@ -762,15 +784,21 @@
   // script, so there is no reduced-motion or script-never-arrived case to fail open
   // into, and a plain show/hide cannot leak the way a 0fr collapse can (home.css v43).
   // "How tiers work" is CLAUDE'S LABEL, not hers -- reversible, one string.
-  /* THE SPARKLE. HER PICK S266 from four, over three-steps, a star and three tier dots.
-     A DRAWN PATH, NEVER A TEXT GLYPH -- a character depends on whatever font is
-     available and renders differently on her phone than on her Mac (the same rule the
-     home page's badge star is built on). aria-hidden, because the button says what it
-     is in words. */
-  var SPARKLE_SVG =
-    '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">' +
-    '<path d="M12 2l1.7 5.1L18 4.9l-2.2 4.3L21 11l-5.2 1.8L18 17.1l-4.3-2.2L12 20l-1.7-5.1' +
-    'L6 17.1l2.2-4.3L3 11l5.2-1.8L6 4.9l4.3 2.2z"/></svg>';
+  /* THREE RISING STEPS. HER RULING S266, REVERSING HER OWN SPARKLE PICK MADE MINUTES
+     EARLIER OFF THE MOCKUP -- and she reversed it for a reason worth keeping: ON THE
+     LIVE PAGE THE SPARKLE AND THE TIER DOT DIRECTLY BELOW IT READ AS THE SAME MARK at
+     16px. A mockup could not have shown that, because the mockup did not put the two
+     within an inch of each other at real size. THE SHAPE ALSO MEANS SOMETHING: three
+     rising steps is what the paragraph behind the link is about. Do not swap it back
+     for something cuter without looking at the tier chip underneath it.
+     A DRAWN PATH, NEVER A TEXT GLYPH -- a character depends on whatever font happens to
+     be available and renders differently on her phone than on her Mac (the same rule
+     the home page's badge star is built on). aria-hidden, because the button says what
+     it is in words. */
+  var TIERS_ICON_SVG =
+    '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" ' +
+    'stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M4 18h4V9H4z"/><path d="M10 18h4V5h-4z"/><path d="M16 18h4v-6h-4z"/></svg>';
 
   /* THE TOGGLE SITS ABOVE THE PHOTO, LEFT, LINED UP WITH THE TIER BADGE -- HER RULING
      S266, off a live render, SUPERSEDING S265's "beside the tier badge".
@@ -782,7 +810,7 @@
      own 12px inset, read off the served head box, which is what lines the two up. */
   var TIERS_TOGGLE =
     '<button type="button" class="ks-tiers-toggle" data-tiers="1" aria-expanded="false" ' +
-      'aria-controls="ks-tiers-body">' + SPARKLE_SVG + '<span>How tiers work</span></button>';
+      'aria-controls="ks-tiers-body">' + TIERS_ICON_SVG + '<span>How tiers work</span></button>';
 
   /* HER APPROVED PARAGRAPH, VERBATIM, NOW SET AS TWO PARAGRAPHS -- HER RULING S266.
      ⚠⚠ THE SPLIT IS FORMATTING AND NOT A REWRITE: NOT ONE WORD CHANGES, and the break
@@ -2333,7 +2361,11 @@ function outOfCreditsBlock(zeroClasses) {
     var grp  = el('div', 'ks-flt-group');
     if (!startOpen) grp.classList.add('ks-flt-collapsed');   // every group is an accordion; ALL render collapsed (buildRail passes startOpen=false)
     var lbl  = el('div', 'ks-flt-grouplabel');
-    lbl.appendChild(el('span', null, title));
+    // THE TITLE CARRIES ITS OWN CLASS AS OF S266 so the amber rule can measure THE WORD.
+    // The label is a flex row holding the title and the chevron, so a rule painted on the
+    // LABEL spans the whole rail width -- which is what made it look stubby under long
+    // words like Occasion and Condition and endless under short ones.
+    lbl.appendChild(el('span', 'ks-flt-grouptitle', title));
     var chev = el('span', 'ks-flt-chev');
     chev.innerHTML = CHEV_SVG;
     lbl.appendChild(chev);
@@ -2433,7 +2465,7 @@ function outOfCreditsBlock(zeroClasses) {
     // and a populated header so /browse doesn't read as sparse. Links, not facets.
     var typeGrp = el('div', 'ks-flt-group');
     var typeLbl = el('div', 'ks-flt-grouplabel');
-    typeLbl.appendChild(el('span', null, 'Type'));
+    typeLbl.appendChild(el('span', 'ks-flt-grouptitle', 'Type'));   // same class as buildGroup's, or TYPE alone keeps the old treatment
     typeGrp.appendChild(typeLbl);
     var typeBody = el('div', 'ks-flt-groupbody');
     [['All', '/browse', 'all'], ['Clothing', '/clothing', 'clothing'], ['Toys', '/toys', 'toy']]
