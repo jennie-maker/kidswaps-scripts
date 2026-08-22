@@ -108,6 +108,24 @@
     return parts.length ? parts.join(' ') : (item.brand || 'Item');
   }
 
+  // MISC-1 (S265): a broken OPERATOR brand never reaches a member. PREFIX match on
+  // "Miscellaneous" -- the family includes Essentials/Elevated/Special, so an exact
+  // match catches one and lets the siblings through silently -- plus exact "Unknown".
+  // DISPLAY ONLY. The stored brand stays wrong (her S117 call) and searchBlob still
+  // indexes it, so "Miscellaneous" remains findable in search.
+  // NOT applied in descriptor(): every one of the 774 available rows has an
+  // item_name (read live S265), so descriptor's [color, brand] fallback is
+  // unreachable on live data. Claude's call, reversible -- if an item ever lands
+  // with no item_name the brand would print in the heading again.
+  function displayBrand(b) {
+    if (!b) return '';
+    var s = String(b).trim();
+    var l = s.toLowerCase();
+    if (l.indexOf('miscellaneous') === 0) return '';
+    if (l === 'unknown') return '';
+    return s;
+  }
+
   function placeholderTile() {
     return el('div', 'ks-browse-ph', 'Photo coming soon');
   }
@@ -260,13 +278,7 @@
          reads 1.99 and would be near-invisible. A dot is a fast-scan aid for a GRID
          and the overlay shows one item, so it has no job on this surface anyway.
          DO NOT "restore" a colour to this pill. */
-      '#ks-detail-root .ks-detail-tier-pill{background:#1E1A19;color:#EEEFE3;border:0;text-transform:none;letter-spacing:.01em;font-weight:600;}' +
-      '#ks-detail-root a.ks-detail-tier-pill{text-decoration:none;color:#EEEFE3;cursor:pointer;}' +
-      '#ks-detail-root .ks-detail-tier-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px;}' +
       '#ks-detail-root .ks-detail-name{font-family:"Instrument Serif",Quicksand,sans-serif;font-size:30px;line-height:1.12;}' +
-      '#ks-detail-root .ks-detail-meta{display:flex;flex-wrap:wrap;align-items:baseline;gap:7px;margin:9px 0 0;}' +
-      '#ks-detail-root .ks-meta-brand{font-size:16px;font-weight:500;color:#1E1A19;}' +
-      '#ks-detail-root .ks-meta-size{font-size:16px;font-weight:500;color:#1E1A19;}' +
       /* NO UNDERLINE -- HER RULING S198, off the live render. A linked label reads
          like the rest of the row and the ONLY affordance is that it sits at ink
          while the un-linkable SKU stays muted. Brand and size were already ink so
@@ -275,10 +287,6 @@
          ACCEPTED COST, NAMED BEFORE SHE RULED: on a phone a linked label and a
          plain one look identical until she taps. DO NOT ADD AN UNDERLINE BACK.
          The tier pill is excluded -- it is a filled pill and already reads tappable. */
-      '#ks-detail-root a.ks-meta-link{text-decoration:none;color:#1E1A19;cursor:pointer;}' +
-      '#ks-detail-root .ks-meta-fit{font-size:13.5px;color:#a99e92;}' +
-      '#ks-detail-root .ks-meta-sku{font-size:13px;letter-spacing:.03em;color:#b3a99d;}' +
-      '#ks-detail-root .ks-meta-sep{color:#cfc4b4;}' +
       /* SPACING: group rhythm via margin-tops (block-collapse keeps them sane vs the
          head-box margins); desktop (>=721px, two-col) centers the info block against
          the image via align-self. mobile keeps the rhythm, top-aligned. these layer
@@ -286,10 +294,6 @@
       '#ks-detail-root .ks-detail-desc{margin-top:14px;}' +
       '#ks-detail-root .ks-detail-cta{margin-top:20px;}' +
       '@media (min-width:721px){#ks-detail-root .ks-detail-info{align-self:center;}#ks-detail-root .ks-detail-name{font-size:33px;line-height:1.1;}}' +
-      '#ks-detail-root .ks-detail-cond{display:inline-flex;align-items:center;gap:5px;font-weight:400;font-size:15px;}' +
-      '#ks-detail-root .ks-detail-cond-ic{display:inline-flex;color:#6a5f57;}' +
-      '#ks-detail-root .ks-detail-retail{display:block;margin:7px 0 0;font-size:14px;font-weight:400;color:#7d7268;}' +
-      '#ks-detail-root .ks-detail-extras{margin:7px 0 0;font-size:14px;font-weight:400;color:#7d7268;}' +
 
       /* FILTER RAIL -- a heading and an option were both Quicksand 13px with no
          tracking, no case change and NO SPACE BENEATH THE HEADING. Separated by
@@ -299,7 +303,7 @@
          Specificity is id + class + class so it beats the per-page head-box
          rules (bare class) WITHOUT !important. */
       '#ks-filter-rail .ks-flt-group > .ks-flt-grouplabel{font-size:12px;font-weight:700;' +
-        'letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px;}' +
+        'letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px;color:#1F5C38;}' +   /* MISC-6 (S265): her dark green. #309359 reads ~3.3:1 on white and fails AA at this size; #1F5C38 clears it. */
       '#ks-filter-rail .ks-flt-group.ks-flt-collapsed > .ks-flt-grouplabel{margin-bottom:0;}' +
       '#ks-filter-rail .ks-flt-group > .ks-flt-groupbody .ks-flt-rowtext{font-weight:400;}' +
       '#ks-filter-rail .ks-flt-group{margin-bottom:16px;}' +
@@ -346,7 +350,28 @@
       '#ks-browse-app .ks-browse-tier:has(.ks-tier-dot){display:inline-flex;align-items:center;gap:5px;}' +
       '#ks-browse-app .ks-browse-tier .ks-tier-dot{width:9px;height:9px;border-radius:50%;flex:none;display:inline-block;}' +
       '#ks-browse-app .ks-browse-tier .ks-tier-dot.ks-tier-elevated{background:#28498D;}' +
-      '#ks-browse-app .ks-browse-tier .ks-tier-dot.ks-tier-special{background:#EDA920;}';
+      '#ks-browse-app .ks-browse-tier .ks-tier-dot.ks-tier-special{background:#EDA920;}' +
+
+      /* ===== S265 CHIP FACTS ROW + TIER DISCLOSURE =====================
+         Appended LAST on purpose: within one injected sheet later wins a tie, so
+         these beat any survivor of the four rules the rebuild retired. All scoped
+         #ks-detail-root, so nothing here can reach the grid or the rail. */
+      '#ks-detail-root .ks-detail-chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 0;align-items:center;}' +
+      '#ks-detail-root .ks-chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;line-height:1.2;}' +
+      '#ks-detail-root .ks-chip-link{border:1px solid #C9C7BC;border-radius:999px;padding:5px 11px;' +
+        'color:#1E1A19;text-decoration:none;}' +
+      '#ks-detail-root .ks-chip-link:hover{border-color:#1E1A19;}' +
+      '#ks-detail-root .ks-chip-plain{color:#75736E;padding:5px 0;}' +
+      '#ks-detail-root .ks-chip .ks-tier-dot{width:9px;height:9px;border-radius:50%;flex:none;display:inline-block;}' +
+      '#ks-detail-root .ks-chip .ks-tier-dot.ks-tier-elevated{background:#28498D;}' +
+      '#ks-detail-root .ks-chip .ks-tier-dot.ks-tier-special{background:#EDA920;}' +
+      '#ks-detail-root .ks-detail-sku{margin:12px 0 0;font-size:15px;color:#1E1A19;}' +
+      '#ks-detail-root .ks-tiers-toggle{display:inline-flex;align-items:center;margin:14px 0 0;' +
+        'background:none;border:0;padding:0;font:inherit;font-size:13px;color:#75736E;' +
+        'text-decoration:underline;cursor:pointer;}' +
+      '#ks-detail-root .ks-tiers-body{display:none;margin:10px 0 0;font-size:14px;line-height:1.5;color:#1E1A19;}' +
+      '#ks-detail-root .ks-tiers-body.is-open{display:block;}' +
+      '#ks-detail-root .ks-tiers-body p{margin:0;}';
     var s = document.createElement('style');
     s.id = 'ks-util-css';
     s.textContent = css;
@@ -629,6 +654,26 @@
   }
 
   // Build the overlay innerHTML for a resolved item.
+  // MISC-2 (S265): her approved tier paragraph, VERBATIM, behind a disclosure.
+  // IT IS IDENTICAL ON ALL 774 ITEMS. Dropped in above Add to bag it would push the
+  // CTA down four lines on every item forever to answer a question a stranger asks
+  // ONCE -- so it sits collapsed under the tier chip and the people who want it are
+  // the people who tap it. HER RULING, option 3 of three.
+  // NO ANIMATION, deliberately: this overlay does not exist at all without the
+  // script, so there is no reduced-motion or script-never-arrived case to fail open
+  // into, and a plain show/hide cannot leak the way a 0fr collapse can (home.css v43).
+  // "How tiers work" is CLAUDE'S LABEL, not hers -- reversible, one string.
+  var TIERS_DISCLOSURE =
+    '<button type="button" class="ks-tiers-toggle" data-tiers="1" aria-expanded="false" ' +
+      'aria-controls="ks-tiers-body">How tiers work</button>' +
+    '<div class="ks-tiers-body" id="ks-tiers-body">' +
+      '<p>It isn\u2019t always about the label. We grade every item essentials, elevated ' +
+      'or special, going on quality, demand and what the piece is actually worth. ' +
+      'Send good, get good: six elevated items in, six elevated items back, no extra ' +
+      'charge. Want something from a higher tier than you sent? You pay the ' +
+      'difference, based on what it\u2019s worth used, never full retail.</p>' +
+    '</div>';
+
   function detailHtml(item) {
     var photos = photoList(item);
     var hasVideo = !!item.video_url;
@@ -664,61 +709,76 @@
     var zoom = photos.length
       ? '<button type="button" class="ks-detail-zoom" aria-label="Zoom photo">' + ZOOM_SVG + ' zoom</button>' : '';
 
-    // type-specific fit (gender for clothing, washability for toys) rides the size
-    // line, muted; condition pairs with the tier pill; occasion + set are a quiet
-    // present-only line. monochrome throughout (gold lives on the Special tier only).
-    var fit = isToy
-      ? (item.toy_washability ? capFirst(item.toy_washability) : '')
-      : genderLabel(item.gender_style);
+    // THE FACTS ROW IS CHIPS -- her ruling S264. Every fact is its own wrapping
+    // pill, so a long brand widens its OWN chip and nothing strands mid-row, which
+    // is what kills the separator fault by construction rather than by patching it.
+    // THIS REPLACES FOUR ELEMENTS: .ks-detail-meta, .ks-detail-tier-row,
+    // .ks-detail-retail and .ks-detail-extras. Their CSS rules are DELETED in the
+    // same commit -- an inert rule beside working ones is the CSS version of an
+    // orphaned comment lying confidently (S0).
+    // NO LABELS -- a labelled list made the panel far too tall (hers).
+    //
+    // AFFORDANCE IS OPTION B: a LINKED value keeps the pill border; an INERT value
+    // is plain grey text, no border, NO UNDERLINE (her ruling). So a row with
+    // nothing linked degrades to a readable sentence of facts instead of looking
+    // like dead buttons -- which is why B beat bolding.
+    //
+    // THE LINK RULE IS UNCHANGED FROM S197: a value links iff that facet exists on
+    // THIS page. facetLive() + facetValueOf() already do exactly that (and already
+    // handle a toy's two age bands), so this is a REPETITION of a proven seam.
+    var chips = [];
+    function chip(key, raw, text, dotKey) {
+      if (!text) return;                       // A CHIP WITH NO VALUE DOES NOT RENDER (hers)
+      var dot = dotKey
+        ? '<span class="ks-tier-dot ks-tier-' + escapeHtml(dotKey) + '"></span>' : '';
+      var v = (key && facetLive(key)) ? facetValueOf(key, raw) : '';
+      if (v) {
+        chips.push('<a class="ks-chip ks-chip-link" href="#" data-facet-link="' +
+          escapeHtml(key) + '" data-facet-value="' + escapeHtml(v) + '">' +
+          dot + escapeHtml(text) + '</a>');
+      } else {
+        chips.push('<span class="ks-chip ks-chip-plain">' + dot + escapeHtml(text) + '</span>');
+      }
+    }
 
-    var condHtml = item.condition_grade
-      ? '<span class="ks-detail-cond"><span class="ks-detail-cond-ic">' +
-        '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" ' +
-        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-        '<path d="M20 6L9 17l-5-5"/></svg></span>' + escapeHtml(conditionLabel(item.condition_grade)) + '</span>'
-      : '';
-
-    var extras = [];
-    // L3: toy completeness (member-facing honesty attribute) leads the line;
-    // null (legacy/ungraded) shows nothing — present-only like the rest.
-    if (isToy && item.is_complete === true) extras.push('Complete');
-    else if (isToy && item.is_complete === false) extras.push('Missing pieces');
-    if (item.occasion) extras.push(escapeHtml(item.occasion));
+    chip('brand', item.brand, displayBrand(item.brand));
+    chip(isToy ? 'age' : 'size', item.size, item.size);
+    if (!isToy) chip('gender', item.gender_style, genderLabel(item.gender_style));
+    var tKeyLower = item.tier ? String(item.tier).toLowerCase() : '';
+    // The tier chip KEEPS its S198 dot, or browse says two different things about
+    // tier on the card and in the overlay. Essentials stays silent, by design.
+    if (item.tier) chip('tier', item.tier, tierLabel(item.tier),
+      (tKeyLower === 'elevated' || tKeyLower === 'special') ? tKeyLower : '');
+    // CONDITION lost its inline checkmark: the tick existed to separate it from the
+    // tier pill beside it, and a chip is already its own visual unit. Reversible.
+    // No condition facet exists on any page, so it is never a link.
+    if (item.condition_grade) chip('', null, conditionLabel(item.condition_grade));
+    if (isToy && item.toy_washability) chip('wash', item.toy_washability, capFirst(item.toy_washability));
+    // COMPLETENESS, HER RULING S265: ticked -> "Complete", UNTICKED -> "Missing
+    // pieces", NEVER CHECKED (null) -> nothing. An item she checked and found
+    // incomplete SHOWS -- that is a disclosure, not an unknown.
+    if (isToy && item.is_complete === true) chip('', null, 'Complete');
+    else if (isToy && item.is_complete === false) chip('', null, 'Missing pieces');
     if (item.is_matching_set) {
-      var n = item.set_piece_count;
-      extras.push(n ? ('Complete \u00b7 ' + n + ' pieces') : 'Matching set');
+      var setN = item.set_piece_count;
+      chip('', null, setN ? (setN + ' pieces') : 'Matching set');
     }
-    var extraLine = extras.length
-      ? '<p class="ks-detail-extras">' + extras.join(' \u00b7 ') + '</p>' : '';
-
-    // BRAND LEADS THE FACTS ROW -- her ruling S197, option A. It was not on this
-    // screen at all before: the brand only ever appeared inside the generated name.
-    var metaParts = [];
-    if (item.brand) metaParts.push(metaLabel('ks-meta-brand', 'brand', item.brand, item.brand));
-    // The size slot holds an AGE RANGE on a toy, so it targets a different facet.
-    if (item.size) metaParts.push(metaLabel('ks-meta-size', isToy ? 'age' : 'size', item.size, item.size));
-    // The fit slot is gender on clothing and washability on toys -- ONE CLASS, TWO
-    // FACETS. Not a bug; the item type decides which.
-    if (fit) metaParts.push(metaLabel('ks-meta-fit', isToy ? 'wash' : 'gender',
-      isToy ? item.toy_washability : item.gender_style, fit));
-    // SKU IS NEVER A LINK: it would return the item she is already looking at.
-    if (item.sku) metaParts.push('<span class="ks-meta-sku">SKU ' + escapeHtml(item.sku) + '</span>');
-    var metaLine = metaParts.length
-      ? '<p class="ks-detail-meta">' +
-        metaParts.join('<span class="ks-meta-sep" aria-hidden="true">\u00b7</span>') + '</p>'
-      : '';
-
+    // OCCASION was not in her chip list, but it is a LIVE FACET on all three pages,
+    // so the S197 rule makes it a link mechanically. Claude's call, reversible.
+    chip('occasion', item.occasion, item.occasion);
     var retail = money(item.retail_value);
-    var tierPill = '';
-    if (item.tier) {
-      var pillKey = String(item.tier).toLowerCase();
-      var pillCls = 'ks-detail-tier-pill ks-tier-' + escapeHtml(pillKey);
-      var pillTxt = escapeHtml(tierLabel(item.tier));
-      tierPill = facetLive('tier')
-        ? '<a class="' + pillCls + '" href="#" data-facet-link="tier" data-facet-value="' +
-          escapeHtml(pillKey) + '">' + pillTxt + '</a>'
-        : '<span class="' + pillCls + '">' + pillTxt + '</span>';
-    }
+    // APPROVED STRINGS, VERBATIM. "$45 new" is shorter and is UNAPPROVED COPY --
+    // DO NOT shorten these to make the chip fit (S0: her words do not stray).
+    if (retail) chip('', null, isToy ? ('Worth about ' + retail) : ('Retail value new ' + retail));
+
+    var chipRow = chips.length
+      ? '<div class="ks-detail-chips">' + chips.join('') + '</div>' : '';
+
+    // SKU IS NOT A CHIP AND IS NEVER A LINK -- it is a reference she reads daily,
+    // not a product fact, and a SKU link would return the item already on screen.
+    // HER CORRECTION S264: it stays CLEARLY READABLE, body size and ink.
+    var skuLine = item.sku
+      ? '<p class="ks-detail-sku">SKU ' + escapeHtml(item.sku) + '</p>' : '';
 
     var blocks = '';
     if (item.description) {
@@ -743,12 +803,10 @@
           '<div class="ks-detail-media">' + main + tierBadge + zoom + '</div>' +
           '<div class="ks-detail-info">' +
             '<h2 class="ks-detail-name">' + escapeHtml(descriptor(item)) + '</h2>' +
-            metaLine +
-            '<div class="ks-detail-tier-row">' + tierPill + condHtml + '</div>' +
-            (retail ? '<p class="ks-detail-retail">' +
-              (isToy ? 'Worth about ' + retail : 'Retail value new ' + retail) + '</p>' : '') +
+            chipRow +
+            skuLine +
+            TIERS_DISCLOSURE +
             (item.is_luxury ? LUX_NOTE : '') +
-            extraLine +
             blocks +
             '<button type="button" class="ks-detail-cta" data-bag="1">' + BAG_SVG +
               '<span>Add to bag</span></button>' +
@@ -787,13 +845,9 @@
     return v;
   }
 
-  function metaLabel(cls, key, raw, text) {
-    var body = escapeHtml(text);
-    var v = facetLive(key) ? facetValueOf(key, raw) : '';
-    if (!v) return '<span class="' + cls + '">' + body + '</span>';
-    return '<a class="' + cls + ' ks-meta-link" href="#" data-facet-link="' +
-      escapeHtml(key) + '" data-facet-value="' + escapeHtml(v) + '">' + body + '</a>';
-  }
+  // metaLabel() lived here. Its ONLY caller was the retired metaParts block, so it
+  // went inert with the chip rebuild and is deleted S265 (S0). chip() inside
+  // detailHtml now does the same job and adds the tier dot.
 
   function opBarHtml(sku) {
     var btn = 'display:inline-block;padding:8px 14px;border-radius:8px;font-size:.85rem;' +
@@ -857,6 +911,17 @@
       if (fl) {
         e.preventDefault();
         applyFacetLink(fl.getAttribute('data-facet-link'), fl.getAttribute('data-facet-value'));
+        return;
+      }
+      // TIER DISCLOSURE (S265). DELEGATED on the persistent root: detailHtml is
+      // rebuilt on every open, so a per-open binding would stack one handler per
+      // item viewed. It ships closed on every open, which is correct -- it answers
+      // a first-visit question, not a per-item one.
+      var tt = e.target.closest('[data-tiers]');
+      if (tt) {
+        e.preventDefault();
+        var tb = root.querySelector('.ks-tiers-body');
+        if (tb) tt.setAttribute('aria-expanded', tb.classList.toggle('is-open') ? 'true' : 'false');
         return;
       }
       if (e.target.closest('[data-close]')) { e.preventDefault(); closeDetail(); }
@@ -1186,11 +1251,8 @@
    * for a cart icon + live count and open the drawer on click. Its orange Webflow
    * styling is preserved (we set inner content + flex display, nothing else).
    * The logged-out JOIN button is a separate element and is never touched. */
-  var CART_SVG =
-    '<svg class="ks-cart-ico" viewBox="0 0 24 24" width="19" height="19" fill="none" ' +
-      'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" ' +
-      'aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>' +
-      '<path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></svg>';
+  // CART_SVG was defined here and referenced NOWHERE (inert since S229).
+  // Deleted S265 -- S0: inert code is deleted, not left in.
 
   // Find the member CART link to adopt as the bag opener. Priority: an explicit
   // data-ks-bag tag, else the .verified-dashboard-button whose label is "CART"
