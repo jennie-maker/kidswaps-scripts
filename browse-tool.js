@@ -376,6 +376,78 @@
       '#ks-filter-rail .ks-flt-group.ks-flt-collapsed > .ks-flt-grouplabel{margin-bottom:0;}' +
       '#ks-filter-rail .ks-flt-group > .ks-flt-groupbody .ks-flt-row{padding-left:12px;}' +
       '#ks-filter-rail .ks-flt-group > .ks-flt-groupbody .ks-flt-rowtext{font-weight:400;color:#75736E;}' +
+
+      /* ===== THE FILTER GROUPS SLIDE IN, ONE AFTER ANOTHER (S266, hers) ============
+         Type first, then Brand, then Age, and so on down the rail. SHE ASKED FOR THE
+         MOVEMENT TO BE NOTICEABLE ENOUGH TO PULL THE EYE, so this is a LATERAL travel
+         rather than the small lift it started as: sideways reads louder than vertical
+         at the same distance, because nothing else on this page moves sideways.
+         ⚠⚠⚠ A KEYFRAME ANIMATION, NEVER A TRANSITION, AND THIS IS NOT A STYLE CHOICE.
+         A transition only runs if the browser PAINTED the start state first, which is a
+         race, and on a warm cache it LOSES -- both states collapse into one frame,
+         nothing animates, and every gate still passes. That is the S247 hero fault, her
+         words "it's like its stuck".
+         ⚠⚠ CSS ONLY, NO JS HALF, DELIBERATELY. There is nothing here that can fail
+         open: the rail does not exist at all without this script, so unlike the S224
+         how-it-works entrance there is no script-never-arrived case. If the animation
+         never runs the rail is visible and still -- failure lands on "no movement",
+         never on "no filters".
+         ⚠ THE SLIDE IS LEFTWARD AND THEREFORE CANNOT CAUSE SIDEWAYS PAGE SCROLL.
+         Content to the LEFT of the origin is not scrollable in an LTR page, it is simply
+         cut off. A RIGHTWARD slide would be the S247 overflow hazard and must not be
+         substituted casually. Do not reach for body{overflow-x:hidden} whatever happens
+         here -- a scroll container on body breaks position:sticky, and .site-header is
+         sticky site-wide.
+         ⚠ `both` FILL IS LOAD-BEARING: it holds each group at its start position through
+         its own delay, so group six cannot appear before group two has moved. Reduced
+         motion drops the whole rule rather than shortening it.
+         ⚠ THE TIMING IS TUNED FOR SEQUENCE, NOT FOR SPEED. .6s each with 130ms between
+         them: the gap is a large enough fraction of the duration that the groups read as
+         arriving one after another rather than as one wave. The first pass ran .42s/70ms
+         and she could barely catch it. S247's .7s/140ms was FOUR hero elements; at nine
+         filter groups a 140ms gap puts the last arrival past 1.2s, which stops reading as
+         an entrance and starts reading as a page still loading. THE CURVE IS S247'S, the
+         one she ruled "perfect" -- it did more of the work there than the distance did.
+         ⚠ NTH-CHILD STARTS AT 2 BECAUSE CHILD 1 IS .ks-flt-head. Eleven delays are
+         written so a new facet inherits one free; a twelfth group would share the last
+         delay, which is a graceful floor rather than a fault.
+         ⚠ DESKTOP FIRES ON INSERT. MOBILE FIRES ON SHEET OPEN, keyed to the
+         `ks-flt-sheet-open` class openRailSheet() already puts on <body>. A page-load
+         animation on a phone would run behind a closed sheet and be spent before she
+         looked; re-adding the class re-runs it, so it plays on every open, which is
+         right, because on a phone the sheet IS the arrival. */
+      '@keyframes ks-rail-in{from{opacity:0;transform:translateX(-34px);}' +
+        'to{opacity:1;transform:none;}}' +
+
+      '@media (min-width:721px) and (prefers-reduced-motion:no-preference){' +
+      '      #ks-filter-rail .ks-flt-group{animation:ks-rail-in .6s cubic-bezier(.4,0,.2,1) both;}' +
+      '      #ks-filter-rail .ks-flt-group:nth-child(2){animation-delay:0ms;}' +
+      '      #ks-filter-rail .ks-flt-group:nth-child(3){animation-delay:130ms;}' +
+      '      #ks-filter-rail .ks-flt-group:nth-child(4){animation-delay:260ms;}' +
+      '      #ks-filter-rail .ks-flt-group:nth-child(5){animation-delay:390ms;}' +
+      '      #ks-filter-rail .ks-flt-group:nth-child(6){animation-delay:520ms;}' +
+      '      #ks-filter-rail .ks-flt-group:nth-child(7){animation-delay:650ms;}' +
+      '      #ks-filter-rail .ks-flt-group:nth-child(8){animation-delay:780ms;}' +
+      '      #ks-filter-rail .ks-flt-group:nth-child(9){animation-delay:910ms;}' +
+      '      #ks-filter-rail .ks-flt-group:nth-child(10){animation-delay:1040ms;}' +
+      '      #ks-filter-rail .ks-flt-group:nth-child(11){animation-delay:1170ms;}' +
+      '      #ks-filter-rail .ks-flt-group:nth-child(12){animation-delay:1300ms;}' +
+      '}' +
+
+      '@media (max-width:720px) and (prefers-reduced-motion:no-preference){' +
+      '      body.ks-flt-sheet-open #ks-filter-rail .ks-flt-group{animation:ks-rail-in .6s cubic-bezier(.4,0,.2,1) both;}' +
+      '      body.ks-flt-sheet-open #ks-filter-rail .ks-flt-group:nth-child(2){animation-delay:0ms;}' +
+      '      body.ks-flt-sheet-open #ks-filter-rail .ks-flt-group:nth-child(3){animation-delay:130ms;}' +
+      '      body.ks-flt-sheet-open #ks-filter-rail .ks-flt-group:nth-child(4){animation-delay:260ms;}' +
+      '      body.ks-flt-sheet-open #ks-filter-rail .ks-flt-group:nth-child(5){animation-delay:390ms;}' +
+      '      body.ks-flt-sheet-open #ks-filter-rail .ks-flt-group:nth-child(6){animation-delay:520ms;}' +
+      '      body.ks-flt-sheet-open #ks-filter-rail .ks-flt-group:nth-child(7){animation-delay:650ms;}' +
+      '      body.ks-flt-sheet-open #ks-filter-rail .ks-flt-group:nth-child(8){animation-delay:780ms;}' +
+      '      body.ks-flt-sheet-open #ks-filter-rail .ks-flt-group:nth-child(9){animation-delay:910ms;}' +
+      '      body.ks-flt-sheet-open #ks-filter-rail .ks-flt-group:nth-child(10){animation-delay:1040ms;}' +
+      '      body.ks-flt-sheet-open #ks-filter-rail .ks-flt-group:nth-child(11){animation-delay:1170ms;}' +
+      '      body.ks-flt-sheet-open #ks-filter-rail .ks-flt-group:nth-child(12){animation-delay:1300ms;}' +
+      '}' +
       '#ks-filter-rail .ks-flt-group{margin-bottom:16px;}' +
       '#ks-filter-rail .ks-flt-head > .ks-flt-clear{font-weight:700;text-decoration:underline;}' +
 
