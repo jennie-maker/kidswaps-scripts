@@ -234,10 +234,17 @@
     return (Date.now() - t) <= NEW_DAYS * 86400000;
   }
 
-  var BAG_SVG =
-    '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"' +
-    ' stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<path d="M6 7h12l-1 13H7L6 7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>';
+  /* BAG_SVG lived here and its last caller was mountBagButton. Both DELETED S267 -- HER
+     RULING, "it doesnt make any sense" and "the icon looks like a garbage can". The bag
+     opener belongs beside the cart in the HEADER, which is Webflow and a separate trip.
+     ⚠⚠⚠ THE GAP THAT WENT WITH IT, AND IT IS OWED TO THE NAV: this button was the
+     FALLBACK opener, rendered only when findHeaderCart() found nothing -- and Memberstack
+     REMOVES the members-only header cart from the DOM for a logged-out visitor. So a
+     LOGGED-OUT STRANGER NOW HAS NO WAY TO REOPEN THE BAG SHEET. The drawer still slides in
+     by itself on add, which is the confirmation, but it cannot be summoned back. That is
+     every visitor arriving cold from a search, i.e. the whole audience the SEO run is for.
+     DO NOT LET THIS BE FORGOTTEN WHEN THE ICON LANDS IN THE HEADER. (S0: inert code is
+     deleted, not left in -- hence the tombstone rather than a commented-out block.) */
 
   var PLAY_SVG =
     '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">' +
@@ -547,6 +554,17 @@
       '#ks-detail-root .ks-tiers-body.is-open{display:block;}' +
       '#ks-detail-root .ks-tiers-body p{margin:0;}' +
       '#ks-detail-root .ks-tiers-body p + p{margin-top:10px;}' +
+      /* THE LEDE IS STYLED, NOT TAGGED -- HER RULING S267 ("i dont care if its an h4 i
+         just want it larger, in instrument italic font, and on its own line"). A real
+         H4 here would land under the page's H2 with no H3 between, on a heading outline
+         S260/S261 just finished fixing, and `h4` on this project is already a CLASS NAME
+         THAT LIES ABOUT TAGS. Looks identical, costs nothing.
+         ⚠ INSTRUMENT SERIF ITALIC 400 IS A REAL LOADED FACE ON /browse -- measured S267
+         off document.fonts, reading `loaded`, not merely declared. If a future font
+         cleanup drops it this silently becomes a SHEARED ROMAN, which on a serif looks
+         visibly wrong. The family ships ONE weight, so never reach for a bold here. */
+      '#ks-detail-root .ks-tiers-body .ks-tiers-lede{font-family:"Instrument Serif",Georgia,serif;'
+        + 'font-style:italic;font-weight:400;font-size:19px;line-height:1.15;}' +
       /* THE NAME STARTS LEVEL WITH THE TOP OF THE PHOTO, NOT WITH THE LINK ABOVE IT --
          her correction S266. The rail drops by the same amount so all three columns line
          up again. 34px = the toggle row plus its gap.
@@ -561,11 +579,106 @@
          and that property now has to sit on the flex child, which is the column. */
       '@media (max-width:720px){#ks-detail-root .ks-detail-mediacol{order:1;width:100%;' +
         'align-self:stretch;}' +
-        '#ks-detail-root .ks-detail-info,#ks-detail-root .ks-detail-rail{margin-top:0;}}';
+        '#ks-detail-root .ks-detail-info,#ks-detail-root .ks-detail-rail{margin-top:0;}}' +
+
+      /* ---- ACTIVE FILTER CHIPS (S267) ------------------------------------------------
+         A READOUT, NOT A CONTROL. The rail is the control and on a phone it is collapsed
+         behind the Filter button, so before this row a member's ONLY evidence a filter was
+         on was a ticked box she could not see and a small grey count line BELOW the grid.
+         ⚠⚠⚠ THE RECORDED REASON FOR THIS ITEM WAS WRONG AND IS CORRECTED HERE. §0 and §NEXT
+         both said applyFacetLink writes nothing to the URL, "read at the SHA S266". IT DOES
+         -- applyFacetLink calls applyAndRender, which calls writeUrl, which sets the facet
+         param via history.replaceState. One definition of each, verified S267. A derivation
+         recorded as a read. The item survives on the half that was always the stronger one:
+         a member does not read the address bar, and on a phone it is usually not on screen.
+         ✅ FREE GAIN FROM THE SAME FACT: readUrl() restores FILTERS on load, so chips built
+         off FILTERS render correctly on a shared or reloaded link with no extra work.
+         ⚠⚠ YELLOW #EDA920 OUTLINE WITH INK TEXT -- HERS S267, off four options replayed on
+         her own live page. Coral was her earlier pick and lost: it would have been coral's
+         SEVENTH job and it measures 3.6:1 as text. Ink on white here clears AA outright and
+         the outline rhymes with the amber rules down the rail. Pink fill and pink text were
+         both built and rejected; pink text measures ~2.1:1 and was never viable.
+         ⚠⚠ YELLOW IS ALSO THE SPECIAL TIER DOT. A yellow chip can therefore sit an inch above
+         a yellow dot meaning "special" -- the sparkle-vs-tier-dot collision from S266, in a
+         new place. IT WAS FLAGGED AND THE CHECK WAS DECLINED, so this ships UNVERIFIED
+         against a special-tier item in the top row. LOOK THE FIRST TIME ONE IS THERE. */
+      '#ks-browse-app .ks-chips{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 18px;}' +
+      '#ks-browse-app .ks-chip{display:inline-flex;align-items:center;gap:7px;border-radius:50px;' +
+        'background:transparent;border:1px solid #EDA920;color:#1E1A19;font-family:Quicksand,sans-serif;' +
+        'font-size:13px;font-weight:500;line-height:1.2;padding:6px 12px;cursor:pointer;}' +
+      '#ks-browse-app .ks-chip-x{font-size:15px;line-height:1;}' +
+      '#ks-browse-app .ks-chips-clear{background:transparent;border:0;padding:0;margin-left:4px;' +
+        'font-family:Quicksand,sans-serif;font-size:13px;font-weight:700;text-decoration:underline;' +
+        'color:#1E1A19;cursor:pointer;}' +
+
+      /* ---- THE SEO BLOCK BELOW THE GRID (S267) ---------------------------------------
+         HER ASK: "when the page is loading and the products arent there yet, the text at
+         the bottom is all you see, and it has no styling."
+         ⚠⚠⚠ THE DOC'S RECORDED LIVE VALUES FOR THIS BLOCK WERE FALSE AND THE CORRECTION IS
+         THE WHOLE SHAPE OF THE FIX. §NEXT said "no side padding and NO max-width... the text
+         runs edge to edge". Measured at 1452 wide it reads max-width 800, centred. That
+         reading had been taken in a window under 721px, WHERE AN 800px CAP DOES NOTHING --
+         the S255 lesson exactly: A MEASUREMENT TAKEN BELOW A max-width CANNOT SEE IT.
+         SO THE EDGE-TO-EDGE FAULT IS REAL BUT IT IS MOBILE-ONLY, which is why the side
+         padding below lives in the ≤991 block and nowhere else.
+         ⚠⚠ THE DESKTOP ALIGNMENT IS NOT HERE -- IT IS MEASURED IN JS (alignSeoBlock). It has
+         to line up with .inventory-main, whose left edge is the rail's width plus a flex
+         gap inside a centred container. A stylesheet cannot measure that, and a hardcoded
+         offset is what broke this twice during S267: 496px measured at 1452 wide does not
+         move when the window narrows, so the block got shoved right and squeezed.
+         ⚠ SIZES ARE HERS, RULED ON HER OWN LIVE PAGE, NOT OFF A MOCKUP: 86/1.0 heading,
+         8px gap, 13/1.4 body at desktop; 34 and 15 under 992. The 13px body is the smallest
+         primary text on the site and she was told so before ruling. */
+      '.seo-content-bottom-of-page{padding-top:0;}' +
+      '.seo-content-bottom-of-page .seo-content-div{padding-top:0;}' +
+      '.seo-content-bottom-of-page .seo-content-heading{max-width:none;margin-bottom:0;' +
+        'font-size:86px;line-height:1.0;}' +
+      '.seo-content-bottom-of-page .seo-content-div > div{max-width:none;font-size:13px;' +
+        'line-height:1.4;padding-top:8px;}' +
+      '@media (max-width:991px){' +
+        '.seo-content-bottom-of-page .seo-content-div{max-width:none;margin-left:0;margin-right:0;' +
+          'padding-left:20px;padding-right:20px;}' +
+        '.seo-content-bottom-of-page .seo-content-heading{font-size:34px;}' +
+        '.seo-content-bottom-of-page .seo-content-div > div{font-size:15px;}}';
     var s = document.createElement('style');
     s.id = 'ks-util-css';
     s.textContent = css;
     document.head.appendChild(s);
+    alignSeoBlock();
+    var seoT;
+    window.addEventListener('resize', function () {
+      clearTimeout(seoT); seoT = setTimeout(alignSeoBlock, 150);
+    });
+  }
+
+  /* Line the SEO block up with the products column above it -- HER RULING S267, off a
+     screenshot with the target drawn on it. It aligns to .inventory-main, NOT to
+     .inventory-layout (which includes the rail and starts too far left) and NOT to
+     .ks-browse-grid (which does not exist until tiles render).
+     ⚠⚠ IT MUST RE-MEASURE ON RESIZE. A fixed pixel offset is correct at exactly one
+     window width and wrong at every other, which is what made this look broken twice.
+     ⚠⚠ UNDER 992 IT CLEARS THE INLINE STYLES AND GETS OUT OF THE WAY, because the rail is
+     gone at that width and the CSS block above owns the full-width-plus-padding case.
+     .inventory-main IS STILL IN THE DOM AND STILL VISIBLE below 992, so a visibility test
+     would silently keep aligning to it -- THE GATE IS THE WIDTH, deliberately.
+     ⚠ If this never runs, the block renders as it does today: capped and page-centred.
+     Ugly rather than a lie, the same failure direction as everything else on this page. */
+  function alignSeoBlock() {
+    var sec = document.querySelector('.seo-content-bottom-of-page');
+    if (!sec) return;
+    var inner = sec.querySelector('.seo-content-div');
+    if (!inner) return;
+    if (window.innerWidth < 992) {
+      inner.style.maxWidth = ''; inner.style.marginLeft = ''; inner.style.marginRight = '';
+      return;
+    }
+    var main = document.querySelector('.inventory-main');
+    if (!main) return;
+    var m = main.getBoundingClientRect(), s2 = sec.getBoundingClientRect();
+    if (!m.width) return;
+    inner.style.maxWidth   = Math.round(m.width) + 'px';
+    inner.style.marginLeft = Math.round(m.left - s2.left) + 'px';
+    inner.style.marginRight = '0';
   }
 
   function showLoading(mount) {
@@ -644,15 +757,23 @@
       media.appendChild(placeholderTile());
     }
     if (item.tier) {
-      // TIER DOT (S198). No mark on essentials -- the dot is emitted for elevated and
-      // special ONLY, so the essentials pill keeps exactly the markup it always had.
-      var tierEl = el('span', 'ks-browse-tier');
-      var tKey   = String(item.tier).toLowerCase();
+      /* NO ESSENTIALS MARKING ON A TILE AT ALL -- HER RULING S267: "i just dont want to see
+         the word essentials on all the product pages, its overwhelming." S198 had already
+         taken the DOT off essentials; this takes the WHOLE ELEMENT off, so an essentials
+         tile carries no tier marking and ABSENCE MEANS ESSENTIALS. First place on this site
+         where nothing is the message.
+         ⚠ SCOPED TO THE TILE, HERS, AND THE SCOPE WAS STATED BACK TO HER: the tier still
+         reads in full on the detail panel's chip row, in the bag row's meta line, and as a
+         Tier option in the rail. Those call tierLabel() independently and are untouched.
+         ⚠ A MEMBER CAN FILTER TO ESSENTIALS AND GET A GRID WITH NO MARKINGS ON IT. That is
+         correct and intended. Do not read it as the emitter failing. */
+      var tKey = String(item.tier).toLowerCase();
       if (tKey === 'elevated' || tKey === 'special') {
+        var tierEl = el('span', 'ks-browse-tier');
         tierEl.appendChild(el('span', 'ks-tier-dot ks-tier-' + tKey));
+        tierEl.appendChild(document.createTextNode(tierLabel(item.tier)));
+        media.appendChild(tierEl);
       }
-      tierEl.appendChild(document.createTextNode(tierLabel(item.tier)));
-      media.appendChild(tierEl);
     }
     if (isNew(item)) media.appendChild(el('span', 'ks-browse-new', 'New'));
     card.appendChild(media);
@@ -750,6 +871,10 @@
     var countText = (pageCount > 1)
       ? 'Showing ' + (startIdx + 1) + '\u2013' + (startIdx + pageItems.length) + ' of ' + total + ' items'
       : total + (total === 1 ? ' item' : ' items');
+    // ACTIVE FILTER CHIPS, ABOVE THE GRID (S267). Built before the grid so it reads first.
+    var chips = buildFilterChips();
+    if (chips) mount.appendChild(chips);
+
     var grid = el('div', 'ks-browse-grid');
     var frag = document.createDocumentFragment();
     pageItems.forEach(function (it) { frag.appendChild(buildCard(it)); });
@@ -884,18 +1009,34 @@
     '<button type="button" class="ks-tiers-toggle" data-tiers="1" aria-expanded="false" ' +
       'aria-controls="ks-tiers-body">' + TIERS_ICON_SVG + '<span>How tiers work</span></button>';
 
-  /* HER APPROVED PARAGRAPH, VERBATIM, NOW SET AS TWO PARAGRAPHS -- HER RULING S266.
-     ⚠⚠ THE SPLIT IS FORMATTING AND NOT A REWRITE: NOT ONE WORD CHANGES, and the break
-     falls at the sentence that turns from how grading works to what it costs her. Same
-     move as the /browse SEO block, which she set as three rendered paragraphs with the
-     words untouched. DO NOT REDRAFT EITHER PARAGRAPH (S0). */
+  /* HER APPROVED COPY, VERBATIM, REWRITTEN BY HER AT S267 -- SUPERSEDES THE S266 TEXT.
+     ⚠⚠ THE S266 COMMENT HERE READ "DO NOT REDRAFT EITHER PARAGRAPH" AND SHE REDRAFTED BOTH.
+     That instruction protected a version she has since replaced, so it is rewritten rather
+     than left standing -- an orphaned comment forbidding a change she made is the artifact
+     S0 calls the worst this project produces.
+     WHAT CHANGED, ALL HERS: "quality" -> "condition", her ask · the three tiers now get a
+     clause each · and "Send good, get good: six elevated items in, six elevated items back"
+     became "The better you send, the better you get" ON THIS SURFACE ONLY.
+     ⚠⚠⚠ THAT LAST ONE IS A FLOW CALL, NOT A CHANGE TO THE PHRASE. Her words: "i dont have a
+     problem with send good get good, it just didnt flow that well here." "Send good, get
+     good" is UNTOUCHED wherever else it lives, and /old-home separately reads "Send
+     elevated, get elevated" (S266). THREE PHRASINGS, THREE SURFACES, EVERY ONE HERS.
+     DO NOT SYNC THEM, and do not read any one of them as evidence another is stale.
+     ⚠⚠ THE SIX-IN/SIX-BACK EXAMPLE IS GONE and it was the only concrete illustration in
+     this panel -- the one line that SHOWED tier matching rather than describing it. She was
+     told that before ruling. Knowingly hers.
+     ⚠ THE CONDITION COLLISION IS KNOWN AND ACCEPTED: "condition" is also a live CHIP on this
+     same panel carrying a grade like "Good", so the word means two things within an inch of
+     itself. Flagged once at S267 and ruled. DO NOT RE-FLAG IT.
+     DO NOT REDRAFT ANY OF IT (S0). */
   var TIERS_BODY =
     '<div class="ks-tiers-body" id="ks-tiers-body">' +
-      '<p>It isn\u2019t always about the label. We grade every item essentials, elevated ' +
-      'or special, going on quality, demand and what the piece is actually worth.</p>' +
-      '<p>Send good, get good: six elevated items in, six elevated items back, no extra ' +
-      'charge. Want something from a higher tier than you sent? You pay the ' +
-      'difference, based on what it\u2019s worth used, never full retail.</p>' +
+      '<p class="ks-tiers-lede">It isn\u2019t always about the label.</p>' +
+      '<p>We grade every item based on condition, demand and what it\u2019s actually worth. ' +
+      'Most items are essentials, elevated items are worth more, and special items are the ' +
+      'rarest and most valuable. The better you send, the better you get, no extra charge. ' +
+      'If you see something from a higher tier you just can\u2019t pass up, you only pay the ' +
+      'difference, never full retail.</p>' +
     '</div>';
 
   function detailHtml(item) {
@@ -1536,24 +1677,16 @@
     updateBagCount();
   }
 
-  /* ---- fallback bag button (search row) — only if the header CART isn't tagged ---- */
-  function mountBagButton(mount) {
-    ensureBagCss();
-    checkLoggedIn(function () {});   // prime login state so the first click is instant
-    if (headerCartWired) { updateBagCount(); return; }   // header CART is the opener
-    if (!mount || mount.querySelector('.ks-bag-btn')) return;
-    var btn = el('button', 'ks-bag-btn');
-    btn.type = 'button';
-    btn.setAttribute('aria-label', 'Open your bag');
-    btn.innerHTML = BAG_SVG + '<span class="ks-bag-count" aria-hidden="true"></span>';
-    btn.addEventListener('click', openBag);
-    mount.appendChild(btn);
-    updateBagCount();
-  }
+  /* mountBagButton lived here. DELETED S267 with BAG_SVG -- see the tombstone at BAG_SVG
+     for her ruling and for the logged-out gap it leaves owed to the nav. Its other three
+     jobs (ensureBagCss, priming login state, painting the count) were NOT the button and
+     are kept at the old call site. */
 
   function updateBagCount() {
     var n = bagCount();
-    var badges = document.querySelectorAll('.ks-bag-count, .ks-cart-badge');
+    // '.ks-bag-count' dropped from this selector S267 -- it only ever existed inside the
+    // deleted fallback button, so it can no longer match anything.
+    var badges = document.querySelectorAll('.ks-cart-badge');
     for (var i = 0; i < badges.length; i++) {
       badges[i].textContent = n ? String(n) : '';
       badges[i].style.display = n ? 'inline-flex' : 'none';
@@ -2016,12 +2149,12 @@ function outOfCreditsBlock(zeroClasses) {
   function ensureBagCss() {
     if (document.getElementById('ks-bag-css')) return;
     var css =
-      '.ks-bag-btn{position:relative;display:inline-flex;align-items:center;justify-content:center;' +
-        'width:40px;height:40px;border:0;background:transparent;color:#1E1A19;cursor:pointer;flex:none;}' +
-      '.ks-bag-btn svg{width:22px;height:22px;}' +
-      '.ks-bag-count{position:absolute;top:-2px;right:-2px;min-width:17px;height:17px;padding:0 4px;' +
-        'border-radius:9px;background:#d24f28;color:#fff;font-size:10px;font-weight:600;' +
-        'line-height:1;align-items:center;justify-content:center;}' +
+      /* The .ks-bag-btn, .ks-bag-btn svg and .ks-bag-count rules were deleted S267 with the
+         button they styled (S0: inert rules are deleted, not left in). .ks-cart-badge below
+         is the header cart's badge and is LIVE -- do not confuse the two.
+         ⚠ FOUND WHILE DOING IT, NOT CHASED AND NOT THIS COMMIT'S DOING: .ks-bag-count-header
+         is referenced by no code anywhere in this file and was already inert before S267.
+         Sweep it on the next browse commit, once someone has confirmed that by reading. */
       '[data-ks-bag]{display:inline-flex;align-items:center;justify-content:center;gap:3px;}' +
       '.ks-cart-ico{vertical-align:middle;}' +
       '.ks-cart-badge{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;' +
@@ -2634,6 +2767,58 @@ function outOfCreditsBlock(zeroClasses) {
     applyAndRender();
   }
 
+  /* ONE CHIP PER SELECTED VALUE, plus Clear all. Emitted only when something is on, so
+     the row costs nothing on an unfiltered page. Real BUTTONS with an aria-label naming
+     what each one removes -- the label alone reads as "Toddler x" to a screen reader.
+     ⚠ A CHIP REMOVES ONLY ITS OWN VALUE. That is deliberately NOT what a facet LINK does:
+     applyFacetLink still REPLACES the whole selection (her S266 ruling, unchanged). The
+     chips make that visible; they do not change it.
+     ⚠ THE RAIL KEEPS ITS OWN "Clear all" TOO -- Claude's call, reversible. Two of them is
+     not wrong: the rail's serves someone already in the rail, this one serves someone who
+     never opened it, which on a phone is most people. */
+  function buildFilterChips() {
+    var keys = activeFacetKeys().filter(function (k) { return FILTERS[k] && FILTERS[k].length; });
+    if (!keys.length) return null;
+    var wrap = el('div', 'ks-chips');
+    keys.forEach(function (key) {
+      var def = FACETS[key];
+      FILTERS[key].forEach(function (val) {
+        var label = (def && def.display) ? def.display(val) : val;
+        var b = el('button', 'ks-chip');
+        b.type = 'button';
+        b.setAttribute('data-chip-facet', key);
+        b.setAttribute('data-chip-value', val);
+        b.setAttribute('aria-label', 'Remove filter ' + label);
+        b.appendChild(document.createTextNode(label));
+        b.appendChild(el('span', 'ks-chip-x', '\u00d7'));
+        wrap.appendChild(b);
+      });
+    });
+    var clr = el('button', 'ks-chips-clear', 'Clear all');
+    clr.type = 'button';
+    clr.addEventListener('click', clearAll);
+    wrap.appendChild(clr);
+    wrap.addEventListener('click', function (e) {
+      var b = e.target.closest ? e.target.closest('.ks-chip') : null;
+      if (!b) return;
+      removeFacetValue(b.getAttribute('data-chip-facet'), b.getAttribute('data-chip-value'));
+    });
+    return wrap;
+  }
+
+  /* ⚠ THE RAIL IS BUILT ONCE (RAIL_BUILT), so a box left ticked here would make the rail
+     silently disagree with the grid -- the same reason applyFacetLink and clearAll both
+     walk the checkboxes by hand. */
+  function removeFacetValue(key, val) {
+    var arr = FILTERS[key];
+    if (!arr) return;
+    var i = arr.indexOf(val);
+    if (i !== -1) arr.splice(i, 1);
+    var boxes = document.querySelectorAll('.ks-flt-cb[data-facet="' + key + '"]');
+    for (var b = 0; b < boxes.length; b++) if (boxes[b].value === val) boxes[b].checked = false;
+    applyAndRender();
+  }
+
   function updateClearVisibility() {
     var rail = document.getElementById(RAIL_MOUNT_ID);
     if (!rail) return;
@@ -2747,7 +2932,12 @@ function outOfCreditsBlock(zeroClasses) {
     var mft = document.querySelector('.mobile-filter-toggle');
     if (mft) mount.insertBefore(mft, box);   // BEFORE the box: Filters sits LEFT of search on mobile. Desktop unaffected -- its own breakpoint CSS hides it there.
 
-    mountBagButton(mount);
+    /* WAS mountBagButton(mount) -- the button is gone (S267) and these three lines are the
+       work it did BESIDES building it. Dropping them with the button would have taken the
+       bag CSS, the primed login state and the header cart's count badge with it. */
+    ensureBagCss();
+    checkLoggedIn(function () {});
+    updateBagCount();
 
     input.addEventListener('input', function () {
       SEARCH = input.value;
