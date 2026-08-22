@@ -140,6 +140,36 @@
 
   // condition_grade is stored lowercase + hyphenated ("like-new", "new-with-tags").
   // Render-side label only: sentence-case, hyphens -> spaces. DB value untouched.
+  /* THE OVERLAY TIER BADGE -- ONE EMITTER, S266.
+     HER FINDING, off a real render: the badge in the photo's top corner had NO DOT
+     while the card badge and the chip row both did, so "Special" showed its yellow
+     twice on one screen and not in the corner. It had never carried one.
+     IT WAS ALSO WRITTEN OUT TWICE -- once in detailHtml and again inside swapMain,
+     which REBUILDS the media block from a hardcoded string on every thumbnail tap.
+     Two copies is how the dot could have been added in one place and silently
+     disappeared the moment she tapped a second photo. ONE FUNCTION, BOTH CALLERS.
+     ⚠ THE DOT RULE IS S198'S, UNCHANGED AND DELIBERATE: essentials carries NO MARK,
+     elevated is blue, special is HER BRAND YELLOW #EDA920. The yellow sits below the
+     contrast bar for a mark and she ruled that knowingly, twice, with the numbers in
+     front of her. DO NOT "CORRECT" IT TO #A67C0A HERE -- the word is the information
+     and the dot is a fast-scan aid, which is the whole reason a below-bar mark is
+     acceptable on this element and nowhere that carries meaning alone. */
+  /* ONE EMITTER FOR THE MEDIA BOX'S CONTENTS. swapMain() throws this box away and
+     rebuilds it on EVERY thumbnail and video tap, so anything in here that is written
+     twice will eventually be added in one place and vanish in the other. */
+  function mediaInnerHtml(item, inner, zoom) {
+    return inner + tierBadgeHtml(item) + (zoom || '');
+  }
+
+  function tierBadgeHtml(item) {
+    if (!item || !item.tier) return '';
+    var k = String(item.tier).toLowerCase();
+    var dot = (k === 'elevated' || k === 'special')
+      ? '<span class="ks-tier-dot ks-tier-' + escapeHtml(k) + '"></span>' : '';
+    return '<span class="ks-detail-tier-badge">' + dot +
+           escapeHtml(tierLabel(item.tier)) + '</span>';
+  }
+
   function conditionLabel(c) {
     if (!c) return '';
     c = String(c).toLowerCase().replace(/-/g, ' ');
@@ -302,10 +332,28 @@
          build doc and is its own decision -- do not fix it here.
          Specificity is id + class + class so it beats the per-page head-box
          rules (bare class) WITHOUT !important. */
+      /* MISC-6, SETTLED S266 AFTER TWO COLOURS WERE TRIED AND REJECTED ON LIVE RENDERS.
+         GREEN #1F5C38 (S265) read too close to her ink to register as a heading. CORAL
+         was mocked and rejected too -- it would have been coral's seventh job and it
+         fails AA at this size (3.84:1). ▶▶ SO THE HEADING IS DIFFERENTIATED BY SHAPE AND
+         WEIGHT INSTEAD OF BY COLOUR, and no colour is spent on rail text at all.
+         HER PICK: her options A AND B TOGETHER -- an amber rule under the heading, plus
+         the options muted and indented beneath it.
+         ⚠ THE AMBER RULE IS A BACKGROUND IMAGE, NOT A ::after, AND THAT IS DELIBERATE:
+         .ks-flt-grouplabel is a flex row holding the title and the chevron, so a pseudo
+         element becomes a THIRD FLEX ITEM and lands beside the chevron instead of under
+         the text. A background cannot be caught by the flex.
+         ⚠ #EDA920 IS THE PALETTE YELLOW FROM HER S249 LIST, not the home page's #E5AD43
+         amber. Same device, this project's value.
+         ⚠ IT IS A MARK, NOT TEXT, so it carries no contrast obligation -- which is the
+         whole reason this answer works where the two colours did not. */
       '#ks-filter-rail .ks-flt-group > .ks-flt-grouplabel{font-size:12px;font-weight:700;' +
-        'letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px;color:#1F5C38;}' +   /* MISC-6 (S265): her dark green. #309359 reads ~3.3:1 on white and fails AA at this size; #1F5C38 clears it. */
+        'letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px;color:#1E1A19;' +
+        'padding-bottom:8px;background-image:linear-gradient(#EDA920,#EDA920);' +
+        'background-size:34px 3px;background-repeat:no-repeat;background-position:left bottom;}' +
       '#ks-filter-rail .ks-flt-group.ks-flt-collapsed > .ks-flt-grouplabel{margin-bottom:0;}' +
-      '#ks-filter-rail .ks-flt-group > .ks-flt-groupbody .ks-flt-rowtext{font-weight:400;}' +
+      '#ks-filter-rail .ks-flt-group > .ks-flt-groupbody .ks-flt-row{padding-left:12px;}' +
+      '#ks-filter-rail .ks-flt-group > .ks-flt-groupbody .ks-flt-rowtext{font-weight:400;color:#75736E;}' +
       '#ks-filter-rail .ks-flt-group{margin-bottom:16px;}' +
       '#ks-filter-rail .ks-flt-head > .ks-flt-clear{font-weight:700;text-decoration:underline;}' +
 
@@ -324,7 +372,7 @@
          and no breakpoint to get wrong. */
       '#ks-search{margin-bottom:10px;}' +
       '.inventory-layout{column-gap:50px;row-gap:14px;}' +
-      '#ks-browse-app .ks-browse-count{text-align:center;margin:0 0 14px;color:#75736E;}' +
+      '#ks-browse-app .ks-browse-count{text-align:center;margin:14px 0 0;color:#75736E;}' +   /* S266: the count moved BELOW the grid, so its breathing room moved from under it to over it. Both numbers cannot live at once -- a bottom margin here would sit between the count and the pager. */
       '#ks-browse-app .ks-browse-size{color:#75736E;}' +
 
       /* TIER DOT ON THE CARD BADGE -- HER RULING S195, PLACEMENT RULED S198.
@@ -365,13 +413,61 @@
       '#ks-detail-root .ks-chip .ks-tier-dot{width:9px;height:9px;border-radius:50%;flex:none;display:inline-block;}' +
       '#ks-detail-root .ks-chip .ks-tier-dot.ks-tier-elevated{background:#28498D;}' +
       '#ks-detail-root .ks-chip .ks-tier-dot.ks-tier-special{background:#EDA920;}' +
-      '#ks-detail-root .ks-detail-sku{margin:12px 0 0;font-size:15px;color:#1E1A19;}' +
-      '#ks-detail-root .ks-tiers-toggle{display:inline-flex;align-items:center;margin:14px 0 0;' +
-        'background:none;border:0;padding:0;font:inherit;font-size:13px;color:#75736E;' +
-        'text-decoration:underline;cursor:pointer;}' +
-      '#ks-detail-root .ks-tiers-body{display:none;margin:10px 0 0;font-size:14px;line-height:1.5;color:#1E1A19;}' +
+      /* THE SAME DOT ON THE PHOTO'S TIER BADGE (S266, her finding).
+         ⚠ .ks-detail-tier-badge ITSELF IS STYLED IN THE UNVERSIONED PER-PAGE HEAD BOX
+         AND IS NOT TOUCHED HERE -- that surface is six style blocks across three
+         pages with no rollback. These are NEW selectors adding a dot to an existing
+         element, so they cannot collide with whatever the head box says about it.
+         The flex is scoped with :has() so the essentials badge, which carries no
+         mark, is not altered at all. If :has ever fails the dot still paints, just
+         without its gap: ugly, not broken. */
+      '#ks-detail-root .ks-detail-tier-badge:has(.ks-tier-dot){display:inline-flex;align-items:center;gap:5px;}' +
+      '#ks-detail-root .ks-detail-tier-badge .ks-tier-dot{width:9px;height:9px;border-radius:50%;flex:none;display:inline-block;}' +
+      '#ks-detail-root .ks-detail-tier-badge .ks-tier-dot.ks-tier-elevated{background:#28498D;}' +
+      '#ks-detail-root .ks-detail-tier-badge .ks-tier-dot.ks-tier-special{background:#EDA920;}' +
+      /* RETAIL AND SKU, EACH ON ITS OWN LINE (S266). Retail takes the ink and SKU takes
+         the muted grey retail used to have -- her ruling, and the swap is the point. */
+      '#ks-detail-root .ks-detail-retail{margin:14px 0 0;font-size:15px;color:#1E1A19;}' +
+      '#ks-detail-root .ks-detail-sku{margin:6px 0 0;font-size:13px;color:#75736E;}' +
+      /* ===== THE MEDIA COLUMN (S266) ==================================
+         .ks-detail-mediacol wraps the toggle, the photo box and the panel. It takes the
+         flex-child job .ks-detail-media used to do, and the head box sizes the media box
+         itself by DESCENDANT selectors, so wrapping it changes nothing there -- checked
+         against the served CSS before this was built, not assumed.
+         ⚠ THE PANEL IS POSITIONED AGAINST THIS COLUMN, NOT AGAINST THE PHOTO BOX, which
+         is what keeps it clear of that box's overflow:hidden. 82px = the 26px toggle row
+         + the 8px gap + a 48px inset, which lands it under the tier badge so SPECIAL
+         stays readable. ONE NUMBER; move the toggle's height and move this with it. */
+      '#ks-detail-root .ks-detail-mediacol{flex:0 0 auto;position:relative;' +
+        'display:flex;flex-direction:column;gap:8px;}' +
+      '#ks-detail-root .ks-tiers-toggle{display:inline-flex;align-items:center;gap:7px;' +
+        'align-self:flex-start;height:26px;margin:0 0 0 12px;' +   /* 12px == the badge's own inset */
+        'background:none;border:0;padding:0;font:inherit;font-size:13px;font-weight:500;' +
+        'color:#75736E;text-decoration:none;cursor:pointer;}' +    /* NO UNDERLINE (hers) */
+      '#ks-detail-root .ks-tiers-toggle:hover{color:#1E1A19;}' +
+      '#ks-detail-root .ks-tiers-toggle svg{flex:none;}' +
+      '#ks-detail-root .ks-tiers-body{display:none;position:absolute;top:82px;left:12px;' +
+        'right:12px;z-index:3;background:#fff;border:1px solid #C9C7BC;border-radius:10px;' +
+        'padding:14px 15px;box-shadow:0 10px 26px rgba(0,0,0,.18);' +
+        'font-size:13px;line-height:1.5;color:#1E1A19;}' +
       '#ks-detail-root .ks-tiers-body.is-open{display:block;}' +
-      '#ks-detail-root .ks-tiers-body p{margin:0;}';
+      '#ks-detail-root .ks-tiers-body p{margin:0;}' +
+      '#ks-detail-root .ks-tiers-body p + p{margin-top:10px;}' +
+      /* THE NAME STARTS LEVEL WITH THE TOP OF THE PHOTO, NOT WITH THE LINK ABOVE IT --
+         her correction S266. The rail drops by the same amount so all three columns line
+         up again. 34px = the toggle row plus its gap.
+         ⚠ THIS ALSO TAKES .ks-detail-info OFF align-self:center, which it has carried
+         since S55 -- so the info column is TOP-ALIGNED at desktop now, not vertically
+         centred. She approved that on the mockup. It is the one change here that alters
+         a layout she had already signed off. */
+      '@media (min-width:721px){#ks-detail-root .ks-detail-info{align-self:flex-start;margin-top:34px;}' +
+        '#ks-detail-root .ks-detail-rail{margin-top:34px;}}' +
+      /* Stacked: nothing to align to, so the offsets come off. The ORDER moves to the
+         wrapper -- the head box puts the photo first with order:1 on .ks-detail-media,
+         and that property now has to sit on the flex child, which is the column. */
+      '@media (max-width:720px){#ks-detail-root .ks-detail-mediacol{order:1;width:100%;' +
+        'align-self:stretch;}' +
+        '#ks-detail-root .ks-detail-info,#ks-detail-root .ks-detail-rail{margin-top:0;}}';
     var s = document.createElement('style');
     s.id = 'ks-util-css';
     s.textContent = css;
@@ -560,14 +656,17 @@
     var countText = (pageCount > 1)
       ? 'Showing ' + (startIdx + 1) + '\u2013' + (startIdx + pageItems.length) + ' of ' + total + ' items'
       : total + (total === 1 ? ' item' : ' items');
-    mount.appendChild(el('div', 'ks-browse-count', countText));
-
     var grid = el('div', 'ks-browse-grid');
     var frag = document.createDocumentFragment();
     pageItems.forEach(function (it) { frag.appendChild(buildCard(it)); });
     grid.appendChild(frag);
     wireGrid(grid);
     mount.appendChild(grid);
+
+    // COUNT BELOW THE GRID -- HER RULING S266. It reads as a footer to the results
+    // beside the pager rather than as a header above them. Built BEFORE the grid and
+    // appended AFTER it, because the figures come off the same slice the grid uses.
+    mount.appendChild(el('div', 'ks-browse-count', countText));
 
     if (pageCount > 1) mount.appendChild(buildPagination(pageCount));
   }
@@ -663,13 +762,38 @@
   // script, so there is no reduced-motion or script-never-arrived case to fail open
   // into, and a plain show/hide cannot leak the way a 0fr collapse can (home.css v43).
   // "How tiers work" is CLAUDE'S LABEL, not hers -- reversible, one string.
-  var TIERS_DISCLOSURE =
+  /* THE SPARKLE. HER PICK S266 from four, over three-steps, a star and three tier dots.
+     A DRAWN PATH, NEVER A TEXT GLYPH -- a character depends on whatever font is
+     available and renders differently on her phone than on her Mac (the same rule the
+     home page's badge star is built on). aria-hidden, because the button says what it
+     is in words. */
+  var SPARKLE_SVG =
+    '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">' +
+    '<path d="M12 2l1.7 5.1L18 4.9l-2.2 4.3L21 11l-5.2 1.8L18 17.1l-4.3-2.2L12 20l-1.7-5.1' +
+    'L6 17.1l2.2-4.3L3 11l5.2-1.8L6 4.9l4.3 2.2z"/></svg>';
+
+  /* THE TOGGLE SITS ABOVE THE PHOTO, LEFT, LINED UP WITH THE TIER BADGE -- HER RULING
+     S266, off a live render, SUPERSEDING S265's "beside the tier badge".
+     ⚠⚠ IT CANNOT LIVE INSIDE .ks-detail-media AND THAT IS NOT A PREFERENCE. That box is
+     overflow:hidden with a FIXED 453px height and an image at height:100%, so a row
+     added inside it does not push the photo down -- it pushes the bottom of the photo
+     out through the clip. Hence the wrapper column: toggle, then the media box.
+     ⚠ NO UNDERLINE (hers). The 12px left margin is not a guess -- it matches the badge's
+     own 12px inset, read off the served head box, which is what lines the two up. */
+  var TIERS_TOGGLE =
     '<button type="button" class="ks-tiers-toggle" data-tiers="1" aria-expanded="false" ' +
-      'aria-controls="ks-tiers-body">How tiers work</button>' +
+      'aria-controls="ks-tiers-body">' + SPARKLE_SVG + '<span>How tiers work</span></button>';
+
+  /* HER APPROVED PARAGRAPH, VERBATIM, NOW SET AS TWO PARAGRAPHS -- HER RULING S266.
+     ⚠⚠ THE SPLIT IS FORMATTING AND NOT A REWRITE: NOT ONE WORD CHANGES, and the break
+     falls at the sentence that turns from how grading works to what it costs her. Same
+     move as the /browse SEO block, which she set as three rendered paragraphs with the
+     words untouched. DO NOT REDRAFT EITHER PARAGRAPH (S0). */
+  var TIERS_BODY =
     '<div class="ks-tiers-body" id="ks-tiers-body">' +
       '<p>It isn\u2019t always about the label. We grade every item essentials, elevated ' +
-      'or special, going on quality, demand and what the piece is actually worth. ' +
-      'Send good, get good: six elevated items in, six elevated items back, no extra ' +
+      'or special, going on quality, demand and what the piece is actually worth.</p>' +
+      '<p>Send good, get good: six elevated items in, six elevated items back, no extra ' +
       'charge. Want something from a higher tier than you sent? You pay the ' +
       'difference, based on what it\u2019s worth used, never full retail.</p>' +
     '</div>';
@@ -704,8 +828,6 @@
     } else {
       main = '<div class="ks-detail-ph">Photo coming soon</div>';
     }
-    var tierBadge = item.tier
-      ? '<span class="ks-detail-tier-badge">' + escapeHtml(tierLabel(item.tier)) + '</span>' : '';
     var zoom = photos.length
       ? '<button type="button" class="ks-detail-zoom" aria-label="Zoom photo">' + ZOOM_SVG + ' zoom</button>' : '';
 
@@ -726,18 +848,23 @@
     // THE LINK RULE IS UNCHANGED FROM S197: a value links iff that facet exists on
     // THIS page. facetLive() + facetValueOf() already do exactly that (and already
     // handle a toy's two age bands), so this is a REPETITION of a proven seam.
-    var chips = [];
+    // ORDER IS LINKED FIRST, INERT LAST -- HER RULING S266, off the live render: a
+    // mixed row read as disorganised. TWO ARRAYS rather than a sort, so the order
+    // WITHIN each group is still the order these chip() calls are written in and
+    // stays readable here. ⚠ WHICH CHIPS LINK IS PER PAGE, so this row genuinely
+    // reorders itself between /browse and /clothing. That is the rule working.
+    var chipsLinked = [], chipsPlain = [];
     function chip(key, raw, text, dotKey) {
       if (!text) return;                       // A CHIP WITH NO VALUE DOES NOT RENDER (hers)
       var dot = dotKey
         ? '<span class="ks-tier-dot ks-tier-' + escapeHtml(dotKey) + '"></span>' : '';
       var v = (key && facetLive(key)) ? facetValueOf(key, raw) : '';
       if (v) {
-        chips.push('<a class="ks-chip ks-chip-link" href="#" data-facet-link="' +
+        chipsLinked.push('<a class="ks-chip ks-chip-link" href="#" data-facet-link="' +
           escapeHtml(key) + '" data-facet-value="' + escapeHtml(v) + '">' +
           dot + escapeHtml(text) + '</a>');
       } else {
-        chips.push('<span class="ks-chip ks-chip-plain">' + dot + escapeHtml(text) + '</span>');
+        chipsPlain.push('<span class="ks-chip ks-chip-plain">' + dot + escapeHtml(text) + '</span>');
       }
     }
 
@@ -751,8 +878,9 @@
       (tKeyLower === 'elevated' || tKeyLower === 'special') ? tKeyLower : '');
     // CONDITION lost its inline checkmark: the tick existed to separate it from the
     // tier pill beside it, and a chip is already its own visual unit. Reversible.
-    // No condition facet exists on any page, so it is never a link.
-    if (item.condition_grade) chip('', null, conditionLabel(item.condition_grade));
+    // IT IS A LINK AS OF S266 -- the condition facet now exists on all three rails,
+    // so this key changed from '' to 'condition' and nothing else had to move.
+    chip('condition', item.condition_grade, conditionLabel(item.condition_grade));
     if (isToy && item.toy_washability) chip('wash', item.toy_washability, capFirst(item.toy_washability));
     // COMPLETENESS, HER RULING S265: ticked -> "Complete", UNTICKED -> "Missing
     // pieces", NEVER CHECKED (null) -> nothing. An item she checked and found
@@ -766,17 +894,25 @@
     // OCCASION was not in her chip list, but it is a LIVE FACET on all three pages,
     // so the S197 rule makes it a link mechanically. Claude's call, reversible.
     chip('occasion', item.occasion, item.occasion);
-    var retail = money(item.retail_value);
-    // APPROVED STRINGS, VERBATIM. "$45 new" is shorter and is UNAPPROVED COPY --
-    // DO NOT shorten these to make the chip fit (S0: her words do not stray).
-    if (retail) chip('', null, isToy ? ('Worth about ' + retail) : ('Retail value new ' + retail));
 
+    var chips = chipsLinked.concat(chipsPlain);
     var chipRow = chips.length
       ? '<div class="ks-detail-chips">' + chips.join('') + '</div>' : '';
 
-    // SKU IS NOT A CHIP AND IS NEVER A LINK -- it is a reference she reads daily,
-    // not a product fact, and a SKU link would return the item already on screen.
-    // HER CORRECTION S264: it stays CLEARLY READABLE, body size and ink.
+    /* RETAIL AND SKU EACH GET THEIR OWN LINE -- HER RULING S266, off the rendered
+       mockup, and it REVERSES her own S265 call that SKU joins the chip row. Recorded
+       as hers rather than as drift: she ruled it once on a description and again on a
+       picture, and the picture won.
+       THE TWO WEIGHTS ARE SWAPPED ON PURPOSE. Retail takes the INK; SKU takes the muted
+       grey retail used to wear. A price is a fact a shopper reads, a SKU is a reference
+       she reads, so the shopper's fact is the darker one.
+       ⚠ APPROVED STRINGS, VERBATIM. "$45 new" is shorter and is UNAPPROVED COPY -- do
+       not shorten either one to fit a line (S0: her words do not stray). */
+    var retail = money(item.retail_value);
+    var retailLine = retail
+      ? '<p class="ks-detail-retail">' +
+          escapeHtml(isToy ? ('Worth about ' + retail) : ('Retail value new ' + retail)) +
+        '</p>' : '';
     var skuLine = item.sku
       ? '<p class="ks-detail-sku">SKU ' + escapeHtml(item.sku) + '</p>' : '';
 
@@ -800,15 +936,25 @@
         (OP_MODE && item.sku ? opBarHtml(item.sku) : '') +
         '<div class="ks-detail-cols">' +
           (thumbs ? '<div class="ks-detail-rail">' + thumbs + '</div>' : '') +
-          '<div class="ks-detail-media">' + main + tierBadge + zoom + '</div>' +
+          // THE MEDIA COLUMN: the toggle, then the photo box, then the panel. The panel
+          // is a SIBLING of the media box rather than a child, so swapMain cannot delete
+          // it and .ks-detail-media's overflow:hidden cannot clip it.
+          '<div class="ks-detail-mediacol">' +
+            TIERS_TOGGLE +
+            '<div class="ks-detail-media">' + mediaInnerHtml(item, main, zoom) + '</div>' +
+            TIERS_BODY +
+          '</div>' +
           '<div class="ks-detail-info">' +
             '<h2 class="ks-detail-name">' + escapeHtml(descriptor(item)) + '</h2>' +
             chipRow +
+            retailLine +
             skuLine +
-            TIERS_DISCLOSURE +
             (item.is_luxury ? LUX_NOTE : '') +
             blocks +
-            '<button type="button" class="ks-detail-cta" data-bag="1">' + BAG_SVG +
+            // NO ICON ON THIS BUTTON -- HER RULING S266. BAG_SVG was live here and is
+            // removed; the icon she actually wanted is the header cart's, which is a
+            // different conversation and a different surface. The label carries it.
+            '<button type="button" class="ks-detail-cta" data-bag="1">' +
               '<span>Add to bag</span></button>' +
             '<span class="ks-detail-cta-cs" aria-live="polite"></span>' +
           '</div>' +
@@ -824,9 +970,11 @@
      Her ask: tapping a label shows every other item that shares it. ONE RULE
      rather than a per-label special case: A LABEL IS A LINK IF THAT FACET
      EXISTS ON THE PAGE SHE IS ON. activeFacetKeys() already returns the live
-     per-page list, so brand/size/tier link everywhere, GENDER links on
-     /clothing and is plain on /browse, and CONDITION is plain today and starts
-     linking itself for free the day a condition facet is ever built.
+     per-page list. S266 MOVED TWO OF THESE: gender is now on /browse's rail as well
+     as /clothing's, and the condition facet was built, so CONDITION now links on all
+     three pages exactly as this comment predicted it would. SKU is still never a
+     link and structurally cannot become one -- it has no facet and would return the
+     item already on screen.
      THE VALUE MUST MATCH rowMatchesFacet'S NORMALISATION or the link filters to
      nothing and reads as broken: 'lower' facets compare lowercased, and a
      'tokens' facet (toy age) compares one band at a time. */
@@ -1096,13 +1244,16 @@
     if (!media) return;
     var photos = photoList(item);
     // rebuild media content but keep tier badge + zoom
-    var tierBadge = item.tier
-      ? '<span class="ks-detail-tier-badge">' + escapeHtml(tierLabel(item.tier)) + '</span>' : '';
+    // ⚠ THIS IS WHY mediaInnerHtml() EXISTS. This function throws the media block away
+    // and rebuilds it on EVERY thumbnail and video tap, so anything living in there must
+    // be re-emitted here or it vanishes on the second photo with nothing in the console.
+    // The badge was a second hardcoded copy until S266. THE TOGGLE AND THE PANEL ARE
+    // DELIBERATELY OUTSIDE THIS BOX and are therefore untouched by a photo swap.
     var inner;
     if (isVideo && item.video_url) {
       inner = '<video class="ks-detail-main-video" src="' + escapeHtml(item.video_url) +
         '" autoplay loop muted playsinline preload="auto"></video>';
-      media.innerHTML = inner + tierBadge;
+      media.innerHTML = mediaInnerHtml(item, inner, '');
       // Option A: silent ambient loop, no controls. The muted *property* (not just
       // the attribute) is what some browsers require for autoplay, and an explicit
       // play() with a swallowed rejection covers the rest.
@@ -1114,7 +1265,7 @@
         '" data-full="' + escapeHtml(u) + '" alt="' +
         escapeHtml(descriptor(item)) + '">';
       var zoom = '<button type="button" class="ks-detail-zoom" aria-label="Zoom photo">' + ZOOM_SVG + ' zoom</button>';
-      media.innerHTML = inner + tierBadge + zoom;
+      media.innerHTML = mediaInnerHtml(item, inner, zoom);
     }
     // active thumb state
     root.querySelectorAll('.ks-detail-thumb').forEach(function (b) {
@@ -2056,6 +2207,15 @@ function outOfCreditsBlock(zeroClasses) {
   var SIZE_ORDER = ['6-9M', '9-12M', '12-18M', '18-24M', '2T', '3T', '4 / XXS', '5 / XS', '6 / XS', '7 / Small'];
   var AGE_ORDER  = ['Baby', 'Toddler', 'Preschool', 'Big Kid'];
   var OCCASION_ORDER = ["Valentine's Day", 'Easter', 'Fourth of July', 'Halloween', 'Christmas', 'Special occasion'];
+  /* CONDITION_ORDER -- BEST TO WORST, and every string is the RAW stored value read
+     off inventory S266 with its counts (great 481, good 138, like-new 74, fair 52,
+     new-with-tags 30). AN `order` ARRAY IS A WHITELIST: facetOptions keeps only
+     present values that appear in it, so ONE WRONG STRING SILENTLY DROPS THAT GRADE
+     FROM THE RAIL WITH NO ERROR ANYWHERE. Do not retype these from memory, and do
+     not "tidy" new-with-tags to nwt -- conditionLabel() renders these five as
+     New with tags / Like new / Great / Good / Fair, which is why no display map is
+     needed here. */
+  var CONDITION_ORDER = ['new-with-tags', 'like-new', 'great', 'good', 'fair'];
 
   function capFirst(s) { s = String(s == null ? '' : s); return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
   function ident(v) { return v; }
@@ -2069,13 +2229,30 @@ function outOfCreditsBlock(zeroClasses) {
     category: { field: 'category',        title: 'Category',    match: 'exact',  order: null,       display: ident,       showAll: true },
     wash:     { field: 'toy_washability', title: 'Washability', match: 'exact',  order: null,       display: capFirst },
     age:      { field: 'size',            title: 'Age',         match: 'tokens', order: AGE_ORDER,  display: ident },
-    occasion: { field: 'occasion',        title: 'Occasion',    match: 'exact',  order: OCCASION_ORDER, display: ident }
+    occasion: { field: 'occasion',        title: 'Occasion',    match: 'exact',  order: OCCASION_ORDER, display: ident },
+    // CONDITION (S266). The file predicted this one at S198: "CONDITION is plain
+    // today and starts linking itself for free the day a condition facet is ever
+    // built." That is exactly what happened -- the chip's key changed from '' to
+    // 'condition' and facetLive() did the rest. match:'exact' compares the RAW
+    // value, which is what the chip link sends, so the two cannot diverge.
+    condition:{ field: 'condition_grade',  title: 'Condition',   match: 'exact',  order: CONDITION_ORDER, display: conditionLabel }
   };
 
+  /* S266: GENDER added to /browse and CONDITION added to all three.
+     GENDER was already live on /clothing, so "Girls" has linked there since S198 and
+     only /browse was missing the rail entry -- confirmed off this config, not off the
+     doc. ⚠ /browse HOLDS TOYS TOO and toys carry no gender_style, so a gender
+     selection there returns clothing only. That is correct (facets combine with AND)
+     and it is NOT the size/age case, which needed EXCLUSIVE_PAIRS because it could
+     only ever return zero rows.
+     ⚠ THE 31 UNGENDERED CLOTHING ITEMS STAY ABSENT FROM THIS FACET -- her S264
+     ruling that null is the honest answer. Reachable unfiltered; do not fill them in.
+     Placement is CLAUDE'S CALL AND REVERSIBLE: gender beside brand, condition beside
+     tier, since tier and condition are the two quality questions. */
   var RAIL_CONFIG = {
-    all:      ['category', 'brand', 'tier', 'size', 'age', 'occasion'],
-    clothing: ['category', 'brand', 'color', 'gender', 'size', 'tier', 'occasion'],
-    toy:      ['brand', 'age', 'wash', 'tier', 'occasion']   // no category group on toys
+    all:      ['category', 'brand', 'gender', 'tier', 'condition', 'size', 'age', 'occasion'],
+    clothing: ['category', 'brand', 'color', 'gender', 'size', 'tier', 'condition', 'occasion'],
+    toy:      ['brand', 'age', 'wash', 'tier', 'condition', 'occasion']   // no category group on toys
   };
 
   /* /browse carries BOTH size (clothing values) and age (toy values). Each facet's
