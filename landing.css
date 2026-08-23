@@ -1,71 +1,84 @@
 /* ==========================================================================
-   landing.css  —  KidSwaps landing pages
-   Built S270 for /bay-area-kids-clothing-swap. Shared by every landing page.
+   landing.css  —  KidSwaps landing pages  —  v2, S270
+   Supersedes v1 @cdb9518 entirely. Rebuilt for the two-column editorial
+   layout after v1's single-column version was judged too plain.
 
    Page-linked from each landing page's HEAD box. Never Site Settings.
    Its behaviour half is landing.js in the Before </body> box, on the SAME SHA.
    TWO PIN FIELDS. EDIT BOTH, EVERY TIME.
 
-   Palette, hers S249. Do not introduce a colour outside this list.
+   Palette, hers S249. Nothing outside this list appears in this file.
      coral  #E54F25   yellow #EDA920   green #309359   navy #1C4A91
      pink   #F491A9   ink    #1E1A19   cream #EDECE0
+   NAVY IS DELIBERATELY UNUSED. Her ruling: no filled masthead, top or bottom.
 
-   INK IS ONE TOKEN HERE, --landing-ink, set to #1E1A19, the site-wide value
-   in header.css. Her S249 list names #211B1A and that is STILL UNRULED, and
-   the live page is currently serving #211B1A on body copy. One line to change
-   if she rules the other way. DO NOT introduce a third value.
+   INK IS ONE TOKEN, --landing-ink, set to #1E1A19, the site-wide value in
+   header.css. Her S249 list names #211B1A and that is STILL UNRULED. One line
+   to change. DO NOT introduce a third value.
    ========================================================================== */
 
 :root {
   --landing-ink: #1E1A19;
   --landing-cream: #EDECE0;
-  --landing-navy: #1C4A91;
   --landing-coral: #E54F25;
   --landing-amber: #EDA920;
   --landing-pink: #F491A9;
-  --landing-measure: 660px;
+  --landing-muted: #75736E;
+  --landing-hairline: #C9C7BC;
+  --landing-placeholder: #CCCAC5;
 }
 
 /* --------------------------------------------------------------------------
    WRAP AND CARD
-   The interior-page measure, her ruling S255, built first on /faq.
-   1400 max-width, 28px gutter, 38 above the card plus 36 inside it.
-   width PLUS max-width, NEVER margin:auto alone — auto margins with no width
-   give the card the whole viewport below 1400 and put it hard against both
-   screen edges, which is exactly where the gutter matters most.
+   The card is 1010 rather than the 1400 interior measure /faq uses, and that
+   is deliberate: 1400 with a 660 reading column left ~700px of empty cream on
+   the right, which is the fault this rebuild exists to fix. The column
+   arithmetic is exact — 290 + 60 gap + 660 = 1010.
+   width PLUS max-width, never margin:auto alone: auto margins with no width
+   give the card the whole viewport below 1010 and put it against both edges.
    -------------------------------------------------------------------------- */
 
 .landing-wrap {
   background-color: var(--landing-cream);
-  padding: 38px 0 72px;
+  padding: 56px 0 96px;
 }
 
 .landing-card {
   position: relative;
   width: calc(100% - 56px);
-  max-width: 1400px;
+  max-width: 1010px;
   margin-left: auto;
   margin-right: auto;
-  padding-top: 36px;
 }
 
 /* --------------------------------------------------------------------------
-   MASTHEAD
-   Navy ground, cream H1. Measured 8.65:1 at S196, clears AA comfortably.
-   The H1 is capped at 70% on desktop so it breaks to two or three lines
-   rather than running the full 1400. Full width once it stacks.
+   TITLE AND LEDE
+   The title sits at the card's left edge. The lede runs wide beneath it and
+   is set LARGER than body copy — that is what makes it read as an opening
+   rather than an orphaned first paragraph, and it fills the space that sat
+   empty when the lede was indented to the body column.
+   Both are STATIC. They are above the fold on desktop, so animating them
+   would either fire before anyone scrolls or flash empty on first paint.
    -------------------------------------------------------------------------- */
 
-.landing-masthead {
+.landing-head {
   position: relative;
-  background-color: var(--landing-navy);
-  border-radius: 12px;
-  padding: 64px 64px 68px;
+  padding-top: 8px;
+}
+
+.landing-eyebrow {
+  margin: 0;
+  font-family: Quicksand, sans-serif;
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
 }
 
 .landing-masthead-heading,
-.landing-masthead .landing-masthead-heading {
-  margin: 0;
+.landing-head .landing-masthead-heading {
+  margin: 14px 0 0;
   max-width: 70%;
   font-family: "Instrument Serif", Georgia, serif;
   font-style: normal;
@@ -73,32 +86,41 @@
   font-size: 56px;
   line-height: 1.06;
   letter-spacing: -0.01em;
-  color: var(--landing-cream);
+  text-align: left;
+  color: var(--landing-ink);
+}
+
+.landing-lede,
+.landing-lede p {
+  margin: 26px 0 0;
+  max-width: 760px;
+  font-family: Quicksand, sans-serif;
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 1.7;
+  color: var(--landing-ink);
 }
 
 /* --------------------------------------------------------------------------
-   THE SEAM STAR
-   A DIV, never an image, filled by clip-path with the pink placeholder —
-   the same pattern as the two hero stars and the closet-standard star.
-   WHEN HER PNG LANDS IT IS ONE PROPERTY SWAP ON THIS SAME ELEMENT:
-   drop background-color and clip-path, add background-image,
-   background-size:contain, background-repeat:no-repeat. NO DESIGNER WORK.
-
-   It straddles the masthead's bottom edge, so it sits on the navy-to-cream
-   seam at every width and never has to move or hide.
+   THE STAR
+   A DIV, never an image, filled by clip-path with the pink placeholder — the
+   same pattern as the two hero stars and the closet-standard star.
+   WHEN HER PNG LANDS IT IS ONE PROPERTY SWAP ON THIS SAME ELEMENT: drop
+   background-color and clip-path, add background-image, background-size
+   contain, background-repeat no-repeat. NO DESIGNER WORK.
 
    THE SPIN IS AN INLINE `rotate:` WRITTEN BY landing.js ON SCROLL.
-   There is deliberately NO rotate rule in this file — a stylesheet rule
-   would lose to the inline value silently, and `transform: rotate()` would
-   delete the translate that centres nothing here but does on the hero stars.
+   There is deliberately NO rotate rule in this file — a stylesheet rule would
+   lose to the inline value silently. And it is `rotate:` rather than
+   `transform: rotate()`, which is what positions the hero stars.
    -------------------------------------------------------------------------- */
 
 .landing-star {
   position: absolute;
-  left: 64px;
-  bottom: -46px;
-  width: 92px;
-  height: 92px;
+  right: 0;
+  top: 0;
+  width: 88px;
+  height: 88px;
   z-index: 2;
   pointer-events: none;
   background-color: var(--landing-pink);
@@ -106,27 +128,56 @@
 }
 
 /* --------------------------------------------------------------------------
-   THE READING COLUMN
-   660px is roughly 68 characters at 16px Quicksand, inside the readable band.
-   It sits INSIDE the 1400 card rather than replacing it.
+   SECTIONS
+   ONE SHAPE, REPEATED. Heading column left, everything else right. An image
+   is a block INSIDE the right column, never a third column — a three-column
+   row leaves the text around 380px, which is below the readable band. Two
+   columns give it ~660 on every section whether it carries a photo or not.
+   That sameness is what lets this template survive ten pages.
    -------------------------------------------------------------------------- */
 
-.landing-measure {
-  width: 100%;
-  max-width: var(--landing-measure);
-  margin: 72px auto 0;
+.landing-section {
+  display: grid;
+  grid-template-columns: 290px 1fr;
+  gap: 60px;
+  align-items: start;
+  margin-top: 46px;
+  padding-top: 46px;
+  border-top: 1px solid var(--landing-hairline);
 }
 
-/* --------------------------------------------------------------------------
-   BODY COPY
-   Every paragraph on this page is styled identically, so these are written
-   as descendants of the rich text element rather than per-paragraph classes.
+.landing-section-heading,
+.landing-section .landing-section-heading {
+  margin: 0;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1.16;
+  color: var(--landing-ink);
+}
 
-   Line-height was computing 1.25 off a global rule before this file existed.
-   1.7 is the readable value on a page that is nothing but running text.
-   -------------------------------------------------------------------------- */
+/* The amber rule as an ::after on the heading rather than its own element —
+   one thing to place, and it cannot get orphaned by a copy edit. Same device
+   as the browse filter headings S266, and it works for the same reason: a
+   rule is a MARK, not text, so it carries no contrast obligation. Green and
+   coral were both tried on that surface and rejected on the render.
+   DO NOT RE-COLOUR THIS. */
 
-.landing-richtext p {
+.landing-section-heading::after {
+  content: "";
+  display: block;
+  width: 32px;
+  height: 3px;
+  margin-top: 14px;
+  background-color: var(--landing-amber);
+}
+
+.landing-section-body > *:first-child {
+  margin-top: 0;
+}
+
+.landing-section-body p {
   margin: 0 0 1.1em;
   font-family: Quicksand, sans-serif;
   font-weight: 400;
@@ -135,83 +186,64 @@
   color: var(--landing-ink);
 }
 
-.landing-richtext p:last-child {
+.landing-section-body p:last-child {
   margin-bottom: 0;
 }
 
 /* --------------------------------------------------------------------------
-   SECTION HEADINGS
-   THE COLOUR IS THE FIX. Before this file the H2s inherited #F2F1EB — the
-   off-palette cream she cleared off /old-home's Body at S253 — and were
-   effectively invisible on the near-white page. Same fault as /browse S261.
-
-   ITALIC IS DELIBERATE and is the only level distinction available: the
-   family ships ONE weight, so a heavier H2 would be a browser-faked bold.
-   H1 roman, H2 italic, the same move /faq already makes on its group heads.
-
-   ⚠ THE ITALIC FACE READ `unloaded` ON THIS PAGE AT S270, with roman loaded.
-   That is EXPECTED for a face nothing referenced yet — browsers fetch lazily.
-   THIS RULE IS WHAT REFERENCES IT. Re-read document.fonts after publishing:
-   italic 400 `loaded` means it is a real face; still `unloaded` means the
-   font link lacks it and every H2 is a SYNTHESIZED SHEAR, which distorts a
-   serif far more visibly than a faked bold. Go roman if so. DO NOT judge it
-   by eye.
-   -------------------------------------------------------------------------- */
-
-.landing-richtext h2 {
-  position: relative;
-  margin: 52px 0 0;
-  padding-bottom: 19px;
-  font-family: "Instrument Serif", Georgia, serif;
-  font-style: italic;
-  font-weight: 400;
-  font-size: 30px;
-  line-height: 1.15;
-  color: var(--landing-ink);
-}
-
-/* The amber rule. An ::after on the heading rather than a separate div per
-   section — one element, and it cannot get orphaned by a copy edit. Same
-   device as the browse filter headings S266, and the reason it works there
-   is that a rule is a MARK rather than text, so it carries no contrast
-   obligation. Green and coral were both tried on that surface and rejected
-   on the render. DO NOT RE-COLOUR THIS. */
-
-.landing-richtext h2::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: 8px;
-  width: 32px;
-  height: 3px;
-  background-color: var(--landing-amber);
-}
-
-/* --------------------------------------------------------------------------
    IMAGE
-   One item, her own listing photo. Full width of the reading column.
+   A DIV with a placeholder fill, so the page is complete before any photo
+   exists. SWAPPING IN A PHOTO IS ONE PROPERTY: drop background-color, add
+   background-image. aspect-ratio rather than a fixed height, so it scales
+   with the column at every width and needs no breakpoint of its own.
    -------------------------------------------------------------------------- */
 
 .landing-image {
   display: block;
   width: 100%;
-  height: auto;
-  margin: 34px 0 0;
+  aspect-ratio: 4 / 3;
+  margin: 26px 0;
   border-radius: 10px;
+  background-color: var(--landing-placeholder);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.landing-image.is-tall {
+  aspect-ratio: 1 / 1;
+}
+
+/* --------------------------------------------------------------------------
+   PULL QUOTE
+   Rule down the left edge, from her second reference. Amber, matching the
+   heading rule, so the page carries one accent rather than two.
+   -------------------------------------------------------------------------- */
+
+.landing-quote,
+.landing-quote p {
+  margin: 28px 0 0;
+  padding-left: 20px;
+  border-left: 3px solid var(--landing-amber);
+  font-family: "Instrument Serif", Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 1.35;
+  color: var(--landing-ink);
 }
 
 /* --------------------------------------------------------------------------
    BUTTONS
-   Coral primary, outlined ink secondary, side by side on desktop and
-   stacked full width once it gets narrow.
-   Coral now does six jobs site-wide. Her knowing call, S264. Not drift.
+   Coral primary, outlined ink secondary. Coral does six jobs site-wide as of
+   her S264 ruling — knowing, not drift.
    -------------------------------------------------------------------------- */
 
 .landing-cta-row {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin: 40px 0 0;
+  margin: 32px 0 0;
 }
 
 .landing-cta-primary,
@@ -259,89 +291,159 @@
 }
 
 /* ==========================================================================
+   MOTION
+   HER S224 RULING, AND THE WHOLE DESIGN OF THIS BLOCK: NOTHING IS HIDDEN BY
+   CSS ALONE. The how-it-works entrance hid four steps and revealed them on an
+   observer, and when the observer did not fire the section rendered
+   PERMANENTLY BLANK on the live page.
+
+   So every hiding rule is scoped under html.landing-motion, a class landing.js
+   sets as its FIRST act. Script never arrives, no flag, no hiding, page renders
+   exactly as it does with no JavaScript at all.
+
+   AND IT IS A KEYFRAME ANIMATION, NEVER A TRANSITION — S247, Claude's own
+   regression. A transition only runs if the browser painted the start state
+   first, and on a warm cache both states collapse into one frame: nothing
+   animates and every gate passes. An animation makes no such bet.
+
+   `both` fill is load-bearing: it holds the start state through any delay and
+   the end state after, so nothing snaps back.
+
+   The whole block sits inside prefers-reduced-motion: no-preference, so a
+   reduced-motion reader never receives the hiding rule at all.
+   ========================================================================== */
+
+@media (prefers-reduced-motion: no-preference) {
+
+  html.landing-motion .landing-section {
+    opacity: 0;
+  }
+
+  html.landing-motion .landing-section.is-in {
+    animation: landing-rise 0.5s cubic-bezier(.4, 0, .2, 1) both;
+  }
+
+}
+
+@keyframes landing-rise {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==========================================================================
    991 — tablet
-   Webflow has FOUR breakpoints and this file speaks at all four, deliberately.
-   home.css speaks at three and leaves below-479 to Webflow's own rules; on a
-   page that is entirely type, the smallest phone is worth writing.
+   Two columns survive here on a narrower left rail: 240 + 44 + text still
+   leaves the reading column above the readable floor at this width.
    ========================================================================== */
 
 @media (max-width: 991px) {
 
-  .landing-masthead {
-    padding: 52px 48px 56px;
+  .landing-wrap {
+    padding: 44px 0 76px;
   }
 
   .landing-masthead-heading,
-  .landing-masthead .landing-masthead-heading {
+  .landing-head .landing-masthead-heading {
     max-width: 88%;
     font-size: 46px;
   }
 
+  .landing-lede,
+  .landing-lede p {
+    font-size: 19px;
+  }
+
   .landing-star {
-    left: 48px;
-    bottom: -38px;
-    width: 76px;
-    height: 76px;
+    width: 70px;
+    height: 70px;
   }
 
-  .landing-measure {
-    margin-top: 62px;
+  .landing-section {
+    grid-template-columns: 240px 1fr;
+    gap: 44px;
+    margin-top: 40px;
+    padding-top: 40px;
   }
 
-  .landing-richtext h2 {
-    font-size: 28px;
+  .landing-section-heading,
+  .landing-section .landing-section-heading {
+    font-size: 27px;
   }
 
 }
 
 /* ==========================================================================
    767 — phone
+   ONE COLUMN. The heading sits above its own content, which is why this
+   layout needs no rearranging on a phone — the grid collapses and the reading
+   order is already right.
+   Spacing is deliberately tighter than a desktop-scaled version would be: on
+   a narrow column the same gaps read as gaps rather than as rhythm.
    ========================================================================== */
 
 @media (max-width: 767px) {
 
   .landing-wrap {
-    padding: 34px 0 56px;
+    padding: 34px 0 60px;
   }
 
   .landing-card {
     width: calc(100% - 40px);
-    padding-top: 20px;
-  }
-
-  .landing-masthead {
-    padding: 38px 26px 42px;
   }
 
   .landing-masthead-heading,
-  .landing-masthead .landing-masthead-heading {
-    max-width: 100%;
+  .landing-head .landing-masthead-heading {
+    max-width: 86%;
     font-size: 38px;
   }
 
+  .landing-lede,
+  .landing-lede p {
+    margin-top: 18px;
+    font-size: 17px;
+  }
+
   .landing-star {
-    left: 26px;
-    bottom: -28px;
-    width: 58px;
-    height: 58px;
+    width: 52px;
+    height: 52px;
   }
 
-  .landing-measure {
-    margin-top: 50px;
+  .landing-section {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-top: 28px;
+    padding-top: 26px;
   }
 
-  .landing-richtext h2 {
-    margin-top: 44px;
-    padding-bottom: 17px;
+  .landing-section-heading,
+  .landing-section .landing-section-heading {
     font-size: 25px;
   }
 
-  .landing-richtext h2::after {
-    width: 28px;
+  .landing-section-heading::after {
+    margin-top: 12px;
+  }
+
+  .landing-image {
+    margin: 20px 0;
+  }
+
+  .landing-quote,
+  .landing-quote p {
+    margin-top: 22px;
+    padding-left: 16px;
+    font-size: 20px;
   }
 
   .landing-cta-row {
     display: block;
+    margin-top: 26px;
   }
 
   .landing-cta-primary,
@@ -361,6 +463,9 @@
 
 /* ==========================================================================
    479 — small phone
+   Webflow has four breakpoints and this file speaks at all four. home.css
+   speaks at three and leaves below-479 to Webflow's own rules; on a page that
+   is almost entirely type, the smallest phone is worth writing.
    ========================================================================== */
 
 @media (max-width: 479px) {
@@ -369,24 +474,29 @@
     width: calc(100% - 32px);
   }
 
-  .landing-masthead {
-    padding: 32px 22px 36px;
-  }
-
   .landing-masthead-heading,
-  .landing-masthead .landing-masthead-heading {
+  .landing-head .landing-masthead-heading {
+    max-width: 100%;
     font-size: 34px;
   }
 
-  .landing-star {
-    left: 22px;
-    bottom: -24px;
-    width: 50px;
-    height: 50px;
+  .landing-eyebrow {
+    font-size: 12px;
   }
 
-  .landing-richtext h2 {
+  .landing-star {
+    width: 44px;
+    height: 44px;
+  }
+
+  .landing-section-heading,
+  .landing-section .landing-section-heading {
     font-size: 23px;
+  }
+
+  .landing-quote,
+  .landing-quote p {
+    font-size: 19px;
   }
 
 }
