@@ -1048,6 +1048,16 @@
      ⚠⚠ THE SIX-IN/SIX-BACK EXAMPLE IS GONE and it was the only concrete illustration in
      this panel -- the one line that SHOWED tier matching rather than describing it. She was
      told that before ruling. Knowingly hers.
+     ⚠⚠ BROKEN INTO FOUR PARAGRAPHS AT S267, HER SECOND PASS, AFTER READING IT ON THE LIVE
+     PANEL: "the how tiers work text is kind of a hard read and thats on me." One wall of
+     prose became lede / how we grade / what the three tiers are / what it costs. THREE WORD
+     CHANGES RODE WITH IT, ALL HERS: "actually worth" -> "currently worth" · the comma after
+     "essentials" became a full stop · and "you just can\u2019t pass up" lost the "just".
+     ✅ "currently worth" IS THE BETTER WORD AND NOT ONLY A PREFERENCE -- it points at used
+     value now, which is exactly what the last clause means by "never full retail".
+     ⚠ THE PANEL IS A POPOVER AT A FIXED TOP OFFSET. Four paragraphs plus three 10px gaps is
+     taller than two; if it ever outgrows its box the fix is the popover, NOT cutting her
+     copy back.
      ⚠ THE CONDITION COLLISION IS KNOWN AND ACCEPTED: "condition" is also a live CHIP on this
      same panel carrying a grade like "Good", so the word means two things within an inch of
      itself. Flagged once at S267 and ruled. DO NOT RE-FLAG IT.
@@ -1055,11 +1065,12 @@
   var TIERS_BODY =
     '<div class="ks-tiers-body" id="ks-tiers-body">' +
       '<p class="ks-tiers-lede">It isn\u2019t always about the label.</p>' +
-      '<p>We grade every item based on condition, demand and what it\u2019s actually worth. ' +
-      'Most items are essentials, elevated items are worth more, and special items are the ' +
-      'rarest and most valuable. The better you send, the better you get, no extra charge. ' +
-      'If you see something from a higher tier you just can\u2019t pass up, you only pay the ' +
-      'difference, never full retail.</p>' +
+      '<p>We grade every item based on condition, demand and what it\u2019s currently worth.</p>' +
+      '<p>Most items are essentials. Elevated items are worth more, and special items are ' +
+      'the rarest and most valuable.</p>' +
+      '<p>The better you send, the better you get, no extra charge. If you see something ' +
+      'from a higher tier you can\u2019t pass up, you only pay the difference, never full ' +
+      'retail.</p>' +
     '</div>';
 
   function detailHtml(item) {
