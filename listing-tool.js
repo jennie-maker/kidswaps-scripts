@@ -735,6 +735,16 @@
         anchor.parentNode.insertBefore(nameField, anchor.nextSibling);
       }
     }
+    // S268 HER ASK: description sits directly after item name, so the two text
+    // fields read as one pair. SCHEMA already has them adjacent; the nameField
+    // move above is what separated them, on purpose (name after the size/gender
+    // group on clothing, under Brand on toy). This preserves that placement and
+    // brings description along.
+    // MUST RUN AFTER THE nameField MOVE — anchoring before it uses a stale position.
+    var descField = root.querySelector('.ksl-field[data-field="description"]');
+    if (nameField && descField && nameField.nextSibling !== descField) {
+      nameField.parentNode.insertBefore(descField, nameField.nextSibling);
+    }
     // resale_value is group "both", so the data-group pass above just made it
     // visible regardless of tier — re-assert the tier gate as the last word.
     applyResaleVisibility();
@@ -1699,6 +1709,21 @@
   submitBtn.addEventListener("click", function () {
     var bad = validate();
     if (bad.length) { showToast("Check the highlighted fields", true); return; }
+    // S268 SKU FORMAT GUARD. The field SEEDS as "KS-" and several paths
+    // deliberately leave it that way for manual entry (prefill auth error,
+    // deploy window, no label at all). Nothing stopped that bare prefix being
+    // submitted: it satisfies NOT NULL and UNIQUE honestly, so both database
+    // guards answered correctly and neither had anything to catch. One shipped
+    // as a live browsable row whose SKU read "KS-" on the browse detail panel.
+    // Mirrors the DB CHECK inventory_sku_format added the same day; the
+    // constraint is the durable half, this is the readable one.
+    var skuVal = (skuEl ? skuEl.value : "").trim();
+    if (!/^KS-\d{5}$/.test(skuVal)) {
+      markError("sku");
+      showToast("SKU needs to be KS- plus five digits, like KS-00042.", true);
+      if (skuEl) { try { skuEl.focus(); } catch (_e) {} }
+      return;
+    }
     // SKU-DRIFT GUARD: graded data was pulled for one SKU, but the SKU field
     // now shows a different label -> the carry-forward data is stale. Block,
     // don't silently list mismatched data (an autopilot-class mistake).
