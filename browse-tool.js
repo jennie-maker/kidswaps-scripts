@@ -631,13 +631,24 @@
          primary text on the site and she was told so before ruling. */
       '.seo-content-bottom-of-page{padding-top:0;}' +
       '.seo-content-bottom-of-page .seo-content-div{padding-top:0;}' +
+      /* 76px, HERS S267, DOWN FROM THE 86 SHE APPROVED MINUTES EARLIER ON THE SAME PAGE.
+         Nothing changed the type; the SPACE around it changed -- section padding-top went
+         to 0 and the heading-to-body gap to 8, so the identical size started reading
+         larger. A SIZE JUDGED BEFORE ITS SPACING IS JUDGED TWICE. */
       '.seo-content-bottom-of-page .seo-content-heading{max-width:none;margin-bottom:0;' +
-        'font-size:86px;line-height:1.0;}' +
+        'font-size:76px;line-height:1.0;}' +
       '.seo-content-bottom-of-page .seo-content-div > div{max-width:none;font-size:13px;' +
         'line-height:1.4;padding-top:8px;}' +
       '@media (max-width:991px){' +
-        '.seo-content-bottom-of-page .seo-content-div{max-width:none;margin-left:0;margin-right:0;' +
-          'padding-left:20px;padding-right:20px;}' +
+        /* NO max-width, margin-left/right or padding-left/right HERE -- alignSeoBlock owns
+           the horizontal box at every width and a side padding would COMPOUND with the
+           margin it sets. Vertical space and fonts only.
+           THE TOP GAP IS HERS, S267: the block sits directly under the pager on a phone and
+           needed "breathing room". It exists only at narrow widths because the desktop
+           padding-top:0 above is also hers -- the 60+60 doubled gap she had me kill. So the
+           two rules are not in conflict; they are the same decision at two widths. ONE
+           NUMBER IF SHE WANTS IT LOOSER. */
+        '.seo-content-bottom-of-page{padding-top:48px;}' +
         '.seo-content-bottom-of-page .seo-content-heading{font-size:34px;}' +
         '.seo-content-bottom-of-page .seo-content-div > div{font-size:15px;}}';
     var s = document.createElement('style');
@@ -657,27 +668,39 @@
      .ks-browse-grid (which does not exist until tiles render).
      ⚠⚠ IT MUST RE-MEASURE ON RESIZE. A fixed pixel offset is correct at exactly one
      window width and wrong at every other, which is what made this look broken twice.
-     ⚠⚠ UNDER 992 IT CLEARS THE INLINE STYLES AND GETS OUT OF THE WAY, because the rail is
-     gone at that width and the CSS block above owns the full-width-plus-padding case.
-     .inventory-main IS STILL IN THE DOM AND STILL VISIBLE below 992, so a visibility test
-     would silently keep aligning to it -- THE GATE IS THE WIDTH, deliberately.
+     ⚠⚠⚠ THERE IS NO BREAKPOINT IN HERE AND THAT IS THE FIX, NOT AN OMISSION. It first
+     shipped gated on width < 992 and THAT WAS WRONG: the rail is still inline at 774 --
+     measured, main.left 370 = 40 padding + 280 rail + 50 gap -- so the rail collapses at
+     720, not 992. In the 721-991 band the CSS sent this block full width while the products
+     column sat inset by 370, and the two disagreed at every width in it. Same species as
+     the /admin/grading tablet band, freshly introduced and caught by one live read.
+     ALIGNING TO THE MEASURED COLUMN AT EVERY WIDTH CANNOT DRIFT OUT OF STEP WITH A
+     BREAKPOINT, because it does not know about any.
+     ⚠ A WIDTH GATE IS A GUESS ABOUT SOMEBODY ELSE'S LAYOUT. Measure the layout instead.
      ⚠ If this never runs, the block renders as it does today: capped and page-centred.
      Ugly rather than a lie, the same failure direction as everything else on this page. */
+  var MIN_SIDE = 20;
   function alignSeoBlock() {
     var sec = document.querySelector('.seo-content-bottom-of-page');
     if (!sec) return;
     var inner = sec.querySelector('.seo-content-div');
     if (!inner) return;
-    if (window.innerWidth < 992) {
-      inner.style.maxWidth = ''; inner.style.marginLeft = ''; inner.style.marginRight = '';
-      return;
-    }
     var main = document.querySelector('.inventory-main');
     if (!main) return;
     var m = main.getBoundingClientRect(), s2 = sec.getBoundingClientRect();
     if (!m.width) return;
-    inner.style.maxWidth   = Math.round(m.width) + 'px';
-    inner.style.marginLeft = Math.round(m.left - s2.left) + 'px';
+    var offset = Math.round(m.left - s2.left);
+    var width  = Math.round(m.width);
+    /* THE 20px FLOOR. If the products column ever runs flush to the screen edge, matching
+       it exactly would put this text edge to edge -- the fault this item exists to fix. So
+       the floor wins and the block keeps a gutter instead of matching. */
+    if (offset < MIN_SIDE) {
+      offset = MIN_SIDE;
+      width  = Math.round(s2.width) - (MIN_SIDE * 2);
+    }
+    if (width < 1) return;
+    inner.style.maxWidth    = width + 'px';
+    inner.style.marginLeft  = offset + 'px';
     inner.style.marginRight = '0';
   }
 
