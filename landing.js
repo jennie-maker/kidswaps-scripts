@@ -40,6 +40,22 @@
   }
 
   /* ------------------------------------------------------------------------
+     1b. THE SECOND FLAG — landing-ready
+
+     SET UNCONDITIONALLY, AND THE DIFFERENCE FROM landing-motion IS THE WHOLE
+     POINT. landing-motion is withheld from a reduced-motion reader, and it
+     arms the section reveal. landing-ready arms the ACCORDION COLLAPSE, and a
+     reduced-motion reader must still get a working accordion rather than rows
+     that cannot open — /old-home learned that at S251. BEHAVIOUR IS NOT
+     MOTION.
+
+     It is still gated on this script running at all, so every failure path
+     ends with every answer open and the page a long readable document.
+     ------------------------------------------------------------------------ */
+
+  doc.classList.add("landing-ready");
+
+  /* ------------------------------------------------------------------------
      2. THE SECTIONS
      One shot each, then unobserve — no replay on the way back up, her ruling.
      Each section carries its own entry, so a section never scrolled to simply
@@ -118,9 +134,69 @@
      scroll past before its observer exists.
      ------------------------------------------------------------------------ */
 
+  /* ------------------------------------------------------------------------
+     4. THE ACCORDION
+
+     ONE delegated listener per question list, bound OUTSIDE the reduced-motion
+     gate and outside start(), for the reason given at the flag above.
+
+     MULTIPLE ROWS MAY BE OPEN AT ONCE — CLAUDE'S CALL, REVERSIBLE IN ONE
+     BLOCK. /old-home's FAQ closes the others because it is four rows a
+     visitor browses. This is a REFERENCE page of nine questions across five
+     sections, where somebody comparing the condition rule against the tier
+     rule needs both. Closing what she just read would be wrong here.
+     To reverse: close every sibling before opening, inside toggle().
+
+     Keyboard: the toggle is not a <button> because the markup is hand-built
+     in Webflow, so the role, the tab stop and Enter/Space are set here. That
+     means a script failure costs the keyboard path too — acceptable, because
+     the same failure leaves every answer already open and there is nothing
+     left to operate.
+     ------------------------------------------------------------------------ */
+
+  function toggle(q) {
+    var open = q.classList.toggle("is-open");
+    var t = q.querySelector(".landing-q-toggle");
+    if (t) t.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  function accordion() {
+    var qs = document.querySelectorAll(".landing-q");
+    if (!qs.length) return;
+
+    for (var i = 0; i < qs.length; i++) {
+      var t = qs[i].querySelector(".landing-q-toggle");
+      var a = qs[i].querySelector(".landing-answer");
+      if (!t || !a) continue;
+
+      if (!a.id) a.id = "landing-a-" + (i + 1);
+      t.setAttribute("role", "button");
+      t.setAttribute("tabindex", "0");
+      t.setAttribute("aria-expanded", "false");
+      t.setAttribute("aria-controls", a.id);
+    }
+
+    document.addEventListener("click", function (e) {
+      var t = e.target.closest && e.target.closest(".landing-q-toggle");
+      if (!t) return;
+      var q = t.closest(".landing-q");
+      if (q) toggle(q);
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Enter" && e.key !== " " && e.key !== "Spacebar") return;
+      var t = e.target.closest && e.target.closest(".landing-q-toggle");
+      if (!t) return;
+      e.preventDefault();
+      var q = t.closest(".landing-q");
+      if (q) toggle(q);
+    });
+  }
+
   function go() {
     start();
     spin();
+    accordion();
   }
 
   if (document.readyState === "loading") {

@@ -500,3 +500,352 @@
   }
 
 }
+
+
+/* ==========================================================================
+   ACCORDION  —  ADDED v3, S272
+   Everything below this line is new. ROLLBACK IS DELETING FROM THIS COMMENT
+   TO THE END OF THE FILE — nothing above it was edited, which is why append
+   beat patching in place. Verified before shipping: the file ended at top
+   level (depth 0, braces 56/56 comments-stripped), so these rules are NOT
+   trapped inside the 479 block.
+
+   THE COLLAPSE IS ARMED BY html.landing-ready, WHICH IS A DIFFERENT FLAG FROM
+   html.landing-motion, AND THE DIFFERENCE IS LOAD-BEARING. landing-motion is
+   only set when the reader has NOT asked for reduced motion. Arm the collapse
+   off that flag and a reduced-motion reader gets rows that cannot open — the
+   S224 failure in a new coat. landing-ready is set whenever the script runs
+   at all, so: no script, no flag, every answer simply sits open and the page
+   is a long readable document. BEHAVIOUR IS NOT MOTION.
+
+   THE HEIGHT CHANGE IS A TRANSITION, NOT A KEYFRAME, AND THAT IS DELIBERATE.
+   S247's rule is about ENTRANCES, which must fire on a page that may not have
+   painted yet. This fires on a click, on a page that is demonstrably painted,
+   which is exactly the case a transition is for.
+   ========================================================================== */
+
+.landing-q-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.landing-q {
+  border-bottom: 1px solid var(--landing-hairline);
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+}
+
+.landing-q:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
+/* THE WHOLE ROW IS THE TAP TARGET, NOT THE WORDS. 44px is the floor she asked
+   for on the header drawer; it is cheaper to build it in here than to be told
+   about it later. */
+
+.landing-q-toggle {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 44px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.landing-question {
+  margin: 0;
+  font-family: Quicksand, sans-serif;
+  font-weight: 600;
+  font-size: 17px;
+  line-height: 1.35;
+  color: var(--landing-ink);
+}
+
+/* THE CHEVRON IS DRAWN, NOT A GLYPH — a character depends on whichever font
+   arrives and sits off the optical centre. Two borders rotated 45deg, so it
+   costs no asset and cannot 404. */
+
+.landing-chevron {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  margin-top: 6px;
+  border-right: 2px solid #8a867e;
+  border-bottom: 2px solid #8a867e;
+  transform: rotate(45deg);
+  transform-origin: 60% 60%;
+  transition: transform 0.22s cubic-bezier(.4, 0, .2, 1);
+}
+
+.landing-q.is-open .landing-chevron {
+  transform: rotate(225deg);
+}
+
+/* OPEN AND CLOSED HAVE TO BE TELLABLE APART AT A GLANCE — hers. Three signals
+   move together rather than one: the chevron turns, the teaser goes from
+   muted to full ink, and the amber rule appears down the left of the answer.
+   NOT OPACITY ON TEXT — opacity multiplies against whatever is behind it and
+   drifts between the cream card and any future tinted block. A stated colour
+   does not. */
+
+.landing-teaser,
+.landing-section-body .landing-teaser {
+  margin: 6px 0 0;
+  font-family: Quicksand, sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--landing-muted);
+  transition: color 0.22s ease;
+}
+
+.landing-q.is-open .landing-teaser,
+.landing-section-body .landing-q.is-open .landing-teaser {
+  color: var(--landing-ink);
+}
+
+/* ⚠⚠⚠ THE 0fr COLLAPSE, AND THE RULE IT OBEYS COST /old-home THREE VERSIONS:
+   AN fr TRACK IS minmax(auto, flex), SO 0fr FLOORS AT THE ITEM'S MINIMUM
+   CONTRIBUTION. min-height:0 takes the CONTENT minimum to zero and CANNOT
+   TOUCH PADDING, MARGIN OR A HORIZONTAL BORDER — every one of those is
+   unshrinkable and leaves a visible window, because overflow:hidden clips at
+   the PADDING box, not the content box.
+
+   SO .landing-answer CARRIES NO margin, NO padding-top, NO padding-bottom AND
+   NO border-top/bottom. Its left padding and left border are horizontal and
+   contribute nothing to a row track, so those are safe. All vertical spacing
+   lives INSIDE the item, where the clip can eat it. */
+
+.landing-answer-wrap {
+  display: grid;
+  grid-template-rows: 1fr;
+}
+
+html.landing-ready .landing-answer-wrap {
+  grid-template-rows: 0fr;
+  overflow: hidden;
+  transition: grid-template-rows 0.3s cubic-bezier(.4, 0, .2, 1);
+}
+
+html.landing-ready .landing-q.is-open .landing-answer-wrap {
+  grid-template-rows: 1fr;
+}
+
+.landing-answer {
+  min-height: 0;
+  margin: 0;
+  padding: 0 0 0 16px;
+  border-left: 2px solid var(--landing-amber);
+}
+
+.landing-answer > *:first-child {
+  margin-top: 13px;
+}
+
+.landing-answer::after {
+  content: "";
+  display: block;
+  height: 4px;
+}
+
+.landing-answer p {
+  margin: 0 0 1.1em;
+  font-family: Quicksand, sans-serif;
+  font-weight: 400;
+  font-size: 15.5px;
+  line-height: 1.68;
+  color: var(--landing-muted);
+}
+
+.landing-answer p:last-child {
+  margin-bottom: 0;
+}
+
+.landing-answer strong {
+  font-weight: 600;
+  color: var(--landing-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .landing-chevron,
+  .landing-teaser,
+  html.landing-ready .landing-answer-wrap {
+    transition: none;
+  }
+
+}
+
+/* --------------------------------------------------------------------------
+   FIGURES
+   Three facts under the masthead. A dot rather than a divider, so a fourth or
+   a shorter third needs no arithmetic.
+   -------------------------------------------------------------------------- */
+
+.landing-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 30px;
+  margin-top: 26px;
+}
+
+.landing-figure {
+  position: relative;
+  padding-left: 16px;
+  font-family: Quicksand, sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--landing-muted);
+}
+
+.landing-figure::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 7px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--landing-amber);
+}
+
+/* --------------------------------------------------------------------------
+   PHOTO EXAMPLES
+   Photo whole, coloured rule beneath it, verdict and caption below — hers,
+   chosen over a hover overlay, because hover does not exist on a phone.
+   GREY DIVS UNTIL HER PHOTOS LAND, and the swap is one property: drop
+   background-color, add background-image / size:cover.
+   ⚠ THE RULE COLOUR IS THE ONLY THING SAYING ACCEPTED OR DECLINED IN COLOUR,
+   AND THE CAPTION SAYS IT IN WORDS DIRECTLY UNDERNEATH. Never let the colour
+   carry it alone.
+   -------------------------------------------------------------------------- */
+
+.landing-photos {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 18px 0 0;
+}
+
+.landing-photo {
+  aspect-ratio: 1 / 1;
+  border-radius: 6px;
+  background-color: var(--landing-placeholder, #CCCAC5);
+  background-size: cover;
+  background-position: center;
+}
+
+.landing-photo-rule {
+  width: 22px;
+  height: 3px;
+  border-radius: 2px;
+  margin-top: 8px;
+  background-color: var(--landing-muted);
+}
+
+.landing-photo-rule.is-accepted {
+  background-color: #309359;
+}
+
+.landing-photo-rule.is-declined {
+  background-color: #E54F25;
+}
+
+.landing-photo-caption,
+.landing-answer .landing-photo-caption {
+  margin: 6px 0 0;
+  font-family: Quicksand, sans-serif;
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--landing-muted);
+}
+
+.landing-photo-caption b {
+  display: block;
+  font-weight: 600;
+  color: var(--landing-ink);
+}
+
+/* --------------------------------------------------------------------------
+   NOTE BOX
+   BORDERED, NEVER TINTED — hers. A tint would be a sixth surface colour on a
+   page that has cream and nothing else.
+   -------------------------------------------------------------------------- */
+
+.landing-note-box {
+  border: 1px solid var(--landing-ink);
+  border-radius: 6px;
+  padding: 16px 18px;
+  margin-top: 26px;
+}
+
+.landing-note-box p,
+.landing-section-body .landing-note-box p {
+  margin: 0;
+  font-family: Quicksand, sans-serif;
+  font-size: 15px;
+  line-height: 1.62;
+  color: var(--landing-ink);
+}
+
+/* ==========================================================================
+   THE CLOSET STANDARD — PAGE-SCOPED
+   ⚠⚠⚠ EVERY RULE HERE IS WRITTEN AT TWO CLASSES, .landing-wrap.standard-page,
+   FOR THE SAME REASON /faq's RULES ARE WRITTEN .faq-section.faq-page: it beats
+   the shared rule AND IT CANNOT MATCH ON ANOTHER LANDING PAGE. Add the combo
+   class in the Designer and leave it unstyled there.
+   A MEDIA QUERY ADDS NO SPECIFICITY, so every breakpoint rule needs its own
+   guarded twin. These sit AFTER the shared 991/767/479 blocks on purpose.
+   ========================================================================== */
+
+@media (max-width: 991px) {
+
+  /* COLLAPSES AT 991, NOT 767. The shared template holds two columns down to
+     767 and drops the reading column to 471px in this band — already logged
+     as an open fault on the Bay Area page. These questions are longer, so it
+     bites harder here. */
+
+  .landing-wrap.standard-page .landing-section {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+
+  .landing-wrap.standard-page .landing-section-heading,
+  .landing-wrap.standard-page .landing-section .landing-section-heading {
+    margin-bottom: 4px;
+  }
+
+}
+
+@media (max-width: 767px) {
+
+  .landing-wrap.standard-page .landing-question {
+    font-size: 16px;
+  }
+
+  .landing-wrap.standard-page .landing-teaser,
+  .landing-wrap.standard-page .landing-section-body .landing-teaser {
+    font-size: 14.5px;
+  }
+
+  /* 2x2, NOT 4 ACROSS. Four across a phone column is roughly 82px a photo,
+     which is too small to see the pilling these photos exist to show.
+     Accepted on the top row, declined on the bottom, so it reads as a
+     comparison rather than a sequence. */
+
+  .landing-wrap.standard-page .landing-photos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .landing-wrap.standard-page .landing-figures {
+    gap: 8px 0;
+    flex-direction: column;
+  }
+
+}
