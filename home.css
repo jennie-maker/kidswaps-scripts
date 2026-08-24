@@ -1572,17 +1572,27 @@
    green measures 8.15 against cream's 7.36, so the rows also read slightly
    crisper than everything around them, which is the point.
 
-   ⚠⚠⚠ NOT ONE ELEMENT RESTRUCTURED. The markup order in every card is name,
-   PRICE, savings, SWAPS — which is not the reading order. `order` on a flex
-   row fixes that with no Designer work. DO NOT "TIDY" THE MARKUP TO MATCH THE
-   LINE; the four cards are still cards and the order is these rules.
+   ⚠⚠⚠ THE ROW IS INLINE TEXT AS OF v57, NOT A FLEX ROW, AND THE MARKUP WAS
+   RESTRUCTURED TO MATCH. The four children were dragged in the Designer so
+   the DOM order is name, SWAPS, price, savings — the reading order. Every
+   `order` property is gone, because INLINE ELEMENTS IGNORE `order`: leave one
+   in and it silently does nothing while looking like it governs the sequence.
+   ⚠ THE OLD COMMENT HERE SAID "NOT ONE ELEMENT RESTRUCTURED" AND "DO NOT TIDY
+   THE MARKUP" — true of the flex build, false from v57. The core doc had
+   recorded the drags as shipped at S243 when they had not; the file was right
+   and the doc was wrong. Both are corrected.
 
-   ⚠⚠⚠ flex-direction IS NOT OPTIONAL AND ITS ABSENCE SHIPPED ONCE. Webflow's
-   own .pricing-card is a flex COLUMN — that is how the four children used to
-   stack — so `display:flex` alone changes nothing and every item takes its
-   own row. `order` still works, which makes the fault read as a stacking bug
-   rather than a missing declaration. STATE THE DIRECTION WHENEVER YOU TAKE
-   OVER A WEBFLOW FLEX.
+   ⚠⚠⚠ WHY INLINE AND NOT FLEX, WHICH IS THE WHOLE LESSON OF THIS SECTION: her
+   approved mockup was ONE SENTENCE per plan. Flex made it FOUR BOXES pushed
+   onto one line, and a flex item is atomic — it cannot share a line with its
+   neighbour, so a narrow screen wraps box by box and leaves "The Basics ·"
+   alone on a line with the rest of the width empty. Inline text fills each
+   line and breaks like prose. SIX VERSIONS SHIPPED IN ONE DAY AT S242 TRYING
+   TO MAKE FOUR BOXES BEHAVE LIKE A SENTENCE. Do not restore a flex row here.
+
+   ⚠⚠ WEBFLOW'S OWN .pricing-card IS A FLEX COLUMN, so `display:block` below is
+   load-bearing rather than a default — remove it and the four children stack
+   again. Ours wins at (0,2,0) against Webflow's (0,1,0).
 
    ⚠⚠ THE SEPARATORS ARE TRAILING ::after MARKS, NOT LEADING ::before ONES,
    AND THAT IS WHAT MAKES THE LINE WRAP CLEANLY. Drawn before each item, a
@@ -1787,12 +1797,7 @@
    than the ladder they replaced (15/19/13 and 14/18/12), her ask. */
 
 .pricing-preview-section .pricing-card {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: baseline;
-  column-gap: 10px;
-  row-gap: 2px;
+  display: block;
   width: auto;
   max-width: none;
   padding: 14px 0;
@@ -1814,7 +1819,7 @@
 /* THE READING ORDER, WHICH IS NOT THE MARKUP ORDER. */
 
 .pricing-preview-section .pricing-card > .footer-tagline-dark {
-  order: 1;
+  display: inline;
   margin: 0;
   color: #FFFFFF;
   font-family: "Instrument Serif", serif;
@@ -1835,7 +1840,7 @@
    SIZE TO FIX A CONTRAST SCORE. */
 
 .pricing-preview-section .pricing-card > .body-text-dark {
-  order: 2;
+  display: inline;
   margin: 0;
   color: #EDA920;
   font-family: inherit;
@@ -1846,7 +1851,7 @@
 }
 
 .pricing-preview-section .pricing-card > .h3 {
-  order: 3;
+  display: inline;
   margin: 0;
   color: #FFFFFF;
   font-family: inherit;
@@ -1864,8 +1869,11 @@
    Poppins and Rubik off a rendered comparison because it is the only one of
    the three with ROUNDED TERMINALS. ⚠ IT IS SCOPED TO THIS ONE CLAUSE. */
 
+/* ⚠ savings-text IS A DIV where the other three are P and H3. A div is block
+   by default, so this declaration is the one that would silently be missed. */
+
 .pricing-preview-section .pricing-card > .savings-text {
-  order: 4;
+  display: inline;
   margin: 0;
   color: #FFFFFF;
   font-family: Nunito, sans-serif;
@@ -1877,12 +1885,19 @@
   text-align: left;
 }
 
-/* THE SEPARATORS — TRAILING, GLUED, AND NEVER ON THE LAST ITEM. */
+/* THE SEPARATORS — TRAILING, GLUED, AND NEVER ON THE LAST ITEM.
+   ⚠⚠ THE TRAILING SPACE IN content IS LOAD-BEARING AS OF v57. Under flex the
+   gap between items came from column-gap; inline elements are only separated
+   by whitespace in the MARKUP, which Webflow does not guarantee. The NBSP
+   glues the dot to the word before it so a wrapped line can never START with
+   a stranded middot, and the ordinary space after it is the break opportunity
+   the line wraps at. REMOVE EITHER AND THE ROW BREAKS: no NBSP and the dot
+   strands, no trailing space and the words run together. */
 
 .pricing-preview-section .pricing-card > .footer-tagline-dark::after,
 .pricing-preview-section .pricing-card > .body-text-dark::after,
 .pricing-preview-section .pricing-card > .h3::after {
-  content: "\00A0\00B7";
+  content: "\00A0\00B7 ";
   color: #FFFFFF;
   font-family: Quicksand, sans-serif;
   font-style: normal;
@@ -1986,9 +2001,10 @@
     grid-row: 5;
   }
 
+  /* ⚠ column-gap WAS HERE AND IS GONE — it governed the flex row and does
+     nothing on a block. Padding is the only thing this breakpoint changes. */
   .pricing-preview-section .pricing-card {
     padding: 12px 0;
-    column-gap: 8px;
   }
 
   .pricing-preview-section::after {
