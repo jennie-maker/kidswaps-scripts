@@ -1594,6 +1594,27 @@
    load-bearing rather than a default — remove it and the four children stack
    again. Ours wins at (0,2,0) against Webflow's (0,1,0).
 
+   ⚠⚠⚠ THERE IS NO WHITESPACE BETWEEN THE FOUR ELEMENTS IN THE MARKUP — read
+   off innerHTML at v57, they are butted directly together. THAT ONE FACT
+   DECIDES THE WHOLE WRAPPING MODEL AND IT COST TWO FAILED ATTEMPTS:
+
+     · Inline with no other rule: the ONLY break opportunities on the line are
+       the spaces INSIDE a phrase, so the browser breaks "6 clothing swaps"
+       and strands "swaps" alone at the start of the next line.
+     · nowrap on the items alone: each phrase holds together, and now the row
+       has NO legal break point at all, so it runs off the right edge.
+
+   ✅ THE ANSWER IS BOTH, IN THE RIGHT PLACES. Each item plus its trailing dot
+   is ONE UNBREAKABLE UNIT (nowrap on the item, nowrap on its ::after), and a
+   NORMAL BREAKABLE SPACE is injected BEFORE each following item by a ::before.
+   THE BREAK MUST SIT OUTSIDE BOTH nowrap RUNS — that is why it is a ::before
+   on the next item rather than a trailing space on the previous one, which
+   was tried at v57 and does nothing.
+   ⚠ THE ::before CARRIES ITS OWN font-size ON PURPOSE. Left to inherit, the
+   gap would be set by whichever item follows it, so the space after the 35px
+   plan name would be wider than the one after the 23px savings clause. One
+   size keeps the rhythm even.
+
    ⚠⚠ THE SEPARATORS ARE TRAILING ::after MARKS, NOT LEADING ::before ONES,
    AND THAT IS WHAT MAKES THE LINE WRAP CLEANLY. Drawn before each item, a
    wrapped line STARTS with a stranded middot — seen on the phone at S242.
@@ -1820,6 +1841,7 @@
 
 .pricing-preview-section .pricing-card > .footer-tagline-dark {
   display: inline;
+  white-space: nowrap;
   margin: 0;
   color: #FFFFFF;
   font-family: "Instrument Serif", serif;
@@ -1841,6 +1863,7 @@
 
 .pricing-preview-section .pricing-card > .body-text-dark {
   display: inline;
+  white-space: nowrap;
   margin: 0;
   color: #EDA920;
   font-family: inherit;
@@ -1852,6 +1875,7 @@
 
 .pricing-preview-section .pricing-card > .h3 {
   display: inline;
+  white-space: nowrap;
   margin: 0;
   color: #FFFFFF;
   font-family: inherit;
@@ -1874,6 +1898,7 @@
 
 .pricing-preview-section .pricing-card > .savings-text {
   display: inline;
+  white-space: nowrap;
   margin: 0;
   color: #FFFFFF;
   font-family: Nunito, sans-serif;
@@ -1886,19 +1911,30 @@
 }
 
 /* THE SEPARATORS — TRAILING, GLUED, AND NEVER ON THE LAST ITEM.
-   ⚠⚠ THE TRAILING SPACE IN content IS LOAD-BEARING AS OF v57. Under flex the
-   gap between items came from column-gap; inline elements are only separated
-   by whitespace in the MARKUP, which Webflow does not guarantee. The NBSP
-   glues the dot to the word before it so a wrapped line can never START with
-   a stranded middot, and the ordinary space after it is the break opportunity
-   the line wraps at. REMOVE EITHER AND THE ROW BREAKS: no NBSP and the dot
-   strands, no trailing space and the words run together. */
+   ⚠⚠ THE NBSP GLUES THE DOT TO THE WORD BEFORE IT so a wrapped line can never
+   START with a stranded middot. ⚠ v57 ALSO PUT A TRAILING SPACE IN HERE AND IT
+   WAS THE WRONG MECHANISM — a space inside a nowrap run is not a break
+   opportunity. It is reverted; the break lives in the ::before below. */
 
 .pricing-preview-section .pricing-card > .footer-tagline-dark::after,
 .pricing-preview-section .pricing-card > .body-text-dark::after,
 .pricing-preview-section .pricing-card > .h3::after {
-  content: "\00A0\00B7 ";
+  content: "\00A0\00B7";
+  white-space: nowrap;
   color: #FFFFFF;
+  font-family: Quicksand, sans-serif;
+  font-style: normal;
+  font-size: clamp(16px, 2.36vw, 28px);
+}
+
+/* THE BREAK POINTS. One normal space before each item after the first, sitting
+   outside every nowrap run. The plan name takes none — nothing precedes it. */
+
+.pricing-preview-section .pricing-card > .body-text-dark::before,
+.pricing-preview-section .pricing-card > .h3::before,
+.pricing-preview-section .pricing-card > .savings-text::before {
+  content: " ";
+  white-space: normal;
   font-family: Quicksand, sans-serif;
   font-style: normal;
   font-size: clamp(16px, 2.36vw, 28px);
