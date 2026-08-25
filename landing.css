@@ -849,3 +849,100 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
   }
 
 }
+
+/* =====================================================================
+   v4 — S274. /the-closet-standard bottom block + accordion polish.
+   Appended at TOP LEVEL, after the mobile blocks. A media query adds no
+   specificity, so every rule here that has a mobile twin is restated in
+   the 767 block at the foot of this section, or it wins at every width.
+   ROLLBACK: delete from this comment to the end of the file.
+   ===================================================================== */
+
+/* --- NOTE BOX, option B: amber bar, no border. -----------------------
+   Her S272 note said "bordered, not tinted". Nothing here is tinted; the
+   border is replaced by the amber rule already used on open answers and
+   under every section heading. HER CALL S274 — do not restore the border.
+   landing-note-eyebrow / -heading / -body are Webflow TEXT BLOCKS, i.e.
+   DIVS, so the existing ".landing-note-box p" rule never reached them.
+   That is why all three lines rendered identically. */
+.landing-note-box {
+  border: 0;
+  border-left: 3px solid var(--landing-amber);
+  border-radius: 0;
+  padding: 4px 0 4px 20px;
+}
+.landing-note-eyebrow {
+  margin: 0 0 10px;
+  font-family: Quicksand, sans-serif;
+  font-weight: 600;
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--landing-amber);
+}
+.landing-note-heading {
+  margin: 0 0 10px;
+  font-family: Quicksand, sans-serif;
+  font-weight: 600;
+  font-size: 17px;
+  line-height: 1.35;
+  color: var(--landing-ink);
+}
+.landing-note-body {
+  margin: 0 0 8px;
+  font-family: Quicksand, sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.62;
+  color: var(--landing-ink);
+}
+.landing-note-box p,
+.landing-section-body .landing-note-box p { margin: 0 0 8px; }
+.landing-note-box p:last-child,
+.landing-section-body .landing-note-box p:last-child { margin-bottom: 0; }
+
+/* --- CLOSE, option 1: line on its own, buttons beneath, both left. ---
+   The row was display:flex, so the paragraph was a flex item sitting in
+   the same line as the buttons. It is now a block, with the two links
+   wrapped in .landing-cta-btns. */
+.landing-cta-row { display: block; margin-top: 34px; }
+.landing-cta-row > p {
+  margin: 0 0 16px;
+  font-family: Quicksand, sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--landing-muted);
+}
+.landing-cta-btns { display: flex; flex-wrap: wrap; gap: 12px; }
+
+/* --- CHEVRON: bolder and darker, hers. ------------------------------
+   margin-top:0 pairs with align-items:center below; the old 6px existed
+   to line it up against flex-start. */
+.landing-chevron {
+  width: 10px;
+  height: 10px;
+  margin-top: 0;
+  border-right: 2.5px solid var(--landing-ink);
+  border-bottom: 2.5px solid var(--landing-ink);
+}
+
+/* --- THE QUESTION-TO-TEASER GAP. ------------------------------------
+   NOT padding. The toggle is min-height:44px with align-items:flex-start,
+   so a ~22px void sat under the question. 44px IS THE PHONE TAP TARGET
+   AND MUST NOT BE REDUCED — centring splits the slack above and below
+   instead of dumping it all underneath. */
+.landing-q-toggle { align-items: center; }
+
+/* --- SECTION INTRO LINE. --------------------------------------------
+   .landing-teaser does two jobs: the per-question teaser, and the intro
+   under a section label ("What you send, is what you get."). The child
+   combinator hits the intro ONLY. Do not loosen it to .landing-teaser. */
+.landing-section-body > .landing-teaser { margin: 0 0 18px; }
+
+/* --- MOBILE TWINS. Required, see the header note. -------------------- */
+@media (max-width: 767px) {
+  .landing-cta-row { margin-top: 26px; }
+  .landing-cta-btns { display: block; }
+}
