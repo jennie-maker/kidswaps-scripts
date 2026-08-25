@@ -1004,3 +1004,46 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
   .landing-note-box::before { top: -20px; }
   .landing-photo .landing-image { margin: 0; }
 }
+
+/* =====================================================================
+   v6 — S274. Teaser tightened to the question, answer indented, and the
+   amber line moved so it starts at the answer rather than at the question.
+   ROLLBACK: delete from this comment to the end of the file.
+   ===================================================================== */
+
+/* --- TEASER CLOSER TO THE QUESTION, HERS. ---------------------------
+   v4 centred the toggle so the 44px slack split above and below instead
+   of dumping it all underneath. She wants it tighter still, and the only
+   honest way is to drop the min-height — which is the TOUCH TARGET, so it
+   goes on DESKTOP ONLY and the phone keeps its 44px below. A mouse does
+   not need a 44px target; a thumb does. DO NOT make this bare. */
+.landing-q-toggle { min-height: 0; }
+
+/* --- ANSWER INDENTED, AND THE LINE STARTS AT THE ANSWER. ------------
+   ⚠⚠⚠ THE LINE CANNOT BE MOVED WITH margin-top OR padding-top.
+   .landing-answer is the grid item inside .landing-answer-wrap, which
+   collapses to grid-template-rows:0fr. An fr track floors at the item's
+   minimum contribution, and vertical margin AND padding are both
+   unshrinkable — either one would leak that many pixels of open answer
+   on every CLOSED row. That is the /old-home v43 fault exactly, and it
+   is why this file already carries margin:0 with the spacing done as a
+   first-child margin and an ::after the clip can eat.
+   SO THE LINE BECOMES A BACKGROUND, WHICH CONTRIBUTES NO LAYOUT AT ALL.
+   17px = the 13px first-child margin plus the 4px ::after.
+   margin-LEFT is safe: the track is rows, so horizontal margin cannot
+   floor it. */
+.landing-answer {
+  margin-left: 14px;
+  border-left: 0;
+  background-image: linear-gradient(var(--landing-amber), var(--landing-amber));
+  background-repeat: no-repeat;
+  background-size: 2px calc(100% - 17px);
+  background-position: 0 13px;
+}
+
+/* --- MOBILE TWINS. An appended bare rule beats a media query at equal
+   specificity, so the touch target is restored here, after it. -------- */
+@media (max-width: 767px) {
+  .landing-q-toggle { min-height: 44px; }
+  .landing-answer { margin-left: 8px; }
+}
