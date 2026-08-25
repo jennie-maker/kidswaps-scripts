@@ -946,3 +946,61 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
   .landing-cta-row { margin-top: 26px; }
   .landing-cta-btns { display: block; }
 }
+
+/* =====================================================================
+   v5 — S274. Note box to navy, separated from the section above, and the
+   photo cells made safe for real images.
+   ROLLBACK: delete from this comment to the end of the file.
+   ===================================================================== */
+
+/* --- NOTE BOX BAR: amber -> NAVY. HER RULING S274. -------------------
+   Amber already does three jobs on this page (section rules, figure dots,
+   the open-answer bar), which is why the box did not stand apart. Navy
+   #1C4A91 is the one value in her seven with NO other job here, so it
+   cannot be misread. Coral was available and rejected: it is the action
+   colour and already carries six jobs. NOT a variable — navy has no
+   token in :root, and adding one is a wider decision than this commit. */
+.landing-note-box { border-left-color: #1C4A91; }
+.landing-note-eyebrow { color: #1C4A91; }
+
+/* --- SEPARATION FROM THE SECTION ABOVE. -----------------------------
+   The box sat directly under the last question and read as part of that
+   answer rather than as a standing instruction. Hairline is the SAME
+   #C9C7BC already used between sections, so the page gains space, not a
+   new device. The ::before spans from the bar's left edge outward. */
+.landing-note-box { position: relative; margin-top: 52px; }
+.landing-note-box::before {
+  content: "";
+  position: absolute;
+  top: -26px;
+  left: -3px;
+  right: 0;
+  height: 1px;
+  background-color: var(--landing-hairline);
+}
+
+/* --- PHOTO CELLS: equal heights, and safe for real photos. -----------
+   .landing-image already carries aspect-ratio 4/3, so the four images are
+   locked to one height whatever the caption does. TWO THINGS WERE WRONG.
+   (1) It also carries margin:26px 0, written for a standalone image in an
+   answer, which was padding every cell from the inside.
+   (2) The rule was written for a background-image DIV (background-size:
+   cover). We built real <img> elements, and an <img> at width:100% with a
+   forced aspect-ratio DISTORTS without object-fit. Nobody would have seen
+   that until her photos landed, because a placeholder has no subject. */
+.landing-photo .landing-image {
+  margin: 0;
+  height: auto;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* --- MOBILE TWINS. The 767 block sets .landing-image margin:20px 0, and
+   an appended bare rule beats a media query at equal specificity, so the
+   scoped rule above already wins at every width. Restated for clarity
+   only; the separation shrinks on a phone. -------------------------- */
+@media (max-width: 767px) {
+  .landing-note-box { margin-top: 40px; }
+  .landing-note-box::before { top: -20px; }
+  .landing-photo .landing-image { margin: 0; }
+}
