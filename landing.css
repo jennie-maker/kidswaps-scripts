@@ -2034,26 +2034,41 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
 
 
 /* =====================================================================
-   v9 — S280. /how-it-works: THE ANSWERS ARE TEXT BLOCKS, NOT PARAGRAPHS.
+   v9 — S280. /how-it-works: .landing-answer IS THE PARAGRAPH ITSELF.
    ROLLBACK: delete from this v9 comment to the end of the file.
+   ⚠ REVISED IN PLACE, TWICE, RATHER THAN STACKED AS v10 — the first cut
+   of this block named the wrong element and shipped a rule at the wrong
+   specificity. Both corrections are folded in here so no dead reasoning
+   survives. v8b is still a byte-exact prefix, machine-checked.
 
-   ⚠⚠⚠ MEASURED, NOT DERIVED. A probe printing the child nodes of every
-   .landing-answer on the live page found:
-     /how-it-works        6 rows, ZERO paragraphs. Every answer is a
-                          Webflow TEXT BLOCK with the prose sitting in it
-                          as bare text nodes (row 1 also holds one inline
-                          <a class="seo-content-link">).
-     /the-closet-standard 8 rows, EVERY ONE carrying real <p> children,
-                          and no answer opens with the photo grid.
+   ⚠⚠⚠ MEASURED, NOT DERIVED, AND THE FIRST READ WAS ONE LEVEL OFF.
+     /how-it-works        6 rows, and `.landing-answer` is itself a
+                          <p class="landing-answer"> — read live off
+                          tagName, after a computed-style read came back
+                          16px/27.2/ink and matched nothing this block
+                          had written. Its prose sits in it as bare text
+                          nodes; row 1 also holds one inline
+                          <a class="seo-content-link">.
+     /the-closet-standard 8 rows, `.landing-answer` is a DIV wrapping
+                          real <p> children, and no answer opens with
+                          the photo grid.
 
-   A WEBFLOW TEXT BLOCK IS A DIV, NOT A PARAGRAPH. So on /how-it-works
-   `.landing-answer p` MATCHES NOTHING and has never once fired there —
-   no Quicksand, no 15.5/1.68, no muted grey. And
-   `.landing-answer > *:first-child { margin-top }` lands on row 1's
-   INLINE link, where a vertical margin does nothing, and on nothing at
-   all in the other five. THAT is why the amber line read ~7.5px below
-   the top of the words: the words had no top margin, the line did. The
-   number was never wrong.
+   SO ONE CLASS NAME WEARS TWO DIFFERENT ELEMENTS ON TWO PAGES, and every
+   consequence follows from that. `.landing-answer p` cannot match on
+   /how-it-works because there are no paragraphs INSIDE the answer — it
+   IS the paragraph. `.landing-answer > *:first-child { margin-top }`
+   lands on row 1's INLINE link, where a vertical margin does nothing,
+   and on nothing at all in the other five. THAT is why the amber line
+   read ~7.5px below the top of the words: the words had no top margin,
+   the line did. The number was never wrong.
+
+   ⚠⚠⚠ AND THE FIRST FIX FAILED ON SPECIFICITY, NOT ON SOURCE ORDER — it
+   was written `.landing-answer` at (0,1,0) and `.landing-section-body p`
+   at (0,1,1) was already styling that same element, so the appended rule
+   LOST and the answers kept rendering 16px/1.7/ink. A bigger number, a
+   later position or an !important war would all have been the wrong
+   move. ▶ WHEN AN APPENDED RULE APPEARS NOT TO FIRE, COUNT THE
+   SPECIFICITY OF WHAT ELSE MATCHES THAT ELEMENT BEFORE CHANGING A VALUE.
 
    ▶ THIS FILE HAS ALREADY MET THIS DISEASE ONCE — v4/v5, where the note
    box's heading and body were Text Blocks and `.landing-note-box p`
@@ -2069,23 +2084,41 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
    the same trick the 4px ::after at the bottom already proves works.
    ===================================================================== */
 
-/* --- THE TYPE MOVES ONTO THE ELEMENT ITSELF, so it lands whether the
-   words are in a paragraph or loose in a Text Block. VALUES ARE COPIED
-   FROM `.landing-answer p` UNCHANGED.
+/* --- THE TYPE, WRITTEN AT TWO CLASSES SO IT WINS OUTRIGHT. ------------
+   ⚠⚠⚠ `.landing-answer-wrap .landing-answer` IS (0,2,0) AND THAT IS THE
+   WHOLE POINT — it beats `.landing-section-body p` at (0,1,1) on
+   SPECIFICITY, never on source order, so it cannot be silently undone by
+   a later rule or by anything moving house. DO NOT "SIMPLIFY" IT BACK TO
+   ONE CLASS. That is a loss, not a tie, and it loses silently.
+   The wrap is the answer's own parent on BOTH pages, so one selector
+   serves both. VALUES ARE COPIED FROM `.landing-answer p` UNCHANGED.
    ⚠ SAFE TO INHERIT, CHECKED CHILD BY CHILD: .landing-photo-caption sets
    its own family, size, line-height AND colour, its <b> sets weight and
    colour, .landing-photo / .landing-photo-rule hold no text, and
    `.landing-answer strong` is already declared above. Nothing downstream
    drifts.
-   ⚠ ON /the-closet-standard THIS CHANGES NOTHING. `.landing-answer p` is
-   (0,1,1) and beats this rule at (0,1,0) for every property — and the
-   values are identical anyway. The `p` rules STAY; do not delete them,
-   or a future rich-text answer loses its paragraph margins.
+   ⚠ ON /the-closet-standard THIS CHANGES NOTHING. There the wrap's child
+   is the DIV, and `.landing-answer p` (0,1,1) still governs the real
+   paragraphs inside it — with identical values. The `p` rules STAY; do
+   not delete them, or a future rich-text answer loses its paragraph
+   margins.
+   ⚠⚠ THE margin:0 IS NOT DECORATION AND IT CLOSES A REAL EXPOSURE.
+   `.landing-section-body p` also sets `margin: 0 0 1.1em`, and it was
+   beating the base `.landing-answer { margin: 0 }` for the same
+   specificity reason — a bottom margin THERE is unshrinkable and would
+   floor the 0fr track, leaking ~17px of open answer under every closed
+   row (the /old-home v43 fault). MEASURED S280: every closed row read
+   0.0 and margin-bottom read 0px, so it has never leaked — but ONLY
+   because `.landing-section-body p:last-child` at (0,2,1) happens to
+   zero it, and that holds only while the answer is the LAST child of its
+   wrap. A sibling added after it brings the leak back with nothing
+   erroring. This rule removes the luck.
    ⚠ CONTRAST, NAMED AND KNOWINGLY ACCEPTED: --landing-muted on this
    cream reads ~4.0:1, under the 4.5 bar for 15.5px text. It is the same
    grey the closet standard's answers already use and it is what makes
    the two pages read as siblings. The lever is one value here. --------- */
-.landing-answer {
+.landing-answer-wrap .landing-answer {
+  margin: 0;
   font-family: Quicksand, sans-serif;
   font-weight: 400;
   font-size: 15.5px;
