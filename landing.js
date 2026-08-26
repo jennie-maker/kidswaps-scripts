@@ -193,10 +193,73 @@
     });
   }
 
+
+  /* =====================================================================
+     v7 — S277. THE TRAVELLING DOT on /how-it-works' cycle ring.
+     ROLLBACK: delete from this comment to the end of the IIFE, and drop
+     lap() from go(). The CSS half degrades to nothing on its own — the
+     dot only becomes visible under .is-lapping, which only this sets.
+
+     ⚠⚠⚠ IT STOPS WHEN THE RING LEAVES THE VIEWPORT. Without that it
+     laps forever behind a reader who is three sections down in the
+     accordion, and a moving thing outside the reading area is the worst
+     kind of motion. The observer is the whole reason this is JS and not
+     a CSS animation.
+
+     ⚠⚠ IT CREATES ITS OWN ELEMENT. There is no markup for her to build
+     and nothing in Webflow to lose. If .landing-ring is absent this
+     returns before touching anything, which is every other page.
+
+     ⚠ MOTION-GATED, LIKE EVERYTHING ELSE HERE. No html.landing-motion,
+     no dot — so a reduced-motion reader gets a still ring rather than a
+     ring with a stranded dot on it. The 767 block hides it outright.
+     ===================================================================== */
+  function lap() {
+    var ring = document.querySelector(".landing-ring");
+    if (!ring) return;
+    if (!document.documentElement.classList.contains("landing-motion")) return;
+    if (!window.IntersectionObserver || !window.requestAnimationFrame) return;
+
+    var dot = document.createElement("div");
+    dot.className = "landing-ring-trav";
+    dot.setAttribute("aria-hidden", "true");
+    ring.appendChild(dot);
+
+    var raf = null;
+    var t0 = 0;
+
+    function step(now) {
+      if (!t0) t0 = now;
+      var a = (((now - t0) / 18000) % 1) * Math.PI * 2 - Math.PI / 2;
+      dot.style.transform =
+        "translate(" + (38 * Math.cos(a)).toFixed(3) + "%," +
+        (38 * Math.sin(a)).toFixed(3) + "%)";
+      raf = requestAnimationFrame(step);
+    }
+
+    /* ⚠ 38 IS THE SAME RADIUS THE SIX BEATS USE — 50 minus the circle's
+       12% inset. It is written in landing.css and again here, in two
+       files, because a percentage translate on the dot cannot read a
+       CSS inset. CHANGE THE INSET AND BOTH MOVE. */
+
+    new IntersectionObserver(function (entries) {
+      var on = entries[0].isIntersecting;
+      ring.classList.toggle("is-lapping", on);
+      if (on) {
+        if (!raf) raf = requestAnimationFrame(step);
+      } else if (raf) {
+        cancelAnimationFrame(raf);
+        raf = null;
+        t0 = 0;
+      }
+    }, { threshold: 0.15 }).observe(ring);
+  }
+
   function go() {
     start();
     spin();
     accordion();
+    lap();
   }
 
   if (document.readyState === "loading") {

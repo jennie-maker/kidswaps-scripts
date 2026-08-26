@@ -1070,14 +1070,15 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
 
    ⚠ GREEN #309359 AND NAVY #1C4A91 ARE WRITTEN AS LITERALS. Neither has
    a :root variable — the same reason the note box writes navy twice
-   (S274). Do not invent tokens for them here; that is a whole-file
-   decision, not a v7 one.
+   (S274). Do not invent tokens for them here.
+
+   ⚠⚠ THE HUB EYEBROW IS GONE — HER RULING S277. "And round again" read
+   as a title for "The closet keeps rotating" rather than as the last
+   beat of the sequence. The ring being a ring already says the loop.
+   The phone rail lost its closing line with it, knowingly. There is
+   deliberately NO .landing-ring-eyebrow rule; the element was deleted.
    ===================================================================== */
 
-/* --- THE SUB LINE. The one class on this page with no rule anywhere,
-   which is why it rendered bare. Capped at a reading measure rather
-   than the card width; the head is the only place on this page where a
-   full-width line of body type would run past 100 characters. -------- */
 .landing-sub,
 .landing-head .landing-sub {
   margin: 10px 0 0;
@@ -1090,9 +1091,8 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
 }
 
 /* =====================================================================
-   THE CYCLE
-   Ring above 767, vertical rail at 767 and below. HER RULING: dots on
-   BOTH shapes. Hub eyebrow reads "And round again" on both.
+   THE CYCLE — ring above 767, vertical rail at 767 and below.
+   HER RULING: dots on BOTH shapes, numbers on both.
    ===================================================================== */
 
 .landing-section.landing-cycle {
@@ -1102,12 +1102,17 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
 .landing-ring {
   position: relative;
   width: 100%;
-  max-width: 560px;
+  max-width: 420px;
   aspect-ratio: 1 / 1;
   margin: 8px auto 0;
 }
 
-/* the circle itself — a drawn hairline, not a border on a child */
+/* ⚠⚠ THE CIRCLE IS inset:12% AND EVERY BEAT SITS AT A RADIUS OF 38%
+   (50 − 12) OF THE BOX. Those two numbers are ONE fact expressed twice:
+   move the inset and every --x/--y below is wrong by the difference,
+   with nothing erroring. The percentages are cos/sin of the six angles
+   at that radius — 50 ± 38·cos, 50 ± 38·sin — not values picked by eye.
+   CHANGE THE INSET, RECOMPUTE THE SIX. */
 .landing-ring::before {
   content: "";
   position: absolute;
@@ -1116,11 +1121,11 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
   border-radius: 50%;
 }
 
-/* ⚠⚠ EACH BEAT IS ONE ELEMENT CARRYING BOTH ITS LABEL AND ITS DOT.
-   --x/--y put the beat's ORIGIN on the circle; --dx/--dy push the TEXT
-   outward from there; the ::before dot is pushed back by the exact
-   inverse, so it lands on the circle whatever the label's length.
-   That is what keeps this to six short rules instead of twelve
+/* ⚠⚠ EACH BEAT IS ONE ELEMENT CARRYING ITS LABEL, ITS DOT AND ITS
+   NUMBER. --x/--y put the beat's origin ON the circle; --dx/--dy push
+   the TEXT outward from there; the ::before dot is pushed back by the
+   exact inverse, so it lands on the circle whatever the label's length.
+   That is what keeps this to six short rules rather than eighteen
    elements, and it is why the offsets are paired. Change one, change
    its partner. */
 .landing-ring-beat {
@@ -1130,7 +1135,7 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
   transform: translate(-50%, -50%) translate(var(--dx), var(--dy));
   font-family: "Instrument Serif", Georgia, serif;
   font-weight: 400;
-  font-size: 21px;
+  font-size: 20px;
   line-height: 1.1;
   color: var(--landing-ink);
   white-space: nowrap;
@@ -1149,46 +1154,81 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
              translate(calc(var(--dx) * -1), calc(var(--dy) * -1));
 }
 
-.landing-ring-beat.is-1 { --x: 50%;   --y: 12%;  --dx: 0;     --dy: -22px; }
-.landing-ring-beat.is-2 { --x: 83%;   --y: 31%;  --dx: 30px;  --dy: -12px; }
-.landing-ring-beat.is-3 { --x: 83%;   --y: 69%;  --dx: 30px;  --dy: 12px;  }
-.landing-ring-beat.is-4 { --x: 50%;   --y: 88%;  --dx: 0;     --dy: 22px;  }
-.landing-ring-beat.is-5 { --x: 17%;   --y: 69%;  --dx: -30px; --dy: 12px;  }
-.landing-ring-beat.is-6 { --x: 17%;   --y: 31%;  --dx: -30px; --dy: -12px; }
+/* THE NUMBER. Drawn by CSS, so the six labels stay plain text and she
+   can edit any of them without touching a span. It always sits on the
+   side AWAY from the ring, or it would land on the dot. */
+.landing-ring-beat::after {
+  position: absolute;
+  font-family: Quicksand, sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--landing-muted);
+}
 
-/* is-2 and is-3 sit right of the circle, is-5 and is-6 left of it, so
-   their text has to run AWAY from the ring rather than through it. */
+/* ⚠ 34px AT TWELVE AND SIX, 34/10 ON THE SIDES. The first version used
+   22px everywhere and the dot landed INSIDE the word at both vertical
+   positions — a label clears sideways on its end, and vertically on its
+   full line height. The two axes are not the same distance. */
+.landing-ring-beat.is-1 { --x: 50%;     --y: 12%; --dx: 0;     --dy: -34px; }
+.landing-ring-beat.is-2 { --x: 82.91%;  --y: 31%; --dx: 34px;  --dy: -10px; }
+.landing-ring-beat.is-3 { --x: 82.91%;  --y: 69%; --dx: 34px;  --dy: 10px;  }
+.landing-ring-beat.is-4 { --x: 50%;     --y: 88%; --dx: 0;     --dy: 34px;  }
+.landing-ring-beat.is-5 { --x: 17.09%;  --y: 69%; --dx: -34px; --dy: 10px;  }
+.landing-ring-beat.is-6 { --x: 17.09%;  --y: 31%; --dx: -34px; --dy: -10px; }
+
 .landing-ring-beat.is-2,
 .landing-ring-beat.is-3 { text-align: left; }
 .landing-ring-beat.is-5,
 .landing-ring-beat.is-6 { text-align: right; }
 
+.landing-ring-beat.is-1::after { content: "1"; left: 50%; top: -17px; transform: translateX(-50%); }
+.landing-ring-beat.is-4::after { content: "4"; left: 50%; bottom: -17px; transform: translateX(-50%); }
+.landing-ring-beat.is-2::after { content: "2"; left: 100%; top: 0.35em; margin-left: 9px; }
+.landing-ring-beat.is-3::after { content: "3"; left: 100%; top: 0.35em; margin-left: 9px; }
+.landing-ring-beat.is-5::after { content: "5"; right: 100%; top: 0.35em; margin-right: 9px; }
+.landing-ring-beat.is-6::after { content: "6"; right: 100%; top: 0.35em; margin-right: 9px; }
+
 .landing-ring-hub {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 62%;
+  width: 66%;
   transform: translate(-50%, -50%);
   text-align: center;
 }
 
-.landing-ring-eyebrow {
-  margin: 0;
-  font-family: Quicksand, sans-serif;
-  font-weight: 600;
-  font-size: 12px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--landing-coral);
-}
-
 .landing-ring-line {
-  margin: 8px 0 0;
+  margin: 0;
   font-family: "Instrument Serif", Georgia, serif;
   font-weight: 400;
-  font-size: 30px;
-  line-height: 1.1;
+  font-size: 27px;
+  line-height: 1.12;
   color: var(--landing-ink);
+}
+
+/* THE TRAVELLING DOT. Written by landing.js as an inline transform on a
+   child it creates itself, so there is no markup for her to build and
+   no element to lose. ⚠⚠ IT STOPS WHEN THE CYCLE LEAVES THE VIEWPORT —
+   the observer is in the JS. Without that it laps forever behind a
+   reader who is three sections down in the accordion. */
+.landing-ring-trav {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  background: var(--landing-coral);
+  opacity: 0;
+  transition: opacity .4s;
+}
+
+html.landing-motion .landing-ring.is-lapping .landing-ring-trav { opacity: .9; }
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-ring-trav { display: none; }
 }
 
 /* =====================================================================
@@ -1202,11 +1242,7 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
   align-items: start;
 }
 
-.landing-beat-icon {
-  width: 26px;
-  height: 26px;
-  margin: 0 0 14px;
-}
+.landing-beat-icon { width: 26px; height: 26px; margin: 0 0 14px; }
 
 .landing-beat-heading {
   position: relative;
@@ -1222,7 +1258,7 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
 
 /* the amber rule, the same device /old-home uses under its step
    headings. A pseudo, never its own element — an element would become a
-   third flex/grid child and land somewhere else. */
+   third grid child and land somewhere else. */
 .landing-beat-heading::after {
   content: "";
   position: absolute;
@@ -1242,8 +1278,6 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
   color: var(--landing-ink);
 }
 
-/* HER MOCKUP: four icons, four palette colours. currentColor so the
-   icon and anything drawn inside it share one source. */
 .landing-beat.is-send   .landing-beat-icon { color: var(--landing-coral); }
 .landing-beat.is-earn   .landing-beat-icon { color: #309359; }
 .landing-beat.is-swap   .landing-beat-icon { color: #1C4A91; }
@@ -1251,8 +1285,6 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
 
 /* =====================================================================
    THE CTA HEADING AND SMALL PRINT
-   The heading shipped UNCLASSED at S277 and rendered near-white on
-   cream — legible only because nothing else was in that corner.
    ===================================================================== */
 
 .landing-cta-heading {
@@ -1274,46 +1306,34 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
 }
 
 /* =====================================================================
-   MOBILE TWINS — see the header note. Every combo above is (0,2,0) and
-   sits after this file's own breakpoints, so without these it wins at
-   every width.
+   MOBILE TWINS — see the header note.
    ===================================================================== */
 
 @media (max-width: 991px) {
-
-  .landing-section.landing-beats {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 36px 32px;
-  }
-
-  .landing-ring { max-width: 460px; }
+  .landing-section.landing-beats { grid-template-columns: repeat(2, 1fr); gap: 36px 32px; }
+  .landing-ring { max-width: 380px; }
   .landing-ring-beat { font-size: 18px; }
-  .landing-ring-line { font-size: 26px; }
-
+  .landing-ring-line { font-size: 24px; }
 }
 
 @media (max-width: 767px) {
 
-  .landing-section.landing-beats {
-    grid-template-columns: 1fr;
-    gap: 30px;
-  }
+  .landing-section.landing-beats { grid-template-columns: 1fr; gap: 30px; }
 
   /* ⚠⚠⚠ THE RAIL IS A DIFFERENT LAYOUT, NOT A SMALLER RING — HERS.
-     Everything positional is unwound here: the circle, the absolute
-     beats and the paired offsets all go, and the hub stops being a
-     centre and becomes the closing line. A scaled ring puts 21px serif
-     labels inside a 340px circle and they overlap. */
+     Everything positional is unwound: the circle, the absolute beats
+     and the paired offsets all go, and the hub stops being a centre.
+     A scaled ring puts 20px serif labels inside a 340px circle and they
+     overlap. */
   .landing-ring {
     max-width: none;
     aspect-ratio: auto;
     margin: 4px 0 0;
-    padding-left: 22px;
+    padding-left: 30px;
   }
 
-  /* the connecting line, drawn between the first and last dot */
   .landing-ring::before {
-    inset: 10px auto 34px 4px;
+    inset: 10px auto 30px 4px;
     width: 1px;
     border: 0;
     border-radius: 0;
@@ -1325,7 +1345,7 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
     transform: none;
     display: block;
     margin: 0 0 18px;
-    font-size: 22px;
+    font-size: 21px;
     text-align: left;
     white-space: normal;
   }
@@ -1335,10 +1355,15 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
   .landing-ring-beat.is-5,
   .landing-ring-beat.is-6 { text-align: left; }
 
-  .landing-ring-beat::before {
-    top: 0.62em;
-    left: -22px;
-    transform: none;
+  .landing-ring-beat::before { top: .62em; left: -30px; transform: none; }
+
+  .landing-ring-beat::after {
+    left: -30px;
+    right: auto;
+    top: 1.7em;
+    bottom: auto;
+    margin: 0;
+    transform: translateX(-30%);
   }
 
   .landing-ring-hub {
@@ -1346,24 +1371,18 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
     width: auto;
     transform: none;
     text-align: left;
+    margin-top: 22px;
   }
 
-  .landing-ring-line { display: none; }
+  .landing-ring-line { font-size: 23px; }
+  .landing-ring-trav { display: none; }
 
-  .landing-ring-eyebrow { margin-left: -22px; }
-
-  .landing-sub,
-  .landing-head .landing-sub { font-size: 17px; }
-
+  .landing-sub, .landing-head .landing-sub { font-size: 17px; }
   .landing-cta-heading { font-size: 30px; }
-
 }
 
 @media (max-width: 479px) {
-
-  .landing-ring-beat { font-size: 20px; }
-  .landing-sub,
-  .landing-head .landing-sub { font-size: 16px; }
+  .landing-ring-beat { font-size: 19px; }
+  .landing-sub, .landing-head .landing-sub { font-size: 16px; }
   .landing-cta-heading { font-size: 27px; }
-
 }
