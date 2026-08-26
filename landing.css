@@ -1077,7 +1077,35 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
    beat of the sequence. The ring being a ring already says the loop.
    The phone rail lost its closing line with it, knowingly. There is
    deliberately NO .landing-ring-eyebrow rule; the element was deleted.
+
+   ⚠⚠⚠ REVISED S278, IN PLACE, NOT STACKED AS A v8 — the same choice v7
+   itself made across its four commits. Two changes: the ring's NUMBER
+   and DOT swapped pseudos so every number sits in front of its label on
+   one line, and the eyebrow went coral on this page only. Nothing was
+   appended, so v6 is still a byte-exact prefix of this file and the
+   rollback above is still "delete from this comment to the end".
    ===================================================================== */
+
+/* ⚠⚠ THE EYEBROW IS CORAL ON /how-it-works AND NOWHERE ELSE — HER
+   RULING S278. Written at THREE classes so it beats the bare
+   .landing-eyebrow rule at the top of this file AND cannot reach the
+   closet standard or the Bay Area page, whose eyebrows stay muted grey.
+   The combo class goes on .landing-wrap in the Designer and is
+   DELIBERATELY LEFT UNSTYLED THERE — the same device as
+   .landing-wrap.standard-page and /faq's .faq-section.faq-page.
+   ⚠⚠ SHE TOOK THE LEGIBILITY COST KNOWINGLY AND IN WRITING. Coral
+   #E54F25 on this cream measures 3.23:1 where the muted grey it
+   replaces measures 3.99, and at 13px BOTH are under the 4.5 bar, so
+   contrast never separated them. HER WORDS: "i dont mind if its harder
+   to read its decoration." DO NOT DARKEN IT, DO NOT SWAP IT BACK, AND
+   DO NOT RAISE THE MEASUREMENT AGAIN.
+   ⚠ COLOUR-ONLY IS SAFE HERE because the line is a label repeating the
+   four beats named directly beneath it; it carries no fact of its own.
+   ⚠ Coral is ALSO the travelling dot on this page's ring, so this page
+   now carries coral twice. Flagged to her before she ruled. */
+.landing-wrap.how-it-works-page .landing-eyebrow {
+  color: var(--landing-coral);
+}
 
 .landing-sub,
 .landing-head .landing-sub {
@@ -1150,13 +1178,41 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
   white-space: nowrap;
 }
 
+/* THE NUMBER. Drawn by CSS, so the six labels stay plain text and she
+   can edit any of them without touching a span.
+
+   ⚠⚠⚠ THE NUMBER IS ::before AND THE DOT IS ::after — SWAPPED S278,
+   AND THE SWAP *IS* THE FIX. She asked for the number in front of the
+   label on one line at all six positions. Only the pseudo that renders
+   FIRST can sit in the text flow, and the dot was using it. Absolute
+   positioning does not care which pseudo it is, so the dot's six
+   placement rules moved across word for word and NOT ONE OFFSET WAS
+   RETUNED — which is what went wrong twice before v7 landed.
+
+   ⚠⚠ WHY IT COULD NOT BE FIXED BY MOVING THE NUMBER. v7 placed it on
+   the side AWAY from the ring — above at twelve, below at six, outboard
+   on the four sides — because inboard is where the dot is. On beats 2
+   and 3 the dot sits to the LEFT of the label, exactly where the number
+   had to go, so an absolute number moved inboard lands ON the dot. The
+   old comment said so in one line and it was right.
+
+   ⚠⚠ INLINE, NEVER ABSOLUTE. Give this rule position:absolute and the
+   number leaves the text flow, the fix silently undoes itself, and the
+   beat boxes shrink back under the dots' anchors.
+
+   ⚠ IT WIDENS EVERY BEAT BOX by the number plus its margin. That is
+   harmless BY CONSTRUCTION and not by luck: the right pair is anchored
+   by its LEFT edge and the left pair by its RIGHT edge, so both grow
+   away from the circle; twelve and six are centred, so the number and
+   the label stay centred as ONE UNIT while the dot, at 50% of that box,
+   stays on the ring's axis. */
 .landing-ring-beat::before {
-  content: "";
-  position: absolute;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--landing-amber);
+  font-family: Quicksand, sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--landing-muted);
+  margin-right: 8px;
 }
 
 /* TWELVE AND SIX — centred on the vertical axis, label clear of the
@@ -1166,7 +1222,7 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
   top: calc(50% - 38% - 20px);
   transform: translate(-50%, -100%);
 }
-.landing-ring-beat.is-1::before {
+.landing-ring-beat.is-1::after {
   left: 50%; bottom: -20px; transform: translate(-50%, 50%);
 }
 
@@ -1175,7 +1231,7 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
   top: calc(50% + 38% + 20px);
   transform: translateX(-50%);
 }
-.landing-ring-beat.is-4::before {
+.landing-ring-beat.is-4::after {
   left: 50%; top: -20px; transform: translate(-50%, -50%);
 }
 
@@ -1190,8 +1246,8 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
 }
 .landing-ring-beat.is-2 { top: calc(50% - 19%); }
 .landing-ring-beat.is-3 { top: calc(50% + 19%); }
-.landing-ring-beat.is-2::before,
-.landing-ring-beat.is-3::before {
+.landing-ring-beat.is-2::after,
+.landing-ring-beat.is-3::after {
   left: -20px; top: 50%; transform: translate(-50%, -50%);
 }
 
@@ -1206,28 +1262,32 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
 }
 .landing-ring-beat.is-5 { top: calc(50% + 19%); }
 .landing-ring-beat.is-6 { top: calc(50% - 19%); }
-.landing-ring-beat.is-5::before,
-.landing-ring-beat.is-6::before {
+.landing-ring-beat.is-5::after,
+.landing-ring-beat.is-6::after {
   right: -20px; top: 50%; transform: translate(50%, -50%);
 }
 
-/* THE NUMBER. Drawn by CSS, so the six labels stay plain text and she
-   can edit any of them without touching a span. Always on the side
-   AWAY from the ring, or it lands on the dot. */
+/* THE DOT ON THE CIRCLE — ::after as of S278, see the number above.
+   Its six placement rules are the ones above, unchanged from v7.
+   ⚠ content:"" LIVES HERE AND ONLY HERE. Every per-beat rule above sets
+   position only, so lose this and all six dots vanish at once. */
 .landing-ring-beat::after {
+  content: "";
   position: absolute;
-  font-family: Quicksand, sans-serif;
-  font-weight: 500;
-  font-size: 12px;
-  line-height: 1;
-  color: var(--landing-muted);
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--landing-amber);
 }
-.landing-ring-beat.is-1::after { content: "1"; left: 50%; top: -17px; transform: translateX(-50%); }
-.landing-ring-beat.is-4::after { content: "4"; left: 50%; bottom: -17px; transform: translateX(-50%); }
-.landing-ring-beat.is-2::after { content: "2"; left: 100%; top: .35em; margin-left: 9px; }
-.landing-ring-beat.is-3::after { content: "3"; left: 100%; top: .35em; margin-left: 9px; }
-.landing-ring-beat.is-5::after { content: "5"; right: 100%; top: .35em; margin-right: 9px; }
-.landing-ring-beat.is-6::after { content: "6"; right: 100%; top: .35em; margin-right: 9px; }
+
+/* THE SIX NUMBERS. Content only — the type is on the base ::before rule
+   above and the position is the text flow, which is the whole point. */
+.landing-ring-beat.is-1::before { content: "1"; }
+.landing-ring-beat.is-2::before { content: "2"; }
+.landing-ring-beat.is-3::before { content: "3"; }
+.landing-ring-beat.is-4::before { content: "4"; }
+.landing-ring-beat.is-5::before { content: "5"; }
+.landing-ring-beat.is-6::before { content: "6"; }
 
 .landing-ring-hub {
   position: absolute;
@@ -1445,13 +1505,19 @@ html.landing-motion .landing-ring.is-lapping .landing-ring-trav { opacity: .9; }
     white-space: normal;
   }
 
-  .landing-ring-beat::before,
-  .landing-ring-beat.is-1::before,
-  .landing-ring-beat.is-2::before,
-  .landing-ring-beat.is-3::before,
-  .landing-ring-beat.is-4::before,
-  .landing-ring-beat.is-5::before,
-  .landing-ring-beat.is-6::before {
+  /* ⚠⚠⚠ THESE ARE THE DOTS AND THEY ARE ::after HERE TOO — the S278
+     swap MUST be mirrored in this block. Leave the desktop swapped and
+     this list unswapped and the rail silently styles the NUMBER with
+     the dot's rules and drops the dots into the text: phone only,
+     nothing errors, and this rail is the one surface nobody has
+     watched. */
+  .landing-ring-beat::after,
+  .landing-ring-beat.is-1::after,
+  .landing-ring-beat.is-2::after,
+  .landing-ring-beat.is-3::after,
+  .landing-ring-beat.is-4::after,
+  .landing-ring-beat.is-5::after,
+  .landing-ring-beat.is-6::after {
     top: .62em;
     left: -30px;
     right: auto;
@@ -1459,14 +1525,11 @@ html.landing-motion .landing-ring.is-lapping .landing-ring-trav { opacity: .9; }
     transform: none;
   }
 
-  .landing-ring-beat::after {
-    left: -30px;
-    right: auto;
-    top: 1.7em;
-    bottom: auto;
-    margin: 0;
-    transform: translateX(-30%);
-  }
+  /* ⚠ THE NUMBER NEEDS NO RULE HERE AS OF S278. v7 parked it in the
+     30px gutter BELOW the dot; it is now inline in front of the label,
+     the same as every desktop position, so the gutter holds the dot and
+     nothing else. The old gutter rule was DELETED rather than left
+     inert (§0). */
 
   .landing-ring-hub {
     position: static;
