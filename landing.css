@@ -1876,16 +1876,22 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
      ⚠⚠⚠ THE GAP WAS TWO THINGS STACKED AND ONLY ONE OF THEM IS MOVABLE.
      The teaser carries a 6px top margin, and under it sits roughly 10px
      of slack from .landing-q-toggle's min-height:44px — which is THE
-     THUMB TARGET and must never be reduced to close a gap. So the 6px
-     goes and the 10px stays: ~16px becomes ~10px, and the control is
-     still 44px tall.
+     THUMB TARGET and must never be reduced to close a gap.
+
+     ⚠⚠⚠ SO THE MARGIN IS NEGATIVE, AND THAT IS THE ONLY HONEST WAY PAST
+     THE FLOOR. -6px pulls the teaser's text up THROUGH the toggle's
+     slack while the control itself stays a full 44px tall — the gap
+     reads ~4px and the thumb target is untouched. It is safe here and
+     ONLY here because the teaser sits OUTSIDE .landing-answer-wrap's
+     collapsing track; a negative margin on anything inside that track
+     would floor it and leak (see the answer rule below).
      ⚠ SCOPED UNDER .landing-q ON PURPOSE. .landing-teaser does two jobs
      on this page — the per-question teaser and the intro line under a
      section label — and only the first one lives inside a .landing-q.
      Loosen this to a bare .landing-teaser and the section intros lose
      their spacing too. */
   .landing-q .landing-teaser {
-    margin-top: 0;
+    margin-top: -6px;
   }
 
   /* --- TEASER → ANSWER, LOOSER. HERS. -------------------------------
@@ -1899,15 +1905,19 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
 
      ⚠⚠ AND THE AMBER RULE MUST MOVE IN THE SAME EDIT. It is a
      background, not a border, sized against the first child's margin:
-     22 top + the 4px ::after = 26. Change one number without the other
-     and the line starts 9px above where the text does. */
+     16 top + the 4px ::after = 20. CHANGE ONE NUMBER WITHOUT THE OTHER
+     AND THE LINE STARTS ABOVE WHERE THE TEXT DOES. These two are one
+     value written twice and they are never tuned apart.
+     ⚠ 16 REPLACED 22 WITHIN S279, off her own screenshot of the spacing
+     she wanted. 22 shipped for about an hour; it is not a rollback
+     target and there is nothing to restore. */
   .landing-answer > *:first-child {
-    margin-top: 22px;
+    margin-top: 16px;
   }
 
   .landing-answer {
-    background-size: 2px calc(100% - 26px);
-    background-position: 0 22px;
+    background-size: 2px calc(100% - 20px);
+    background-position: 0 16px;
   }
 
   /* --- THE CTA HEADING'S WRAP. --------------------------------------
