@@ -1964,3 +1964,70 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
   }
 
 }
+
+/* =====================================================================
+   v8b — S279, STILL INSIDE v8. THE AMBER LINE'S OFFSET AND THE RING'S
+   LABEL FACE. Rollback is unchanged: delete from the v8 comment to the
+   end of the file.
+   ===================================================================== */
+
+/* --- THE AMBER LINE, RAISED. HERS, TUNED ON HER OWN PAGE WITH THE
+   DISPLAY-ONLY PROBE RATHER THAN GUESSED FROM A SCREENSHOT: top 11,
+   trim 4, so 11 + 4 = 15.
+
+   ⚠⚠⚠ THE OFFSET AND THE FIRST CHILD'S MARGIN ARE ONE VALUE WRITTEN
+   TWICE AND THEY MOVE TOGETHER, ALWAYS. The line is a background, so it
+   contributes no layout and will happily sit above or below the text
+   with nothing erroring. Set one and not the other and the rule starts
+   somewhere the words do not.
+
+   ⚠⚠ THIS PAIR IS 11 ON THE DESKTOP AND 16 ON THE PHONE, and the twin
+   below is what keeps it that way — a bare appended rule beats a media
+   query at equal specificity by source order, so without it 11 would
+   have governed both. IF THE PHONE READS TOO LOW TOO, the fix is to
+   take the twin's two numbers to 11 and 15 as well; it is one edit and
+   the pair still moves together. --------------------------------- */
+.landing-answer > *:first-child {
+  margin-top: 11px;
+}
+
+.landing-answer {
+  background-size: 2px calc(100% - 15px);
+  background-position: 0 11px;
+}
+
+/* --- THE RING'S LABELS GO SANS. HERS: "easier to read at a smaller
+   size too", which is aimed at the phone ring that is not built yet as
+   much as at this one.
+
+   ⚠ FAMILY AND WEIGHT ONLY, NO SIZE CHANGE. Quicksand at a given size
+   sets WIDER than Instrument Serif, so the six labels all grow a little
+   — harmless by construction, because the right pair is anchored by its
+   LEFT edge and the left pair by its RIGHT edge, so both grow AWAY from
+   the circle and can never creep over it. Size was deliberately left
+   alone so that if this reads wrong, the face is the only variable.
+
+   ⚠ IT COSTS THE NUMBER-VERSUS-LABEL CONTRAST. The numbers were already
+   Quicksand 500 at 12px, so number and label are now one family and are
+   told apart by size and by the muted grey alone. Flagged, not a fault.
+
+   ⚠ THE HUB LINE IS NOT TOUCHED — .landing-ring-line is still
+   Instrument Serif at 40px. It is display type at the centre of the
+   picture rather than a label to be read at a small size, so it was
+   left out of this deliberately. One rule if she wants it too. */
+.landing-ring-beat {
+  font-family: Quicksand, sans-serif;
+  font-weight: 500;
+}
+
+/* --- MOBILE TWIN. Required, see the note above. --------------------- */
+@media (max-width: 767px) {
+  .landing-answer > *:first-child {
+    margin-top: 16px;
+  }
+
+  .landing-answer {
+    background-size: 2px calc(100% - 20px);
+    background-position: 0 16px;
+  }
+}
