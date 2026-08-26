@@ -1047,3 +1047,323 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
   .landing-q-toggle { min-height: 44px; }
   .landing-answer { margin-left: 8px; }
 }
+
+
+/* =====================================================================
+   v7 — S277. /how-it-works: the sub line, the cycle, the four beats,
+   the CTA heading and its small print.
+   ROLLBACK: delete from this comment to the end of the file.
+
+   ⚠⚠⚠ THE CYCLE AND THE BEATS ARE `.landing-section` ELEMENTS WEARING A
+   COMBO CLASS, AND THAT IS LOAD-BEARING, NOT TIDINESS. landing.js
+   observes `.landing-section` AND NOTHING ELSE — read at the SHA — so a
+   new block hidden at opacity:0 under any other class would never be
+   revealed and would render PERMANENTLY BLANK on a live page. That is
+   the /old-home S224 fault. Wearing the class inherits the observer,
+   the entrance, the top hairline and the spacing, and cannot fail open.
+
+   ⚠⚠ EVERY COMBO RULE HERE IS (0,2,0) AND THIS FILE ENDS *AFTER* ITS
+   991/767/479 BLOCKS, so an appended combo beats a media query at equal
+   specificity by source order and would win at every width. Every rule
+   below that needs a mobile value restates it in its own @media block
+   at the foot. ADD A RULE UP TOP, ADD ITS TWIN.
+
+   ⚠ GREEN #309359 AND NAVY #1C4A91 ARE WRITTEN AS LITERALS. Neither has
+   a :root variable — the same reason the note box writes navy twice
+   (S274). Do not invent tokens for them here; that is a whole-file
+   decision, not a v7 one.
+   ===================================================================== */
+
+/* --- THE SUB LINE. The one class on this page with no rule anywhere,
+   which is why it rendered bare. Capped at a reading measure rather
+   than the card width; the head is the only place on this page where a
+   full-width line of body type would run past 100 characters. -------- */
+.landing-sub,
+.landing-head .landing-sub {
+  margin: 10px 0 0;
+  max-width: 62ch;
+  font-family: Quicksand, sans-serif;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--landing-ink);
+}
+
+/* =====================================================================
+   THE CYCLE
+   Ring above 767, vertical rail at 767 and below. HER RULING: dots on
+   BOTH shapes. Hub eyebrow reads "And round again" on both.
+   ===================================================================== */
+
+.landing-section.landing-cycle {
+  display: block;
+}
+
+.landing-ring {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  aspect-ratio: 1 / 1;
+  margin: 8px auto 0;
+}
+
+/* the circle itself — a drawn hairline, not a border on a child */
+.landing-ring::before {
+  content: "";
+  position: absolute;
+  inset: 12%;
+  border: 1px solid var(--landing-hairline);
+  border-radius: 50%;
+}
+
+/* ⚠⚠ EACH BEAT IS ONE ELEMENT CARRYING BOTH ITS LABEL AND ITS DOT.
+   --x/--y put the beat's ORIGIN on the circle; --dx/--dy push the TEXT
+   outward from there; the ::before dot is pushed back by the exact
+   inverse, so it lands on the circle whatever the label's length.
+   That is what keeps this to six short rules instead of twelve
+   elements, and it is why the offsets are paired. Change one, change
+   its partner. */
+.landing-ring-beat {
+  position: absolute;
+  top: var(--y);
+  left: var(--x);
+  transform: translate(-50%, -50%) translate(var(--dx), var(--dy));
+  font-family: "Instrument Serif", Georgia, serif;
+  font-weight: 400;
+  font-size: 21px;
+  line-height: 1.1;
+  color: var(--landing-ink);
+  white-space: nowrap;
+}
+
+.landing-ring-beat::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--landing-amber);
+  transform: translate(-50%, -50%)
+             translate(calc(var(--dx) * -1), calc(var(--dy) * -1));
+}
+
+.landing-ring-beat.is-1 { --x: 50%;   --y: 12%;  --dx: 0;     --dy: -22px; }
+.landing-ring-beat.is-2 { --x: 83%;   --y: 31%;  --dx: 30px;  --dy: -12px; }
+.landing-ring-beat.is-3 { --x: 83%;   --y: 69%;  --dx: 30px;  --dy: 12px;  }
+.landing-ring-beat.is-4 { --x: 50%;   --y: 88%;  --dx: 0;     --dy: 22px;  }
+.landing-ring-beat.is-5 { --x: 17%;   --y: 69%;  --dx: -30px; --dy: 12px;  }
+.landing-ring-beat.is-6 { --x: 17%;   --y: 31%;  --dx: -30px; --dy: -12px; }
+
+/* is-2 and is-3 sit right of the circle, is-5 and is-6 left of it, so
+   their text has to run AWAY from the ring rather than through it. */
+.landing-ring-beat.is-2,
+.landing-ring-beat.is-3 { text-align: left; }
+.landing-ring-beat.is-5,
+.landing-ring-beat.is-6 { text-align: right; }
+
+.landing-ring-hub {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 62%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.landing-ring-eyebrow {
+  margin: 0;
+  font-family: Quicksand, sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--landing-coral);
+}
+
+.landing-ring-line {
+  margin: 8px 0 0;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1.1;
+  color: var(--landing-ink);
+}
+
+/* =====================================================================
+   THE FOUR BEATS
+   ===================================================================== */
+
+.landing-section.landing-beats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 40px;
+  align-items: start;
+}
+
+.landing-beat-icon {
+  width: 26px;
+  height: 26px;
+  margin: 0 0 14px;
+}
+
+.landing-beat-heading {
+  position: relative;
+  margin: 0;
+  padding-bottom: 12px;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 27px;
+  line-height: 1.1;
+  color: var(--landing-ink);
+}
+
+/* the amber rule, the same device /old-home uses under its step
+   headings. A pseudo, never its own element — an element would become a
+   third flex/grid child and land somewhere else. */
+.landing-beat-heading::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 36px;
+  height: 3px;
+  background: var(--landing-amber);
+}
+
+.landing-beat-body {
+  margin: 14px 0 0;
+  font-family: Quicksand, sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--landing-ink);
+}
+
+/* HER MOCKUP: four icons, four palette colours. currentColor so the
+   icon and anything drawn inside it share one source. */
+.landing-beat.is-send   .landing-beat-icon { color: var(--landing-coral); }
+.landing-beat.is-earn   .landing-beat-icon { color: #309359; }
+.landing-beat.is-swap   .landing-beat-icon { color: #1C4A91; }
+.landing-beat.is-repeat .landing-beat-icon { color: var(--landing-pink); }
+
+/* =====================================================================
+   THE CTA HEADING AND SMALL PRINT
+   The heading shipped UNCLASSED at S277 and rendered near-white on
+   cream — legible only because nothing else was in that corner.
+   ===================================================================== */
+
+.landing-cta-heading {
+  margin: 0 0 22px;
+  max-width: 18ch;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-weight: 400;
+  font-size: 34px;
+  line-height: 1.08;
+  color: var(--landing-ink);
+}
+
+.landing-cta-note {
+  margin: 16px 0 0;
+  font-family: Quicksand, sans-serif;
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--landing-muted);
+}
+
+/* =====================================================================
+   MOBILE TWINS — see the header note. Every combo above is (0,2,0) and
+   sits after this file's own breakpoints, so without these it wins at
+   every width.
+   ===================================================================== */
+
+@media (max-width: 991px) {
+
+  .landing-section.landing-beats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 36px 32px;
+  }
+
+  .landing-ring { max-width: 460px; }
+  .landing-ring-beat { font-size: 18px; }
+  .landing-ring-line { font-size: 26px; }
+
+}
+
+@media (max-width: 767px) {
+
+  .landing-section.landing-beats {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+
+  /* ⚠⚠⚠ THE RAIL IS A DIFFERENT LAYOUT, NOT A SMALLER RING — HERS.
+     Everything positional is unwound here: the circle, the absolute
+     beats and the paired offsets all go, and the hub stops being a
+     centre and becomes the closing line. A scaled ring puts 21px serif
+     labels inside a 340px circle and they overlap. */
+  .landing-ring {
+    max-width: none;
+    aspect-ratio: auto;
+    margin: 4px 0 0;
+    padding-left: 22px;
+  }
+
+  /* the connecting line, drawn between the first and last dot */
+  .landing-ring::before {
+    inset: 10px auto 34px 4px;
+    width: 1px;
+    border: 0;
+    border-radius: 0;
+    background: var(--landing-hairline);
+  }
+
+  .landing-ring-beat {
+    position: static;
+    transform: none;
+    display: block;
+    margin: 0 0 18px;
+    font-size: 22px;
+    text-align: left;
+    white-space: normal;
+  }
+
+  .landing-ring-beat.is-2,
+  .landing-ring-beat.is-3,
+  .landing-ring-beat.is-5,
+  .landing-ring-beat.is-6 { text-align: left; }
+
+  .landing-ring-beat::before {
+    top: 0.62em;
+    left: -22px;
+    transform: none;
+  }
+
+  .landing-ring-hub {
+    position: static;
+    width: auto;
+    transform: none;
+    text-align: left;
+  }
+
+  .landing-ring-line { display: none; }
+
+  .landing-ring-eyebrow { margin-left: -22px; }
+
+  .landing-sub,
+  .landing-head .landing-sub { font-size: 17px; }
+
+  .landing-cta-heading { font-size: 30px; }
+
+}
+
+@media (max-width: 479px) {
+
+  .landing-ring-beat { font-size: 20px; }
+  .landing-sub,
+  .landing-head .landing-sub { font-size: 16px; }
+  .landing-cta-heading { font-size: 27px; }
+
+}
