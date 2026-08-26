@@ -2031,3 +2031,109 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
     background-position: 0 16px;
   }
 }
+
+
+/* =====================================================================
+   v9 — S280. /how-it-works: THE ANSWERS ARE TEXT BLOCKS, NOT PARAGRAPHS.
+   ROLLBACK: delete from this v9 comment to the end of the file.
+
+   ⚠⚠⚠ MEASURED, NOT DERIVED. A probe printing the child nodes of every
+   .landing-answer on the live page found:
+     /how-it-works        6 rows, ZERO paragraphs. Every answer is a
+                          Webflow TEXT BLOCK with the prose sitting in it
+                          as bare text nodes (row 1 also holds one inline
+                          <a class="seo-content-link">).
+     /the-closet-standard 8 rows, EVERY ONE carrying real <p> children,
+                          and no answer opens with the photo grid.
+
+   A WEBFLOW TEXT BLOCK IS A DIV, NOT A PARAGRAPH. So on /how-it-works
+   `.landing-answer p` MATCHES NOTHING and has never once fired there —
+   no Quicksand, no 15.5/1.68, no muted grey. And
+   `.landing-answer > *:first-child { margin-top }` lands on row 1's
+   INLINE link, where a vertical margin does nothing, and on nothing at
+   all in the other five. THAT is why the amber line read ~7.5px below
+   the top of the words: the words had no top margin, the line did. The
+   number was never wrong.
+
+   ▶ THIS FILE HAS ALREADY MET THIS DISEASE ONCE — v4/v5, where the note
+   box's heading and body were Text Blocks and `.landing-note-box p`
+   never reached them. It was fixed by styling the real elements rather
+   than rebuilding the markup, and that is what this block does too.
+
+   ⚠⚠ WHY NOT padding-top ON .landing-answer: it is the grid item inside
+   .landing-answer-wrap, which collapses to grid-template-rows:0fr, and
+   vertical padding AND margin are both unshrinkable — either would leak
+   that many pixels of open answer on every CLOSED row, on all three
+   landing pages. The /old-home v43 fault exactly. A ::before BLOCK sits
+   INSIDE the item where min-height:0 and the clip can eat it, which is
+   the same trick the 4px ::after at the bottom already proves works.
+   ===================================================================== */
+
+/* --- THE TYPE MOVES ONTO THE ELEMENT ITSELF, so it lands whether the
+   words are in a paragraph or loose in a Text Block. VALUES ARE COPIED
+   FROM `.landing-answer p` UNCHANGED.
+   ⚠ SAFE TO INHERIT, CHECKED CHILD BY CHILD: .landing-photo-caption sets
+   its own family, size, line-height AND colour, its <b> sets weight and
+   colour, .landing-photo / .landing-photo-rule hold no text, and
+   `.landing-answer strong` is already declared above. Nothing downstream
+   drifts.
+   ⚠ ON /the-closet-standard THIS CHANGES NOTHING. `.landing-answer p` is
+   (0,1,1) and beats this rule at (0,1,0) for every property — and the
+   values are identical anyway. The `p` rules STAY; do not delete them,
+   or a future rich-text answer loses its paragraph margins.
+   ⚠ CONTRAST, NAMED AND KNOWINGLY ACCEPTED: --landing-muted on this
+   cream reads ~4.0:1, under the 4.5 bar for 15.5px text. It is the same
+   grey the closet standard's answers already use and it is what makes
+   the two pages read as siblings. The lever is one value here. --------- */
+.landing-answer {
+  font-family: Quicksand, sans-serif;
+  font-weight: 400;
+  font-size: 15.5px;
+  line-height: 1.68;
+  color: var(--landing-muted);
+}
+
+/* --- THE TOP GAP BECOMES A BLOCK SPACER INSIDE THE ITEM. --------------
+   ⚠⚠⚠ THE SPACER AND THE AMBER LINE'S OFFSET ARE ONE VALUE WRITTEN TWICE
+   AND THEY MOVE TOGETHER, ALWAYS — 11 desktop / 16 phone, matching the
+   background-position and the calc(100% - N) already set at v8b. THE
+   BACKGROUND IS THEREFORE UNCHANGED BY THIS COMMIT: the line already
+   starts at 11, and now the words do too, so they align by construction
+   rather than by tuning. DO NOT ALSO MOVE THE LINE TO 4 — that number
+   was measured against text that had no top margin at all.
+   ⚠ :first-child MATCHES ELEMENTS ONLY, so ::before does not become the
+   first child and does not shift what that rule targets. The margin is
+   zeroed rather than left in place, or a paragraph row would take 11
+   from the spacer PLUS 11 from the margin.
+   ⚠ ZERO IS THE SAME AT BOTH WIDTHS, so the first-child rule needs no
+   mobile twin. THE SPACER DOES — a bare appended rule beats a media
+   query at equal specificity by source order, so without the twin below
+   11 would govern the phone as well. ---------------------------------- */
+.landing-answer > *:first-child {
+  margin-top: 0;
+}
+
+.landing-answer::before {
+  content: "";
+  display: block;
+  height: 11px;
+}
+
+/* --- THE LINK IN ROW 1 KEEPS ITS JOB. CLAUDE'S CALL, REVERSIBLE, ONE
+   RULE. With the answer text going muted grey the inline link would
+   inherit the same grey and stop reading as clickable, so it takes the
+   ink and an underline. ⚠ It is written at (0,1,1) so it beats
+   `seo-content-link`, which removes the underline and sets nothing else
+   (§0) — and beats the site-wide `All Links` tag selector outright. ---- */
+.landing-answer a {
+  color: var(--landing-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* --- MOBILE TWIN. Required, see the note above. --------------------- */
+@media (max-width: 767px) {
+  .landing-answer::before {
+    height: 16px;
+  }
+}
