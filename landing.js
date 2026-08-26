@@ -228,19 +228,30 @@
     var raf = null;
     var t0 = 0;
 
+    /* ⚠⚠⚠ THE OFFSET MUST BE IN PIXELS. A percentage translate resolves
+       against THE TRANSLATED ELEMENT'S OWN BOX — the dot is 10px — so
+       the first version moved it about four pixels and parked it on the
+       hub text. It read as a config fault and was arithmetic. Measure
+       the ring, convert to px, write px.
+
+       ⚠ 0.38 IS THE SAME RADIUS THE SIX BEATS USE — 50% minus the
+       circle's 12% inset — and it is written in landing.css as well.
+       Two files, one fact. CHANGE THE INSET AND BOTH MOVE.
+
+       ⚠ THE RADIUS IS RE-MEASURED EVERY FRAME rather than cached: the
+       ring is width-driven with aspect-ratio 1, so it changes on any
+       resize, and a cached value would strand the dot off the circle
+       until reload. offsetWidth is cheap and this only runs while the
+       ring is on screen. */
     function step(now) {
       if (!t0) t0 = now;
+      var r = ring.offsetWidth * 0.38;
       var a = (((now - t0) / 18000) % 1) * Math.PI * 2 - Math.PI / 2;
       dot.style.transform =
-        "translate(" + (38 * Math.cos(a)).toFixed(3) + "%," +
-        (38 * Math.sin(a)).toFixed(3) + "%)";
+        "translate(" + (r * Math.cos(a)).toFixed(1) + "px," +
+        (r * Math.sin(a)).toFixed(1) + "px)";
       raf = requestAnimationFrame(step);
     }
-
-    /* ⚠ 38 IS THE SAME RADIUS THE SIX BEATS USE — 50 minus the circle's
-       12% inset. It is written in landing.css and again here, in two
-       files, because a percentage translate on the dot cannot read a
-       CSS inset. CHANGE THE INSET AND BOTH MOVE. */
 
     new IntersectionObserver(function (entries) {
       var on = entries[0].isIntersecting;

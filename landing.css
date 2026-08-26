@@ -1166,14 +1166,19 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
   color: var(--landing-muted);
 }
 
-/* ⚠ 34px AT TWELVE AND SIX, 34/10 ON THE SIDES. The first version used
-   22px everywhere and the dot landed INSIDE the word at both vertical
-   positions — a label clears sideways on its end, and vertically on its
-   full line height. The two axes are not the same distance. */
-.landing-ring-beat.is-1 { --x: 50%;     --y: 12%; --dx: 0;     --dy: -34px; }
+/* ⚠⚠⚠ THE TWO AXES ARE NOT THE SAME DISTANCE AND THIS WAS GOT WRONG
+   TWICE. Sideways, a label clears the dot on HALF ITS WIDTH — 60px or
+   more on these strings, so 34px was already inside the clear zone.
+   Vertically it clears on HALF ITS LINE HEIGHT, about 11px at 20/1.1,
+   so 34px put the dot 23px into the text and it landed in the middle of
+   the word. 22px then 34px both failed for the same reason: the number
+   was being tuned as if one value served both directions.
+   TWELVE AND SIX NEED THE HALF-LINE PLUS REAL AIR: 11 + 9 for the dot
+   + 12 clear = 32 minimum, taken to 40. The sides keep 34. */
+.landing-ring-beat.is-1 { --x: 50%;     --y: 12%; --dx: 0;     --dy: -40px; }
 .landing-ring-beat.is-2 { --x: 82.91%;  --y: 31%; --dx: 34px;  --dy: -10px; }
 .landing-ring-beat.is-3 { --x: 82.91%;  --y: 69%; --dx: 34px;  --dy: 10px;  }
-.landing-ring-beat.is-4 { --x: 50%;     --y: 88%; --dx: 0;     --dy: 34px;  }
+.landing-ring-beat.is-4 { --x: 50%;     --y: 88%; --dx: 0;     --dy: 40px;  }
 .landing-ring-beat.is-5 { --x: 17.09%;  --y: 69%; --dx: -34px; --dy: 10px;  }
 .landing-ring-beat.is-6 { --x: 17.09%;  --y: 31%; --dx: -34px; --dy: -10px; }
 
@@ -1212,6 +1217,11 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
    no element to lose. ⚠⚠ IT STOPS WHEN THE CYCLE LEAVES THE VIEWPORT —
    the observer is in the JS. Without that it laps forever behind a
    reader who is three sections down in the accordion. */
+/* ⚠⚠⚠ THE OFFSET IS IN PIXELS, NEVER A PERCENTAGE. A percentage
+   translate resolves against THE TRANSLATED ELEMENT'S OWN BOX — 10px
+   here — not against the ring, so the first version moved the dot about
+   four pixels and parked it on the hub text. It looked like a config
+   fault and was arithmetic. The JS measures the ring and writes px. */
 .landing-ring-trav {
   position: absolute;
   top: 50%;
@@ -1242,7 +1252,26 @@ html.landing-motion .landing-ring.is-lapping .landing-ring-trav { opacity: .9; }
   align-items: start;
 }
 
-.landing-beat-icon { width: 26px; height: 26px; margin: 0 0 14px; }
+/* ⚠⚠ A PLACEHOLDER BOX, NOT AN ICON — her PNGs are not ready. Flat
+   #CCCAC5, DELIBERATELY OUTSIDE THE SEVEN-COLOUR PALETTE so nobody
+   later reads it as a design decision. Same device as the hero media
+   half and the closet-standard photo panel.
+   THE SWAP IS ONE PROPERTY ON THIS SAME ELEMENT: drop background-color,
+   add background-image / background-size:contain / no-repeat. NO
+   DESIGNER WORK when the artwork lands.
+   ⚠ SIZE IT BY THE BOX, NOT BY THE FILE. Four PNGs will carry four
+   different amounts of transparent padding, and height is a bad proxy
+   for how big a mark looks — the marquee logos paid for that lesson. */
+.landing-beat-icon {
+  width: 26px;
+  height: 26px;
+  margin: 0 0 14px;
+  background-color: var(--landing-placeholder);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  border-radius: 3px;
+}
 
 .landing-beat-heading {
   position: relative;
@@ -1278,6 +1307,12 @@ html.landing-motion .landing-ring.is-lapping .landing-ring-trav { opacity: .9; }
   color: var(--landing-ink);
 }
 
+/* ⚠⚠ THESE FOUR ARE INERT WHILE THE ICON IS A PNG — a raster image
+   cannot take `color`. KEPT ON PURPOSE, against §0's delete-inert-rules
+   rule, because they are the record of her four-colour ruling from the
+   S276 mockup (Send coral, Earn green, Swap navy, Repeat pink) and they
+   go live again the day the icons are inline SVG. DO NOT DELETE THEM AS
+   TIDYING, and do not read them as live styling either. */
 .landing-beat.is-send   .landing-beat-icon { color: var(--landing-coral); }
 .landing-beat.is-earn   .landing-beat-icon { color: #309359; }
 .landing-beat.is-swap   .landing-beat-icon { color: #1C4A91; }
@@ -1319,6 +1354,19 @@ html.landing-motion .landing-ring.is-lapping .landing-ring-trav { opacity: .9; }
 @media (max-width: 767px) {
 
   .landing-section.landing-beats { grid-template-columns: 1fr; gap: 30px; }
+
+  /* HER MOCKUP: on the phone the icon sits BESIDE the heading on one
+     line, not above it. Grid rather than flex so the body copy aligns
+     to the heading's left edge and not to the icon's. */
+  .landing-beat {
+    display: grid;
+    grid-template-columns: 26px 1fr;
+    column-gap: 14px;
+    align-items: center;
+  }
+  .landing-beat-icon { margin: 0; }
+  .landing-beat-heading { grid-column: 2; }
+  .landing-beat-body { grid-column: 2; }
 
   /* ⚠⚠⚠ THE RAIL IS A DIFFERENT LAYOUT, NOT A SMALLER RING — HERS.
      Everything positional is unwound: the circle, the absolute beats
