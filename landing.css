@@ -2467,3 +2467,61 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
   }
   .landing-ring-line { font-size: 22px; }
 }
+
+
+/* =====================================================================
+   v12 — S280. THE PHONE RING, THE SIZE THAT LETS BOTH THINGS FIT.
+   ROLLBACK: delete from this v12 comment to the end of the file.
+
+   ⚠⚠⚠ HER RULING: THE HUB LINE STAYS INSIDE THE CIRCLE. She was shown
+   the alternative — move it below on the phone, which frees the circle
+   to shrink and gives the line the whole column at 26px — and chose to
+   keep the desktop arrangement intact. So the ring keeps its centre and
+   the hub accepts a small size. DO NOT MOVE IT BELOW THE CIRCLE.
+
+   ⚠⚠ THE ARITHMETIC THIS BLOCK IS SOLVING, SO IT IS NOT RE-DERIVED AND
+   RE-TUNED BY EYE. Two things share one width and they pull opposite
+   ways:
+     · a side label gets  (viewport/2) − 20px − 32.909%·BOX
+     · the hub line gets  (hub width %)·BOX, inside the circle
+   Shrink the box and the labels breathe while the hub suffocates; grow
+   it and the reverse. At 393px there is no box that gives the labels
+   two lines AND the hub 22px. The settlement is a SMALLER BOX with a
+   WIDER HUB: the hub takes a bigger share of a smaller circle.
+   ▶ SO THE THREE NUMBERS BELOW ARE ONE DECISION. Change the box and the
+   hub width and the hub size both need recomputing, or one of the two
+   silently goes to three lines. -------------------------------------- */
+
+@media (max-width: 767px) {
+
+  /* 46vw, down from 62. At 393px that hands each side label ~117px
+     instead of ~96, which is what takes "We inspect and grade" from
+     four lines to two. Capped at 230 so it still stops growing before
+     the desktop ring takes over at 768. */
+  .landing-ring {
+    width: 46vw;
+    max-width: 230px;
+    margin: 6px auto 14px;
+  }
+
+  /* THE HUB TAKES A BIGGER SHARE OF THE SMALLER CIRCLE — 72% against
+     v11's 58%. ⚠ 72 IS A CEILING, NOT A TASTE VALUE: the circle's
+     radius is 38% of the box, so a hub wider than 76% would put its
+     text under the six dots. */
+  .landing-ring-hub {
+    width: 72%;
+  }
+
+  /* ⚠ 17px IS WHAT FITS "The closet keeps" ON ONE LINE AT 320px, the
+     narrowest phone this has to hold, where the hub box is ~106px. It
+     is smaller than v11's 24 and that is the cost she accepted when she
+     kept the hub inside. Raising it breaks the line into three. */
+  .landing-ring-line {
+    font-size: 17px;
+    line-height: 1.1;
+  }
+}
+
+@media (max-width: 479px) {
+  .landing-ring-line { font-size: 16px; }
+}
