@@ -2370,3 +2370,100 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
   .landing-ring-beat { font-size: 12px; }
   .landing-ring-line { font-size: 17px; }
 }
+
+
+/* =====================================================================
+   v11 — S280. THE PHONE RING'S TYPE. v10's SIZE NEVER FIRED.
+   ROLLBACK: delete from this v11 comment to the end of the file, which
+   returns v10 exactly.
+
+   ⚠⚠⚠ THE FAULT, AND IT IS THE SECOND TIME IN ONE SESSION: v10 wrote
+   `.landing-ring-beat { font-size: 13px }` at ONE class (0,1,0), while
+   the rail block above sets its 21px inside a selector LIST that names
+   `.landing-ring-beat.is-1` … `.is-6` at TWO classes (0,2,0). So the
+   labels shipped at 21px on the phone and every gate passed — the file
+   arrived, the rule was present, and it simply lost.
+   ▶▶ THE RULE, PAID FOR TWICE TODAY: WHEN OVERRIDING A BLOCK THAT USES
+   A SELECTOR LIST, MATCH THE HEAVIEST SELECTOR IN THAT LIST, NOT THE
+   ONE THAT READS MOST NATURALLY. A bare class after a two-class rule is
+   a LOSS, not a tie, and it loses in total silence.
+
+   ⚠⚠ THREE OF THE FOUR FAULTS SHE SAW WERE ONE FAULT. At 21px "Fill
+   your bag" wrapped and pushed up through the hairline above the ring,
+   "Shop the closet" pushed down through the one below, and "They
+   outgrow it" broke three ways and stranded "it". All of it is the size
+   that never landed; the GEOMETRY was correct on her render — dots on
+   the stroke, end mark placed, six colours right.
+
+   ✅ AND HER RULING ON THE HUB, OFF THE SAME RENDER: it gets BIGGER and
+   takes a line break. On desktop the hub is 40px against 15px labels —
+   the biggest thing in the picture. v10 shipped 18px against a 21px
+   label, which inverted the hierarchy at the one place the ring is
+   supposed to be read from.
+   ===================================================================== */
+
+@media (max-width: 767px) {
+
+  /* --- THE SIZE, THIS TIME AT TWO CLASSES SO IT WINS OUTRIGHT.
+     ⚠ DO NOT "SIMPLIFY" THIS BACK TO `.landing-ring-beat`. That is the
+     v10 rule and it does nothing. The six are named because the rail's
+     unwind names all six. -------------------------------------------- */
+  .landing-ring-beat.is-1,
+  .landing-ring-beat.is-2,
+  .landing-ring-beat.is-3,
+  .landing-ring-beat.is-4,
+  .landing-ring-beat.is-5,
+  .landing-ring-beat.is-6 {
+    font-size: 13px;
+    line-height: 1.32;
+  }
+
+  /* THE NUMBER comes down with the label. The base rule is 12px, set at
+     `.landing-ring-beat::before` (0,1,0) — nothing in the rail block
+     touches it, so one class is enough HERE and only here. The margin
+     shrinks with it or the number floats away from its own word. */
+  .landing-ring-beat::before {
+    font-size: 10px;
+    margin-right: 5px;
+  }
+
+  /* --- THE HUB. Bigger, and narrowed so it breaks where she wants it.
+     ⚠⚠⚠ THE WIDTH IS WHAT MAKES THE BREAK, NOT A <br>. The markup is a
+     plain text element she edits herself, so the line break has to come
+     from the box: 66% of the ring is wide enough to hold the sentence
+     on one line at 18px and not at 24, which is why raising the size
+     and narrowing the box are ONE change and not two. 58% puts "The
+     closet keeps" on line one and "rotating" on line two at every phone
+     width, because both the box and the type scale with vw together.
+     ⚠ 24px IS THE CEILING AT 320px — the circle's inner width there is
+     ~150px and a third line would touch the dots. */
+  .landing-ring-hub {
+    width: 58%;
+  }
+
+  .landing-ring-line {
+    font-size: 24px;
+    line-height: 1.06;
+  }
+
+  /* --- ROOM ABOVE AND BELOW. The top and bottom labels sit OUTSIDE the
+     circle by design, so at 13px they need ~18px of clearance each or
+     they crowd the section hairlines the way the 21px ones ran through
+     them. This is margin on the ring, never padding on the beats —
+     a beat's box is what its dot is positioned against. */
+  .landing-ring {
+    margin: 22px auto 18px;
+  }
+}
+
+@media (max-width: 479px) {
+  .landing-ring-beat.is-1,
+  .landing-ring-beat.is-2,
+  .landing-ring-beat.is-3,
+  .landing-ring-beat.is-4,
+  .landing-ring-beat.is-5,
+  .landing-ring-beat.is-6 {
+    font-size: 12px;
+  }
+  .landing-ring-line { font-size: 22px; }
+}
