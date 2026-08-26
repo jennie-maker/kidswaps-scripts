@@ -195,74 +195,38 @@
 
 
   /* =====================================================================
-     v7 — S277. THE TRAVELLING DOT on /how-it-works' cycle ring.
-     ROLLBACK: delete from this comment to the end of the IIFE, and drop
-     lap() from go(). The CSS half degrades to nothing on its own — the
-     dot only becomes visible under .is-lapping, which only this sets.
+     THE LAP GATE — S279. ONE OBSERVER, AND NOTHING ELSE.
 
-     ⚠⚠⚠ IT STOPS WHEN THE RING LEAVES THE VIEWPORT. Without that it
-     laps forever behind a reader who is three sections down in the
-     accordion, and a moving thing outside the reading area is the worst
-     kind of motion. The observer is the whole reason this is JS and not
-     a CSS animation.
+     THIS FUNCTION USED TO DRAW THE LAP. It built its own dot element and
+     ran a requestAnimationFrame loop measuring ring.offsetWidth every
+     frame to place it. All of that went at S279: the ring is now an SVG
+     in the page and the lap is six CSS keyframe animations on one
+     shared 10.00s cycle, so JavaScript has nothing left to compute.
 
-     ⚠⚠ IT CREATES ITS OWN ELEMENT. There is no markup for her to build
-     and nothing in Webflow to lose. If .landing-ring is absent this
-     returns before touching anything, which is every other page.
+     ⚠⚠⚠ WHAT SURVIVES IS THE OBSERVER, AND IT IS THE WHOLE REASON THIS
+     IS STILL JAVASCRIPT. Without it the ring laps forever behind a
+     reader who is three sections down in the accordion, and a moving
+     thing outside the reading area is the motion that actually annoys
+     people. CSS cannot ask whether an element is on screen.
 
-     ⚠ MOTION-GATED, LIKE EVERYTHING ELSE HERE. No html.landing-motion,
-     no dot — so a reduced-motion reader gets a still ring rather than a
-     ring with a stranded dot on it. The 767 block hides it outright.
+     ⚠⚠ IT TOGGLES BOTH WAYS AND MUST NEVER unobserve. The section
+     reveal above is one-shot and unobserves on purpose; this one has to
+     keep firing, because the class it sets is what flips the animations
+     between paused and running every time she scrolls past.
+
+     ⚠ MOTION-GATED LIKE EVERYTHING ELSE HERE. No html.landing-motion,
+     no class, and landing.css leaves the ring painted and still rather
+     than blank. If .landing-ring is absent this returns before touching
+     anything, which is every page but /how-it-works.
      ===================================================================== */
   function lap() {
     var ring = document.querySelector(".landing-ring");
     if (!ring) return;
     if (!document.documentElement.classList.contains("landing-motion")) return;
-    if (!window.IntersectionObserver || !window.requestAnimationFrame) return;
-
-    var dot = document.createElement("div");
-    dot.className = "landing-ring-trav";
-    dot.setAttribute("aria-hidden", "true");
-    ring.appendChild(dot);
-
-    var raf = null;
-    var t0 = 0;
-
-    /* ⚠⚠⚠ THE OFFSET MUST BE IN PIXELS. A percentage translate resolves
-       against THE TRANSLATED ELEMENT'S OWN BOX — the dot is 10px — so
-       the first version moved it about four pixels and parked it on the
-       hub text. It read as a config fault and was arithmetic. Measure
-       the ring, convert to px, write px.
-
-       ⚠ 0.38 IS THE SAME RADIUS THE SIX BEATS USE — 50% minus the
-       circle's 12% inset — and it is written in landing.css as well.
-       Two files, one fact. CHANGE THE INSET AND BOTH MOVE.
-
-       ⚠ THE RADIUS IS RE-MEASURED EVERY FRAME rather than cached: the
-       ring is width-driven with aspect-ratio 1, so it changes on any
-       resize, and a cached value would strand the dot off the circle
-       until reload. offsetWidth is cheap and this only runs while the
-       ring is on screen. */
-    function step(now) {
-      if (!t0) t0 = now;
-      var r = ring.offsetWidth * 0.38;
-      var a = (((now - t0) / 18000) % 1) * Math.PI * 2 - Math.PI / 2;
-      dot.style.transform =
-        "translate(" + (r * Math.cos(a)).toFixed(1) + "px," +
-        (r * Math.sin(a)).toFixed(1) + "px)";
-      raf = requestAnimationFrame(step);
-    }
+    if (!window.IntersectionObserver) return;
 
     new IntersectionObserver(function (entries) {
-      var on = entries[0].isIntersecting;
-      ring.classList.toggle("is-lapping", on);
-      if (on) {
-        if (!raf) raf = requestAnimationFrame(step);
-      } else if (raf) {
-        cancelAnimationFrame(raf);
-        raf = null;
-        t0 = 0;
-      }
+      ring.classList.toggle("is-lapping", entries[0].isIntersecting);
     }, { threshold: 0.15 }).observe(ring);
   }
 

@@ -1141,8 +1141,16 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
    with nothing erroring. The percentages are cos/sin of the six angles
    at that radius — 50 ± 38·cos, 50 ± 38·sin — not values picked by eye.
    CHANGE THE INSET, RECOMPUTE THE SIX. */
+/* ⚠⚠⚠ THIS RULE NO LONGER DRAWS THE DESKTOP CIRCLE AND IT MUST NOT BE
+   DELETED. S279 gave the ring to an SVG, so this is display:none above
+   767 — but AT 767 AND BELOW IT IS THE RAIL'S VERTICAL LINE, restyled
+   in the mobile block at the foot as a 1px bar. Delete it as dead and
+   the phone rail loses its spine, phone only, nothing erroring.
+   ⚠ THE inset:12% BELOW STILL GOVERNS: every beat percentage is derived
+   from it AND the SVG's arcs are drawn at that same radius. */
 .landing-ring::before {
   content: "";
+  display: none;
   position: absolute;
   inset: 12%;
   border: 1px solid var(--landing-hairline);
@@ -1307,33 +1315,320 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
   color: var(--landing-ink);
 }
 
-/* THE TRAVELLING DOT. Written by landing.js as an inline transform on a
-   child it creates itself, so there is no markup for her to build and
-   no element to lose. ⚠⚠ IT STOPS WHEN THE CYCLE LEAVES THE VIEWPORT —
-   the observer is in the JS. Without that it laps forever behind a
-   reader who is three sections down in the accordion. */
-/* ⚠⚠⚠ THE OFFSET IS IN PIXELS, NEVER A PERCENTAGE. A percentage
-   translate resolves against THE TRANSLATED ELEMENT'S OWN BOX — 10px
-   here — not against the ring, so the first version moved the dot about
-   four pixels and parked it on the hub text. It looked like a config
-   fault and was arithmetic. The JS measures the ring and writes px. */
-.landing-ring-trav {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 10px;
-  height: 10px;
-  margin: -5px 0 0 -5px;
-  border-radius: 50%;
-  background: var(--landing-coral);
-  opacity: 0;
-  transition: opacity .4s;
+/* =====================================================================
+   THE RING ART — S279. AN INLINE SVG IN A WEBFLOW EMBED, TRANSPLANTED
+   FROM ring-lap-loop.html, THE FILE SHE APPROVED AT S278. The seven `d`
+   attributes and the end dot's coordinates were lifted out of that file
+   and machine-checked byte-identical; NOTHING WAS RETYPED.
+
+   ⚠⚠⚠ THE SVG AND THE SIX BEATS DRAW THE SAME CIRCLE FROM TWO
+   DIFFERENT SYSTEMS, AND THEY AGREE BY ARITHMETIC RATHER THAN BY LUCK.
+   The viewBox is 0 0 420 420 and every arc has radius 159.60 — which IS
+   50% − 12%, the inset:12% circle above, at 38% of the box. The six dot
+   centres computed off the live percentages land on the SVG's arc
+   endpoints to two decimal places, and they stay together at EVERY
+   width because the two 20px offsets in the beat anchors cancel.
+   ▶ CHANGE THE INSET AND THE SVG IS WRONG WITH NOTHING ERRORING. The
+   dots drift off the arc ends and only a screenshot shows it.
+
+   ⚠⚠ THE ART IS ABSOLUTE, NEVER width:100%. Webflow wraps embed code in
+   a div.w-embed that SHRINK-WRAPS its content, so a percentage width
+   resolves against a parent sizing itself from that same content, both
+   settle at 0, and the SVG loads perfectly into a box with no area
+   (S224). An absolutely positioned child leaves that wrapper's flow and
+   sizes against .landing-ring, which is position:relative.
+
+   ⚠⚠ THE DOTS ARE NOT IN THE SVG — they are .landing-ring-beat::after
+   and they always were, in her mockup too. Moving them in would have
+   emptied the PHONE RAIL, which reuses the same six pseudo-elements and
+   reuses .landing-ring::before as its vertical line. The only thing
+   S279 changed about them is size and colour, and both are gated to
+   min-width:768 so the rail is untouched.
+   ===================================================================== */
+.landing-ring-art {
+  display: none;
 }
 
-html.landing-motion .landing-ring.is-lapping .landing-ring-trav { opacity: .9; }
+/* ⚠⚠⚠ COLOUR LIVES HERE AND NOWHERE ELSE, AND THE EMBED CARRIES NO
+   stroke OR fill ATTRIBUTE ON PURPOSE. Each of these six values is used
+   THREE times — the arc, the dot sitting on it, and the arrow's colour
+   while it lays that arc. Three copies split across a pinned file and
+   an unversioned Webflow field is how they drift, and the Webflow half
+   has no rollback. */
+.landing-ring-base    { stroke: var(--landing-hairline); }
+.landing-ring-endmark { fill:   var(--landing-hairline); }
 
-@media (prefers-reduced-motion: reduce) {
-  .landing-ring-trav { display: none; }
+/* ⚠⚠⚠ EACH STRETCH IS PAINTED THE COLOUR OF THE DOT IT *LEAVES*, NEVER
+   THE ONE IT REACHES — HER DESIGN, AND IT IS WHY 2 AND 5 ARE BOTH
+   AMBER: those are the two beats THE CLOSET does rather than the
+   member. It is also why the ring underneath had to go grey. She
+   watched both forks on the live mockup and picked the grey ring,
+   because an amber trail on an amber ring changes nothing on screen.
+   ⚠ GREEN AND NAVY ARE LITERALS — neither has a :root token, the same
+   reason the four beat icons write them as literals fifty lines below.
+   Do not invent tokens for them here. */
+.landing-ring-seg.is-1 { stroke: var(--landing-coral); }
+.landing-ring-seg.is-2 { stroke: var(--landing-amber); }
+.landing-ring-seg.is-3 { stroke: #309359; }
+.landing-ring-seg.is-4 { stroke: #1C4A91; }
+.landing-ring-seg.is-5 { stroke: var(--landing-amber); }
+.landing-ring-seg.is-6 { stroke: var(--landing-pink); }
+
+/* THE ARROW. A plain HTML div in the embed rather than SVG: the whole
+   arm is inset:0 on the ring, so it rotates about the ring's centre and
+   the arrow rides its top edge.
+
+   ⚠⚠⚠ top IS 12%, NEVER 50.4px. Her mockup stage is a fixed 420 box, so
+   it could write pixels; .landing-ring is fluid below 420 and a pixel
+   top slides the arrow off the circle at every smaller width, silently.
+   50.4 / 420 = 12%, the same inset as the circle above.
+
+   ⚠ THE ARM IS opacity:0 AT REST AND display:none UNTIL THE min-width
+   GATE. No script, no flag, no animation — and the failure is NO ARROW
+   rather than an arrow stranded at twelve o'clock forever. */
+.landing-ring-arm {
+  display: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
+.landing-ring-trav {
+  position: absolute;
+  left: 50%;
+  top: 12%;
+  width: 16px;
+  height: 14px;
+  margin: -7px 0 0 -8px;
+  background: var(--landing-coral);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+/* =====================================================================
+   THE RING ABOVE THE RAIL — POSITION, SIZE, ENTRANCE AND LAP.
+
+   ⚠⚠⚠ THIS IS A min-width BLOCK, DELIBERATELY, AGAINST THIS FILE'S
+   max-width HABIT, AND THE REASON IS SPECIFICITY RATHER THAN TASTE.
+   Every animation below is filled `both`, and a filled animation WRITES
+   A transform that beats a plain `transform: none` declaration outright
+   — at any source order, in any media query. Twinning these the usual
+   way would mean restating six per-beat overrides at matching
+   specificity in the 767 block, and the file's own record says the last
+   thing that went wrong on this rail was exactly such a list going half
+   updated. A GATE THE RAIL NEVER ENTERS CANNOT GO HALF UPDATED.
+   ===================================================================== */
+@media (min-width: 768px) {
+
+  .landing-ring::before { display: none; }
+
+  .landing-ring-art {
+    display: block;
+    position: absolute;
+    inset: 0;
+  }
+
+  .landing-ring-arm { display: block; }
+
+  /* HER RULING: 14px dots on the ring. The rail keeps its 9px, which is
+     why this sits inside the gate — the rail's dots are NOT centred by
+     a transform (top:.62em, left:-30px), so a size change there would
+     move them off the line. On the ring every dot is centred by its own
+     translate, so size is free. */
+  .landing-ring-beat::after { width: 14px; height: 14px; }
+
+  .landing-ring-beat.is-1::after { background: var(--landing-coral); }
+  .landing-ring-beat.is-2::after { background: var(--landing-amber); }
+  .landing-ring-beat.is-3::after { background: #309359; }
+  .landing-ring-beat.is-4::after { background: #1C4A91; }
+  .landing-ring-beat.is-5::after { background: var(--landing-amber); }
+  .landing-ring-beat.is-6::after { background: var(--landing-pink); }
+
+  /* THE SEGMENTS' RESTING STATE, UNDER THE MOTION FLAG ONLY — AND THE
+     NO-FLAG CASE IS A DELIBERATE CHOICE, NOT AN OVERSIGHT. Without
+     html.landing-motion these carry no dash array, so they paint in
+     full: a reduced-motion reader, or anybody whose script never
+     arrived, gets a COMPLETE COLOURED RING sitting still rather than a
+     grey one waiting for something that will never happen. Fail
+     visible, never fail blank (her S224 rule). */
+  html.landing-motion .landing-ring-seg {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+  }
+
+  /* ---------------------------------------------------------------
+     THE ENTRANCE — ONE SHOT, ARMED BY `.is-in`.
+
+     ⚠⚠⚠ IT ARMS OFF THE SECTION REVEAL AND NEVER OFF PAGE LOAD. Armed
+     on load, she scrolls down to a ring that finished painting while
+     she was reading the masthead — the S246 watchdog fault in a new
+     place. `.is-in` is added once by landing.js's section observer and
+     then unobserved, so this cannot replay.
+     --------------------------------------------------------------- */
+  html.landing-motion .landing-cycle.is-in .landing-ring-base {
+    stroke-dasharray: 100;
+    animation: landing-ring-trace 1.4s cubic-bezier(.4, 0, .2, 1) both;
+  }
+
+  html.landing-motion .landing-cycle.is-in .landing-ring-endmark {
+    opacity: 0;
+    animation: landing-ring-endin .3s linear 1.4s forwards;
+  }
+
+  html.landing-motion .landing-cycle.is-in .landing-ring-hub {
+    animation: landing-ring-hubin .6s cubic-bezier(.4, 0, .2, 1) 1.55s both;
+  }
+
+  /* ⚠⚠⚠ EVERY ENTRANCE KEYFRAME CARRIES ITS ELEMENT'S OWN POSITIONING
+     transform, AND THAT IS THE WHOLE REASON THERE ARE THREE POP
+     KEYFRAMES AND THREE RISE KEYFRAMES INSTEAD OF ONE OF EACH. On this
+     ring the dots and the labels are POSITIONED BY transform, so a
+     keyframe animating a bare scale() or translateY() DELETES that
+     positioning and throws the element across the section — the hero
+     star's rule, arriving here. Her mockup could use one pop keyframe
+     because its dots were placed with left/top and a pixel margin.
+     ▶ IF YOU ADD A SEVENTH BEAT, IT NEEDS THE KEYFRAME MATCHING ITS
+     OWN ANCHOR, NOT WHICHEVER ONE IS NEAREST IN THE LIST. */
+  html.landing-motion .landing-cycle.is-in .landing-ring-beat.is-1::after { animation: landing-ring-pop-1   .32s cubic-bezier(.4,0,.2,1) 0.000s both; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-beat.is-1        { animation: landing-ring-rise-top .5s cubic-bezier(.4,0,.2,1) 0.140s both; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-beat.is-2::after { animation: landing-ring-pop-234 .32s cubic-bezier(.4,0,.2,1) 0.243s both; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-beat.is-2        { animation: landing-ring-rise-side .5s cubic-bezier(.4,0,.2,1) 0.383s both; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-beat.is-3::after { animation: landing-ring-pop-234 .32s cubic-bezier(.4,0,.2,1) 0.486s both; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-beat.is-3        { animation: landing-ring-rise-side .5s cubic-bezier(.4,0,.2,1) 0.626s both; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-beat.is-4::after { animation: landing-ring-pop-234 .32s cubic-bezier(.4,0,.2,1) 0.728s both; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-beat.is-4        { animation: landing-ring-rise-bot .5s cubic-bezier(.4,0,.2,1) 0.868s both; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-beat.is-5::after { animation: landing-ring-pop-56  .32s cubic-bezier(.4,0,.2,1) 0.971s both; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-beat.is-5        { animation: landing-ring-rise-side .5s cubic-bezier(.4,0,.2,1) 1.111s both; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-beat.is-6::after { animation: landing-ring-pop-56  .32s cubic-bezier(.4,0,.2,1) 1.214s both; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-beat.is-6        { animation: landing-ring-rise-side .5s cubic-bezier(.4,0,.2,1) 1.354s both; }
+
+  /* ---------------------------------------------------------------
+     THE LAP — FOREVER, ON ONE 10.00s CYCLE.
+
+     ⚠⚠⚠ ONE DURATION, SHARED BY EVERY LOOPING ELEMENT. The six arcs,
+     the arrow's travel and the arrow's colour all run 10.00s with their
+     moments written as PERCENTAGES inside it. Give any one of them its
+     own animation-duration and they never line up again — the arrow
+     lays an arc that is already painted, or paints one it has not
+     reached. The Earn coin on /old-home paid for this rule once.
+
+     ⚠⚠ IT PAUSES WHEN THE RING LEAVES THE VIEWPORT rather than
+     restarting: landing.js toggles `.is-lapping` on .landing-ring and
+     the only thing that changes here is play-state. Restarting instead
+     would drop every element back to 0% at once and re-run the 2.00s
+     lead-in each time she scrolled past. A moving thing behind a reader
+     three sections down is the motion that actually annoys people.
+     --------------------------------------------------------------- */
+  html.landing-motion .landing-cycle.is-in .landing-ring-seg.is-1 { animation: landing-ring-lap-1 10.00s linear 2.00s infinite; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-seg.is-2 { animation: landing-ring-lap-2 10.00s linear 2.00s infinite; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-seg.is-3 { animation: landing-ring-lap-3 10.00s linear 2.00s infinite; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-seg.is-4 { animation: landing-ring-lap-4 10.00s linear 2.00s infinite; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-seg.is-5 { animation: landing-ring-lap-5 10.00s linear 2.00s infinite; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-seg.is-6 { animation: landing-ring-lap-6 10.00s linear 2.00s infinite; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-arm      { animation: landing-ring-sweep 10.00s linear 2.00s infinite; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-trav     { animation: landing-ring-hue 10.00s step-end 2.00s infinite; }
+
+  html.landing-motion .landing-cycle.is-in .landing-ring-seg,
+  html.landing-motion .landing-cycle.is-in .landing-ring-arm,
+  html.landing-motion .landing-cycle.is-in .landing-ring-trav {
+    animation-play-state: paused;
+  }
+
+  html.landing-motion .landing-cycle.is-in .landing-ring.is-lapping .landing-ring-seg,
+  html.landing-motion .landing-cycle.is-in .landing-ring.is-lapping .landing-ring-arm,
+  html.landing-motion .landing-cycle.is-in .landing-ring.is-lapping .landing-ring-trav {
+    animation-play-state: running;
+  }
+
+}
+
+/* THE RING'S KEYFRAMES. At top level on purpose — a @keyframes block
+   inside the min-width gate would be unreachable to anything that ever
+   needs it at another width, and keyframes cost nothing when nothing
+   references them. */
+@keyframes landing-ring-trace {
+  from { stroke-dashoffset: 100; }
+  to   { stroke-dashoffset: 0; }
+}
+
+@keyframes landing-ring-endin {
+  to { opacity: 1; }
+}
+
+@keyframes landing-ring-hubin {
+  from { opacity: 0; transform: translate(-50%, calc(-50% + 8px)); }
+  to   { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+/* THE THREE POPS — see the warning above. Each ends on the exact
+   transform its beat's ::after uses for positioning. */
+@keyframes landing-ring-pop-1 {
+  from { opacity: 0; transform: translate(-50%, 50%) scale(.4); }
+  to   { opacity: 1; transform: translate(-50%, 50%) scale(1); }
+}
+@keyframes landing-ring-pop-234 {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(.4); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes landing-ring-pop-56 {
+  from { opacity: 0; transform: translate(50%, -50%) scale(.4); }
+  to   { opacity: 1; transform: translate(50%, -50%) scale(1); }
+}
+
+/* THE THREE RISES — same rule, for the labels. 6px, no scale: a scale
+   moves a left edge, which is what put /old-home's spine out. */
+@keyframes landing-ring-rise-top {
+  from { opacity: 0; transform: translate(-50%, calc(-100% + 6px)); }
+  to   { opacity: 1; transform: translate(-50%, -100%); }
+}
+@keyframes landing-ring-rise-bot {
+  from { opacity: 0; transform: translate(-50%, 6px); }
+  to   { opacity: 1; transform: translateX(-50%); }
+}
+@keyframes landing-ring-rise-side {
+  from { opacity: 0; transform: translate(0, calc(-50% + 6px)); }
+  to   { opacity: 1; transform: translateY(-50%); }
+}
+
+/* THE SIX ARC KEYFRAMES. The percentages are her file's, unchanged:
+   .60s lead, 6.20s painting split six ways, 2.00s held fully coloured,
+   .70s fade back to grey, .50s tail. The 95.0/95.1 pair is what resets
+   a segment to hidden INSIDE the fade rather than snapping it back
+   visibly — do not collapse those two stops into one. */
+@keyframes landing-ring-lap-1 { 0%{stroke-dashoffset:100;opacity:1} 6.0%{stroke-dashoffset:100;opacity:1} 16.751%{stroke-dashoffset:0;opacity:1} 88.0%{stroke-dashoffset:0;opacity:1} 95.0%{stroke-dashoffset:0;opacity:0} 95.1%{stroke-dashoffset:100;opacity:1} 100%{stroke-dashoffset:100;opacity:1} }
+@keyframes landing-ring-lap-2 { 0%{stroke-dashoffset:100;opacity:1} 16.751%{stroke-dashoffset:100;opacity:1} 27.503%{stroke-dashoffset:0;opacity:1} 88.0%{stroke-dashoffset:0;opacity:1} 95.0%{stroke-dashoffset:0;opacity:0} 95.1%{stroke-dashoffset:100;opacity:1} 100%{stroke-dashoffset:100;opacity:1} }
+@keyframes landing-ring-lap-3 { 0%{stroke-dashoffset:100;opacity:1} 27.503%{stroke-dashoffset:100;opacity:1} 38.254%{stroke-dashoffset:0;opacity:1} 88.0%{stroke-dashoffset:0;opacity:1} 95.0%{stroke-dashoffset:0;opacity:0} 95.1%{stroke-dashoffset:100;opacity:1} 100%{stroke-dashoffset:100;opacity:1} }
+@keyframes landing-ring-lap-4 { 0%{stroke-dashoffset:100;opacity:1} 38.254%{stroke-dashoffset:100;opacity:1} 49.006%{stroke-dashoffset:0;opacity:1} 88.0%{stroke-dashoffset:0;opacity:1} 95.0%{stroke-dashoffset:0;opacity:0} 95.1%{stroke-dashoffset:100;opacity:1} 100%{stroke-dashoffset:100;opacity:1} }
+@keyframes landing-ring-lap-5 { 0%{stroke-dashoffset:100;opacity:1} 49.006%{stroke-dashoffset:100;opacity:1} 59.757%{stroke-dashoffset:0;opacity:1} 88.0%{stroke-dashoffset:0;opacity:1} 95.0%{stroke-dashoffset:0;opacity:0} 95.1%{stroke-dashoffset:100;opacity:1} 100%{stroke-dashoffset:100;opacity:1} }
+@keyframes landing-ring-lap-6 { 0%{stroke-dashoffset:100;opacity:1} 59.757%{stroke-dashoffset:100;opacity:1} 68.0%{stroke-dashoffset:0;opacity:1} 88.0%{stroke-dashoffset:0;opacity:1} 95.0%{stroke-dashoffset:0;opacity:0} 95.1%{stroke-dashoffset:100;opacity:1} 100%{stroke-dashoffset:100;opacity:1} }
+
+/* THE ARROW'S TRAVEL. `rotate:`, NEVER `transform: rotate()` — the arm
+   is positioned by inset and carries no transform today, but the hero
+   stars' rule is kept identical here so the two cannot drift, and a
+   transform keyframe on anything positioned by one deletes the
+   positioning. 346deg, not 360: it stops where the stroke stops. */
+@keyframes landing-ring-sweep {
+  0%    { rotate: 0deg;     opacity: 0; }
+  5.99% { rotate: 0deg;     opacity: 0; }
+  6.0%  { rotate: 0deg;     opacity: 1; }
+  68.0% { rotate: 346.0deg; opacity: 1; }
+  72.5% { rotate: 346.0deg; opacity: 0; }
+  99.9% { rotate: 346.0deg; opacity: 0; }
+  100%  { rotate: 0deg;     opacity: 0; }
+}
+
+/* THE ARROW'S COLOUR. step-end, so it changes at the seam rather than
+   blending through it — the arrow is always the colour of the arc it is
+   currently laying. THESE SIX MUST MATCH .landing-ring-seg ABOVE AND
+   .landing-ring-beat::after ABOVE THAT. One fact, three places, and the
+   only reason all three are in this file. */
+@keyframes landing-ring-hue {
+  0%       { background: #E54F25; }
+  6.0%     { background: #E54F25; }
+  16.751%  { background: #EDA920; }
+  27.503%  { background: #309359; }
+  38.254%  { background: #1C4A91; }
+  49.006%  { background: #EDA920; }
+  59.757%  { background: #F491A9; }
 }
 
 /* =====================================================================
@@ -1539,8 +1834,16 @@ html.landing-motion .landing-ring.is-lapping .landing-ring-trav { opacity: .9; }
     margin-top: 22px;
   }
 
+  /* THE RAIL'S SPINE. The SVG owns the circle above 767; here the same
+     pseudo-element becomes the vertical bar, so display:block turns it
+     back on — the base rule is display:none as of S279.
+     ⚠ THE OLD `.landing-ring-trav { display: none }` LINE WENT WITH IT
+     RATHER THAN BEING LEFT INERT (§0): the arrow's wrapper is
+     display:none by default now and only the min-width gate turns it
+     on, so the rail can never receive it. */
+  .landing-ring::before { display: block; }
+
   .landing-ring-line { font-size: 23px; }
-  .landing-ring-trav { display: none; }
 
   .landing-sub, .landing-head .landing-sub { font-size: 17px; }
   .landing-cta-heading { font-size: 30px; }
