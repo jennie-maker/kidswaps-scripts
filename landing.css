@@ -1121,18 +1121,27 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
   border-radius: 50%;
 }
 
-/* ⚠⚠ EACH BEAT IS ONE ELEMENT CARRYING ITS LABEL, ITS DOT AND ITS
-   NUMBER. --x/--y put the beat's origin ON the circle; --dx/--dy push
-   the TEXT outward from there; the ::before dot is pushed back by the
-   exact inverse, so it lands on the circle whatever the label's length.
-   That is what keeps this to six short rules rather than eighteen
-   elements, and it is why the offsets are paired. Change one, change
-   its partner. */
+/* ⚠⚠⚠ THE DOT AND THE LABEL ARE PLACED INDEPENDENTLY. THIS REPLACES A
+   PAIRED --dx/--dy SCHEME THAT FAILED TWICE, AND THE REASON IT FAILED
+   IS WORTH KEEPING: it put the label on the circle and then pushed the
+   DOT back by the inverse offset, so the two only agreed if every
+   number stayed in step — and a percentage in a `translate` resolves
+   against THE ELEMENT'S OWN BOX, not the ring, so they never did.
+   Worse, `--dx: 0` with no unit made `calc(0 * -1)` invalid, which
+   silently dropped the WHOLE transform including the centring, on the
+   two beats that looked most wrong. A dropped transform reports
+   nothing anywhere.
+   ▶ NOW: the beat is anchored so its EDGE sits 20px clear of the
+   circle, and the dot is placed 20px back from that same edge. One
+   number, one direction, per beat. A wrong value moves one thing
+   visibly instead of dropping a transform.
+
+   ⚠ THE TWO RADII ARE COS/SIN AT THE SIX ANGLES, NOT VALUES PICKED BY
+   EYE. The circle is inset:12%, so its radius is 38% of the box:
+   38·cos and 38·sin at -90, -30, 30, 90, 150, 210. CHANGE THE INSET
+   AND RECOMPUTE ALL SIX. */
 .landing-ring-beat {
   position: absolute;
-  top: var(--y);
-  left: var(--x);
-  transform: translate(-50%, -50%) translate(var(--dx), var(--dy));
   font-family: "Instrument Serif", Georgia, serif;
   font-weight: 400;
   font-size: 20px;
@@ -1144,19 +1153,67 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
 .landing-ring-beat::before {
   content: "";
   position: absolute;
-  top: 50%;
-  left: 50%;
   width: 9px;
   height: 9px;
   border-radius: 50%;
   background: var(--landing-amber);
-  transform: translate(-50%, -50%)
-             translate(calc(var(--dx) * -1), calc(var(--dy) * -1));
+}
+
+/* TWELVE AND SIX — centred on the vertical axis, label clear of the
+   circle by 20px on its own bottom or top edge. */
+.landing-ring-beat.is-1 {
+  left: 50%;
+  top: calc(50% - 38% - 20px);
+  transform: translate(-50%, -100%);
+}
+.landing-ring-beat.is-1::before {
+  left: 50%; bottom: -20px; transform: translate(-50%, 50%);
+}
+
+.landing-ring-beat.is-4 {
+  left: 50%;
+  top: calc(50% + 38% + 20px);
+  transform: translateX(-50%);
+}
+.landing-ring-beat.is-4::before {
+  left: 50%; top: -20px; transform: translate(-50%, -50%);
+}
+
+/* THE RIGHT PAIR — anchored by their LEFT edge, so the text runs away
+   from the ring however long the label is. That is why a long label
+   like "We inspect and grade" cannot creep back over the circle. */
+.landing-ring-beat.is-2,
+.landing-ring-beat.is-3 {
+  left: calc(50% + 32.909% + 20px);
+  transform: translateY(-50%);
+  text-align: left;
+}
+.landing-ring-beat.is-2 { top: calc(50% - 19%); }
+.landing-ring-beat.is-3 { top: calc(50% + 19%); }
+.landing-ring-beat.is-2::before,
+.landing-ring-beat.is-3::before {
+  left: -20px; top: 50%; transform: translate(-50%, -50%);
+}
+
+/* THE LEFT PAIR — anchored by their RIGHT edge, mirror of the above.
+   ⚠ `right`, never `left`: with `left` the box grows rightward and a
+   longer label would push its own text over the circle. */
+.landing-ring-beat.is-5,
+.landing-ring-beat.is-6 {
+  right: calc(50% + 32.909% + 20px);
+  transform: translateY(-50%);
+  text-align: right;
+}
+.landing-ring-beat.is-5 { top: calc(50% + 19%); }
+.landing-ring-beat.is-6 { top: calc(50% - 19%); }
+.landing-ring-beat.is-5::before,
+.landing-ring-beat.is-6::before {
+  right: -20px; top: 50%; transform: translate(50%, -50%);
 }
 
 /* THE NUMBER. Drawn by CSS, so the six labels stay plain text and she
-   can edit any of them without touching a span. It always sits on the
-   side AWAY from the ring, or it would land on the dot. */
+   can edit any of them without touching a span. Always on the side
+   AWAY from the ring, or it lands on the dot. */
 .landing-ring-beat::after {
   position: absolute;
   font-family: Quicksand, sans-serif;
@@ -1165,34 +1222,12 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
   line-height: 1;
   color: var(--landing-muted);
 }
-
-/* ⚠⚠⚠ THE TWO AXES ARE NOT THE SAME DISTANCE AND THIS WAS GOT WRONG
-   TWICE. Sideways, a label clears the dot on HALF ITS WIDTH — 60px or
-   more on these strings, so 34px was already inside the clear zone.
-   Vertically it clears on HALF ITS LINE HEIGHT, about 11px at 20/1.1,
-   so 34px put the dot 23px into the text and it landed in the middle of
-   the word. 22px then 34px both failed for the same reason: the number
-   was being tuned as if one value served both directions.
-   TWELVE AND SIX NEED THE HALF-LINE PLUS REAL AIR: 11 + 9 for the dot
-   + 12 clear = 32 minimum, taken to 40. The sides keep 34. */
-.landing-ring-beat.is-1 { --x: 50%;     --y: 12%; --dx: 0;     --dy: -40px; }
-.landing-ring-beat.is-2 { --x: 82.91%;  --y: 31%; --dx: 34px;  --dy: -10px; }
-.landing-ring-beat.is-3 { --x: 82.91%;  --y: 69%; --dx: 34px;  --dy: 10px;  }
-.landing-ring-beat.is-4 { --x: 50%;     --y: 88%; --dx: 0;     --dy: 40px;  }
-.landing-ring-beat.is-5 { --x: 17.09%;  --y: 69%; --dx: -34px; --dy: 10px;  }
-.landing-ring-beat.is-6 { --x: 17.09%;  --y: 31%; --dx: -34px; --dy: -10px; }
-
-.landing-ring-beat.is-2,
-.landing-ring-beat.is-3 { text-align: left; }
-.landing-ring-beat.is-5,
-.landing-ring-beat.is-6 { text-align: right; }
-
 .landing-ring-beat.is-1::after { content: "1"; left: 50%; top: -17px; transform: translateX(-50%); }
 .landing-ring-beat.is-4::after { content: "4"; left: 50%; bottom: -17px; transform: translateX(-50%); }
-.landing-ring-beat.is-2::after { content: "2"; left: 100%; top: 0.35em; margin-left: 9px; }
-.landing-ring-beat.is-3::after { content: "3"; left: 100%; top: 0.35em; margin-left: 9px; }
-.landing-ring-beat.is-5::after { content: "5"; right: 100%; top: 0.35em; margin-right: 9px; }
-.landing-ring-beat.is-6::after { content: "6"; right: 100%; top: 0.35em; margin-right: 9px; }
+.landing-ring-beat.is-2::after { content: "2"; left: 100%; top: .35em; margin-left: 9px; }
+.landing-ring-beat.is-3::after { content: "3"; left: 100%; top: .35em; margin-left: 9px; }
+.landing-ring-beat.is-5::after { content: "5"; right: 100%; top: .35em; margin-right: 9px; }
+.landing-ring-beat.is-6::after { content: "6"; right: 100%; top: .35em; margin-right: 9px; }
 
 .landing-ring-hub {
   position: absolute;
@@ -1388,8 +1423,20 @@ html.landing-motion .landing-ring.is-lapping .landing-ring-trav { opacity: .9; }
     background: var(--landing-hairline);
   }
 
-  .landing-ring-beat {
+  /* ⚠⚠ EVERY ANCHOR IS UNWOUND HERE, INCLUDING `right`. The desktop
+     left pair is anchored by its right edge; left as static without
+     clearing `right` leaves it pinned. */
+  .landing-ring-beat,
+  .landing-ring-beat.is-1,
+  .landing-ring-beat.is-2,
+  .landing-ring-beat.is-3,
+  .landing-ring-beat.is-4,
+  .landing-ring-beat.is-5,
+  .landing-ring-beat.is-6 {
     position: static;
+    left: auto;
+    right: auto;
+    top: auto;
     transform: none;
     display: block;
     margin: 0 0 18px;
@@ -1398,12 +1445,19 @@ html.landing-motion .landing-ring.is-lapping .landing-ring-trav { opacity: .9; }
     white-space: normal;
   }
 
-  .landing-ring-beat.is-2,
-  .landing-ring-beat.is-3,
-  .landing-ring-beat.is-5,
-  .landing-ring-beat.is-6 { text-align: left; }
-
-  .landing-ring-beat::before { top: .62em; left: -30px; transform: none; }
+  .landing-ring-beat::before,
+  .landing-ring-beat.is-1::before,
+  .landing-ring-beat.is-2::before,
+  .landing-ring-beat.is-3::before,
+  .landing-ring-beat.is-4::before,
+  .landing-ring-beat.is-5::before,
+  .landing-ring-beat.is-6::before {
+    top: .62em;
+    left: -30px;
+    right: auto;
+    bottom: auto;
+    transform: none;
+  }
 
   .landing-ring-beat::after {
     left: -30px;
