@@ -2170,3 +2170,203 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
     height: 16px;
   }
 }
+
+
+/* =====================================================================
+   v10 — S280. THE PHONE RING. THE RAIL IS REPLACED.
+   ROLLBACK: delete from this v10 comment to the end of the file, which
+   returns the vertical rail exactly as it was — every rail rule is
+   still in place above and this block only overrides it.
+
+   ⚠⚠⚠ HER RULING, AND IT REVERSES THE S277 RAIL: "id rather keep the
+   same style as the desktop as much as possible" and "reduce the scale
+   of everything so its proportionate". So this is NOT the two-part
+   arrangement that was mocked first (dots on the circle, labels listed
+   beneath) — it is the DESKTOP ARRANGEMENT at a smaller scale: labels
+   outboard on the circle, numbers in front of them, hub line inside.
+
+   ⚠⚠ WHAT THE SCALE COSTS, NAMED BEFORE IT SHIPPED AND ACCEPTED BY HER
+   OFF A RENDERED MOCKUP AT A TRUE 381px:
+     · four of the six labels WRAP to two lines where desktop has one
+     · labels 13px against 15, hub line 18px against 40
+     · the circle is roughly half its desktop diameter
+   The alternative kept the scale and moved the labels off the circle.
+   She chose arrangement over scale. DO NOT "CORRECT" IT BACK.
+
+   ⚠⚠⚠ THE RAIL RULES ABOVE ARE NOT DELETED AND MUST NOT BE. They are
+   what this block overrides, one property at a time, and they are the
+   rollback. Deleting them and keeping this block leaves nothing to fall
+   back to.
+   ===================================================================== */
+
+@media (max-width: 767px) {
+
+  /* --- THE BOX. FLUID, SO THE LABELS' ROOM GROWS WITH THE SCREEN.
+     ⚠⚠⚠ 62vw IS NOT A TASTE VALUE — IT IS WHAT KEEPS THE LONGEST LABEL
+     OFF THE EDGE ON A SMALL PHONE. The side labels start at
+     50% + 32.909% of THE BOX from centre, so a fixed box width would
+     leave 74px for "We inspect" at 320px and 137px at 479px. A vw box
+     keeps the two in step: the ring shrinks exactly as the screen does.
+     Capped at 250 so it stops growing before the 767 boundary, where
+     the desktop ring takes over at 420. ------------------------------ */
+  .landing-ring {
+    width: 62vw;
+    max-width: 250px;
+    aspect-ratio: 1 / 1;
+    margin: 10px auto 0;
+    padding-left: 0;
+  }
+
+  /* THE SVG DRAWS THE CIRCLE HERE TOO, exactly as it does on desktop,
+     so the pseudo-element goes back to being nothing. It is the RAIL's
+     vertical bar and the rail is gone. */
+  .landing-ring::before { display: none; }
+
+  .landing-ring-art {
+    display: block;
+    position: absolute;
+    inset: 0;
+  }
+
+  /* ⚠⚠ THE SIX COLOURED ARCS ARE HIDDEN AND THE GREY BASE IS NOT.
+     CLAUDE'S CALL, REVERSIBLE IN ONE LINE. The entrance and the lap
+     live in the min-width:768 gate, and without html.landing-motion's
+     dash-array the segments PAINT IN FULL — so leaving them visible
+     would give the phone a permanently rainbow ring, which is not what
+     the desktop looks like at rest. Grey ring, coloured dots, still:
+     that IS the desktop at rest. Bringing the lap down here is now a
+     separate, honest decision rather than an accident. */
+  .landing-ring-seg { display: none; }
+
+  /* --- THE SIX BEATS. Every anchor the rail unwound is wound back,
+     including `right` — the rail set it to auto on all six and the left
+     pair is anchored BY its right edge.
+     ⚠⚠⚠ white-space GOES BACK TO normal, WHICH IS THE ONE REAL
+     DEPARTURE FROM DESKTOP. Desktop keeps nowrap because a label there
+     has the whole margin to run into; here it does not, so the side
+     labels wrap and their max-width is what decides where.
+     ⚠ THE CLEARANCE IS 10px HERE, NOT THE DESKTOP 20 — it is scaled
+     with everything else. It appears in FOUR places per beat (the
+     label's own offset and its dot's), so change one and change all. */
+  .landing-ring-beat {
+    font-size: 13px;
+    line-height: 1.35;
+    white-space: normal;
+  }
+
+  .landing-ring-beat::before { font-size: 11px; }
+
+  .landing-ring-beat.is-1 {
+    position: absolute;
+    display: block;
+    margin: 0;
+    left: 50%;
+    right: auto;
+    top: calc(50% - 38% - 10px);
+    transform: translate(-50%, -100%);
+    text-align: center;
+  }
+  .landing-ring-beat.is-1::after {
+    left: 50%; right: auto; top: auto; bottom: -10px;
+    transform: translate(-50%, 50%);
+  }
+
+  .landing-ring-beat.is-4 {
+    position: absolute;
+    display: block;
+    margin: 0;
+    left: 50%;
+    right: auto;
+    top: calc(50% + 38% + 10px);
+    transform: translateX(-50%);
+    text-align: center;
+  }
+  .landing-ring-beat.is-4::after {
+    left: 50%; right: auto; bottom: auto; top: -10px;
+    transform: translate(-50%, -50%);
+  }
+
+  /* ⚠⚠⚠ THE max-width IS THE WHOLE FIT AND IT MIXES UNITS ON PURPOSE.
+     50vw is half the screen, 32.909% resolves against THE RING BOX, and
+     the 20px is the 10px clearance plus a 10px margin off the screen
+     edge. So the label is given exactly the room left between the
+     circle and the edge, at every width, with no breakpoint. Give it a
+     fixed px value instead and it is right on one phone only. */
+  .landing-ring-beat.is-2,
+  .landing-ring-beat.is-3 {
+    position: absolute;
+    display: block;
+    margin: 0;
+    left: calc(50% + 32.909% + 10px);
+    right: auto;
+    transform: translateY(-50%);
+    text-align: left;
+    max-width: calc(50vw - 20px - 32.909%);
+  }
+  .landing-ring-beat.is-2 { top: calc(50% - 19%); }
+  .landing-ring-beat.is-3 { top: calc(50% + 19%); }
+  .landing-ring-beat.is-2::after,
+  .landing-ring-beat.is-3::after {
+    left: -10px; right: auto; bottom: auto; top: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .landing-ring-beat.is-5,
+  .landing-ring-beat.is-6 {
+    position: absolute;
+    display: block;
+    margin: 0;
+    right: calc(50% + 32.909% + 10px);
+    left: auto;
+    transform: translateY(-50%);
+    text-align: right;
+    max-width: calc(50vw - 20px - 32.909%);
+  }
+  .landing-ring-beat.is-5 { top: calc(50% + 19%); }
+  .landing-ring-beat.is-6 { top: calc(50% - 19%); }
+  .landing-ring-beat.is-5::after,
+  .landing-ring-beat.is-6::after {
+    right: -10px; left: auto; bottom: auto; top: 50%;
+    transform: translate(50%, -50%);
+  }
+
+  /* --- THE DOTS. 10px, scaled between the desktop ring's 14 and the
+     rail's 9. Every one is centred by its own translate above, so the
+     size is free to change without moving anything.
+     ⚠ THE SIX COLOURS LIVE IN THE min-width:768 GATE, so they have to
+     be restated here or every dot on the phone is the base amber. Same
+     six values as the arcs and the desktop dots — THREE COPIES NOW, and
+     a change to one is a change to three. */
+  .landing-ring-beat::after { width: 10px; height: 10px; }
+
+  .landing-ring-beat.is-1::after { background: var(--landing-coral); }
+  .landing-ring-beat.is-2::after { background: var(--landing-amber); }
+  .landing-ring-beat.is-3::after { background: #309359; }
+  .landing-ring-beat.is-4::after { background: #1C4A91; }
+  .landing-ring-beat.is-5::after { background: var(--landing-amber); }
+  .landing-ring-beat.is-6::after { background: var(--landing-pink); }
+
+  /* --- THE HUB GOES BACK TO THE CENTRE. 66% of the box, same as
+     desktop, so it wraps to two lines inside the circle. 18px is the
+     largest that clears the ring at 320px. */
+  .landing-ring-hub {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 66%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    margin-top: 0;
+  }
+
+  .landing-ring-line { font-size: 18px; }
+}
+
+/* --- THE 479 TWIN. Required: the existing 479 block sets the beat to
+   19px and sits ABOVE this one, so without this the labels jump back up
+   on a small phone. The box and the max-width need nothing — both are
+   already fluid. ------------------------------------------------------ */
+@media (max-width: 479px) {
+  .landing-ring-beat { font-size: 12px; }
+  .landing-ring-line { font-size: 17px; }
+}
