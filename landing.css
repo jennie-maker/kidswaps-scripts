@@ -1854,3 +1854,103 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
   .landing-sub, .landing-head .landing-sub { font-size: 16px; }
   .landing-cta-heading { font-size: 27px; }
 }
+
+/* =====================================================================
+   v8 — S279. THE PHONE PASS ON /how-it-works: accordion spacing, the
+   CTA heading's wrap, and the two buttons side by side.
+   ROLLBACK: delete from this comment to the end of the file. v7 is a
+   byte-exact prefix and was machine-checked as one.
+
+   ⚠⚠ EVERY RULE IN THIS SECTION LIVES INSIDE ITS OWN @media BLOCK AND
+   NOT ONE IS APPENDED BARE. That is deliberate and it is the file's own
+   rule read the right way round: a bare appended rule beats a media
+   query at equal specificity by source order, so a mobile-only change
+   written bare would have silently governed the desktop too. Written
+   inside a query that sits AFTER the existing 767 blocks, it wins over
+   them on source order and cannot reach any other width.
+   ===================================================================== */
+
+@media (max-width: 767px) {
+
+  /* --- QUESTION → TEASER, TIGHTER. HERS, OFF HER OWN PHONE. ----------
+     ⚠⚠⚠ THE GAP WAS TWO THINGS STACKED AND ONLY ONE OF THEM IS MOVABLE.
+     The teaser carries a 6px top margin, and under it sits roughly 10px
+     of slack from .landing-q-toggle's min-height:44px — which is THE
+     THUMB TARGET and must never be reduced to close a gap. So the 6px
+     goes and the 10px stays: ~16px becomes ~10px, and the control is
+     still 44px tall.
+     ⚠ SCOPED UNDER .landing-q ON PURPOSE. .landing-teaser does two jobs
+     on this page — the per-question teaser and the intro line under a
+     section label — and only the first one lives inside a .landing-q.
+     Loosen this to a bare .landing-teaser and the section intros lose
+     their spacing too. */
+  .landing-q .landing-teaser {
+    margin-top: 0;
+  }
+
+  /* --- TEASER → ANSWER, LOOSER. HERS. -------------------------------
+     ⚠⚠⚠ THIS IS A MARGIN ON THE FIRST CHILD, NEVER ON .landing-answer.
+     That element is the grid item inside a track that collapses to 0fr,
+     an fr track floors at the item's minimum contribution, and vertical
+     margin and padding are both unshrinkable — either one leaks that
+     many pixels of open answer on EVERY CLOSED ROW, on every landing
+     page. /old-home paid for this at home.css v43. A margin on the
+     child is inside the clip and costs nothing.
+
+     ⚠⚠ AND THE AMBER RULE MUST MOVE IN THE SAME EDIT. It is a
+     background, not a border, sized against the first child's margin:
+     22 top + the 4px ::after = 26. Change one number without the other
+     and the line starts 9px above where the text does. */
+  .landing-answer > *:first-child {
+    margin-top: 22px;
+  }
+
+  .landing-answer {
+    background-size: 2px calc(100% - 26px);
+    background-position: 0 22px;
+  }
+
+  /* --- THE CTA HEADING'S WRAP. --------------------------------------
+     ⚠ THE BREAK AFTER "deserves a" WAS max-width:18ch, NOT THE VIEWPORT.
+     18ch at 30px forces the first line short whatever the screen does.
+     Off on the phone, and `text-wrap: balance` evens the lines instead
+     of filling the first — a browser that does not know the property
+     ignores it and renders today's wrap, so there is no fallback to
+     build. The desktop keeps its 18ch measure, untouched. */
+  .landing-cta-heading {
+    max-width: none;
+    text-wrap: balance;
+  }
+
+  /* --- THE TWO BUTTONS, SIDE BY SIDE AT HALF WIDTH. HERS. -----------
+     ⚠⚠⚠ ONLY .landing-cta-btns BECOMES FLEX. .landing-cta-row HOLDS THE
+     H2 AS WELL, so making the row flex would stand the heading beside
+     the buttons. Read off Navigator, not assumed.
+     ⚠ flex:1 1 0 WITH min-width:0 IS WHAT GIVES TRUE HALVES. Without
+     min-width a flex item refuses to shrink below its content, so the
+     longer label would take more than half and push the row wide.
+     ⚠ 13px AND 8px OF SIDE PADDING ARE WHAT KEEP "See The Closet
+     Standard" ON ONE LINE at 390px. align-items:stretch means the pills
+     stay the same height if it ever does wrap on a narrower phone. */
+  .landing-cta-btns {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .landing-cta-row .landing-cta-primary,
+  .landing-cta-row .landing-cta-secondary,
+  .landing-cta-btns .landing-cta-primary,
+  .landing-cta-btns .landing-cta-secondary {
+    display: inline-block;
+    width: auto;
+    flex: 1 1 0;
+    min-width: 0;
+    margin-top: 0;
+    padding: 14px 8px;
+    font-size: 13px;
+    line-height: 1.25;
+  }
+
+}
