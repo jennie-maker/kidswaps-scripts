@@ -169,13 +169,34 @@
      centring gives ~27px between the coins against 6px coin-to-label. THIS IS THE LEVER:
      one number, judged on a render. ⚠ IT KNOWINGLY REVERSES THE S88 "tuck" — the overlap
      was deliberate, not a bug, and it is being overturned rather than repaired. */
-  .ks-coins-row { gap: 20px; align-items: flex-start; }
+  .ks-coins-row { gap: 16px; align-items: flex-start; }
   /* ⚠⚠⚠ THE -15px OVERLAP IS DELETED, NOT COMMENTED OUT — S282. It read as "31".
      ⚠ THE TIER LABELS' padding: 0 12px IS WRITTEN INLINE BY dashboard-tool.js (tierEl
      .style.cssText) AND IT STAYS. It was added at S214 to clear this overlap; with the
      overlap gone it still separates the two tier columns, so it is NOT inert and removing
      it costs a JS bump for nothing. ⚠ IF THE COIN BOX EVER CHANGES SIZE AGAIN, only two
      numbers move together now, not three: the box and .ks-coin-num's font-size. */
+
+  /* ⚠⚠ THE HAIRLINE — S282, HERS, AFTER SEEING THE GAP ALONE ON A REAL RENDER.
+     ⚠⚠⚠ IT IS A BACKGROUND GRADIENT, NEVER A border-left, AND THAT IS NOT A STYLE
+     PREFERENCE. A border is exactly as tall as the element it sits on, and the two
+     columns are NOT always the same height — three tier lines on clothing against one
+     on toys makes the toy column shorter, and the line would stop short with nothing
+     erroring. A BACKGROUND CONTRIBUTES NO LAYOUT, so its height is stated outright and
+     cannot drift with the tier lists. Same reasoning as home.css v43's amber answer rule.
+     ⚠⚠ THE SELECTOR IS THE ADJACENT SIBLING ON PURPOSE: a member on The Basics renders
+     ONE coin unit, and + means there is nothing to draw a divider beside. A rule on the
+     ROW would paint a line down a single-coin bank.
+     ⚠ 110px = the 87px coin + its 6px label gap + the label, so the line closes under
+     the label and never reaches the ragged bottom of the tier lists. top 4px sinks it
+     below the coin's own top edge so it reads as a column rule, not a crop mark.
+     ⚠ 16px of padding matches the 16px row gap, so the line sits centred in the space
+     with the same air either side. THE TWO NUMBERS MOVE TOGETHER.
+     ⚠ #C9C7BC is the hairline grey already used on the landing pages — not a new value. */
+  .ks-coin-unit + .ks-coin-unit {
+    padding-left: 16px;
+    background: linear-gradient(#C9C7BC, #C9C7BC) left 0 top 4px / 1px 110px no-repeat;
+  }
 
   /* ============================================================
      THE COIN BOX — TAKEN OVER FROM THE DESIGNER, S88.
