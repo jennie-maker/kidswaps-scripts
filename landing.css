@@ -2886,3 +2886,65 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
   .landing-wrap.pricing-page .landing-plan-cards { grid-template-columns: 1fr; }
   .landing-wrap.pricing-page .landing-plan-name  { font-size: 24px; }
 }
+
+/* ==========================================================================
+   /pricing  —  v17, S281.  TWO ADDITIONS, BOTH PAGE-SCOPED.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   THE BILLING NOTE
+   ⚠ v16 styled this line as a `small` INSIDE .landing-plan-price, and WEBFLOW
+   CANNOT MAKE ONE — its Text block is a div. So it is its own element with its
+   own class. The v16 `small` rule is LEFT IN PLACE and is inert on this page;
+   it is not deleted because it costs nothing and a hand-written embed could
+   still use it. DO NOT read its presence as evidence the markup uses a `small`.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.pricing-page .landing-plan-note {
+  margin: 5px 20px 0;
+  font-family: Quicksand, sans-serif;
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--landing-muted);
+}
+
+/* --------------------------------------------------------------------------
+   THE SEO BLOCK — SPACING ONLY, DELIBERATELY NOT TYPE.
+   ⚠⚠ HER S277 RULING STANDS: this block is the SAME ARTIFACT as the one on
+   /browse, /clothing and /toys, and it renders through Webflow's own classes on
+   all four. Restyling its type here would break that set. THESE RULES ADD ROOM
+   AND NOTHING ELSE — no font, no size, no colour.
+
+   ⚠⚠⚠ IT ONLY WORKS IF seo-content-bottom-of-page IS MOVED INSIDE
+   .landing-card. Left where it is, outside .landing-wrap, NOTHING HERE MATCHES
+   and the block renders on white against the card's cream. That is a Designer
+   drag, not a code change, and it is the same move already owed on
+   /how-it-works.
+
+   ⚠ The hairline and the 46px echo .landing-section's own rhythm, so the block
+   reads as the page's last section rather than as something stuck underneath.
+   CLAUDE'S CALL, REVERSIBLE — delete these two rules and it is a plain gap.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.pricing-page .seo-content-bottom-of-page {
+  display: block;
+  margin-top: 46px;
+  padding: 46px 0 0;
+  border-top: 1px solid var(--landing-hairline);
+}
+
+.landing-wrap.pricing-page .seo-content-div {
+  max-width: 660px;
+  margin-left: 0;
+  margin-right: auto;
+  padding: 0;
+}
+
+@media (max-width: 767px) {
+  .landing-wrap.pricing-page .seo-content-bottom-of-page {
+    margin-top: 36px;
+    padding-top: 36px;
+  }
+  .landing-wrap.pricing-page .landing-plan-note { margin-top: 4px; }
+}
