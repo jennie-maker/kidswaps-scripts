@@ -2525,3 +2525,60 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
 @media (max-width: 479px) {
   .landing-ring-line { font-size: 16px; }
 }
+
+
+/* =====================================================================
+   v13 — S280. THE LABELS WERE NEVER GIVEN THE WIDTH. THE REAL FAULT.
+   ROLLBACK: delete from this v13 comment to the end of the file.
+
+   ⚠⚠⚠ AN ABSOLUTELY POSITIONED BOX ANCHORED BY `left` IS SHRINK-TO-FIT,
+   AND THE SPACE IT IS OFFERED RUNS ONLY TO ITS CONTAINING BLOCK'S EDGE
+   — NOT TO THE SCREEN'S. The beats are positioned against .landing-ring,
+   which is 46vw. A right-pair label sits at left: 50% + 32.909% + 10px
+   of that box, so the space left inside the box is
+       BOX − (50% + 32.909% + 10px)  ≈  21px
+   and the label collapses to its longest WORD. The left pair is the
+   same fault mirrored through `right`.
+
+   ⚠⚠⚠ AND max-width COULD NEVER HAVE FIXED IT. A max-width CAPS a
+   width; it cannot GRANT space that was never offered. v10's
+   `max-width: calc(50vw − 20px − 32.909%)` computed to ~117px and was
+   simply never reached, so it looked like a value that did nothing —
+   and three passes of type-shrinking were spent on a symptom.
+   ✅ THE FIX IS `width`, WHICH REMOVES SHRINK-TO-FIT FROM THE QUESTION.
+   The label then takes exactly the room between the circle and the
+   screen edge, and the box is free to overflow its containing block,
+   which is what an absolute box is allowed to do.
+
+   ▶▶ THE RULE, GENERAL: WHEN AN ABSOLUTE BOX WRAPS HARDER THAN ITS
+   max-width SAYS IT SHOULD, IT IS NOT BEING CAPPED — IT IS BEING OFFERED
+   LESS. Print offsetWidth against the max-width; if the box is narrower
+   than its own cap, the cap is not the thing deciding. Sibling of INERT
+   RULES: every gate passes and the rule aims at nothing.
+   ===================================================================== */
+
+@media (max-width: 767px) {
+
+  /* ⚠ `width`, NOT `max-width` — see above. The three terms are: half
+     the screen, minus the 10px clearance plus a 10px margin off the
+     screen edge, minus the label's own distance from centre (which is a
+     PERCENTAGE OF THE RING BOX, so it scales with the ring). No
+     breakpoint: the label is handed exactly what the circle leaves it,
+     at every width. */
+  .landing-ring-beat.is-2,
+  .landing-ring-beat.is-3,
+  .landing-ring-beat.is-5,
+  .landing-ring-beat.is-6 {
+    width: calc(50vw - 20px - 32.909%);
+    max-width: none;
+  }
+
+  /* THE TOP AND BOTTOM PAIR ARE CENTRED, so they are offered the whole
+     box either side of their own centre and were never starved. They
+     take the full column instead of the box so a long label stays on
+     one line, and translateX(-50%) keeps them centred on the axis. */
+  .landing-ring-beat.is-1,
+  .landing-ring-beat.is-4 {
+    width: calc(100vw - 40px);
+  }
+}
