@@ -2948,3 +2948,98 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
   }
   .landing-wrap.pricing-page .landing-plan-note { margin-top: 4px; }
 }
+
+/* ==========================================================================
+   /pricing  —  v18, S281.  FOUR FIXES, ALL PAGE-SCOPED.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. THE CARD HOVER, HERS.
+   ⚠⚠⚠ IT CANNOT USE transform, AND THIS IS NOT A PREFERENCE. The v16 entrance
+   runs `landing-plan-deal` with `both` fill, so the animation's end value —
+   transform: translateY(0) — KEEPS APPLYING after it finishes and BEATS any
+   declaration in the cascade. A hover written as translateY would verify
+   clean, ship, and do absolutely nothing. Same family as INERT RULES.
+   So the hover moves the border and lays a bar of the plan's own colour under
+   the card. Both are properties the entrance never touches.
+
+   ⚠ A TRANSITION IS CORRECT HERE, unlike the entrance: this fires on a state
+   change on a page that has already painted, so there is no paint race to
+   lose. S247's keyframe rule is about entrances.
+
+   ⚠ HOVER DOES NOT EXIST ON A PHONE. This is decoration for a mouse and
+   nothing on the card depends on it — the card is not a link, and the one CTA
+   sits below the grid.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.pricing-page .landing-plan-card {
+  transition: box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+.landing-wrap.pricing-page .landing-plan-card:hover {
+  border-color: var(--plan-colour);
+  box-shadow: 0 5px 0 -1px var(--plan-colour);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-wrap.pricing-page .landing-plan-card { transition: none; }
+}
+
+/* --------------------------------------------------------------------------
+   2. ROOM ABOVE THE FOOTNOTE, HERS. The shared rule gives it 16px, which is
+   correct under a paragraph and too tight under a 50px-tall pill.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.pricing-page .landing-cta-note {
+  margin-top: 30px;
+}
+
+/* --------------------------------------------------------------------------
+   3. DOTS ON THE INCLUDES LIST, HERS.
+   ⚠⚠ IT NEEDS A COMBO CLASS IN THE DESIGNER: add `is-includes` alongside
+   `landing-section` on that ONE section. Without it nothing here matches —
+   the six lines are plain paragraphs with no class of their own, and a rule
+   written at `.landing-section-body p` would put a dot on every paragraph on
+   the page, including the closing line and the answers.
+
+   ⚠ THE DOT IS THE SAME DEVICE AS .landing-figure::before — 6px, amber, on a
+   pseudo — so the page carries one accent language rather than two. It is a
+   MARK, not a bullet: the markup stays paragraphs, because a real list would
+   need every line rebuilt as an li.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.pricing-page .landing-section.is-includes .landing-section-body p {
+  position: relative;
+  padding-left: 22px;
+  margin-bottom: 1.35em;
+}
+
+.landing-wrap.pricing-page .landing-section.is-includes .landing-section-body p::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--landing-amber);
+}
+
+/* --------------------------------------------------------------------------
+   4. THE SEO BLOCK GOES FULL WIDTH — REVERSING v17, HERS.
+   v17 capped it at a 660 reading measure. She wants the card's full width, so
+   the cap is removed rather than left in and overridden. The spacing half of
+   v17 stays: it is what puts the hairline and the room above it.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.pricing-page .seo-content-div {
+  max-width: none;
+}
+
+@media (max-width: 767px) {
+  .landing-wrap.pricing-page .landing-cta-note { margin-top: 24px; }
+  .landing-wrap.pricing-page .landing-section.is-includes .landing-section-body p {
+    padding-left: 20px;
+    margin-bottom: 1.2em;
+  }
+}
