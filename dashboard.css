@@ -193,7 +193,20 @@
      ⚠ 16px of padding matches the 16px row gap, so the line sits centred in the space
      with the same air either side. THE TWO NUMBERS MOVE TOGETHER.
      ⚠ #C9C7BC is the hairline grey already used on the landing pages — not a new value. */
-  .ks-coin-unit + .ks-coin-unit {
+  /* ⚠⚠⚠ BOTH SELECTORS TEST THE INLINE style ATTRIBUTE AND THAT IS LOAD-BEARING, NOT
+     CLEVERNESS — CAUGHT BY HER S282 BEFORE IT SHIPPED. paintCoins hides a coin with
+     unit.style.display = 'none', and `+` MATCHES ON DOM ORDER, NOT ON VISIBILITY. So a
+     bare `.ks-coin-unit + .ks-coin-unit` is correct for THE BASICS (clothing shows, the
+     hidden toy unit is the one carrying the rule, nothing paints) and WRONG FOR THE TOY
+     CHEST, where the CLOTHING unit is the hidden one and the rule lands on the only
+     visible coin — a hairline with nothing on the far side of it, and 16px of padding
+     shoving it off centre. An entire plan.
+     ⚠⚠ THE COUPLING: paintCoins writes the literal `display: flex` / `display: none`, so
+     [style*="display: flex"] is exact today. IF THAT LINE EVER BECOMES A classList TOGGLE
+     THIS RULE STOPS MATCHING AND THE HAIRLINE SIMPLY DISAPPEARS — ugly, never a lie, and
+     the padding goes with it so nothing lands off centre. THAT IS THE SAFE DIRECTION AND
+     IT IS WHY THIS WAS TAKEN OVER A JS COMMIT. Grep paintCoins before changing either. */
+  .ks-coin-unit[style*="display: flex"] + .ks-coin-unit[style*="display: flex"] {
     padding-left: 16px;
     background: linear-gradient(#C9C7BC, #C9C7BC) left 0 top 4px / 1px 110px no-repeat;
   }
