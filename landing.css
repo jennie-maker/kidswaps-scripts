@@ -2686,3 +2686,38 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
     animation-play-state: running;
   }
 }
+
+
+/* =====================================================================
+   v15 — S280. BEATS 2 AND 6 WRAP TO TWO LINES. HERS.
+   ROLLBACK: delete from this v15 comment to the end of the file.
+
+   ⚠⚠ THE CAP IS IN `ch`, NOT PIXELS, AND THAT IS THE WHOLE TRICK. A ch
+   is the width of the font's own "0", so a cap written this way SCALES
+   WITH THE TYPE — the 479 block drops these labels to 12px and the cap
+   comes down with them, keeping the same wrap. A px cap would be right
+   at one size and wrong at the other, silently.
+
+   ⚠⚠⚠ AND max-width WORKS HERE WHERE IT FAILED AT v13, WHICH IS NOT A
+   CONTRADICTION: v13 set an explicit `width`, so there IS now a width
+   to cap. A max-width can only ever narrow a width that exists; at v13
+   the box was shrink-to-fit and there was nothing for it to act on.
+   ▶ IF THIS CAP EVER APPEARS TO DO NOTHING, CHECK THAT v13's `width`
+   IS STILL THERE FIRST.
+
+   ⚠ 10ch IS CHOSEN AGAINST THE TWO LABELS, NOT PICKED ROUND: it breaks
+   "We inspect / and grade" and "They / outgrow it". Widen it and beat 6
+   goes back to one long line; narrow it and beat 6 strands "it" on a
+   line of its own, which is the break she rejected at v11. THE TWO
+   FAILURES SIT EITHER SIDE OF THIS VALUE.
+
+   ⚠ BEAT 3 IS DELIBERATELY NOT CAPPED. "You earn credits" reads fine on
+   one line and she named 2 and 6 only. The right side is therefore
+   uneven by instruction, not by oversight — do not "balance" it. */
+
+@media (max-width: 767px) {
+  .landing-ring-beat.is-2,
+  .landing-ring-beat.is-6 {
+    max-width: 10ch;
+  }
+}
