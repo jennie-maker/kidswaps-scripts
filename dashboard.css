@@ -150,9 +150,11 @@
      .ks-look-h heading so the two big serif headings rhyme. line-height tightened for the size. */
   .ks-bank-label {
     font-family: 'Instrument Serif', serif;
-    /* ⚠ ENLARGED AGAIN S215, HERS — "about 15px bigger". 52 -> 67. The mobile twin at the foot
-       of this file stays 26px, so this cannot wrap on a phone. */
-    font-size: 67px;
+    /* ⚠ 67 -> 52 S282, HERS — an exact reversal of the S215 enlargement, back to the S214
+       size, which is .ks-look-h's size and the rhyme that was intended. The mobile twin at
+       the foot of this file stays 26px. ⚠ IF IT READS CRAMPED the lever is
+       .ks-hero-card .ks-bank-label { margin: 0 0 6px }, which was sized against 67px. */
+    font-size: 52px;
     line-height: 1.05;
     color: #1E1A19;
     text-align: center;
@@ -160,13 +162,20 @@
   }
 
   /* Coins hero */
-  .ks-coins-row { gap: 0; align-items: flex-start; }
-  /* ⚠⚠ THREE NUMBERS MOVE TOGETHER OR THE COINS BREAK (S88, coins 1/3 smaller — HERS):
-     the box below (130 -> 87), .ks-coin-num's font-size (44 -> 29), and this overlap.
-     ⚠ -22px WAS SIZED FOR A 130px COIN. Left alone it eats a third of an 87px one.
-     ⚠ THE MARGIN SITS ON THE UNIT, NOT ON THE COIN (§DASH.3) — it shifts coin + label +
-     tiers together so they stay aligned as a column. Do not move it onto .ks-coin. */
-  .ks-coin-unit + .ks-coin-unit { margin-left: -15px; }
+  /* ⚠⚠ THE GAP EXISTS TO STOP THE TWO NUMERALS READING AS ONE NUMBER — S282, HERS.
+     A real reader (age 9) read a 3 coin beside a 1 coin as "31". The coins overlapped by
+     15px while each coin sat only 6px from its own label, so proximity said the numerals
+     belonged together and the labels belonged to nothing. 20px here plus the units' own
+     centring gives ~27px between the coins against 6px coin-to-label. THIS IS THE LEVER:
+     one number, judged on a render. ⚠ IT KNOWINGLY REVERSES THE S88 "tuck" — the overlap
+     was deliberate, not a bug, and it is being overturned rather than repaired. */
+  .ks-coins-row { gap: 20px; align-items: flex-start; }
+  /* ⚠⚠⚠ THE -15px OVERLAP IS DELETED, NOT COMMENTED OUT — S282. It read as "31".
+     ⚠ THE TIER LABELS' padding: 0 12px IS WRITTEN INLINE BY dashboard-tool.js (tierEl
+     .style.cssText) AND IT STAYS. It was added at S214 to clear this overlap; with the
+     overlap gone it still separates the two tier columns, so it is NOT inert and removing
+     it costs a JS bump for nothing. ⚠ IF THE COIN BOX EVER CHANGES SIZE AGAIN, only two
+     numbers move together now, not three: the box and .ks-coin-num's font-size. */
 
   /* ============================================================
      THE COIN BOX — TAKEN OVER FROM THE DESIGNER, S88.
@@ -1808,8 +1817,15 @@
        max-width is 42ch to match .ks-greet-sub / .ks-sb-stop, and font-size comes up to
        17px so 42ch measures the SAME there as it does on them.
        (0,2,0) - it must beat the base rule's width:fit-content and the 200px cap. */
+    /* ⚠⚠ S282, HERS — THIS REVERSES THE S86 "MATCH THE BANDS" RULING ABOVE, KNOWINGLY.
+       The pill now hugs its label instead of running the full 42ch. ⚠ max-width STAYS
+       EXPLICITLY SET and this selector STAYS (0,2,0): it is the #DASH-CTA-CLIP fix beating
+       Webflow's own max-width:200px on .ks-greet-cta, and simplifying it to one class is a
+       tie that loses silently. ⚠ white-space:nowrap on the base rule is load-bearing — the
+       label once broke to "Browse the / closet". ⚠ BOTH PILLS MOVE OR NEITHER.
+       ⚠ THE PADDING IS SET HERE, NOT IN THE 939 BLOCK, so 601-939 is untouched. */
     .ks-cta-row .ks-greet-cta,
-    .ks-cta-row .ks-sb-cta { width: 100%; max-width: 42ch; font-size: 17px; }
+    .ks-cta-row .ks-sb-cta { width: fit-content; max-width: 100%; font-size: 16px; padding: 13px 26px; }
     .ks-sb-stop        { margin-top: 16px; }
     .ks-panel-h        { font-size: 20px; }
     .ks-rev-h          { font-size: 20px; }
