@@ -2721,3 +2721,168 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
     max-width: 10ch;
   }
 }
+
+/* ==========================================================================
+   /pricing  —  PAGE-SCOPED  —  v16, S281
+   ⚠⚠⚠ EVERY RULE HERE IS WRITTEN AT TWO CLASSES, .landing-wrap.pricing-page,
+   for the same reason .standard-page and .how-it-works-page are: it beats the
+   shared rule AND IT CANNOT MATCH ON ANOTHER LANDING PAGE. Add the combo class
+   in the Designer and LEAVE IT UNSTYLED THERE.
+
+   HER RULING S281, off the C1 mockup: ink-outlined cards, two by two, with a
+   COLOURED CAP across the top. The cap is a MARK, not a surface, so it carries
+   no contrast obligation — the same reason the amber rule under the section
+   headings works where coral and green both failed on /browse.
+
+   ⚠⚠ MEASURED, NOT ASSUMED, AND IT IS WHY NOTHING HERE IS FILLED: cream on
+   coral reads 3.23 and on green 3.25, both under the bar. Only navy takes
+   cream (7.25). Ink passes on all four. IF A FILLED VARIANT IS EVER BUILT,
+   INK TEXT ON EVERYTHING EXCEPT NAVY.
+
+   ⚠ THE PLAN COLOUR IS ONE CUSTOM PROPERTY SET ON THE CARD and read by the
+   cap. Re-assigning which plan is which colour is four lines in one place.
+   Green on toys matches the meaning it already carries in signup; the others
+   are free under her S236 palette ruling.
+   ========================================================================== */
+
+.landing-wrap.pricing-page .landing-plan-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.landing-wrap.pricing-page .landing-plan-card {
+  --plan-colour: var(--landing-coral);
+  position: relative;
+  border: 1px solid var(--landing-ink);
+  border-radius: 6px;
+  padding: 0 0 22px;
+  overflow: hidden;
+}
+
+.landing-wrap.pricing-page .landing-plan-card.is-basics     { --plan-colour: var(--landing-coral); }
+.landing-wrap.pricing-page .landing-plan-card.is-toys       { --plan-colour: #309359; }
+.landing-wrap.pricing-page .landing-plan-card.is-wardrobe   { --plan-colour: #1C4A91; }
+.landing-wrap.pricing-page .landing-plan-card.is-everything { --plan-colour: var(--landing-amber); }
+
+/* THE CAP IS ITS OWN ELEMENT, NOT A ::before, on purpose: the draw animates
+   transform: scaleX and needs transform-origin: left, and an element is what a
+   future session can find in Navigator. overflow:hidden on the card is what
+   keeps it inside the radius. */
+
+.landing-wrap.pricing-page .landing-plan-cap {
+  display: block;
+  height: 8px;
+  background-color: var(--plan-colour);
+  transform-origin: left center;
+}
+
+.landing-wrap.pricing-page .landing-plan-name {
+  margin: 20px 20px 0;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 26px;
+  line-height: 1.1;
+  color: var(--landing-ink);
+}
+
+.landing-wrap.pricing-page .landing-plan-swaps {
+  margin: 6px 20px 0;
+  font-family: Quicksand, sans-serif;
+  font-weight: 500;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--landing-ink);
+}
+
+.landing-wrap.pricing-page .landing-plan-value {
+  margin: 2px 20px 0;
+  font-family: Quicksand, sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--landing-muted);
+}
+
+.landing-wrap.pricing-page .landing-plan-price {
+  display: block;
+  margin: 16px 20px 0;
+  font-family: Quicksand, sans-serif;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--landing-ink);
+}
+
+.landing-wrap.pricing-page .landing-plan-price small {
+  display: block;
+  margin-top: 5px;
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--landing-muted);
+}
+
+/* --------------------------------------------------------------------------
+   MOTION  —  M3, HERS. Each card rises, then its own cap draws 250ms behind it.
+   Two beats a card, four cards, one sweep.
+
+   ⚠⚠⚠ NO landing.js CHANGE. `.is-in` is already added to every .landing-section
+   by the existing observer, once, and then unobserved. This whole block hangs
+   off that class.
+
+   ⚠⚠ THE 300ms BASE DELAY IS LOAD-BEARING, NOT TASTE: the section itself runs
+   landing-rise for 0.5s, so a card starting at 0 races its own parent's fade
+   and the stagger is invisible inside it.
+
+   ⚠ KEYFRAMES, NEVER TRANSITIONS (S247), and `both` fill holds the start state
+   through the delay so no card flashes early. Hidden ONLY under
+   html.landing-motion inside prefers-reduced-motion — no script or reduced
+   motion means four finished cards sitting still, never an empty section.
+   -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: no-preference) {
+
+  html.landing-motion .landing-wrap.pricing-page .landing-plan-card { opacity: 0; }
+  html.landing-motion .landing-wrap.pricing-page .landing-plan-cap  { transform: scaleX(0); }
+
+  html.landing-motion .landing-wrap.pricing-page .landing-section.is-in .landing-plan-card {
+    animation: landing-plan-deal 0.55s cubic-bezier(.4, 0, .2, 1) both;
+  }
+  html.landing-motion .landing-wrap.pricing-page .landing-section.is-in .landing-plan-cap {
+    animation: landing-plan-cap-draw 0.60s cubic-bezier(.4, 0, .2, 1) both;
+  }
+
+  html.landing-motion .landing-wrap.pricing-page .landing-section.is-in .landing-plan-card:nth-child(1) { animation-delay: 0.30s; }
+  html.landing-motion .landing-wrap.pricing-page .landing-section.is-in .landing-plan-card:nth-child(2) { animation-delay: 0.42s; }
+  html.landing-motion .landing-wrap.pricing-page .landing-section.is-in .landing-plan-card:nth-child(3) { animation-delay: 0.54s; }
+  html.landing-motion .landing-wrap.pricing-page .landing-section.is-in .landing-plan-card:nth-child(4) { animation-delay: 0.66s; }
+
+  html.landing-motion .landing-wrap.pricing-page .landing-section.is-in .landing-plan-card:nth-child(1) .landing-plan-cap { animation-delay: 0.55s; }
+  html.landing-motion .landing-wrap.pricing-page .landing-section.is-in .landing-plan-card:nth-child(2) .landing-plan-cap { animation-delay: 0.67s; }
+  html.landing-motion .landing-wrap.pricing-page .landing-section.is-in .landing-plan-card:nth-child(3) .landing-plan-cap { animation-delay: 0.79s; }
+  html.landing-motion .landing-wrap.pricing-page .landing-section.is-in .landing-plan-card:nth-child(4) .landing-plan-cap { animation-delay: 0.91s; }
+
+}
+
+@keyframes landing-plan-deal {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes landing-plan-cap-draw {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+/* --------------------------------------------------------------------------
+   MOBILE TWINS. These sit AFTER the desktop rules above, which is what lets
+   them win — this file ends at top level and an appended bare rule would
+   otherwise beat a media query written earlier in the file by source order.
+   The stagger is KEPT on one column, matching the FAQ rows and the ring.
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 767px) {
+  .landing-wrap.pricing-page .landing-plan-cards { grid-template-columns: 1fr; }
+  .landing-wrap.pricing-page .landing-plan-name  { font-size: 24px; }
+}
