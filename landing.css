@@ -3043,3 +3043,60 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
     margin-bottom: 1.2em;
   }
 }
+
+/* ==========================================================================
+   THE CLOSING BLOCK ON THE SPINE  —  v19, S281.
+   ⚠⚠⚠ THE ONLY RULE IN THIS FILE'S RECENT HISTORY THAT IS **NOT**
+   PAGE-SCOPED, AND THAT IS DELIBERATE — HER ASK WAS THAT THE OTHER LANDING
+   PAGES DO NOT HIT THE SAME FAULT.
+
+   THE FAULT, OFF HER LIVE RENDER: a full-width closing block puts a 34px
+   ROMAN serif at the card's left edge, which is exactly where the ITALIC
+   section headings sit. It reads as a section heading wearing the wrong
+   style, and the right two-thirds of the row is empty. Moving the block onto
+   the spine removes the collision rather than restyling around it.
+
+   ⚠⚠⚠ THE CHILD COMBINATOR IS THE GUARD AND IT IS LOAD-BEARING.
+   `.landing-card > .landing-cta-row` matches ONLY a closing block that is a
+   DIRECT child of the card, i.e. one that is already full width. A
+   .landing-cta-row nested INSIDE a .landing-section-body is already in the
+   right-hand column, and a bare `.landing-cta-row` rule would push it a
+   further 350px and wreck it. That shape is live on /how-it-works and the
+   closet standard AND HAS NOT BEEN READ — the combinator means it does not
+   have to be. DO NOT LOOSEN THIS TO ONE CLASS.
+
+   ⚠ 350 IS NOT A ROUND NUMBER: it is the section grid's 290px rail plus its
+   60px gap. CHANGE EITHER AND THIS MOVES WITH THEM.
+
+   ⚠ THE EMPTY LEFT RAIL IS THE POINT, not an oversight. It is what keeps the
+   block reading as a closer rather than as one more section.
+   ========================================================================== */
+
+.landing-card > .landing-cta-row {
+  padding-left: 350px;
+  margin-top: 52px;
+  padding-top: 46px;
+  border-top: 1px solid var(--landing-hairline);
+}
+
+/* --------------------------------------------------------------------------
+   991 AND BELOW — THE INDENT GOES, and that is why this option was chosen
+   over a centred one. The section grid collapses to one column here, so a
+   350px indent would be indenting against a rail that no longer exists.
+   Below 991 this block is byte-for-byte what shipped before v19.
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 991px) {
+  .landing-card > .landing-cta-row {
+    padding-left: 0;
+    margin-top: 44px;
+    padding-top: 40px;
+  }
+}
+
+@media (max-width: 767px) {
+  .landing-card > .landing-cta-row {
+    margin-top: 36px;
+    padding-top: 36px;
+  }
+}
