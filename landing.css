@@ -2582,3 +2582,107 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
     width: calc(100vw - 40px);
   }
 }
+
+
+/* =====================================================================
+   v14 — S280. THE ENTRANCE AND THE LAP COME TO THE PHONE.
+   ROLLBACK: delete from this v14 comment to the end of the file, which
+   returns the phone to a static grey ring with coloured dots.
+
+   ⚠⚠ THIS REVERSES v10's `.landing-ring-seg { display: none }`, WHICH
+   WAS ALWAYS CONDITIONAL ON THIS. The arcs were hidden because without
+   the lap they paint IN FULL and the phone would have shown a
+   permanently rainbow ring that the desktop never shows. With the lap
+   running there is nothing to hide from.
+
+   ⚠⚠⚠ THESE DECLARATIONS ARE A **SECOND COPY** OF THE ONES INSIDE THE
+   min-width:768 GATE, VALUE FOR VALUE. THE KEYFRAMES ARE NOT COPIED —
+   they sit at top level and are shared, which is what keeps the two
+   copies from drifting on the part that matters. IF A TIMING, A DELAY
+   OR A PLAY-STATE CHANGES IN EITHER PLACE, CHANGE IT IN BOTH AND DIFF
+   THEM. Same standing rule as the six dot colours in v10, and the same
+   reason: the gate exists to protect the RAIL, which no longer runs
+   here, but unpicking it is a structural edit to a proven, shipped
+   block and this is not the session for that.
+   ▶ THE HONEST TIDY-UP LATER: drop the min-width wrapper from the
+   animation half entirely so one copy governs both widths. It is a
+   deliberate job with its own verification, not a drive-by.
+
+   ✅ WHY THE ENTRANCE KEYFRAMES NEED NO PHONE VARIANT: every pop and
+   rise carries its element's OWN positioning transform, and the phone
+   beats use the IDENTICAL transforms to the desktop ones — translate
+   (-50%,-100%) at twelve, translateX(-50%) at six, translateY(-50%) on
+   the four sides. Only the offsets differ, and offsets are not in the
+   keyframes. If a future phone layout changes a beat's transform, its
+   keyframe has to change with it or the beat will jump on entrance.
+
+   ✅ AND THE LAP STILL PAUSES OFF-SCREEN. landing.js toggles
+   `.is-lapping` on .landing-ring with no width test of its own, so the
+   phone gets that behaviour for free and nothing moves behind a reader
+   three sections down.
+   ===================================================================== */
+
+@media (max-width: 767px) {
+
+  .landing-ring-seg { display: inline; }
+  .landing-ring-arm { display: block; }
+
+  html.landing-motion .landing-ring-seg {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+  }
+
+  /* THE ENTRANCE — one shot, armed by `.is-in` off the section reveal,
+     never off page load. */
+  html.landing-motion .landing-cycle.is-in .landing-ring-base {
+    stroke-dasharray: 100;
+    animation: landing-ring-trace 1.4s cubic-bezier(.4, 0, .2, 1) both;
+  }
+
+  html.landing-motion .landing-cycle.is-in .landing-ring-endmark {
+    opacity: 0;
+    animation: landing-ring-endin .3s linear 1.4s forwards;
+  }
+
+  html.landing-motion .landing-cycle.is-in .landing-ring-hub {
+    animation: landing-ring-hubin .6s cubic-bezier(.4, 0, .2, 1) 1.55s both;
+  }
+
+  html.landing-motion .landing-cycle.is-in .landing-ring-beat.is-1::after { animation: landing-ring-pop-1    .32s cubic-bezier(.4,0,.2,1) 0.000s both; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-beat.is-1        { animation: landing-ring-rise-top  .5s cubic-bezier(.4,0,.2,1) 0.140s both; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-beat.is-2::after { animation: landing-ring-pop-234  .32s cubic-bezier(.4,0,.2,1) 0.243s both; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-beat.is-2        { animation: landing-ring-rise-side .5s cubic-bezier(.4,0,.2,1) 0.383s both; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-beat.is-3::after { animation: landing-ring-pop-234  .32s cubic-bezier(.4,0,.2,1) 0.486s both; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-beat.is-3        { animation: landing-ring-rise-side .5s cubic-bezier(.4,0,.2,1) 0.626s both; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-beat.is-4::after { animation: landing-ring-pop-234  .32s cubic-bezier(.4,0,.2,1) 0.728s both; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-beat.is-4        { animation: landing-ring-rise-bot  .5s cubic-bezier(.4,0,.2,1) 0.868s both; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-beat.is-5::after { animation: landing-ring-pop-56   .32s cubic-bezier(.4,0,.2,1) 0.971s both; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-beat.is-5        { animation: landing-ring-rise-side .5s cubic-bezier(.4,0,.2,1) 1.111s both; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-beat.is-6::after { animation: landing-ring-pop-56   .32s cubic-bezier(.4,0,.2,1) 1.214s both; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-beat.is-6        { animation: landing-ring-rise-side .5s cubic-bezier(.4,0,.2,1) 1.354s both; }
+
+  /* THE LAP — forever, one 10.00s cycle shared by every looping element.
+     ⚠ DO NOT GIVE ANY ONE OF THESE ITS OWN DURATION. Their moments are
+     percentages inside that one cycle, so a different duration anywhere
+     means the arrow lays an arc that is already painted. */
+  html.landing-motion .landing-cycle.is-in .landing-ring-seg.is-1 { animation: landing-ring-lap-1 10.00s linear 2.00s infinite; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-seg.is-2 { animation: landing-ring-lap-2 10.00s linear 2.00s infinite; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-seg.is-3 { animation: landing-ring-lap-3 10.00s linear 2.00s infinite; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-seg.is-4 { animation: landing-ring-lap-4 10.00s linear 2.00s infinite; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-seg.is-5 { animation: landing-ring-lap-5 10.00s linear 2.00s infinite; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-seg.is-6 { animation: landing-ring-lap-6 10.00s linear 2.00s infinite; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-arm      { animation: landing-ring-sweep 10.00s linear 2.00s infinite; }
+  html.landing-motion .landing-cycle.is-in .landing-ring-trav     { animation: landing-ring-hue 10.00s step-end 2.00s infinite; }
+
+  html.landing-motion .landing-cycle.is-in .landing-ring-seg,
+  html.landing-motion .landing-cycle.is-in .landing-ring-arm,
+  html.landing-motion .landing-cycle.is-in .landing-ring-trav {
+    animation-play-state: paused;
+  }
+
+  html.landing-motion .landing-cycle.is-in .landing-ring.is-lapping .landing-ring-seg,
+  html.landing-motion .landing-cycle.is-in .landing-ring.is-lapping .landing-ring-arm,
+  html.landing-motion .landing-cycle.is-in .landing-ring.is-lapping .landing-ring-trav {
+    animation-play-state: running;
+  }
+}
