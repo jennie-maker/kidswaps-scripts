@@ -26,7 +26,13 @@
   --hdr-drawer-w:     284px;
   --hdr-pad:          24px;
 
-  --hdr-cart-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='4' width='14' height='17' rx='2.5'/%3E%3Cpath d='M5 8.5h14'/%3E%3Cpath d='M10.5 6.2h3'/%3E%3C/svg%3E");
+  /* THE CART ICON. A classic shopping cart — handle, tapered basket, two
+     wheels — REPLACING the shipping mailer that shipped at S228. The mailer
+     was rejected on the render: with a flap line and a label rectangle it
+     reads as a washing machine, and five drawn candidates failed the same
+     way. Drawn as a mask so the Designer needs no Embed and no second
+     element, and so background-color:currentColor carries the colour. */
+  --hdr-cart-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.6 3.8h1.9l2 10.8h9.9l2-7.2H6.2'/%3E%3Ccircle cx='9.7' cy='18.6' r='1.4'/%3E%3Ccircle cx='15.6' cy='18.6' r='1.4'/%3E%3C/svg%3E");
 
   position: sticky;
   top: 0;
@@ -145,6 +151,10 @@
 
 .header-logo-link:hover .header-logo { transform: rotateY(360deg); }
 
+/* THE TAP HALF. A phone has no hover, so :active is the only way the gesture
+   exists there at all. Same value, same curve, no second animation. */
+.header-logo-link:active .header-logo { transform: rotateY(360deg); }
+
 .header-nav {
   display: flex;
   align-items: center;
@@ -195,10 +205,13 @@
   flex-shrink: 0;
 }
 
-/* Cart and Join are a conditional pair — only one ever renders live.
-   They share a shape so the right-hand slot does not change size or
-   position between a logged-out and a logged-in visitor. */
-.header-cart-link,
+/* CART AND JOIN NO LONGER SHARE A SHAPE, AND THAT IS DELIBERATE.
+   They are still a conditional pair — only one ever renders live — but the
+   cart is now a 44px icon at EVERY width and Join is still a coral pill, so
+   the right-hand slot does change size between a logged-out and a logged-in
+   visitor. HER RULING. The comment that used to sit here said the opposite;
+   it was true until this commit and is not being left behind to argue with
+   a future session. */
 .header-join-button {
   font-family: Quicksand, sans-serif;
   font-weight: 500;
@@ -212,29 +225,118 @@
   transition: background-color .15s ease, color .15s ease, border-color .15s ease;
 }
 
+/* THE CART IS AN ICON AT BOTH WIDTHS — hoisted out of the 767 block, which
+   held these exact declarations until this commit. One control instead of two
+   that drift.
+
+   font-size:0 COLLAPSES THE LABEL, IT DOES NOT REMOVE IT. The word "Cart"
+   stays in the DOM, so the link keeps its accessible name on every page.
+   browse-tool.js sets an aria-label on /browse, /clothing and /toys; nothing
+   sets one anywhere else, and this text is the only name a screen reader has
+   there. DO NOT DELETE THE LABEL ELEMENT IN THE DESIGNER.
+
+   position:relative is load-bearing — the count badge is absolutely
+   positioned against this box. */
 .header-cart-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 0;
+  font-size: 0;
+  line-height: 0;
   color: var(--hdr-ink);
-  background: transparent;
-  border: 1px solid var(--hdr-ink);
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: color .15s ease;
 }
 
-.header-cart-link:hover {
-  background: var(--hdr-ink);
-  color: var(--hdr-cream);
-}
-
-/* The phone cart icon. A shipping mailer, her S228 ruling, drawn as a mask so
-   the Designer needs no Embed and no second element. currentColor means it
-   follows the link's own colour, so hover and focus need no second rule.
-   OFF above 767px — the desktop cart stays the outline pill. */
 .header-cart-link::before {
   content: "";
-  display: none;
+  display: block;
   width: 22px;
   height: 22px;
   background-color: currentColor;
   -webkit-mask: var(--hdr-cart-icon) center / contain no-repeat;
           mask: var(--hdr-cart-icon) center / contain no-repeat;
+  transition: transform .2s cubic-bezier(.34, 1.56, .64, 1);
+}
+
+.header-cart-link:hover,
+.header-cart-link:active { color: var(--hdr-coral); }
+
+/* THE LIFT AND TILT ARE ON THE ICON, NEVER ON THE LINK. A transform on the
+   link would carry the count badge with it, and a tilted numeral reads as a
+   fault. The cart tips as though it is rolling; the number stays upright. */
+.header-cart-link:hover::before,
+.header-cart-link:focus-visible::before {
+  transform: translateY(-2px) rotate(-8deg);
+}
+
+/* THE COUNT BADGE.
+   The element is created and shown by browse-tool.js, which injects its own
+   CSS at ONE class. Every rule here is written at TWO classes, so it wins on
+   SPECIFICITY and never on source order — the injected block is appended to
+   <head> at runtime and would beat a one-class rule of ours every time.
+
+   NO display DECLARATION HERE, ON PURPOSE. browse-tool.js flips the badge
+   between none and inline-flex as the count crosses zero, and it does that
+   with an inline style, which beats any stylesheet rule. Writing display
+   here would be inert at best and would read as the control it is not.
+   EMPTY THEREFORE SHOWS NO BADGE — a permanent coral dot reading 0 on every
+   page reads as "you have something". Claude's call, one line to reverse.
+
+   font-size IS SET EXPLICITLY because the parent is font-size:0. The number
+   renders full size today by some mechanism nobody has read; this stops the
+   badge depending on it.
+
+   THE BADGE EXISTS ONLY ON /browse, /clothing AND /toys. Everywhere else
+   these rules match nothing — that is the known gap, not a fault here. */
+.header-cart-link .ks-cart-badge {
+  position: absolute;
+  top: 5px;
+  right: 4px;
+  left: auto;
+  bottom: auto;
+  margin: 0;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  border-radius: 40px;
+  background: var(--hdr-coral);
+  color: #FFFFFF;
+  font-family: Quicksand, sans-serif;
+  font-weight: 600;
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0;
+  text-align: center;
+  pointer-events: none;              /* never eats the tap meant for the link */
+  box-shadow: 0 0 0 2px var(--hdr-cream);   /* separates it from the drawing */
+  transform-origin: 60% 40%;
+  animation: ks-hdr-badge-pop .34s cubic-bezier(.34, 1.56, .64, 1) both;
+}
+
+/* THE FIRST-ADD POP, AND ONLY THE FIRST. An animation restarts when an
+   element goes from display:none to shown, so the badge pops as it appears
+   at 0 -> 1. It does NOT re-fire on 1 -> 2, because updateBagCount only
+   rewrites textContent and a CSS animation cannot restart on a text change.
+   A pop on EVERY add is a browse-tool.js change, i.e. a x3 pin bump across
+   three pages, and is deliberately not in this commit.
+
+   A KEYFRAMES NAME IS GLOBAL TO THE PAGE — it is not namespaced by any
+   selector, and this file is site-wide. ks-hdr- prefix, always. */
+@keyframes ks-hdr-badge-pop {
+  from { transform: scale(.4); opacity: 0; }
+  to   { transform: scale(1);  opacity: 1; }
 }
 
 .header-join-button {
@@ -480,30 +582,20 @@
   /* the right-hand slot only ever holds one of Cart or Join */
   .header-join-button { padding: 10px 18px; font-size: 13px; }
 
-  /* Cart drops the pill and becomes the mailer icon. The label is COLLAPSED,
-     not removed — it stays in the DOM so the link keeps its accessible name. */
-  .header-cart-link {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    padding: 0;
-    border: none;
-    background: none;
-    border-radius: 0;
-    font-size: 0;
-    line-height: 0;
-    color: var(--hdr-ink);
-  }
+  /* THE CART RULES THAT SAT HERE ARE GONE, NOT DUPLICATED. They were hoisted
+     into the base rule so the icon renders at every width; leaving a copy
+     behind is how two halves of one control start disagreeing. */
 
-  .header-cart-link::before { display: block; }
+  /* THE SCROLL HALF OF THE LOGO FLIP, AND THE 767 SCOPE IS LOAD-BEARING.
+     Unscoped, .is-scrolled parks the logo at 360deg and :hover sets the same
+     value, so THE DESKTOP FLIP WOULD SILENTLY DIE BELOW THE FOLD with
+     nothing erroring. It sits inside this block, after the base :hover and
+     :active rules, so it wins on the phone by source order at equal
+     specificity and cannot reach the desktop at all.
 
-  .header-cart-link:hover,
-  .header-cart-link:active {
-    background: none;
-    color: var(--hdr-coral);
-  }
+     NAMED COST, HERS: 360deg equals 0deg, so scrolling back to the top turns
+     the logo backwards. */
+  .site-header.is-scrolled .header-logo { transform: rotateY(360deg); }
 }
 
 /* --------------------------------------------------------------------------
