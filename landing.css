@@ -3100,3 +3100,375 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
     padding-top: 36px;
   }
 }
+
+
+/* ==========================================================================
+   v20 — /about, S284
+   EVERY RULE BELOW IS WRITTEN .landing-wrap.about-page — THREE CLASSES, so it
+   beats the shared landing rules on SPECIFICITY rather than on source order,
+   and it CANNOT reach /how-it-works, /pricing or /the-closet-standard.
+   about-page is a combo class added in the Designer and deliberately left
+   unstyled there, the same device as .faq-page and .how-it-works-page.
+
+   APPENDED AT TOP LEVEL. v19 is a BYTE-EXACT PREFIX of this file, so
+   ROLLBACK IS DELETING FROM THIS COMMENT TO THE END OF THE FILE.
+   ========================================================================== */
+
+.landing-wrap.about-page {
+  --about-navy: #1C4A91;
+  --about-panel-text: #E9E7DC;
+}
+
+/* --------------------------------------------------------------------------
+   MASTHEAD — headline left, answer block right, photo band beneath.
+   GRID AREAS, NOT flex order and NOT duplicated markup: at 767 the band has
+   to move ABOVE the headline, while the MARKUP order stays headline, answer,
+   photo — so a crawler and an AI engine still read the headline and the
+   answer paragraph first whatever a phone shows first. Areas do that with no
+   wrapper element.
+   ⚠ The answer block is NOT stretched to fill the card. At full width it runs
+   ~100 characters a line, well past readable. The space is used by putting
+   two elements side by side instead.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.about-page .landing-masthead {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  column-gap: 60px;
+  align-items: end;
+  grid-template-areas:
+    "eyebrow eyebrow"
+    "head    sub"
+    "band    band";
+}
+
+.landing-wrap.about-page .landing-eyebrow {
+  grid-area: eyebrow;
+  color: var(--landing-coral);
+}
+
+.landing-wrap.about-page .landing-masthead-heading {
+  grid-area: head;
+  margin: 18px 0 0;
+  max-width: none;
+  font-size: 58px;
+}
+
+.landing-wrap.about-page .landing-sub {
+  grid-area: sub;
+  margin: 18px 0 6px;
+  max-width: 44ch;
+  font-size: 17px;
+  line-height: 1.62;
+}
+
+/* --------------------------------------------------------------------------
+   FOUNDER BAND — photo with the navy panel hanging off its bottom-left.
+   ⚠⚠ THE -96px PULL AND THE 5/2 RATIO ARE ONE DECISION, HER RULING S284.
+   The overlap is a fixed pixel value against a photo whose height scales with
+   the column, so changing the ratio changes how much of the photo the panel
+   covers. Change one, re-judge the other.
+   ⚠ The photo is a DIV, never an Image element, so the page is complete before
+   any photo exists. SWAPPING IN THE PHOTO IS ONE PROPERTY: drop
+   background-color, add background-image / background-size:cover /
+   background-position. NO DESIGNER WORK.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.about-page .landing-founder-band {
+  grid-area: band;
+  position: relative;
+  margin-top: 46px;
+}
+
+.landing-wrap.about-page .landing-founder-photo {
+  width: 100%;
+  aspect-ratio: 5 / 2;
+  background-color: var(--landing-placeholder);
+}
+
+.landing-wrap.about-page .landing-founder-panel {
+  position: relative;
+  z-index: 2;
+  width: min(520px, 84%);
+  margin: -96px 0 0 34px;
+  padding: 34px 38px;
+  background-color: var(--about-navy);
+}
+
+.landing-wrap.about-page .landing-founder-heading {
+  margin: 0;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 34px;
+  line-height: 1.14;
+  color: var(--landing-cream);
+}
+
+/* Same amber ::after device as .landing-section-heading, so the panel reads as
+   a section of this page rather than as a foreign object. */
+
+.landing-wrap.about-page .landing-founder-heading::after {
+  content: "";
+  display: block;
+  width: 32px;
+  height: 3px;
+  margin-top: 14px;
+  background-color: var(--landing-amber);
+}
+
+/* ⚠ THE STAR IS ABSOLUTE AGAINST THE PANEL, NOT THE BAND — the panel carries
+   position:relative above. It sits between the heading and the body in the
+   markup and must stay EMPTY: it is a clip-path shape, so anything inside it
+   is cut into a five-pointed hole. */
+
+.landing-wrap.about-page .landing-founder-star {
+  position: absolute;
+  right: 26px;
+  top: 22px;
+  width: 50px;
+  height: 50px;
+  z-index: 3;
+  pointer-events: none;
+  background-color: var(--landing-pink);
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+
+.landing-wrap.about-page .landing-founder-body {
+  margin: 18px 0 0;
+  max-width: 42ch;
+  font-family: Quicksand, sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--about-panel-text);
+}
+
+/* --------------------------------------------------------------------------
+   SECTIONS
+   is-first drops the hairline and the top padding so the navy panel runs
+   straight into the story — HER RULING S284. The combo is what keeps that off
+   every other landing page.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.about-page .landing-section.is-first {
+  margin-top: 52px;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.landing-wrap.about-page .landing-section-link {
+  display: inline-block;
+  margin-top: 18px;
+  padding-bottom: 3px;
+  border-bottom: 2px solid var(--landing-amber);
+  font-family: Quicksand, sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--landing-coral);
+}
+
+/* The Closet Standard link is INLINE inside its paragraph, made with Cmd+K, so
+   it carries no class of its own and is reached through the paragraph. A
+   background gradient rather than text-decoration, so the amber sits clear of
+   the descenders. */
+
+.landing-wrap.about-page .landing-section-body p a {
+  color: var(--landing-ink);
+  font-weight: 600;
+  text-decoration: none;
+  padding-bottom: 1px;
+  background: linear-gradient(var(--landing-amber), var(--landing-amber)) no-repeat 0 100% / 100% 2px;
+}
+
+/* --------------------------------------------------------------------------
+   THE CLOSE
+   .landing-card > .landing-cta-row already carries the 350px spine indent and
+   its own hairline from v19 — nothing here touches it. Only the lead
+   paragraph and the button label are new.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.about-page .landing-cta-lead {
+  margin: 0 0 26px;
+  max-width: 46ch;
+  font-family: Quicksand, sans-serif;
+  font-weight: 400;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--landing-ink);
+}
+
+.landing-wrap.about-page .landing-cta-label {
+  font-family: Quicksand, sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1;
+  color: inherit;
+}
+
+/* --------------------------------------------------------------------------
+   WORKING TOGETHER
+   Built on the SAME 290 + 60 rail as .landing-section, so it reads as another
+   section addressed to a different reader rather than as a caption on the
+   button. HER NOTE S284: it was sitting too close to the CTA.
+   ⚠⚠ THE THREE CHILDREN ARE PLACED EXPLICITLY. Auto-placement would put the
+   label in column 1, the body in column 2 and then the LINK BACK IN COLUMN 1
+   on the next row, under the label — correct-looking markup, wrong column,
+   nothing erroring.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.about-page .landing-partner-row {
+  display: grid;
+  grid-template-columns: 290px 1fr;
+  gap: 60px;
+  align-items: start;
+  margin-top: 46px;
+  padding-top: 34px;
+  border-top: 1px solid var(--landing-hairline);
+}
+
+.landing-wrap.about-page .landing-partner-label {
+  grid-column: 1;
+  grid-row: 1;
+  margin: 4px 0 0;
+  font-family: Quicksand, sans-serif;
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+}
+
+.landing-wrap.about-page .landing-partner-body {
+  grid-column: 2;
+  grid-row: 1;
+  margin: 0;
+  max-width: 56ch;
+  font-family: Quicksand, sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--landing-ink);
+}
+
+.landing-wrap.about-page .landing-partner-link {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: start;
+  margin-top: 12px;
+  padding-bottom: 3px;
+  border-bottom: 2px solid var(--landing-amber);
+  font-family: Quicksand, sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--landing-coral);
+}
+
+/* The SEO block is the SAME artifact as /browse, /clothing and /toys and keeps
+   their type. Only its separation from the page above it is set here, scoped,
+   so this cannot reach those three pages. */
+
+.landing-wrap.about-page .seo-content-div {
+  margin-top: 46px;
+  padding-top: 30px;
+  border-top: 1px solid var(--landing-hairline);
+}
+
+@media (max-width: 991px) {
+  .landing-wrap.about-page .landing-masthead {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "eyebrow"
+      "head"
+      "sub"
+      "band";
+  }
+
+  .landing-wrap.about-page .landing-masthead-heading {
+    font-size: 46px;
+  }
+
+  .landing-wrap.about-page .landing-sub {
+    max-width: 62ch;
+    margin: 22px 0 0;
+  }
+
+  .landing-wrap.about-page .landing-partner-row {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .landing-wrap.about-page .landing-partner-label,
+  .landing-wrap.about-page .landing-partner-body,
+  .landing-wrap.about-page .landing-partner-link {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
+/* ⚠⚠ AT 767 THE PHOTO MOVES ABOVE THE HEADLINE — HER RULING S284. Only the
+   grid-template-areas line does it; the markup is untouched. */
+
+@media (max-width: 767px) {
+  .landing-wrap.about-page .landing-masthead {
+    grid-template-areas:
+      "eyebrow"
+      "band"
+      "head"
+      "sub";
+  }
+
+  .landing-wrap.about-page .landing-masthead-heading {
+    margin: 34px 0 0;
+    font-size: 36px;
+  }
+
+  .landing-wrap.about-page .landing-sub {
+    margin: 18px 0 0;
+    font-size: 16px;
+  }
+
+  .landing-wrap.about-page .landing-founder-band {
+    margin-top: 22px;
+  }
+
+  .landing-wrap.about-page .landing-founder-photo {
+    aspect-ratio: 3 / 2;
+  }
+
+  .landing-wrap.about-page .landing-founder-panel {
+    width: auto;
+    margin: -56px 14px 0;
+    padding: 26px 22px;
+  }
+
+  .landing-wrap.about-page .landing-founder-heading {
+    font-size: 28px;
+  }
+
+  .landing-wrap.about-page .landing-founder-star {
+    right: 18px;
+    top: 14px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .landing-wrap.about-page .landing-founder-body {
+    font-size: 15px;
+  }
+
+  .landing-wrap.about-page .landing-section.is-first {
+    margin-top: 34px;
+  }
+
+  .landing-wrap.about-page .landing-cta-primary {
+    display: block;
+    text-align: center;
+  }
+}
