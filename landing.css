@@ -3523,3 +3523,60 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
   line-height: 1.55;
   color: var(--landing-muted);
 }
+
+
+/* ==========================================================================
+   v22 — /about, S284. THE SEO BLOCK BLENDS IN. HER RULING.
+   APPENDED AT TOP LEVEL. v21 is a BYTE-EXACT PREFIX, so ROLLBACK IS DELETING
+   FROM THIS COMMENT TO THE END OF THE FILE.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. THE BLOCK MOVES TO THE CARD'S LEFT EDGE.
+   It was sitting indented because the shared `seo-content-div` CENTRES ITSELF
+   with auto margins and a max-width — the same override /pricing already
+   carries. HER RULING: it lines up with the text above it, which on this page
+   is the W of WORKING TOGETHER, i.e. the card's own left edge, NOT the 350px
+   spine the closing block sits on.
+   ⚠ The reading measure is not lost: the 78ch cap from v21 lives on the body
+   text, so removing the wrapper's cap changes WHERE the block starts and not
+   how long its lines are.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.about-page .seo-content-div {
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* --------------------------------------------------------------------------
+   2. THE HEADING STOPS BEING A HEADING TO LOOK AT. HER RULING, VERBATIM:
+   "it doesnt need to stand out on the page at all, the point is actually for
+   it all to blend in."
+   It was Instrument Serif at 35px, the loudest thing on the lower half of the
+   page, sitting on top of the quietest. Now it matches the body exactly.
+
+   ⚠⚠ IT IS STILL AN <h2> AND THAT IS THE POINT — the tag is what a crawler
+   and a screen reader read, and it is untouched. Only its appearance changes.
+   A heading that looks like body text is still a heading; a paragraph styled
+   to look like one is not.
+
+   ⚠ Weight 500 rather than 400 is CLAUDE'S CALL, REVERSIBLE — one step of
+   weight so the line is findable when you are scanning for it, with no size
+   or colour difference at all. Take it to 400 and it is indistinguishable.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.about-page .seo-content-heading {
+  margin: 0 0 14px;
+  max-width: 78ch;
+  font-family: Quicksand, sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1.55;
+  letter-spacing: 0;
+  text-align: left;
+  color: var(--landing-muted);
+}
