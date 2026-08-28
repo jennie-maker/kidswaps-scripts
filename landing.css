@@ -3659,3 +3659,90 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
     line-height: 1.65;
   }
 }
+
+/* ============================================================================
+   v24 — S286 — /privacy-policy
+   Page-scoped under .landing-wrap.privacy-page. Every selector in this block
+   carries that combo, so nothing here can reach another landing page.
+
+   THE SAME TWO FAULTS v23 EXISTS TO BEAT, measured live at S286 on this page:
+   1. .landing-section is a 290px / 660px grid. This page's section has ONE
+      child (the body), so the body took cell ONE and the whole document
+      rendered in a 290px rail. A legal document reads as one column.
+   2. Webflow's site-wide `All H2` TAG selector paints these headings
+      #F2F1EB at weight 500 — read back rgb(242,241,235)/500 on the live
+      page. Near-invisible on cream, and Instrument Serif ships ONE weight
+      so 500 is a browser-FAKED bold.
+      DO NOT FIX EITHER IN THE STYLE PANEL — All H2 reaches all 20 pages.
+
+   ⚠ ONE DELIBERATE DIFFERENCE FROM v23. The terms document opens with an h2,
+   so v23 carries an h2:first-child rule killing the hairline above it. THIS
+   document opens with two metadata lines and three intro paragraphs, so its
+   first h2 is section 1 and it SHOULD carry a hairline. That rule is omitted
+   rather than copied — it would have matched nothing and read as live.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.privacy-page .landing-section {
+  display: block;
+}
+
+.landing-wrap.privacy-page .landing-section-body {
+  width: 100%;
+  max-width: none;
+}
+
+/* The section headings. 400 is not a taste value — it is the only weight
+   Instrument Serif has. Anything heavier is synthesised. */
+.landing-wrap.privacy-page .landing-richtext h2 {
+  margin: 52px 0 16px;
+  padding-top: 30px;
+  border-top: 1px solid var(--landing-hairline);
+  font-family: "Instrument Serif", serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 28px;
+  line-height: 1.15;
+  letter-spacing: -0.2px;
+  color: var(--landing-ink);
+}
+
+/* Body. The measure cap is what stops a 1010px card running 130 characters
+   to the line; the card itself is not narrowed, so the masthead is untouched. */
+.landing-wrap.privacy-page .landing-richtext p {
+  margin: 0 0 14px;
+  max-width: 72ch;
+  font-family: Quicksand, sans-serif;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--landing-ink);
+}
+
+/* The entity line and the effective date are the two lines above the policy
+   proper and read as metadata rather than as terms. Muted together.
+   ⚠ KEYED ON POSITION, so it is the one rule here that breaks if a paragraph
+   is ever inserted at the top of the Rich Text. Verified by effect at S286. */
+.landing-wrap.privacy-page .landing-richtext > p:nth-child(1),
+.landing-wrap.privacy-page .landing-richtext > p:nth-child(2) {
+  margin-bottom: 6px;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: var(--landing-muted);
+}
+
+.landing-wrap.privacy-page .landing-richtext > p:nth-child(2) {
+  margin-bottom: 34px;
+}
+
+@media screen and (max-width: 767px) {
+  .landing-wrap.privacy-page .landing-richtext h2 {
+    margin-top: 40px;
+    padding-top: 24px;
+    font-size: 24px;
+  }
+
+  .landing-wrap.privacy-page .landing-richtext p {
+    max-width: none;
+    font-size: 16px;
+    line-height: 1.65;
+  }
+}
