@@ -3472,3 +3472,54 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
     text-align: center;
   }
 }
+
+
+/* ==========================================================================
+   v21 — /about, S284. TWO FIXES, BOTH PAGE-SCOPED.
+   APPENDED AT TOP LEVEL. v20 is a BYTE-EXACT PREFIX of this file, so
+   ROLLBACK IS DELETING FROM THIS COMMENT TO THE END OF THE FILE.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. THE PARTNER ROW'S LINK SAT 72px BELOW ITS OWN PARAGRAPH.
+   `gap: 60px` is a SHORTHAND and sets ROW gap as well as column gap, so the
+   link inherited 60px plus its own 12px margin. The column gap is the only
+   one this row wants — the label and the body sit side by side, the link sits
+   directly under the body.
+   ▶ WHENEVER A GRID'S CHILDREN STACK IN ONE COLUMN, `gap` IS TWO VALUES, NOT
+   ONE. Nothing errors and the row simply reads loose.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.about-page .landing-partner-row {
+  column-gap: 60px;
+  row-gap: 0;
+}
+
+/* --------------------------------------------------------------------------
+   2. THE SEO BLOCK — LEFT, QUIETER, AND ON A READING MEASURE. HER RULING S284.
+
+   ⚠⚠⚠ THIS KNOWINGLY REVERSES HER S277 RULING, WHICH IS RECORDED ABOVE IN
+   THE /pricing BLOCK AS "the SAME ARTIFACT ... restyling its type here would
+   break that set". SHE HAS RULED THE OTHER WAY: every SEO block on the site
+   is to look like this one. /about is the first; /browse, /clothing and /toys
+   are styled from browse-tool.js at runtime and are a THREE-PAGE PIN BUMP, so
+   they are banked for the SEO run rather than done here. UNTIL THEY MOVE,
+   THIS PAGE IS DELIBERATELY THE ODD ONE OUT.
+
+   ⚠⚠ AND IT COLLIDES WITH HER v18 /pricing RULING, which took the cap OFF
+   that page's block to make it full width. A 13px line across the full 1010
+   card is ~130 characters, about double a readable measure. When the set
+   moves, /pricing keeps its full width or that ruling is reversed too.
+   HERS, UNSETTLED, NOT DECIDED HERE.
+
+   ⚠ The heading is UNTOUCHED — already left, already matching the other
+   pages, and only the body was ever centred.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.about-page .seo-content-div .body-text-dark {
+  max-width: 78ch;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--landing-muted);
+}
