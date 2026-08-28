@@ -3580,3 +3580,82 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
   text-align: left;
   color: var(--landing-muted);
 }
+
+/* ============================================================================
+   v23 — S285 — /terms-of-service
+   Page-scoped under .landing-wrap.terms-page. Every selector in this block
+   carries that combo, so nothing here can reach another landing page.
+
+   TWO THINGS THIS EXISTS TO BEAT, both measured live at S285:
+   1. .landing-section is a 290px / 660px grid. On this page the section has
+      ONE child (the body), so the body took cell ONE and the document
+      overflowed a 290px rail. A legal document reads as one column.
+   2. Webflow's site-wide `All H2` TAG selector paints these headings
+      #F2F1EB at weight 500. On cream that is near-invisible, and Instrument
+      Serif ships ONE weight so 500 is a browser-FAKED bold.
+      DO NOT FIX EITHER IN THE STYLE PANEL — All H2 reaches all 20 pages.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.terms-page .landing-section {
+  display: block;
+}
+
+.landing-wrap.terms-page .landing-section-body {
+  width: 100%;
+  max-width: none;
+}
+
+/* The section headings. 400 is not a taste value — it is the only weight
+   Instrument Serif has. Anything heavier is synthesised. */
+.landing-wrap.terms-page .landing-richtext h2 {
+  margin: 52px 0 16px;
+  padding-top: 30px;
+  border-top: 1px solid var(--landing-hairline);
+  font-family: "Instrument Serif", serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 28px;
+  line-height: 1.15;
+  letter-spacing: -0.2px;
+  color: var(--landing-ink);
+}
+
+.landing-wrap.terms-page .landing-richtext h2:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+/* Body. The measure cap is what stops a 1010px card running 130 characters
+   to the line; the card itself is not narrowed, so the masthead is untouched. */
+.landing-wrap.terms-page .landing-richtext p {
+  margin: 0 0 14px;
+  max-width: 72ch;
+  font-family: Quicksand, sans-serif;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--landing-ink);
+}
+
+/* The effective date is the first line of the document and reads as metadata
+   rather than as a term. Muted, and it is the ONLY p rule keyed on position. */
+.landing-wrap.terms-page .landing-richtext > p:first-child {
+  margin-bottom: 34px;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: var(--landing-muted);
+}
+
+@media screen and (max-width: 767px) {
+  .landing-wrap.terms-page .landing-richtext h2 {
+    margin-top: 40px;
+    padding-top: 24px;
+    font-size: 24px;
+  }
+
+  .landing-wrap.terms-page .landing-richtext p {
+    max-width: none;
+    font-size: 16px;
+    line-height: 1.65;
+  }
+}
