@@ -3746,3 +3746,629 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
     line-height: 1.65;
   }
 }
+
+
+/* ============================================================================
+   v25 — S288 — /post/* BLOG POST TEMPLATE
+   Page-scoped under .landing-wrap.blog-post-page. Every selector in this block
+   carries that combo, so nothing here can reach another landing page.
+
+   THE VALUES ARE TRANSPLANTED FROM blog-post-template-v4.html, THE ARTIFACT SHE
+   APPROVED. Only the selectors changed: v4's names (.sheet, .inner, .head,
+   .body, .note, .cta, .star, .figure) are generic, and this file is SITE-WIDE,
+   so shipping them would put a rule called `.body` on all twenty pages. Every
+   one is spelled out and prefixed blog-post-. The rules themselves are v4's.
+
+   THREE THINGS THIS EXISTS TO BEAT, and all three are measured faults this
+   project has already paid for on another page:
+   1. Webflow's site-wide `All H2` TAG selector paints unclassed H2s #F2F1EB at
+      weight 500. Every heading inside a Rich Text element is unclassed by
+      construction, so the whole body meets it. Same fault as v23 and v24.
+   2. Webflow's site-wide `All Links` styles every <a>, which is why an
+      unclassed rich-text link renders browser-blue and underlined.
+   3. .landing-wrap sets the page cream. A post sits on the DEEPER cream so the
+      sheet reads as a sheet, so the ground is overridden here and nowhere else.
+
+   ⚠⚠ THE EMPTY CASES ARE THE POINT OF THIS BLOCK, NOT AN AFTERTHOUGHT. She does
+   not intend to use every element on every post, so each optional block has to
+   disappear cleanly rather than leave a heading over nothing. PROVEN BY EFFECT
+   S288 ON A REAL LEAN POST (zz-test-lean-post): a blank CMS field renders a
+   GENUINELY EMPTY element — len 0, :empty true, no whitespace and no <br> — so
+   :empty is a valid instrument here. That was read before these rules were
+   written, not assumed.
+   ⚠ AN IMAGE CANNOT BE :empty, because <img> is a void element. Webflow puts
+   the class w-dyn-bind-empty on an image bound to a blank field, and that is
+   what the two image rules key on.
+   ============================================================================ */
+
+.landing-wrap.blog-post-page {
+  --blog-post-ground: #DEDBC8;
+  --blog-post-navy: #1C4A91;
+  --blog-post-measure: 68ch;
+  background-color: var(--blog-post-ground);
+}
+
+/* ---------- the sheet ---------- */
+/* ⚠⚠⚠ overflow:hidden IS LOAD-BEARING AND IS NOT TIDINESS — it is what clips
+   the ribbon. The ribbon is 116% wide and pulled left 8% precisely so its two
+   ends are always off the sheet, which is HER S231 RULE: a banner never shows a
+   start or a stop. Remove this and both ends of the amber band appear. */
+.landing-wrap.blog-post-page .blog-post-sheet {
+  position: relative;
+  max-width: 1080px;
+  margin: 0 auto;
+  overflow: hidden;
+  background-color: var(--landing-cream);
+  color: var(--landing-ink);
+}
+
+/* v4 FIX 1 — THE SHEET'S BOTTOM PADDING LIVES HERE, NEVER ON THE LAST BLOCK.
+   Every block above it is optional, so hanging the bottom padding off any one
+   of them means the sheet ends flush against the text on the posts that do not
+   use it. ⚠ EVERY BREAKPOINT OVERRIDE OF THIS RULE MUST RESTATE THE BOTTOM
+   VALUE or the shorthand resets it to zero. */
+.landing-wrap.blog-post-page .blog-post-inner {
+  padding: 0 76px 76px;
+}
+
+/* ---------- letterhead ribbon: identical on every post ---------- */
+/* ⚠⚠ THE FOUR PHRASES MATCH THE ANNOUNCEMENT BAR'S, HER RULING S288, AND THE
+   ANNOUNCEMENT-BAR COMPONENT IS DELIBERATELY NOT ON THIS PAGE. Two strips of
+   the same four phrases on one page reads as a mistake. If the bar's copy ever
+   changes, these four Text Blocks change with it — they are not bound to
+   anything and nothing will tell you they have gone stale. */
+.landing-wrap.blog-post-page .blog-post-ribbon-band {
+  padding: 34px 0 0;
+}
+
+.landing-wrap.blog-post-page .blog-post-ribbon {
+  width: 116%;
+  margin-left: -8%;
+  padding: 13px 0;
+  background-color: var(--landing-amber);
+  transform: rotate(-1.6deg);
+}
+
+.landing-wrap.blog-post-page .blog-post-ribbon-inner {
+  display: flex;
+  justify-content: center;
+  gap: 56px;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--landing-ink);
+}
+
+/* ⚠ NO PLUS MARKS BETWEEN THE PHRASES, unlike the announcement bar. The bar's
+   plus is amber on pink; here the ground IS amber, so an amber mark would be
+   invisible. Claude's call, one rule to reverse. */
+.landing-wrap.blog-post-page .blog-post-ribbon-phrase {
+  color: inherit;
+}
+
+/* ---------- back link ---------- */
+.landing-wrap.blog-post-page .back-link {
+  display: inline-block;
+  margin: 38px 0 0;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--landing-muted);
+  text-decoration: none;
+}
+
+.landing-wrap.blog-post-page .back-link:hover {
+  color: var(--landing-ink);
+}
+
+/* ---------- head ---------- */
+.landing-wrap.blog-post-page .blog-post-head {
+  position: relative;
+  padding: 22px 0 0;
+}
+
+/* ⚠⚠ THE STAR MUST STAY EMPTY IN THE DESIGNER. It is drawn by a clip-path, so
+   anything placed inside it is cut into a five-pointed hole. Her artwork later
+   is ONE PROPERTY on this same element — drop background-color and clip-path,
+   add background-image / size:contain / repeat:no-repeat. NO DESIGNER WORK. */
+.landing-wrap.blog-post-page .blog-post-star {
+  position: absolute;
+  top: 26px;
+  right: 0;
+  width: 46px;
+  height: 46px;
+  background-color: var(--landing-pink);
+  transform: rotate(-8deg);
+  clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+
+.landing-wrap.blog-post-page .blog-post-eyebrow {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+}
+
+/* ⚠⚠⚠ THE H1 IS STYLED BY ITS OWN CLASS AND EVERY PROPERTY IS STATED, INCLUDING
+   text-align. blog-heading is an OLD class carrying Webflow Style-panel values
+   from the scratch layout — it was centred there. A rule that only sets the
+   size inherits whatever else that class still holds. Same family as the
+   /privacy-policy H1 that shipped bare at S286 and took Webflow's own heading
+   styles unopposed at 95px, centred. */
+.landing-wrap.blog-post-page .blog-heading {
+  margin: 14px 0 0;
+  max-width: 20ch;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-weight: 400;
+  font-size: 58px;
+  line-height: 1.04;
+  letter-spacing: -0.01em;
+  text-align: left;
+  color: var(--landing-ink);
+}
+
+.landing-wrap.blog-post-page .blog-post-date {
+  margin: 20px 0 0;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: var(--landing-muted);
+}
+
+/* ---------- lede ---------- */
+/* Post Summary does three jobs — this lede, the blurb on the index, and the
+   basis for the meta description. ONE FIELD, ONE PLACE TO EDIT IT. */
+.landing-wrap.blog-post-page .blog-post-lede {
+  margin: 28px 0 0;
+  max-width: 60ch;
+  font-size: 21px;
+  line-height: 1.65;
+  color: var(--landing-ink);
+}
+
+/* ---------- share image ---------- */
+.landing-wrap.blog-post-page .blog-post-share-image {
+  display: block;
+  width: 100%;
+  max-width: 440px;
+  height: auto;
+  margin: 44px 0 0;
+  background-color: var(--landing-placeholder);
+}
+
+/* ---------- body: rich-text vocabulary, styled by TAG inside one class ------
+   She writes naturally in the CMS editor and the design follows. There are no
+   fixed slots in here and nothing to build per post. */
+
+.landing-wrap.blog-post-page .blog-post-body {
+  margin: 44px 0 0;
+}
+
+.landing-wrap.blog-post-page .blog-post-body p {
+  margin: 0 0 17px;
+  max-width: var(--blog-post-measure);
+  font-size: 17px;
+  line-height: 1.78;
+  color: var(--landing-ink);
+}
+
+.landing-wrap.blog-post-page .blog-post-body h2 {
+  position: relative;
+  margin: 60px 0 20px;
+  padding-top: 34px;
+  border-top: 1px solid var(--landing-hairline);
+  max-width: var(--blog-post-measure);
+  font-family: "Instrument Serif", Georgia, serif;
+  font-weight: 400;
+  font-size: 31px;
+  line-height: 1.14;
+  letter-spacing: -0.2px;
+  color: var(--landing-ink);
+}
+
+.landing-wrap.blog-post-page .blog-post-body h2::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -11px;
+  width: 58px;
+  height: 3px;
+  background-color: var(--landing-amber);
+}
+
+/* v4 FIX 3 — AN H2 OPENING THE BODY HAS NOTHING ABOVE IT TO DIVIDE FROM, so its
+   rule and its 94px of clearance both come off and it draws a hairline straight
+   under the lede. Found only by rendering a post that starts with a heading
+   instead of an intro paragraph. The amber mark stays. */
+.landing-wrap.blog-post-page .blog-post-body h2:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.landing-wrap.blog-post-page .blog-post-body h3 {
+  margin: 34px 0 10px;
+  max-width: var(--blog-post-measure);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+}
+
+.landing-wrap.blog-post-page .blog-post-body ul {
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+  max-width: var(--blog-post-measure);
+}
+
+.landing-wrap.blog-post-page .blog-post-body ul li {
+  position: relative;
+  margin: 0 0 11px;
+  padding-left: 24px;
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--landing-ink);
+}
+
+.landing-wrap.blog-post-page .blog-post-body ul li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 11px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--landing-amber);
+}
+
+/* ⚠ A NUMBERED LIST IS A DIFFERENT ELEMENT AND MUST NOT INHERIT THE BULLET.
+   The dot above is scoped `ul li` on purpose — written as a bare `li` it draws
+   an amber dot beside every number in an ordered list. */
+.landing-wrap.blog-post-page .blog-post-body ol {
+  margin: 0 0 20px;
+  padding-left: 22px;
+  max-width: var(--blog-post-measure);
+}
+
+.landing-wrap.blog-post-page .blog-post-body ol li {
+  margin: 0 0 11px;
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--landing-ink);
+}
+
+/* v4 FIX 4 — whatever ends the body drops its bottom margin, so the gap down to
+   whatever comes next is ONE predictable number instead of depending on which
+   element she happened to finish writing with. */
+.landing-wrap.blog-post-page .blog-post-body > *:last-child {
+  margin-bottom: 0;
+}
+
+/* ⚠⚠⚠ THE QUOTE'S WIDTH IS IN PIXELS, NEVER A ch CAP, AND THIS IS THE THIRD TIME
+   A ch UNIT HAS MEASURED THE WRONG FONT ON THIS PROJECT. A ch is the zero glyph
+   of the ELEMENT's own font: this blockquote inherits Quicksand 16px while its
+   text renders at 33px Instrument Serif, so max-width:24ch computed to ~210px —
+   about TWELVE characters of the face actually on screen — and the quote ran
+   seven lines deep with a lake beside it. It looks like a design choice and it
+   is arithmetic. 508px is 480px of text plus the 28px indent. */
+.landing-wrap.blog-post-page .blog-post-body blockquote {
+  position: relative;
+  width: 508px;
+  max-width: 100%;
+  margin: 52px 0;
+  padding: 0 0 0 28px;
+  border-left: 3px solid var(--landing-coral);
+}
+
+.landing-wrap.blog-post-page .blog-post-body blockquote p {
+  margin: 0;
+  max-width: none;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-style: italic;
+  font-size: 33px;
+  line-height: 1.22;
+}
+
+.landing-wrap.blog-post-page .blog-post-body blockquote::after {
+  content: "";
+  position: absolute;
+  right: -72px;
+  top: 14px;
+  width: 32px;
+  height: 32px;
+  background-color: var(--landing-amber);
+  transform: rotate(12deg);
+  clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+
+.landing-wrap.blog-post-page .blog-post-body a {
+  color: var(--landing-ink);
+  text-decoration: none;
+  border-bottom: 2px solid var(--landing-amber);
+}
+
+/* Quicksand 700 is a REAL loaded face on this project, so a bold inside the
+   body is genuine type rather than a browser-synthesised smear. */
+.landing-wrap.blog-post-page .blog-post-body strong {
+  font-weight: 700;
+}
+
+.landing-wrap.blog-post-page .blog-post-body img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 24px 0;
+}
+
+/* ---------- optional block: the note box ---------- */
+.landing-wrap.blog-post-page .blog-post-note-box {
+  margin: 44px 0;
+  padding: 2px 0 2px 22px;
+  border-left: 3px solid var(--blog-post-navy);
+  max-width: var(--blog-post-measure);
+}
+
+.landing-wrap.blog-post-page .blog-post-note-heading {
+  margin: 0 0 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--blog-post-navy);
+}
+
+.landing-wrap.blog-post-page .blog-post-note-body {
+  margin: 0;
+  font-size: 15.5px;
+  line-height: 1.68;
+  color: var(--landing-ink);
+}
+
+/* ---------- optional block: sources ---------- */
+/* The heading is TYPED, not bound — it reads "Sources" on every post. That is
+   exactly why the heading and the list live inside one div: an empty Sources
+   field would otherwise leave the word sitting over nothing, and the rule that
+   hides it has to reach the WRAPPER. */
+.landing-wrap.blog-post-page .blog-post-sources {
+  margin: 58px 0 0;
+  padding-top: 26px;
+  border-top: 1px solid var(--landing-hairline);
+}
+
+.landing-wrap.blog-post-page .blog-post-sources-heading {
+  margin: 0 0 16px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+}
+
+.landing-wrap.blog-post-page .blog-post-sources-list ol {
+  margin: 0;
+  padding-left: 18px;
+  max-width: var(--blog-post-measure);
+}
+
+.landing-wrap.blog-post-page .blog-post-sources-list li {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--landing-muted);
+}
+
+.landing-wrap.blog-post-page .blog-post-sources-list li:last-child {
+  margin-bottom: 0;
+}
+
+/* The link is ink and bold, the annotation beside it stays muted, so the two
+   separate without needing a class the CMS editor cannot give them. */
+.landing-wrap.blog-post-page .blog-post-sources-list li a {
+  color: var(--landing-ink);
+  font-weight: 700;
+  text-decoration: none;
+  border-bottom: 1px solid var(--landing-hairline);
+}
+
+/* ---------- the CTA ---------- */
+/* HER RULING: the CTA sits in the post body ABOVE Sources. Her reasoning —
+   "sources is only for people looking for it." Do not move it below. */
+.landing-wrap.blog-post-page .blog-post-cta {
+  margin: 46px 0 0;
+  font-size: 18px;
+  line-height: 1.7;
+  color: var(--landing-ink);
+}
+
+.landing-wrap.blog-post-page .blog-post-cta a {
+  color: var(--landing-coral);
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 2px solid var(--landing-amber);
+}
+
+/* ---------- optional block: keep reading ---------- */
+/* THIS IS THE SEO MECHANISM, not decoration — it is what links posts to each
+   other, and it runs off a multi-reference field pointing at Blog Posts itself.
+   A wrong source renders posts perfectly and renders the WRONG ones. */
+.landing-wrap.blog-post-page .blog-post-related {
+  margin: 66px 0 0;
+  padding: 28px 0 0;
+  border-top: 1px solid var(--landing-hairline);
+}
+
+.landing-wrap.blog-post-page .blog-post-related-heading {
+  margin: 0 0 22px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+}
+
+/* v4 FIX 5 — THE GRID DIVIDES BY HOWEVER MANY RELATED POSTS EXIST. It was three
+   fixed columns, so one related post sat in a third of the width with two empty
+   columns beside it — and EARLY POSTS HAVE EXACTLY ONE, so that is the state
+   that would have shipped on the first thing she published. */
+.landing-wrap.blog-post-page .blog-post-related-grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 26px;
+}
+
+.landing-wrap.blog-post-page .blog-post-related-card {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.landing-wrap.blog-post-page .blog-post-related-thumb {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background-color: var(--landing-placeholder);
+}
+
+.landing-wrap.blog-post-page .blog-post-related-title {
+  margin: 13px 0 0;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: 20px;
+  line-height: 1.2;
+  color: var(--landing-ink);
+}
+
+.landing-wrap.blog-post-page .blog-post-related-date {
+  margin: 5px 0 0;
+  font-size: 12px;
+  color: var(--landing-muted);
+}
+
+/* ---------- THE EMPTY CASES ----------
+   ⚠⚠⚠ THIS IS THE HALF THAT MAKES THE TEMPLATE USABLE, AND IT IS INVISIBLE ON A
+   FULL POST. She does not intend to use every element on every post, so every
+   one of these has to be judged on the LEAN post, never on the rich one. Five
+   faults in v4 were found that way and no other. */
+
+/* A blank text field renders a genuinely empty element — read live S288. */
+.landing-wrap.blog-post-page .blog-post-eyebrow:empty,
+.landing-wrap.blog-post-page .blog-post-date:empty,
+.landing-wrap.blog-post-page .blog-post-lede:empty,
+.landing-wrap.blog-post-page .blog-post-note-heading:empty {
+  display: none;
+}
+
+/* ⚠ AN IMAGE IS A VOID ELEMENT AND CAN NEVER BE :empty. Webflow marks an image
+   bound to a blank field with w-dyn-bind-empty, and that is the only handle. */
+.landing-wrap.blog-post-page .blog-post-share-image.w-dyn-bind-empty,
+.landing-wrap.blog-post-page .blog-post-related-thumb.w-dyn-bind-empty {
+  display: none;
+}
+
+/* ⚠⚠ THE NOTE BOX AND THE SOURCES BLOCK HIDE AS WHOLE BLOCKS, because each
+   carries a border, a rule or a typed heading that would otherwise sit over
+   nothing. Keyed on the block's SUBSTANCE — the note body and the sources list
+   — so a note with a body and no heading still renders, which is a real case:
+   they are two separate CMS fields and either can be left blank. */
+.landing-wrap.blog-post-page .blog-post-note-box:has(.blog-post-note-body:empty),
+.landing-wrap.blog-post-page .blog-post-sources:has(.blog-post-sources-list:empty) {
+  display: none;
+}
+
+/* ⚠⚠⚠ KEEP READING CANNOT USE :empty AND THAT IS STRUCTURAL — its wrapper holds
+   the typed heading and the collection list, so it is never empty even with
+   zero related posts. Webflow renders its own .w-dyn-empty element instead,
+   and that is what this keys on.
+   ⚠ :has() IS THE ONLY WAY TO REACH A PARENT FROM A CHILD IN CSS. On a browser
+   without it the heading renders over Webflow's default empty-state box —
+   UGLY, NEVER A LIE, which is the direction this project accepts. */
+.landing-wrap.blog-post-page .blog-post-related:has(.w-dyn-empty) {
+  display: none;
+}
+
+.landing-wrap.blog-post-page .blog-post-related .w-dyn-empty {
+  display: none;
+}
+
+/* ---------- tablet ---------- */
+@media screen and (max-width: 1023px) {
+  /* ⚠ THE BOTTOM VALUE IS RESTATED, or the shorthand resets it to zero. */
+  .landing-wrap.blog-post-page .blog-post-inner {
+    padding: 0 44px 64px;
+  }
+
+  .landing-wrap.blog-post-page .blog-heading {
+    font-size: 47px;
+  }
+
+  /* ⚠⚠ width:auto IS LOAD-BEARING. Without it the 508px above survives into the
+     tablet band and the quote stays narrow with a lake beside it — and the star
+     it was making room for is hidden here anyway. */
+  .landing-wrap.blog-post-page .blog-post-body blockquote {
+    width: auto;
+    max-width: var(--blog-post-measure);
+  }
+
+  .landing-wrap.blog-post-page .blog-post-body blockquote::after {
+    display: none;
+  }
+}
+
+/* ---------- phone ---------- */
+@media screen and (max-width: 767px) {
+  .landing-wrap.blog-post-page .blog-post-inner {
+    padding: 0 22px 56px;
+  }
+
+  .landing-wrap.blog-post-page .blog-post-ribbon-band {
+    padding-top: 24px;
+  }
+
+  /* Claude's call: the phrases tighten rather than the type shrinking, so the
+     strip keeps the same height as it does on a desktop. */
+  .landing-wrap.blog-post-page .blog-post-ribbon-inner {
+    gap: 28px;
+  }
+
+  .landing-wrap.blog-post-page .blog-heading {
+    font-size: 37px;
+    max-width: 100%;
+  }
+
+  .landing-wrap.blog-post-page .blog-post-star {
+    top: 22px;
+    width: 32px;
+    height: 32px;
+  }
+
+  .landing-wrap.blog-post-page .blog-post-lede {
+    font-size: 18px;
+  }
+
+  .landing-wrap.blog-post-page .blog-post-body p,
+  .landing-wrap.blog-post-page .blog-post-body ul li,
+  .landing-wrap.blog-post-page .blog-post-body ol li {
+    font-size: 16px;
+  }
+
+  .landing-wrap.blog-post-page .blog-post-body h2 {
+    margin-top: 44px;
+    padding-top: 28px;
+    font-size: 25px;
+  }
+
+  .landing-wrap.blog-post-page .blog-post-body blockquote p {
+    font-size: 24px;
+  }
+
+  .landing-wrap.blog-post-page .blog-post-related-grid {
+    grid-auto-flow: row;
+    gap: 32px;
+  }
+}
