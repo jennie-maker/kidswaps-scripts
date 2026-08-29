@@ -5100,3 +5100,73 @@ html.landing-motion .landing-wrap.blog-post-page .blog-post-related.is-in {
    below 767. Checked rather than assumed — a bare rule appended after a media
    query beats it at equal specificity, which is the trap v29 restated the
    inner padding twins for. */
+
+/* ==========================================================================
+   v32 — S291. THE PHONE BLOCK NEVER TOOK, AND A TYPE BUMP.
+   APPENDED AT TOP LEVEL. v31 is a byte-exact prefix, so ROLLBACK IS DELETING
+   FROM THIS COMMENT TO THE END OF THE FILE.
+
+   ⚠⚠⚠ v31 SHIPPED A BARE `grid-template-columns: 1.25fr 1fr` AFTER THE 767
+   BLOCK AND ITS OWN COMMENT CLAIMED THE PHONE RULE STILL WON. IT DID NOT.
+   Read live at 390px: cols 192.219px 153.773px — two columns on a phone, the
+   lead image crushed to 192 wide and the row titles wrapping to five lines at
+   108px. THE COMMENT SAID "checked rather than assumed" AND IT WAS ASSUMED.
+   This file ends at top level but AFTER its media queries, so an appended bare
+   rule beats a media query at equal specificity BY SOURCE ORDER. That is the
+   same trap v29 restated the inner-padding twins for, and it caught the very
+   next commit.
+
+   ⚠⚠ AND THE SPAN RULES BEAT THE PHONE BLOCK TOO, FOR A DIFFERENT REASON.
+   `:has(> .w-dyn-item:nth-child(3))` takes the SPECIFICITY OF ITS ARGUMENT, so
+   those rules outweigh the plain phone rule whatever the source order. v30
+   tried to take the span back with a bare `grid-row: auto` and it was never
+   heavy enough — the lead still read `1 / span 2` at 390px.
+   ▶ A MEDIA QUERY ADDS NO SPECIFICITY. To take back a :has rule inside a
+   breakpoint you must repeat the :has.
+   ========================================================================== */
+
+@media screen and (max-width: 767px) {
+  .landing-wrap.blog-post-page .blog-post-related-grid {
+    grid-template-columns: 1fr;
+    column-gap: 0;
+  }
+
+  .landing-wrap.blog-post-page .blog-post-related-grid:has(> .w-dyn-item:nth-child(2))
+    > .w-dyn-item:first-child,
+  .landing-wrap.blog-post-page .blog-post-related-grid:has(> .w-dyn-item:nth-child(3))
+    > .w-dyn-item:first-child,
+  .landing-wrap.blog-post-page .blog-post-related-grid:has(> .w-dyn-item:nth-child(4))
+    > .w-dyn-item:first-child,
+  .landing-wrap.blog-post-page .blog-post-related-grid:not(:has(> .w-dyn-item:nth-child(2)))
+    > .w-dyn-item:first-child {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item {
+    grid-column: 1;
+  }
+}
+
+/* ---------- the type comes up ----------
+   The right column carries two short rows against a tall lead, so the text was
+   sitting small in a lot of air. HER CALL: fill it. */
+.landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:first-child
+  .blog-post-related-lede {
+  font-size: 14px;
+}
+
+.landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:not(:first-child)
+  .blog-post-related-title {
+  font-size: 16px;
+}
+
+.landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:not(:first-child)
+  .blog-post-related-lede {
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+/* ⚠ THESE THREE ARE BARE AND THEREFORE APPLY AT EVERY WIDTH, DELIBERATELY —
+   they are sizes rather than placement, and nothing in the phone block sets
+   them. The placement rules above are the ones that had to be repeated. */
