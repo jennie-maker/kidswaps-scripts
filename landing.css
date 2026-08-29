@@ -4476,3 +4476,216 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
     font-size: 24px;
   }
 }
+
+/* ==========================================================================
+   v27 — S289 — /post/* THE RIBBON MARQUEE, THE SHADOW, THE HEAD ENTRANCE,
+   HOVER, AND THE BACK-LINK / EYEBROW SEPARATION
+   APPENDED AT TOP LEVEL. v26 is a byte-exact prefix, so the rollback is
+   deleting from this comment to the end of the file.
+   Every selector is scoped .landing-wrap.blog-post-page.
+
+   ⚠⚠⚠ EVERY HIDING RULE AND EVERY LOOP IN THIS SECTION IS GATED ON
+   html.landing-motion, WHICH landing.js SETS AS ITS FIRST ACT. Script never
+   arrives, or a reader prefers reduced motion, and the page renders exactly
+   as it did before this commit: fully visible, ribbon static, nothing hidden.
+   Failure lands on "no animation", never on "no content". Her S224 rule.
+   ========================================================================== */
+
+/* ---------- THE RIBBON BECOMES A SLOW MARQUEE — HER RULING S289 -----------
+   It stops being a static letterhead and drifts. ~55s a lap, chosen slow on
+   purpose: this strip sits above a long article rather than at the top of a
+   landing page, and a brisk one beside body copy pulls the eye off the words.
+
+   ⚠⚠⚠ IT NEEDS EIGHT PHRASES IN THE MARKUP, NOT FOUR — TWO IDENTICAL SETS.
+   The animation slides exactly -50%, i.e. one whole set, so the strip is
+   always covered and the loop has no seam. THE SET COUNT AND THE SLIDE
+   DISTANCE ARE LOCKED TO EACH OTHER, the same lock the hero marquee carries:
+   six sets there slide -16.6667%. Duplicate the four Text Blocks to eight and
+   this reads seamlessly; put three sets in and the percentage must change
+   with them or the strip jumps once per cycle — silently, and only on a
+   screen wide enough to show the seam.
+
+   ✅ THE WHOLE MARQUEE IS GATED ON :has(> :nth-child(5)), SO IT IS INERT
+   UNTIL THE EIGHTH PHRASE EXISTS. That is deliberate: it means this file and
+   the Designer edit can land in either order with no broken state in
+   between. With four phrases the ribbon stays exactly as it is today. On a
+   browser with no :has() support the whole rule is dropped and the ribbon is
+   also static — ugly is not available here, only "unchanged".
+
+   ⚠⚠ THE GAP MOVED OFF `gap` AND ONTO margin-right ON EACH PHRASE, AND THAT
+   IS ARITHMETIC RATHER THAN STYLE. With flex `gap`, eight items carry SEVEN
+   gaps, so 50% of the total is one set plus half a gap and the loop drifts by
+   28px every lap. With a per-item right margin the total is exactly
+   8 x (phrase + margin) and -50% is exactly one set. Do not "tidy" this back
+   into a gap. */
+
+.landing-wrap.blog-post-page .blog-post-ribbon {
+  /* Soft lift, never a hard offset copy of the band. ⚠⚠ THE /old-home RIBBON
+     PAID FOR THIS ONCE: a shadow there was raised past its written ceiling and
+     laid a solid coral bar across the product cards, because a tilted band's
+     wedge grows with viewport width and no shadow number can ever fill it.
+     This one is a blur with almost no offset, so it reads as lift at every
+     width and has nothing to chase. */
+  box-shadow: 0 8px 22px rgba(30, 26, 25, 0.13);
+}
+
+.landing-wrap.blog-post-page .blog-post-ribbon-phrase {
+  margin-right: 56px;
+}
+
+html.landing-motion .landing-wrap.blog-post-page
+  .blog-post-ribbon-inner:has(> :nth-child(5)) {
+  justify-content: flex-start;
+  gap: 0;
+  width: max-content;
+  animation: blog-post-ribbon-drift 55s linear infinite;
+}
+
+/* ⚠⚠ A KEYFRAMES NAME IS GLOBAL TO THE PAGE AND THIS FILE IS SITE-WIDE — it
+   is not namespaced by any selector, and the scope sweep this project relies
+   on checks SELECTORS and is structurally blind to keyframes names. Prefix
+   every one blog-post-. */
+@keyframes blog-post-ribbon-drift {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* ---------- THE BACK LINK AND THE EYEBROW STOP LOOKING ALIKE -------------
+   HER RULING S289: both halves. They were 13px Quicksand 500 muted, one
+   directly above the other, differing only in case. The back link is
+   NAVIGATION and gets quieter; the eyebrow is PART OF THE POST and gets
+   louder. Now separated on three axes at once — size, weight and colour —
+   rather than on one. */
+
+.landing-wrap.blog-post-page .back-link {
+  /* ⚠ width:auto IS A GUARD, NOT A FIX. This link was found rendering as a
+     720px inline-block wearing a shared Webflow class, which is what let a
+     background land on it as a full-width bar. Fixed at source in the
+     Designer S289; this line stops the same class handing it a width again. */
+  width: auto;
+  font-size: 12px;
+  transition: color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* The arrow nudges left on hover — it is the only element on the page whose
+   job is going backwards, so the motion says the same thing the word does. */
+.landing-wrap.blog-post-page .back-link:hover {
+  color: var(--landing-ink);
+}
+
+html.landing-motion .landing-wrap.blog-post-page .back-link {
+  display: inline-block;
+}
+
+html.landing-motion .landing-wrap.blog-post-page .back-link:hover {
+  transform: translateX(-3px);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ⚠ INK RATHER THAN CORAL — CLAUDE'S CALL, ONE VALUE TO REVERSE. Coral already
+   does six jobs across this build and /how-it-works has just spent it on an
+   eyebrow of its own; a seventh makes it a colour rather than a signal. Ink
+   uppercase at 600 reads as a kicker attached to the headline, which is what
+   this line is. */
+.landing-wrap.blog-post-page .blog-post-eyebrow {
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: var(--landing-ink);
+}
+
+/* ---------- THE HEAD ENTRANCE ON LOAD ------------------------------------
+   ⚠⚠⚠ A KEYFRAME ANIMATION, NEVER A TRANSITION. A transition only runs if the
+   browser painted the start state before the class landed, so it is a race —
+   and on a warm cache it LOSES: both states collapse into one frame, nothing
+   moves, and every deploy gate still passes. That is the S247 hero fault
+   exactly. An animation makes no such bet.
+
+   ⚠⚠ `both` FILL IS LOAD-BEARING. It holds the start state through the delay
+   so a staggered element cannot flash early, and the end state afterwards so
+   nothing snaps back.
+
+   ⚠ THESE ELEMENTS ARE ALL ABOVE THE FOLD, WHICH IS WHY THIS NEEDS NO
+   OBSERVER. Anything below the fold wants a scroll reveal, and landing.js
+   observes .landing-section ONLY — the blog blocks are not landing-sections
+   and must never be given that class, because .landing-section is a
+   290px/660px grid and it would put the whole post in a narrow rail. That is
+   the fault /terms-of-service and /privacy-policy both shipped with. A scroll
+   reveal here is a landing.js change, deliberately not in this commit. */
+
+@keyframes blog-post-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+html.landing-motion .landing-wrap.blog-post-page .back-link,
+html.landing-motion .landing-wrap.blog-post-page .blog-post-eyebrow,
+html.landing-motion .landing-wrap.blog-post-page .blog-heading,
+html.landing-motion .landing-wrap.blog-post-page .blog-post-date,
+html.landing-motion .landing-wrap.blog-post-page .blog-post-lede,
+html.landing-motion .landing-wrap.blog-post-page .blog-post-share-image {
+  animation: blog-post-rise 0.7s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+html.landing-motion .landing-wrap.blog-post-page .back-link            { animation-delay: 0s; }
+html.landing-motion .landing-wrap.blog-post-page .blog-post-eyebrow    { animation-delay: 0.08s; }
+html.landing-motion .landing-wrap.blog-post-page .blog-heading         { animation-delay: 0.16s; }
+html.landing-motion .landing-wrap.blog-post-page .blog-post-date       { animation-delay: 0.24s; }
+html.landing-motion .landing-wrap.blog-post-page .blog-post-lede       { animation-delay: 0.32s; }
+html.landing-motion .landing-wrap.blog-post-page .blog-post-share-image{ animation-delay: 0.40s; }
+
+/* ⚠⚠ THE HOVER TRANSFORM ON THE BACK LINK AND THE ENTRANCE ANIMATION BOTH
+   WRITE `transform` ON THE SAME ELEMENT, AND A FILLED ANIMATION WINS. Its end
+   state translateY(0) keeps applying forever, so the hover nudge would verify
+   clean and do nothing — the /pricing card-hover fault. The delay is 0s here,
+   so the animation is finished within 0.7s of load; the nudge is written at a
+   HEAVIER selector (html.landing-motion + :hover) to take the element back.
+   ▶ IF A HOVER ON AN ANIMATED ELEMENT EVER APPEARS DEAD, THIS IS WHY. */
+
+/* ---------- HOVER ---------- */
+/* Body links fill their amber underline rather than moving. Nothing shifts, so
+   a link inside a paragraph cannot reflow the line under the cursor. */
+.landing-wrap.blog-post-page .blog-post-body a {
+  transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.landing-wrap.blog-post-page .blog-post-body a:hover {
+  background-color: rgba(237, 169, 32, 0.22);
+}
+
+/* The Keep reading cards lift. ⚠ THE TRANSFORM IS ON THE CARD, and the thumb
+   carries its own scale inside an overflow:hidden box so the image grows
+   INSIDE its frame rather than the frame growing. */
+.landing-wrap.blog-post-page .blog-post-related-card {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.landing-wrap.blog-post-page .blog-post-related-thumb {
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html.landing-motion .landing-wrap.blog-post-page .blog-post-related-card:hover {
+  transform: translateY(-4px);
+}
+
+html.landing-motion .landing-wrap.blog-post-page .blog-post-related-card:hover
+  .blog-post-related-thumb {
+  transform: scale(1.03);
+}
+
+/* ---------- phone ---------- */
+@media screen and (max-width: 767px) {
+  /* v25 tightens the strip with `gap` at this width. The marquee cannot use
+     gap (see the arithmetic above), so the phone value moves onto the margin
+     and the v25 gap rule is overridden to 0 by the marquee rule itself. */
+  .landing-wrap.blog-post-page .blog-post-ribbon-phrase {
+    margin-right: 28px;
+  }
+
+  /* A lighter shadow: on a phone the sheet fills the viewport, so the band is
+     closer to the edge and a heavy shadow reads as a smudge. */
+  .landing-wrap.blog-post-page .blog-post-ribbon {
+    box-shadow: 0 6px 16px rgba(30, 26, 25, 0.11);
+  }
+}
