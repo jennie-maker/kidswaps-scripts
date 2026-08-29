@@ -4372,3 +4372,107 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
     gap: 32px;
   }
 }
+
+/* ==========================================================================
+   v26 — S289 — /post/* THE TYPE PASS AND THE PULL QUOTE
+   APPENDED AT TOP LEVEL. v25 is a byte-exact prefix of this file, so the
+   rollback is deleting from this comment to the end of the file.
+   Every selector is scoped .landing-wrap.blog-post-page.
+   ========================================================================== */
+
+/* ---------- HER RULING S289: MEET THE FLOOR OF WHAT IS STANDARD ----------
+   Body 17 -> 15 desktop and 16 -> 14 phone, lede 21 -> 18 and 18 -> 16, note
+   body 15.5 -> 14. HEADINGS, THE PULL QUOTE, THE EYEBROWS AND THE SOURCE
+   ANNOTATIONS ARE UNCHANGED — hers, so the page does not go top-heavy while
+   staying a deliberate step above body size.
+
+   ⚠⚠ THE MEASURE NEEDS NO EDIT AND MUST NOT GET ONE. --blog-post-measure is
+   68ch and a ch is measured in the ELEMENT'S OWN FONT, so dropping a
+   paragraph to 15px takes its cap from ~688px to ~607px by itself and the
+   line length is held where it was. Writing a pixel cap here would freeze it
+   and break the next time the size moves. The ch unit is honest on these
+   elements ONLY because they render in the font they are declared in — see
+   the blockquote below, where it is not.
+
+   ⚠⚠⚠ THESE RULES SIT AFTER v25's @media BLOCKS AND THEREFORE BEAT THEM ON
+   SOURCE ORDER AT EQUAL SPECIFICITY. Every one that has a phone twin has its
+   twin restated in the @media block at the foot of this section. Add a rule
+   here and ask whether it needs one, or it silently wins at every width. */
+
+.landing-wrap.blog-post-page .blog-post-lede {
+  font-size: 18px;
+}
+
+.landing-wrap.blog-post-page .blog-post-body p,
+.landing-wrap.blog-post-page .blog-post-body ul li,
+.landing-wrap.blog-post-page .blog-post-body ol li {
+  font-size: 15px;
+}
+
+.landing-wrap.blog-post-page .blog-post-note-body {
+  font-size: 14px;
+}
+
+/* ---------- THE PULL QUOTE: TYPE MOVED OFF THE p AND ONTO THE ELEMENT -----
+   ⚠⚠⚠ A WEBFLOW RICH-TEXT BLOCKQUOTE HOLDS A BARE TEXT NODE, NOT A
+   PARAGRAPH. Read live S289 on the first real post: blockquote.children.length
+   is 0 and its innerHTML is the sentence itself. So v25's `blockquote p` rule
+   — 33px Instrument Serif italic — MATCHED NOTHING and the quote rendered as
+   18px Quicksand, i.e. smaller than the body around it. Every deploy gate had
+   passed; the rule was aimed at an element that does not exist. Same family as
+   the /how-it-works answers and the /the-closet-standard note box.
+   THE FIX IS TO STYLE THE BLOCKQUOTE ITSELF. The box was never wrong: 508px,
+   the coral border and the 28px indent were all live and measured correct. */
+
+.landing-wrap.blog-post-page .blog-post-body blockquote {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-style: italic;
+  font-size: 33px;
+  line-height: 1.22;
+  color: var(--landing-ink);
+}
+
+/* The p rule is KEPT AND POINTED AT inherit rather than deleted, so a quote
+   that DOES arrive wrapped in a paragraph — two paragraphs in one blockquote
+   would produce them — renders identically instead of falling back to body
+   type. It must stay AFTER the v25 rule it supersedes. */
+.landing-wrap.blog-post-page .blog-post-body blockquote p {
+  margin: 0;
+  max-width: none;
+  font: inherit;
+  color: inherit;
+}
+
+/* ---------- tablet ---------- */
+@media screen and (max-width: 1023px) {
+  /* ⚠⚠⚠ THE ch TRAP, CREATED BY THE FIX ABOVE AND CAUGHT BEFORE IT SHIPPED.
+     v25 caps this quote at var(--blog-post-measure) = 68ch in the tablet band.
+     That computed to ~688px while the blockquote inherited Quicksand 16px.
+     Now the element itself is 33px Instrument Serif, so the SAME 68ch computes
+     to ~970px — the quote would silently grow half as wide again, in one
+     breakpoint only. 607px is the body's own new measure at 15px, computed
+     rather than guessed, so the quote can never end up wider than the prose
+     it sits inside. FOURTH TIME A ch UNIT HAS MEASURED THE WRONG FONT HERE. */
+  .landing-wrap.blog-post-page .blog-post-body blockquote {
+    max-width: 607px;
+  }
+}
+
+/* ---------- phone ---------- */
+@media screen and (max-width: 767px) {
+  .landing-wrap.blog-post-page .blog-post-lede {
+    font-size: 16px;
+  }
+
+  .landing-wrap.blog-post-page .blog-post-body p,
+  .landing-wrap.blog-post-page .blog-post-body ul li,
+  .landing-wrap.blog-post-page .blog-post-body ol li {
+    font-size: 14px;
+  }
+
+  /* v25 puts the phone size on `blockquote p`, which matches nothing. Restated
+     on the element, or the 33px above survives onto a phone. */
+  .landing-wrap.blog-post-page .blog-post-body blockquote {
+    font-size: 24px;
+  }
+}
