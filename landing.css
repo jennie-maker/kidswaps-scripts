@@ -4754,3 +4754,84 @@ html.landing-motion .landing-wrap.blog-post-page .blog-post-sources.is-in,
 html.landing-motion .landing-wrap.blog-post-page .blog-post-related.is-in {
   animation: blog-post-rise 0.7s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
+
+/* ==========================================================================
+   v29 — S291. Four fixes found on the first real render of post two.
+   APPENDED AT TOP LEVEL. v28 is a byte-exact prefix, so ROLLBACK IS DELETING
+   FROM THIS COMMENT TO THE END OF THE FILE.
+   ========================================================================== */
+
+/* ---------- 1. the eyebrow goes navy ----------
+   HER RULING S291, replacing v27's ink. Navy #1C4A91 measures 8.6:1 on the
+   cream, the only one of her seven that passes cleanly at this size, so
+   nothing is traded for the colour. It is the first place navy does work as
+   SMALL TYPE rather than as a section ground (the /old-home hero field, the
+   /faq masthead) — so navy now carries two jobs on the site. */
+.landing-wrap.blog-post-page .blog-post-eyebrow {
+  color: #1C4A91;
+}
+
+/* ---------- 2. the H1 stops being title-cased ----------
+   ⚠⚠⚠ THE CAPITALIZE IS NOT IN THIS FILE. It is on WEBFLOW'S OWN
+   `All H1 Headings` TAG SELECTOR — read live S291, "1 on this page, 31 on
+   other pages" — the same hazard class as `All Links` and `All H2`. READ IT,
+   NEVER EDIT IT: clearing it in the Style panel re-cases every H1 on all
+   twenty pages in one click.
+   This beats it page-scoped, two classes and a class against a bare tag, and
+   it cannot reach the other 31. It is the fourth property this rule has to
+   take back off that selector, after size, alignment and margin — which is
+   why the comment above the base rule says every property is stated. */
+.landing-wrap.blog-post-page .blog-heading {
+  text-transform: none;
+}
+
+/* ---------- 3. a source link is styled wherever it sits ----------
+   ⚠⚠ THE EXISTING RULE WAS NEVER WRONG, IT WAS NOT MATCHING. It is written
+   `.blog-post-sources-list li a`, so it needs the citation to be a LIST ITEM.
+   Post one's Sources field is a numbered list of five and it matched. Post
+   two's is a single PARAGRAPH, so there is no li, the rule reached nothing,
+   and the link rendered browser-blue and underlined on a page where every
+   other link is ink. Same family as S288 — the rule is fine and the markup is
+   not the shape it expects.
+   This one asks only that the link be inside the block. It is (0,3,1) against
+   the existing (0,3,2), so the li rule still wins where it applies; the two
+   set identical values, so there is nothing for them to disagree about. */
+.landing-wrap.blog-post-page .blog-post-sources-list a {
+  color: var(--landing-ink);
+  font-weight: 700;
+  text-decoration: none;
+  border-bottom: 1px solid var(--landing-hairline);
+}
+
+/* ---------- 4. the two seams close up ----------
+   Both were MEASURED on the live post at 1477px, not guessed, and neither was
+   a stack: the body's last child contributes 0, so each gap is one value.
+   Paragraph to Sources read 58px, all of it this margin. The 26px between the
+   hairline and the citation is untouched — the rule should not crowd the text.
+   ⚠ padding-bottom LONGHAND, never the shorthand. The base rule is
+   `padding: 0 76px 76px`, so a shorthand here would restate the horizontal
+   padding too and the two would drift the next time either changes. */
+.landing-wrap.blog-post-page .blog-post-sources {
+  margin-top: 32px;
+}
+
+.landing-wrap.blog-post-page .blog-post-inner {
+  padding-bottom: 40px;
+}
+
+/* ⚠⚠⚠ THE TWINS ARE RESTATED AND THEY ARE NOT OPTIONAL. This file ends at top
+   level but AFTER its 1023 and 767 blocks, so an appended bare rule beats a
+   media query at equal specificity BY SOURCE ORDER. Without these two, 40px
+   would apply at every width and the tablet and phone values above would
+   silently stop working. */
+@media screen and (max-width: 1023px) {
+  .landing-wrap.blog-post-page .blog-post-inner {
+    padding-bottom: 36px;
+  }
+}
+
+@media screen and (max-width: 767px) {
+  .landing-wrap.blog-post-page .blog-post-inner {
+    padding-bottom: 32px;
+  }
+}
