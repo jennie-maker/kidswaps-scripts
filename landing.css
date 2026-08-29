@@ -4835,3 +4835,195 @@ html.landing-motion .landing-wrap.blog-post-page .blog-post-related.is-in {
     padding-bottom: 32px;
   }
 }
+
+/* ==========================================================================
+   v30 — S291. KEEP READING: A LEAD STORY WITH THE REST BESIDE IT.
+   APPENDED AT TOP LEVEL. v29 is a byte-exact prefix, so ROLLBACK IS DELETING
+   FROM THIS COMMENT TO THE END OF THE FILE.
+
+   HER RULING, off four rounds of mockups: the first related post is a LEAD —
+   1.5fr column, 3:2 image, larger title, its lede kept — and the rest are
+   thumb-left rows at 1fr with hairlines between them. Columns align to the
+   TOP and end where they end; level bottoms were shown and rejected, because
+   levelling them means the row list decides the photograph's shape.
+   ========================================================================== */
+
+/* ---------- the two columns ----------
+   ⚠⚠⚠ WEBFLOW REPEATS ONE COLLECTION ITEM, so the lead and the rows are THE
+   SAME MARKUP and the difference is done entirely with :first-child. There is
+   no second template to edit and no per-card class to add — which also means
+   a rule written here reaches every card unless it is scoped to a position. */
+.landing-wrap.blog-post-page .blog-post-related-grid {
+  grid-auto-flow: row;
+  grid-template-columns: 1.5fr 1fr;
+  grid-auto-columns: auto;
+  align-items: start;
+  column-gap: 32px;
+  row-gap: 0;
+}
+
+/* ⚠⚠ column-gap AND row-gap SEPARATELY, never the `gap` shorthand. The rows in
+   the right column carry their own hairline spacing, and a shorthand row gap
+   would stack on top of it — the S284 fault, where one `gap` opened 60px
+   between a link and the paragraph above it and read as a taste failure. */
+
+.landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item {
+  grid-column: 2;
+}
+
+.landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:first-child {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+/* ⚠⚠⚠ THE LEAD SPANS AS MANY ROWS AS THERE ARE ROWS BESIDE IT, AND THE COUNT
+   HAS TO BE STATED. `grid-row: 1 / -1` does NOT work here — the rows are
+   IMPLICIT, and -1 resolves to the end of the EXPLICIT grid, which is row one.
+   It would ship looking correct on a four-card row and collapse on any other.
+   So the span is set by counting the items with :has, largest last.
+   ⚠ A browser without :has() gets a lead spanning one row and the remaining
+   cards stacked beside it — untidy, never broken, which is the direction this
+   project takes every time. */
+.landing-wrap.blog-post-page .blog-post-related-grid:has(> .w-dyn-item:nth-child(2))
+  > .w-dyn-item:first-child {
+  grid-row: 1 / span 1;
+}
+
+.landing-wrap.blog-post-page .blog-post-related-grid:has(> .w-dyn-item:nth-child(3))
+  > .w-dyn-item:first-child {
+  grid-row: 1 / span 2;
+}
+
+.landing-wrap.blog-post-page .blog-post-related-grid:has(> .w-dyn-item:nth-child(4))
+  > .w-dyn-item:first-child {
+  grid-row: 1 / span 3;
+}
+
+/* ⚠⚠ THE ONE-CARD CASE IS THE COMMON ONE TODAY and it is the state the v4 fix
+   was written for. A lead at 1.5fr with an empty column beside it reads as a
+   missing card, so a lone related post takes the full width. */
+.landing-wrap.blog-post-page .blog-post-related-grid:not(:has(> .w-dyn-item:nth-child(2)))
+  > .w-dyn-item:first-child {
+  grid-column: 1 / -1;
+}
+
+/* ---------- the lead ---------- */
+.landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:first-child
+  .blog-post-related-thumb {
+  aspect-ratio: 3 / 2;
+}
+
+.landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:first-child
+  .blog-post-related-title {
+  margin-top: 16px;
+  font-size: 23px;
+  line-height: 1.15;
+}
+
+.landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:first-child
+  .blog-post-related-lede {
+  margin-top: 9px;
+  font-size: 13px;
+}
+
+/* ---------- the rows beside it ---------- */
+/* The card becomes thumb-left, text-right. The thumb is a FIXED 70px square
+   with flex:none — a percentage width here would shrink as a title wrapped. */
+.landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:not(:first-child)
+  .blog-post-related-card {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:not(:first-child)
+  .blog-post-related-thumb {
+  width: 70px;
+  height: 70px;
+  flex: none;
+  aspect-ratio: auto;
+}
+
+.landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:not(:first-child)
+  .blog-post-related-title {
+  margin-top: 0;
+  font-size: 15px;
+}
+
+.landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:not(:first-child)
+  .blog-post-related-lede {
+  margin-top: 6px;
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+
+/* ⚠ THE HAIRLINE IS A TOP BORDER ON EVERY ROW BUT THE FIRST ONE IN THAT COLUMN
+   — :nth-child(2) is the top of the right column, so it takes no rule and the
+   dividers sit BETWEEN the rows rather than above the first. */
+.landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:not(:first-child) {
+  padding-bottom: 16px;
+}
+
+.landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:nth-child(n+3) {
+  padding-top: 16px;
+  border-top: 1px solid var(--landing-hairline);
+}
+
+/* ---------- the lede, which did not exist before this ---------- */
+/* It replaced the date at S291. The base rule is the row size; the lead
+   overrides it above. */
+.landing-wrap.blog-post-page .blog-post-related-lede {
+  margin: 6px 0 0;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--landing-muted);
+}
+
+/* ---------- tablet ---------- */
+/* ⚠⚠ THE LEAD SHAPE HOLDS AND THE COLUMNS TIGHTEN. Below 1023 the right column
+   is narrow enough that a 70px thumb plus a wrapped title reads cramped, so
+   the split moves toward even. */
+@media screen and (max-width: 1023px) {
+  .landing-wrap.blog-post-page .blog-post-related-grid {
+    grid-template-columns: 1.25fr 1fr;
+    column-gap: 24px;
+  }
+
+  .landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:first-child
+    .blog-post-related-title {
+    font-size: 20px;
+  }
+}
+
+/* ---------- phone ---------- */
+/* ⚠⚠⚠ ONE COLUMN, AND EVERY DESKTOP PLACEMENT RULE HAS TO BE TAKEN BACK — the
+   grid-column, the grid-row span and the :has spans all lose their meaning in
+   a single column, and a span left in place leaves empty rows behind it.
+   HER RULING: NO CLAMP ON THE LEDE AT THIS WIDTH. The clamp existed to even
+   three columns, and there are no columns here to even. */
+@media screen and (max-width: 767px) {
+  .landing-wrap.blog-post-page .blog-post-related-grid {
+    grid-template-columns: 1fr;
+    column-gap: 0;
+  }
+
+  .landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item,
+  .landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:first-child {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:first-child
+    .blog-post-related-title {
+    font-size: 20px;
+  }
+
+  .landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:first-child {
+    padding-bottom: 22px;
+  }
+
+  .landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:nth-child(2) {
+    padding-top: 16px;
+    border-top: 1px solid var(--landing-hairline);
+  }
+}
