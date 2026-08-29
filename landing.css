@@ -5027,3 +5027,76 @@ html.landing-motion .landing-wrap.blog-post-page .blog-post-related.is-in {
     border-top: 1px solid var(--landing-hairline);
   }
 }
+
+/* ==========================================================================
+   v31 — S291. THE ROW CARD'S TEXT COLUMN. A v30 FAULT, FOUND ON THE FIRST
+   REAL RENDER.
+   APPENDED AT TOP LEVEL. v30 is a byte-exact prefix, so ROLLBACK IS DELETING
+   FROM THIS COMMENT TO THE END OF THE FILE.
+
+   ⚠⚠⚠ v30 MADE THE ROW CARD A FLEX CONTAINER WITH THREE CHILDREN — thumb,
+   title, lede — so the title and the lede each became their own flex ITEM and
+   split the remaining width between them. On a 358px column that left the
+   title about 130px wide and "Why New Clothes Are Actually Dirty" wrapped to
+   seven lines beside a 70px thumb.
+   ▶ THE TEXT HAS TO BE ONE COLUMN, NOT TWO ITEMS. There is no wrapper element
+   to give it — Webflow repeats one Collection Item and the three children are
+   siblings — so the fix is a GRID rather than a flex row: one fixed 70px track
+   for the thumb, one flexible track for the text, and the title and lede
+   stacked in that second track by explicit placement.
+   ========================================================================== */
+
+.landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:not(:first-child)
+  .blog-post-related-card {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr);
+  column-gap: 14px;
+  row-gap: 0;
+  align-items: start;
+}
+
+/* ⚠⚠ minmax(0, 1fr) RATHER THAN 1fr, AND IT IS LOAD-BEARING. A 1fr track has
+   min-width:auto, so a long unbroken title pushes the column past its share
+   and the thumb shrinks — the overflow this doc already records on grids. */
+
+.landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:not(:first-child)
+  .blog-post-related-thumb {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+}
+
+.landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:not(:first-child)
+  .blog-post-related-title {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:not(:first-child)
+  .blog-post-related-lede {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+/* ⚠ THE THUMB SPANS BOTH ROWS so a two-line title does not pull the lede out
+   from under it. And it keeps its own height — a grid item stretches by
+   default, which would turn a 70px square into a 70px-wide column-height
+   rectangle. */
+.landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:not(:first-child)
+  .blog-post-related-thumb {
+  align-self: start;
+}
+
+/* ---------- the lead comes down a size ----------
+   ⚠ 1.5fr put the lead image at 538x358 on a 1477px window, which is larger
+   than it read at mockup scale and left the three rows looking incidental
+   beside it. 1.25fr takes roughly 60px off the image and hands it to the rows,
+   which is also what gives the title above room to stop wrapping. */
+.landing-wrap.blog-post-page .blog-post-related-grid {
+  grid-template-columns: 1.25fr 1fr;
+}
+
+/* ⚠⚠ THE PHONE BLOCK STILL WINS. It sets grid-template-columns:1fr later in
+   the file, and this rule is bare, so source order keeps the single column
+   below 767. Checked rather than assumed — a bare rule appended after a media
+   query beats it at equal specificity, which is the trap v29 restated the
+   inner padding twins for. */
