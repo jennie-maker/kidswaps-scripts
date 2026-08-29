@@ -230,11 +230,77 @@
     }, { threshold: 0.15 }).observe(ring);
   }
 
+  /* =====================================================================
+     5. THE BLOG POST SCROLL REVEAL — S290
+
+     HER RULING S290, off a display-only preview on her own live post:
+     PARAGRAPH BY PARAGRAPH. Every child of the rich-text body, then the
+     note box, then Sources, then Keep reading. 19 elements on the first
+     post. She watched the 4-element block version too and picked this.
+
+     ⚠⚠⚠ THE BLOG BLOCKS ARE NOT .landing-section AND MUST NEVER BE GIVEN
+     THAT CLASS, which is why start() cannot do this job.
+     .landing-section is a 290px/660px grid and it would put the whole
+     post in a narrow rail — the fault /terms-of-service and
+     /privacy-policy both shipped with. This observes the blog's own
+     classes instead, so there is ZERO Designer work and no chance of the
+     S288 fault where a rule is written for a class nobody applied.
+
+     ⚠⚠⚠ THE SELECTOR STRING BELOW IS DUPLICATED IN landing.css's v28
+     BLOCK. CSS hides them, this adds `.is-in` to reveal them. THEY MUST
+     MATCH. A block hidden there and not observed here stays invisible
+     forever with nothing erroring.
+
+     ⚠⚠ IT REUSES `.is-in`, THE SAME CLASS THE SECTION REVEAL USES. Safe
+     because a blog post carries no .landing-section — verified live,
+     count 0 — so the two rule sets can never meet on one page.
+
+     ⚠ THE catch FAILS OPEN AND IS NOT A SWALLOW. If anything throws, every
+     matched element is revealed immediately and the reason is logged. The
+     CSS has already hidden them by this point, so a silent failure here
+     would leave a blank article — the one outcome this file exists to
+     prevent.
+     ===================================================================== */
+
+  var BLOG_REVEAL =
+    ".blog-post-body > *, .blog-post-note-box, .blog-post-sources, .blog-post-related";
+
+  function blogPost() {
+    var post = document.querySelector(".landing-wrap.blog-post-page");
+    if (!post) return;
+    if (!doc.classList.contains("landing-motion")) return;
+    if (!canObserve) return;
+
+    var els = post.querySelectorAll(BLOG_REVEAL);
+    if (!els.length) return;
+
+    try {
+      var io = new IntersectionObserver(function (entries, obs) {
+        for (var i = 0; i < entries.length; i++) {
+          if (entries[i].isIntersecting) {
+            entries[i].target.classList.add("is-in");
+            obs.unobserve(entries[i].target);
+          }
+        }
+      }, { rootMargin: "0px 0px -15% 0px", threshold: 0 });
+
+      for (var j = 0; j < els.length; j++) {
+        io.observe(els[j]);
+      }
+    } catch (err) {
+      for (var k = 0; k < els.length; k++) {
+        els[k].classList.add("is-in");
+      }
+      window.console && console.warn("[landing] blog reveal failed, revealing all:", err);
+    }
+  }
+
   function go() {
     start();
     spin();
     accordion();
     lap();
+    blogPost();
   }
 
   if (document.readyState === "loading") {

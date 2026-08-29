@@ -4689,3 +4689,68 @@ html.landing-motion .landing-wrap.blog-post-page .blog-post-related-card:hover
     box-shadow: 0 6px 16px rgba(30, 26, 25, 0.11);
   }
 }
+
+/* ==========================================================================
+   v28 — S290 — THE BLOG POST SCROLL REVEAL
+
+   HER RULING S290, off a display-only preview on her own live post, both
+   options watched at real size: PARAGRAPH BY PARAGRAPH, not block by block.
+   Every heading, paragraph, quote and image in the body rises as it arrives,
+   then the note box and Sources, then Keep reading. 19 elements on the first
+   post. She was shown the 4-element block version first and picked this one.
+
+   THE VALUES ARE v27's OWN — 14px over 0.7s on cubic-bezier(.4,0,.2,1) — and
+   the keyframe is v27's `blog-post-rise`, REUSED RATHER THAN COPIED. One
+   definition, so the head entrance and the scroll reveal cannot drift apart.
+
+   ⚠⚠⚠ THE SHARE IMAGE IS DELIBERATELY NOT IN THIS SET AND v27 IS UNTOUCHED.
+   It was nearly moved here: it starts 749px down the page, so on a short
+   viewport its load entrance plays before the reader ever reaches it — the
+   S246 shape, motion firing ahead of the eye. MOVING IT WOULD HAVE BEEN
+   WORSE. The observer fires the moment an element intersects, so on load it
+   would arrive at 0s, i.e. BEFORE the headline at 0.16s, breaking the head
+   stagger to fix something nobody can see. It stays the last beat of the head
+   at 0.40s. ▶ IF A FUTURE SESSION "TIDIES" IT INTO THIS LIST, THAT IS WHY IT
+   SUDDENLY ARRIVES FIRST.
+
+   ⚠⚠⚠ THE SELECTOR LIST BELOW EXISTS TWICE — HERE AND IN landing.js's
+   blogPost(). CSS hides them, JS adds `.is-in` to reveal them. THEY MUST
+   MATCH. Add a block here and not there and it is hidden forever with nothing
+   erroring; add it there and not here and it simply never animates. Same
+   shape as the star-spin list, which is five explicit selectors for the same
+   reason. The hiding is the dangerous half.
+
+   ⚠⚠ GATED ON html.landing-motion, WHICH landing.js SETS AS ITS FIRST ACT AND
+   WITHHOLDS FROM A REDUCED-MOTION READER. Script blocked, script 404s, no
+   IntersectionObserver, reduced motion, an exception on line one — no flag,
+   no hiding, the post renders as a complete static document. Her S224 ruling.
+   The failure lands on "no animation", never on "no article".
+
+   ⚠⚠ THE ANIMATION IS ON `.blog-post-related`, NEVER ON ITS CARDS. The cards
+   carry a hover transform (v27), and a `both`-filled animation's end state
+   beats a hover declaration outright — the /pricing card fault, and the exact
+   thing that made the share image unhideable during the S290 preview. Animate
+   the parent and the cards' hover is untouched. DO NOT MOVE THIS DOWN A LEVEL.
+
+   ⚠ THE NOTE BOX AND SOURCES SIT 158px APART, so they will always arrive as
+   one event rather than two. Measured, not a fault, and no delay will
+   separate them — they are on screen together.
+
+   ⚠ `both` FILL IS LOAD-BEARING, as everywhere else in this file: it holds
+   the start state through any delay and the end state after, so nothing
+   snaps back.
+   ========================================================================== */
+
+html.landing-motion .landing-wrap.blog-post-page .blog-post-body > *,
+html.landing-motion .landing-wrap.blog-post-page .blog-post-note-box,
+html.landing-motion .landing-wrap.blog-post-page .blog-post-sources,
+html.landing-motion .landing-wrap.blog-post-page .blog-post-related {
+  opacity: 0;
+}
+
+html.landing-motion .landing-wrap.blog-post-page .blog-post-body > .is-in,
+html.landing-motion .landing-wrap.blog-post-page .blog-post-note-box.is-in,
+html.landing-motion .landing-wrap.blog-post-page .blog-post-sources.is-in,
+html.landing-motion .landing-wrap.blog-post-page .blog-post-related.is-in {
+  animation: blog-post-rise 0.7s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
