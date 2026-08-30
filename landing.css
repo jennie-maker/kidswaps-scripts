@@ -5230,3 +5230,65 @@ html.landing-motion .landing-wrap.blog-post-page .blog-post-related.is-in {
     overflow: hidden;
   }
 }
+
+/* ==========================================================================
+   v34 — S291. TYPE PASS ON THE PHONE, PLUS THE ROW TITLES OFF THE SERIF.
+   APPENDED AT TOP LEVEL. v33 is a byte-exact prefix, so ROLLBACK IS DELETING
+   FROM THIS COMMENT TO THE END OF THE FILE.
+   ========================================================================== */
+
+/* ---------- the row titles go to Quicksand, at every width ----------
+   HER RULING: "the instrument font doesnt look great this small." She is right
+   and it is a property of the face rather than a preference — Instrument Serif
+   is a display serif with fine strokes and a single weight, so at 16px in a
+   narrow column it thins out and loses its joins. Quicksand is a geometric
+   sans built to hold at small sizes.
+   ⚠⚠ THIS IS NOT SCOPED TO THE PHONE, DELIBERATELY. Those titles are 16px at
+   every width, so the reason applies at every width. THE LEAD TITLE KEEPS THE
+   SERIF — it is 23px and up, which is where that face belongs.
+   ⚠ WEIGHT 600, NOT 700. Quicksand loads 300 to 700 on this site, so both are
+   real faces and neither is synthesised; 600 sits beside the muted lede
+   without shouting. */
+.landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:not(:first-child)
+  .blog-post-related-title {
+  font-family: Quicksand, sans-serif;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+@media screen and (max-width: 767px) {
+
+  /* ---------- the headline's leading comes in ----------
+     At 74px the old 1.04 gave 77px of leading and the lines drifted apart.
+     0.92 lands at 68px, inside the 65-70 she asked for.
+     ⚠ A RATIO, NOT A PIXEL VALUE — it stays correct if the size is ever
+     adjusted, which on this headline it already has been twice today. */
+  .landing-wrap.blog-post-page .blog-heading {
+    line-height: 0.92;
+  }
+
+  /* ---------- the body headings double ----------
+     25px to 50px, HER CALL. The leading has to come down with it: 50px type on
+     the section default would have set far too loose, so 1.0 here. */
+  .landing-wrap.blog-post-page .blog-post-body h2 {
+    font-size: 50px;
+    line-height: 1;
+  }
+
+  /* ---------- the space under Sources closes ----------
+     ⚠⚠ THE SPACE IS NOT INSIDE THE SOURCES BLOCK AND MEASURING IT THERE FINDS
+     NOTHING — the gap below the citation reads 0. What she is seeing is
+     .blog-post-related's OWN 66px top margin sitting above its hairline, so
+     the air belongs to Keep reading rather than to Sources.
+     ▶ SAME SHAPE AS THE S284 GRID GAP: the space showed up on an element that
+     was not creating it. 32px here, matching the Sources seam v29 set. */
+  .landing-wrap.blog-post-page .blog-post-related {
+    margin-top: 32px;
+  }
+
+  /* ---------- the lead related title grows ---------- */
+  .landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:first-child
+    .blog-post-related-title {
+    font-size: 30px;
+  }
+}
