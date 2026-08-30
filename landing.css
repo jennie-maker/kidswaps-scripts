@@ -5292,3 +5292,145 @@ html.landing-motion .landing-wrap.blog-post-page .blog-post-related.is-in {
     font-size: 30px;
   }
 }
+
+/* =====================================================================
+   v35 — S292 — THE BLOG INDEX (/blog)
+
+   ROLLBACK: delete from this comment to the end of the file. v34 is a
+   byte-exact prefix, machine-checked before this block was appended.
+
+   PAGE-SCOPED under .collection-list-wrapper.blog-index-page, the combo
+   added in the Designer and DELIBERATELY LEFT UNSTYLED there.
+   collection-list-wrapper is a WEBFLOW DEFAULT NAME and is almost
+   certainly worn on other pages — a bare rule here would reach them.
+
+   ⚠ THE DESIGNER PAINTS THE CARD, NOT THIS FILE. Read live S292:
+   .post-card carries background #FFF, radius 10px and padding 20px from
+   the Style panel. Every rule below that turns one of those off is
+   BEATING a live value at (0,3,0) against its (0,1,0), on specificity
+   and never on source order. Clear them in the Style panel later and
+   these rules go quiet on their own — they do not break.
+
+   ⚠⚠ HER RULING S292: NO DATE ON THIS PAGE. .post-card-date is bound to
+   Published date, which is EMPTY on every post today, so it already
+   renders w-dyn-bind-empty at zero size. The display:none below is what
+   stops it appearing UNSTYLED the day she fills that field in. One line
+   to reverse.
+   ===================================================================== */
+
+/* ---------- the measure ----------
+   One card per row at every width, hers. 760 is the reading measure the
+   post template already uses for its body. */
+.collection-list-wrapper.blog-index-page {
+  max-width: 760px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+/* ---------- the card comes off ----------
+   Cream on cream, so /blog and /post/… read as one publication.
+   The hairline replaces the card edge as the thing separating posts. */
+.collection-list-wrapper.blog-index-page .post-card {
+  background-color: transparent;
+  border-radius: 0;
+  padding: 38px 0;
+  border-top: 1px solid #C9C7BC;
+  display: block;
+  text-decoration: none;
+  color: #1E1A19;
+}
+
+/* The list needs a rule under the last post as well as above the first,
+   or the page ends on an open edge. */
+.collection-list-wrapper.blog-index-page
+  .w-dyn-item:last-child .post-card {
+  border-bottom: 1px solid #C9C7BC;
+}
+
+/* ---------- the photo ----------
+   ⚠ IT SHIPPED AS A 3.5:1 LETTERBOX — measured 640 x 180 live, which is
+   why the photographs read as cropped strips. 3/2 is the post template's
+   own share-image ratio.
+   ⚠⚠ height:auto IS LOAD-BEARING: an explicit height set in the Designer
+   BEATS aspect-ratio outright, and the fix would silently do nothing. */
+.collection-list-wrapper.blog-index-page .post-card-image {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  border-radius: 10px;
+  display: block;
+}
+
+/* ---------- the title ----------
+   ⚠⚠⚠ font-weight 400 IS NOT OPTIONAL. An h2 defaults to bold and
+   Instrument Serif SHIPS ONE WEIGHT, so bold here is a browser-
+   synthesised fake — the fault that sat on .ks-wz-h for months. */
+.collection-list-wrapper.blog-index-page .post-card-title {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-weight: 400;
+  font-size: 33px;
+  line-height: 1.12;
+  color: #1E1A19;
+  margin: 22px 0 10px;
+  text-transform: none;
+  /* the hover rule lives on the underline colour, so the underline
+     itself is declared here and starts invisible */
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+  transition: text-decoration-color 0.25s ease;
+}
+
+/* ---------- hover ----------
+   ⚠⚠ AN UNDERLINE ON THE TEXT, NEVER A BACKGROUND GRADIENT ON THE
+   HEADING. The h2 is a block at the full 712px measure, so a gradient
+   rule would draw a line the width of the COLUMN rather than the width
+   of the WORDS, and on a title that wraps it would underline only the
+   last line at full width. text-decoration hugs the text and handles
+   the wrap for free — and it needs NO extra span in the markup, so the
+   Designer tree stays as it is. */
+.collection-list-wrapper.blog-index-page .post-card:hover .post-card-title {
+  text-decoration-color: #EDA920;
+}
+
+/* ---------- the lede ---------- */
+.collection-list-wrapper.blog-index-page .post-card-summary {
+  font-family: Quicksand, sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.62;
+  color: #75736E;
+  margin: 0;
+}
+
+/* ---------- the date stays off ---------- */
+.collection-list-wrapper.blog-index-page .post-card-date {
+  display: none;
+}
+
+/* ---------- phone ----------
+   ⚠⚠⚠ THIS BLOCK MUST SIT AT THE FOOT OF THE v35 SECTION. landing.css
+   ends at top level but AFTER its own breakpoint blocks, so a bare rule
+   appended here beats a 767 rule earlier in the file by SOURCE ORDER.
+   Every v35 rule with a phone twin declares that twin below, never
+   above. */
+@media screen and (max-width: 767px) {
+
+  .collection-list-wrapper.blog-index-page {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .collection-list-wrapper.blog-index-page .post-card {
+    padding: 30px 0;
+  }
+
+  .collection-list-wrapper.blog-index-page .post-card-title {
+    font-size: 27px;
+    margin: 18px 0 9px;
+  }
+}
