@@ -5170,3 +5170,63 @@ html.landing-motion .landing-wrap.blog-post-page .blog-post-related.is-in {
 /* ⚠ THESE THREE ARE BARE AND THEREFORE APPLY AT EVERY WIDTH, DELIBERATELY —
    they are sizes rather than placement, and nothing in the phone block sets
    them. The placement rules above are the ones that had to be repeated. */
+
+/* ==========================================================================
+   v33 — S291. THE PHONE PASS ON THE POST HEAD AND THE RELATED ROWS.
+   APPENDED AT TOP LEVEL. v32 is a byte-exact prefix, so ROLLBACK IS DELETING
+   FROM THIS COMMENT TO THE END OF THE FILE.
+   Four things, all HER RULINGS off her own phone, all scoped to <=767.
+   ========================================================================== */
+
+@media screen and (max-width: 767px) {
+
+  /* ---------- 1. the bands go ----------
+     ⚠⚠ THE DEEPER CREAM IS NOT A FAULT — it is #DEDBC8, the --blog-post-ground
+     the sheet sits on, and on desktop it is the whole point of the sheet
+     design. On a phone the sheet runs full bleed, so the ground only shows as
+     two stripes above and below and reads as a mistake.
+     ▶ THE FIX IS THE GROUND, NOT THE SHEET. Setting the sheet transparent
+     would hand the whole page to #DEDBC8, which is darker than the cream she
+     approved. Taking the ground to the sheet's cream removes the seam and
+     keeps the page the colour it already is. */
+  .landing-wrap.blog-post-page {
+    background-color: var(--landing-cream);
+  }
+
+  /* ---------- 2. the headline doubles ----------
+     37px to 74px, HER CALL, phone only. */
+  .landing-wrap.blog-post-page .blog-heading {
+    font-size: 74px;
+  }
+
+  /* ---------- 3. the lede comes up under it ----------
+     28px to 12px. The gap was set for a 37px headline; at 74 the two were
+     drifting apart. */
+  .landing-wrap.blog-post-page .blog-post-lede {
+    margin-top: 12px;
+  }
+
+  /* ---------- 4. the related rows clamp to three lines ----------
+     HER RULING, REVERSING HER EARLIER "no clamp on mobile" — and the reversal
+     is correct rather than a drift, because the layout changed underneath it.
+     That ruling was made when the phone cards were full-width stacked, where
+     there was nothing to line the text up against. They are thumb-left rows
+     now, and three lines lands about level with a 70px thumb, which is what
+     she asked for.
+     ⚠⚠ THE LEAD CARD IS DELIBERATELY EXCLUDED — :not(:first-child) — so the
+     first story still shows its whole summary.
+     ⚠⚠⚠ A CHARACTER CAP DOES NOT EXIST IN CSS. Webflow hands over the entire
+     Post Summary and the browser only knows about lines, so a line clamp is
+     the only way to stop text at a predictable height. ACCEPTED COST, NAMED
+     BEFORE SHE RULED: a long summary ends mid-sentence with an ellipsis.
+     ⚠ display:-webkit-box IS REQUIRED FOR THE CLAMP AND IT OVERRIDES THE GRID
+     PLACEMENT'S DISPLAY, NOT ITS POSITION — the element keeps its grid-column
+     and grid-row from v31, because placement belongs to the parent grid. */
+  .landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:not(:first-child)
+    .blog-post-related-lede {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
