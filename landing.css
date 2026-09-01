@@ -5434,3 +5434,73 @@ html.landing-motion .landing-wrap.blog-post-page .blog-post-related.is-in {
     margin: 18px 0 9px;
   }
 }
+
+/* =====================================================================
+   v36 — S294. BULLETED LISTS IN A SECTION BODY.
+   ROLLBACK: delete from this comment to the end of the file.
+
+   Nothing in this file had ever spoken to a <ul>. Read live on
+   /used-baby-clothes: markers rgb(33,27,26) (the site ink, inherited),
+   li line-height 20px against body copy's 27.2px, ul padding-left 40px.
+   All three are BROWSER DEFAULTS showing through, which is why a real
+   list read tighter and plainer than the prose around it.
+
+   ⚠⚠ THE MARKER IS A DRAWN ::before, NEVER ::marker. Her ruling was that
+   it match .landing-figure::before — 6px, amber, round — and ::marker
+   accepts neither width nor border-radius, so it structurally cannot.
+   The values here are LIFTED from the two dots this file already draws
+   (.landing-figure::before and the pricing includes dot), not chosen
+   fresh: 6px, var(--landing-amber), padding-left 22px, top 0.62em.
+   ONE ACCENT LANGUAGE, THREE PLACES.
+
+   ⚠⚠⚠ THIS IS SITE-WIDE, NOT PAGE-SCOPED, AND THAT IS DELIBERATE — it is
+   the landing template's list style from now on, so a list on any future
+   landing page inherits it without a second rule. Scoped to
+   .landing-section-body so it cannot reach the header, the footer or a
+   rich-text list on a blog post.
+
+   ⚠ 0.6em BETWEEN ITEMS IS CLAUDE'S CALL, REVERSIBLE. Body paragraphs sit
+   1.1em apart; items in one list should read closer than two paragraphs
+   or the list stops reading as a unit. The pricing includes list uses
+   1.35em, but those are six standalone marketing lines, not a run of
+   eight.
+   ===================================================================== */
+
+.landing-section-body ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0 0 1.1em;
+}
+
+.landing-section-body ul li {
+  position: relative;
+  padding-left: 22px;
+  margin-bottom: 0.6em;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.landing-section-body ul li:last-child {
+  margin-bottom: 0;
+}
+
+.landing-section-body ul li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--landing-amber);
+}
+
+/* --- MOBILE TWIN. REQUIRED: this file ends at top level but AFTER its
+   991/767/479 blocks, so a bare rule appended here beats every one of
+   them on source order. Any value with a phone variant must restate it. */
+@media (max-width: 767px) {
+  .landing-section-body ul li {
+    padding-left: 20px;
+    margin-bottom: 0.55em;
+  }
+}
