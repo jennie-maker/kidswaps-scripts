@@ -5537,3 +5537,40 @@ html.landing-motion .landing-wrap.blog-post-page .blog-post-related.is-in {
 .landing-wrap {
   background-color: #FFFFFF;
 }
+
+/* ============================================================================
+   v38 — S296 · THE BLOG HEADLINE MEASURE
+   ----------------------------------------------------------------------------
+   HER CALL, off a live read on her own published post: the headline should sit
+   a little wider than the lede. It was sitting NARROWER.
+
+   MEASURED, NOT DERIVED. 1ch on this element is 26.68px at 58px Instrument
+   Serif, so the shipped 20ch computed to 534px against the lede's 643px — 17%
+   narrower. 26ch lands it at 694px, about 8% wider than the lede, which is what
+   she asked for. Judged on the live render of two real posts, a short title and
+   a long one.
+
+   ⚠⚠ THE ch UNIT IS HONEST ON THIS ELEMENT AND THAT IS WHY IT STAYS A ch.
+   A ch is measured in the element's OWN font, and here the element is
+   Instrument Serif 58px and its text renders in Instrument Serif 58px. So the
+   cap scales correctly with the 47px tablet size and keeps the same character
+   count. Contrast the v26 blockquote, where the element inherited Quicksand
+   and its text rendered 33px serif, and a ch cap was arithmetic pretending to
+   be a design choice.
+
+   ⚠⚠⚠ THE PHONE TWIN IS RESTATED BELOW AND IT IS LOAD-BEARING. This rule sits
+   AFTER every @media block in the file, so at equal specificity it wins at
+   every width on source order. The 767 block at v25 sets max-width:100% on
+   this heading; without the twin, that is silently overridden and the phone
+   headline picks up a 26ch cap it was never meant to have.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.blog-post-page .blog-heading {
+  max-width: 26ch;
+}
+
+@media screen and (max-width: 767px) {
+  .landing-wrap.blog-post-page .blog-heading {
+    max-width: 100%;
+  }
+}
