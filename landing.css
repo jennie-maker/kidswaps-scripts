@@ -5504,3 +5504,36 @@ html.landing-motion .landing-wrap.blog-post-page .blog-post-related.is-in {
     margin-bottom: 0.55em;
   }
 }
+
+/* ==========================================================================
+   v37 — S295. THE LANDING GROUND GOES WHITE.
+
+   HER RULING: the middle of every page is white; the header and the footer
+   carry the cream. The landing template was the only thing on the site still
+   painting its ground #EDECE0, so on all eleven landing pages the footer sat
+   on the same colour as the page above it and there was NO EDGE between them.
+   That is what she reported, and it was never a footer fault.
+
+   ⚠⚠ THE VARIABLE IS NOT TOUCHED, DELIBERATELY. --landing-cream is read SIX
+   times and only ONE of them is the page ground: the other five are cream
+   TEXT on coral and ink (the CTA label, its hover, the founder panel heading)
+   and the blog post sheet's own fill. Changing #EDECE0 at line 22 would have
+   turned all of those white-on-cream and blanked three labels. Read before
+   changing a variable that looks like it means one thing.
+
+   ⚠⚠ BLOG POSTS ARE UNAFFECTED AND MUST STAY THAT WAY. .landing-wrap.blog-post-page
+   sets its own --blog-post-ground #DEDBC8 at TWO classes, so it beats this
+   rule on specificity rather than on source order. A post keeps its deeper
+   cream ground and its cream sheet.
+
+   ⚠ APPENDED RATHER THAN EDITED AT LINE 42 so v36 stays a byte-exact prefix
+   and the rollback is deleting from this comment to the end of the file.
+   It ties with line 42 at (0,1,0) and wins on source order.
+
+   ⚠ NO MOBILE TWIN IS OWED. Both breakpoint .landing-wrap rules (991 and 767)
+   set padding only and no background, checked before this was written.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap {
+  background-color: #FFFFFF;
+}
