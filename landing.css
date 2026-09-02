@@ -5574,3 +5574,65 @@ html.landing-motion .landing-wrap.blog-post-page .blog-post-related.is-in {
     max-width: 100%;
   }
 }
+
+/* =====================================================================
+   v39 — S299 — KEEP READING: THE LEAD IMAGE AND THE LEAD TITLE
+
+   ROLLBACK: delete from this comment to the end of the file. v38 is a
+   byte-exact prefix, machine-checked before this block was appended.
+   ===================================================================== */
+
+/* ---------- the lead image comes down to 2:1 ----------
+   HER CALL S299. The lead measured 498x332 against a right-hand column of two
+   70px rows, so roughly 200px of the lead's height had nothing beside it, and
+   that gap is what read as "too big" — not the width, which is what makes it
+   the lead in the first place. 2/1 lands it at 249px.
+   ⚠ MEASURED, NOT DERIVED: the 3/2 rule was arriving correctly and the image
+   was rendering exactly to spec. THIS IS A TASTE CHANGE, NOT A FIX, and it
+   knowingly revises the S291 design. Do not "correct" it back to 3/2.
+   ⚠⚠ THE ROW THUMBS STAY 70px SQUARE, DELIBERATELY. Her S291 phone rule clamps
+   the row ledes to 3 lines so the text sits level with a 70px square — change
+   the thumb and that clamp needs redoing at phone width too.
+   ⚠ object-fit IS cover, so a taller crop takes the middle of the photograph.
+   Watch the first post shot for this page: heads and hands go first. */
+.landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:first-child
+  .blog-post-related-thumb {
+  aspect-ratio: 2 / 1;
+}
+
+/* ---------- the lead title leaves Instrument Serif ----------
+   HER CALL S299, off a mockup: the lead title matches the rows' family. It was
+   23px Instrument Serif 400 against rows at 16px Quicksand 600, and the serif
+   was carrying much of the bulk the image was being blamed for.
+   ⚠⚠⚠ THIS REVERSES HER OWN S291 RULING, which made the lead serif on purpose
+   to separate it from the Quicksand rows. SHE OVERTURNED IT OFF A LIVE RENDER.
+   Do not restore the serif on the strength of the S291 line.
+   ⚠⚠ AT 18px AGAINST 16px ROWS, SIZE IS DOING ALMOST NO WORK. What marks the
+   lead now is its 498px column, its image and its lede — the type is
+   deliberately quiet. IF IT EVER READS FLAT, THE LEVER IS WEIGHT, NOT SIZE:
+   Quicksand loads 300-700 on this site so 700 is a real face, not a synthesised
+   bold. Raising the size instead walks back toward the serif's footprint.
+   ⚠ WEIGHT 600 AND LINE-HEIGHT 1.3 ARE COPIED FROM THE ROW TITLES, so the two
+   differ by size alone and cannot drift apart on any other axis. */
+.landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:first-child
+  .blog-post-related-title {
+  font-family: Quicksand, sans-serif;
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+/* ---------- the phone size is restated, and it is LOAD-BEARING ----------
+   ⚠⚠⚠ THIS FILE ENDS AFTER EVERY @media BLOCK, so the bare rule above beats
+   them all on SOURCE ORDER at equal specificity. Two 767 rules set this title
+   (20px, then 30px, the later winning). WITHOUT THIS RESTATEMENT the phone lead
+   title silently drops from 30px to 18px — phone-only, nothing erroring.
+   ⚠ 30px IN QUICKSAND 600 HAS NEVER BEEN SEEN. Her S299 ruling was made at
+   1477px and the family change rides to every width with it. BUILT, NOT PROVEN
+   BY EFFECT — a handoff must not upgrade it, and it is one value to change. */
+@media screen and (max-width: 767px) {
+  .landing-wrap.blog-post-page .blog-post-related-grid > .w-dyn-item:first-child
+    .blog-post-related-title {
+    font-size: 30px;
+  }
+}
