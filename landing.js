@@ -176,8 +176,28 @@
       t.setAttribute("aria-controls", a.id);
     }
 
+      /* THE TEASER IS A CLICK TARGET TOO — HER RULING S300, OPENS AND CLOSES.
+       ⚠ THE TEASER BRANCH MUST COME BEFORE THE TOGGLE BRANCH'S RETURN, or it
+       is unreachable and ships inert. It calls toggle(q) directly rather than
+       firing the toggle's own click, so there is no synthetic event and
+       nothing for this same delegated listener to catch a second time.
+       ⚠ MOUSE AND TOUCH ONLY, DELIBERATELY. The teaser gets no tabindex — the
+       toggle already carries the tab stop, the role and Enter/Space, and two
+       focusable elements per row doing one job is worse for a keyboard user,
+       not better.
+       ⚠ ROW ONE HAS NO TEASER on /how-it-works — it ships open. Anything here
+       that assumes every row has one will throw on that row. */
     document.addEventListener("click", function (e) {
-      var t = e.target.closest && e.target.closest(".landing-q-toggle");
+      if (!e.target.closest) return;
+
+      var te = e.target.closest(".landing-teaser");
+      if (te) {
+        var tq = te.closest(".landing-q");
+        if (tq) toggle(tq);
+        return;
+      }
+
+      var t = e.target.closest(".landing-q-toggle");
       if (!t) return;
       var q = t.closest(".landing-q");
       if (q) toggle(q);
