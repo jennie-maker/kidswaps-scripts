@@ -5651,3 +5651,26 @@ html.landing-motion .landing-wrap.blog-post-page .blog-post-related.is-in {
    a section label, and a bare rule puts a pointer cursor on text that does
    nothing, on every landing page. */
 .landing-q .landing-teaser { cursor: pointer; }
+
+
+/* PLAN CARD BUTTONS ALIGN AT THE FOOT OF THE CARD — S300.
+   MEASURED, NOT DERIVED: at 1477 the button sat 172px from the card top on
+   three cards and 195px on The Everything Bag, whose swaps line wraps to two
+   lines. The grid stretches a row to its tallest card, so The Full Wardrobe
+   got a 265px card with its button still at 172 and 70px of dead space under it.
+   ⚠ THE CARDS ARE display:block IN THE DESIGNER, so the flex column is what
+   makes margin-top:auto mean anything. Both declarations or neither.
+   ⚠ auto MARGIN, NEVER A FIXED HEIGHT OR A padding-top. The cards differ in
+   height by design and the copy can change; auto aligns by construction and
+   cannot drift out of step with the text above it.
+   ⚠ .landing-plan-card IS WORN BY BOTH GRIDS — the logged-out one and the
+   is-members one. The logged-out cards have no button, so the auto margin
+   matches nothing there. The flex column DOES apply to both; their children
+   are plain stacked blocks, so it changes nothing. */
+.landing-plan-card {
+  display: flex;
+  flex-direction: column;
+}
+.landing-plan-card .landing-cta-primary {
+  margin-top: auto;
+}
