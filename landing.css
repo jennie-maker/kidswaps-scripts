@@ -5685,14 +5685,6 @@ html.landing-motion .landing-wrap.blog-post-page .blog-post-related.is-in {
   margin: 16px 20px 0;
 }
 
-/* ⚠ THE CHILDREN LOSE THEIR OWN MARGINS OR THE ROW INHERITS THEM TWICE. Both
-   carried 20px horizontal and their own top margin while they were stacked
-   siblings; the row now owns all of that. */
-.landing-plan-price-row .landing-plan-price,
-.landing-plan-price-row .landing-plan-note {
-  margin: 0;
-}
-
 /* THE PLAN BUTTON — POSITION, WIDTH AND SPACING, SET IN ONE PLACE.
    Every value is COPIED FROM THE CARD'S OWN CHILDREN, measured at 652px:
      card padding        0px 0px 22px   — NO horizontal padding at all
@@ -5722,4 +5714,29 @@ html.landing-motion .landing-wrap.blog-post-page .blog-post-related.is-in {
   align-self: flex-start;
   display: inline-block;
   width: auto;
+}
+/* THE PRICE ROW'S CHILDREN LOSE THEIR OWN MARGINS — S300, SECOND ATTEMPT.
+   ⚠⚠⚠ THE FIRST VERSION LOST ON SPECIFICITY AND SHIPPED INERT. It was written
+   .landing-plan-price-row .landing-plan-price at (0,2,0) against the page's own
+   rules at (0,3,0), so both children kept margin:16px 20px 0 and 4px 20px 0 —
+   and the visible gap between "$70" and "billed monthly" was 46px, not the row's
+   6px gap: 20 right + 20 left + 6. MEASURED, NOT DERIVED.
+   ⚠ FOUR CLASSES HERE ON PURPOSE, (0,4,0). Do not "simplify" it back; a tie
+   loses silently and this rule has already failed once that way.
+   ⚠ The row itself keeps its own 16px 20px 0 — it inherited that job from the
+   price when the two were stacked siblings. */
+.landing-wrap.pricing-page .landing-plan-price-row .landing-plan-price,
+.landing-wrap.pricing-page .landing-plan-price-row .landing-plan-note {
+  margin: 0;
+}
+
+/* THE LOGGED-OUT CTA MATCHES THE PLAN BUTTONS — S300.
+   MEASURED: "Get my swap bag" carried padding 14px 8px against the plan buttons'
+   15px 32px, so it read cramped beside them on the same page. Both are
+   .landing-cta-primary; only the plan buttons had ever been styled here.
+   ⚠ SCOPED TO .landing-cta-row, so this cannot reach the closing CTA on any
+   other landing page — that class is shared site-wide and those buttons have
+   not been looked at. */
+.landing-wrap.pricing-page .landing-cta-row .landing-cta-primary {
+  padding: 15px 32px;
 }
