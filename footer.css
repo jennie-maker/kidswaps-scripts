@@ -420,11 +420,6 @@
     margin-top: 32px;
   }
 }
-   
-   .footer-section .footer-bottom {
-    margin-top: 32px;
-  }
-}
 
 /* ⚠⚠ WEBFLOW HAS FOUR BREAKPOINTS AND THIS FILE SPEAKS AT THREE. Below 479 its
    own rules run unopposed unless something here says otherwise. Nothing is set
