@@ -151,21 +151,36 @@
 
 
 /* ---- THE LINK COLUMNS ----------------------------------------------------- */
+/* ⚠⚠ THE GAP GROWS WITH THE WINDOW, THE COLUMNS DO NOT. With flex:1 1 0 on
+   the columns every column got an equal SHARE of the width while its content
+   stayed its own width, so the leftover space inside each one differed and the
+   footer read as four different gutters — she drew them on a screenshot S300.
+   Content-width columns plus a fluid gap gives ONE gutter value at every
+   width. clamp's floor is the old 32; the ceiling stops the columns bunching
+   left with dead space collecting on the right as the window widens. */
 .footer-section .footer-columns {
   flex: 1 1 auto;
   width: auto;
   display: flex;
   align-items: flex-start;
-  gap: 32px;
+  gap: clamp(32px, 4vw, 72px);
 }
 
 /* ⚠⚠⚠ display:block IS LOAD-BEARING. Webflow has this as a flex container with
    no direction set, i.e. a ROW — links side by side, squashed to 136px, and
    "Browse The Closet" breaking onto two lines. The links are plain stacked
    blocks; nothing here needs flex at all. */
+/* ⚠⚠⚠ display:block IS LOAD-BEARING. Webflow has this as a flex container with
+   no direction set, i.e. a ROW — links side by side, squashed to 136px, and
+   "Browse The Closet" breaking onto two lines. The links are plain stacked
+   blocks; nothing here needs flex at all.
+   ⚠⚠ flex:0 0 auto REPLACES flex:1 1 0 AS OF S300 — see the gap comment above.
+   Equal shares made the gutters unequal. Content width plus one gap is what
+   makes them even. DO NOT RESTORE 1 1 0 to "balance the columns"; that is the
+   change that caused the fault. */
 .footer-section .footer-column {
   display: block;
-  flex: 1 1 0;
+  flex: 0 0 auto;
   min-width: 0;
 }
 
