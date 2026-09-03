@@ -5671,31 +5671,55 @@ html.landing-motion .landing-wrap.blog-post-page .blog-post-related.is-in {
   flex-direction: column;
 }
 
+/* THE PRICE AND ITS TERM SIT ON ONE LINE — S300, HERS.
+   They were two stacked elements, which cost a line and left the button crowded
+   against them. Now wrapped in .landing-plan-price-row in the Designer, eight
+   times: four cards in the members grid, four in the logged-out one.
+   ⚠ baseline, NOT center. The price is 19px bold and the term is 11px muted, so
+   centring floats the small text against the numeral's middle. Baseline sits it
+   on the same line the eye reads. */
+.landing-plan-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 16px 20px 0;
+}
+
+/* ⚠ THE CHILDREN LOSE THEIR OWN MARGINS OR THE ROW INHERITS THEM TWICE. Both
+   carried 20px horizontal and their own top margin while they were stacked
+   siblings; the row now owns all of that. */
+.landing-plan-price-row .landing-plan-price,
+.landing-plan-price-row .landing-plan-note {
+  margin: 0;
+}
+
 /* THE PLAN BUTTON — POSITION, WIDTH AND SPACING, SET IN ONE PLACE.
-   Every value here is COPIED FROM THE CARD'S OWN CHILDREN, measured at 683px,
-   not chosen. Read the card before changing any of them:
+   Every value is COPIED FROM THE CARD'S OWN CHILDREN, measured at 652px:
      card padding        0px 0px 22px   — NO horizontal padding at all
      every child's inset 20px           — each child carries its own margin
-     the vertical ladder 20 / 6 / 2 / 16 / 4 — each element steps off the one above
+     the vertical ladder 20 / 6 / 2 / 16 — each element steps off the one above
    ⚠⚠ WIDTH: the button computes display:block, set outside this file, probably
    the Style panel. A block element fills its container whatever align-self says,
    so it was full-width before this rule existed — 610px on a 612px card. The flex
    column only made it visible. display:inline-block and width:auto are what fix
    it; align-self alone did NOT, and an earlier comment here wrongly said it did.
-   ⚠⚠ POSITION: 20px matches every sibling. An earlier version used 21px, measured
-   off the rendered left edge, which included the card's 1px border.
-   ⚠⚠ THE TOP GAP IS padding, NOT margin, AND THAT IS THE WHOLE TRICK. margin-top
-   is spent on `auto`, which is what pins the button to the foot of the card so the
-   four cards align whatever their copy does. A top margin would replace it and the
-   alignment would go. 16px matches the price's own step, the largest in the ladder.
-   ⚠ THE BOTTOM NEEDS NOTHING — the card's own padding-bottom:22px already gives 23px
-   under the button. Do not add a bottom margin here. */
+   ⚠⚠⚠ margin-top IS 16px, NOT auto, AND THAT REVERSES THE FIRST VERSION OF THIS
+   RULE. auto pinned the button to the card's foot so the four aligned whatever
+   their copy did — but it then ABSORBED ALL THE SLACK in a taller card, leaving
+   The Full Wardrobe's button floating with a gap above it. It is safe to drop
+   ONLY BECAUSE the S300 copy edit made all four cards the same height, so equal
+   cards align by construction. ▶ IF A PLAN'S DESCRIPTION EVER WRAPS TO TWO LINES
+   AGAIN, THE CARDS GO UNEQUAL AND THE BUTTONS STOP LINING UP ACROSS A ROW. Fix
+   the copy, not this rule.
+   ⚠ NO padding-top HERE. An earlier version put the 16px inside the pill, which
+   made it 48px tall with 16 above the label and 15 below — lopsided, and the gap
+   it was meant to create never appeared. The pill keeps the Designer's own padding.
+   ⚠ THE BOTTOM NEEDS NOTHING — the card's padding-bottom:22px already gives 23px
+   under the button. Do not add a bottom margin. */
 .landing-plan-card .landing-cta-primary {
-  margin-top: auto;
+  margin-top: 16px;
   margin-left: 20px;
-  padding-top: 16px;
   align-self: flex-start;
   display: inline-block;
   width: auto;
 }
-
