@@ -5680,6 +5680,8 @@ html.landing-motion .landing-wrap.blog-post-page .blog-post-related.is-in {
 .landing-plan-card .landing-cta-primary {
   margin-top: auto;
   align-self: flex-start;
+  display: inline-block;
+  width: auto;
 }
 
 
