@@ -52,8 +52,20 @@ var ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI
   }
 
   var GREET = {
-    cancelled: { sub: "Your membership won't renew. Reactivate anytime to pick up where you left off.", cta: "Reactivate",        mode: "manage",                  accent: false },
-    paused:    { sub: "Your membership is paused. Your credits are safe and waiting.",                  cta: "Resume membership", mode: "manage",                  accent: false },
+    // ⚠⚠ mode WAS "manage" UNTIL S300 AND IT WAS A FAKE DOOR. That branch removes the
+    // href and scrolls to the utility row's Manage Membership link, which opens the
+    // STRIPE PORTAL — and the portal cannot revive a cancelled subscription (switch-plans
+    // is off, and there is no subscription left to manage). So "Reactivate" flashed a
+    // control that could not reactivate anything. She found it live at S300.
+    // ⚠ /pricing IS THE DESTINATION because that page grew a members-only grid at S300:
+    // four cards carrying data-ms-price:update, rendered on data-ms-content="no-plans",
+    // i.e. exactly a logged-in member with no active plan. PROVEN END TO END S300 — a real
+    // Basics checkout wrote status cancelled -> active and plan null -> The Basics, with
+    // starter-pack credits correctly unmoved.
+    // ⚠ PAUSED KEEPS mode:"manage" ON PURPOSE. A paused member still HAS a subscription,
+    // so the portal is the right control for her. Do not "fix" both at once.
+    cancelled: { sub: "Your membership won't renew. Reactivate anytime to pick up where you left off.", cta: "Reactivate",        mode: "closet", href: "/pricing", accent: false },
+	paused:    { sub: "Your membership is paused. Your credits are safe and waiting.",                  cta: "Resume membership", mode: "manage",                  accent: false },
     capped:    { sub: cappedSub,                                                                        cta: "See what's new",    mode: "closet", href: "/browse", accent: false },
     expiring:  { sub: "Some credits are expiring soon. Don't let them slip away.",                       cta: "Browse the closet", mode: "closet", href: "/browse", accent: false },
     // ⚠⚠ "ready to spend" IS A DELIBERATE, NARROW EXCEPTION TO THE "ADDED TO YOUR BANK,
