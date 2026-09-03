@@ -5671,24 +5671,31 @@ html.landing-motion .landing-wrap.blog-post-page .blog-post-related.is-in {
   flex-direction: column;
 }
 
-/* ⚠ THE BUTTON'S WIDTH AND ITS POSITION ARE TWO SEPARATE PROBLEMS AND BOTH ARE
-   FIXED HERE. Measured, not derived, at 652px.
-   ⚠⚠ WIDTH: the button computes display:block — set somewhere outside this file,
-   probably the Style panel — and a block element fills its container whatever
-   align-self says. It was full-width before this rule existed too; making the
-   card a flex column only made it visible, at 610px on a 612px card.
-   display:inline-block and width:auto are what return it to its own label.
-   align-self alone did NOT fix it, and an earlier version of this comment said
-   it did. ALL THREE DECLARATIONS STAY.
-   ⚠⚠ POSITION: the card has NO horizontal padding — measured 0px 0px 22px. Every
-   other child carries its own indent and the button never had one, so it sat 1px
-   from the card edge while the heading sat at 21. 21px here is COPIED FROM THE
-   HEADING'S OWN MARGIN, not a shared value. If the card ever gains real padding,
-   DELETE this line rather than tuning it, or the button indents twice. */
+/* THE PLAN BUTTON — POSITION, WIDTH AND SPACING, SET IN ONE PLACE.
+   Every value here is COPIED FROM THE CARD'S OWN CHILDREN, measured at 683px,
+   not chosen. Read the card before changing any of them:
+     card padding        0px 0px 22px   — NO horizontal padding at all
+     every child's inset 20px           — each child carries its own margin
+     the vertical ladder 20 / 6 / 2 / 16 / 4 — each element steps off the one above
+   ⚠⚠ WIDTH: the button computes display:block, set outside this file, probably
+   the Style panel. A block element fills its container whatever align-self says,
+   so it was full-width before this rule existed — 610px on a 612px card. The flex
+   column only made it visible. display:inline-block and width:auto are what fix
+   it; align-self alone did NOT, and an earlier comment here wrongly said it did.
+   ⚠⚠ POSITION: 20px matches every sibling. An earlier version used 21px, measured
+   off the rendered left edge, which included the card's 1px border.
+   ⚠⚠ THE TOP GAP IS padding, NOT margin, AND THAT IS THE WHOLE TRICK. margin-top
+   is spent on `auto`, which is what pins the button to the foot of the card so the
+   four cards align whatever their copy does. A top margin would replace it and the
+   alignment would go. 16px matches the price's own step, the largest in the ladder.
+   ⚠ THE BOTTOM NEEDS NOTHING — the card's own padding-bottom:22px already gives 23px
+   under the button. Do not add a bottom margin here. */
 .landing-plan-card .landing-cta-primary {
   margin-top: auto;
-  margin-left: 21px;
+  margin-left: 20px;
+  padding-top: 16px;
   align-self: flex-start;
   display: inline-block;
   width: auto;
 }
+
