@@ -1891,7 +1891,14 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
      Loosen this to a bare .landing-teaser and the section intros lose
      their spacing too. */
   .landing-q .landing-teaser {
-    margin-top: -6px;
+    /* ⚠⚠ +5px AS OF S300, REVERSING THE −6 ABOVE. HERS, picked off a
+       display-only probe on her own phone at 417px. The comment above
+       still governs everything except the value: the −6 was spending
+       the toggle's slack to tighten the look, and against a TWO-LINE
+       question that left the teaser reading as a fourth line of the
+       heading. The 44px tap target is on the toggle and never moved.
+       DO NOT RESTORE −6px TO TIGHTEN THIS BLOCK. */
+    margin-top: 5px;
   }
 
   /* --- TEASER → ANSWER, LOOSER. HERS. -------------------------------
