@@ -400,7 +400,28 @@
     flex: 0 0 auto;
     width: 100%;
   }
+  .footer-section .footer-column {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+  /* ⚠⚠⚠ THE LINE-HEIGHT IS PINNED IN PIXELS HERE AND THAT IS THE WHOLE POINT.
+     The base rule's 2.6 is UNITLESS, so dropping the font to 14 would take the
+     row from 41.6 to 36.4 by arithmetic and quietly breach the 44px tap-target
+     floor this file protects. HER RULING S300 WAS SMALLER TEXT, SAME TARGETS —
+     not a shorter footer. 42px keeps the row where it was.
+     ⚠ CHANGE THE FONT SIZE HERE AND CHANGE THE LINE-HEIGHT WITH IT, or the
+     target shrinks with the type and nothing errors. */
+  .footer-section .footer-link,
+  .footer-section a.footer-link {
+    font-size: 14px;
+    line-height: 42px;
+  }
   .footer-section .footer-bottom {
+    margin-top: 32px;
+  }
+}
+   
+   .footer-section .footer-bottom {
     margin-top: 32px;
   }
 }
