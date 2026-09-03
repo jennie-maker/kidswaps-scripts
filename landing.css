@@ -5671,17 +5671,24 @@ html.landing-motion .landing-wrap.blog-post-page .blog-post-related.is-in {
   flex-direction: column;
 }
 
-/* ⚠ align-self IS NOT OPTIONAL AND THE FLEX COLUMN IS WHY. A flex container's
-   align-items defaults to STRETCH, so the button — inline-block and content-sized
-   while the card was display:block — went full-bleed at 610px the moment the card
-   became flex. The alignment fix caused it, and it shipped that way for one
-   commit. flex-start returns the button to its own label width.
-   ⚠ REMOVE align-self AND THE 610px BUTTON COMES BACK. */
+/* ⚠ THE BUTTON'S WIDTH AND ITS POSITION ARE TWO SEPARATE PROBLEMS AND BOTH ARE
+   FIXED HERE. Measured, not derived, at 652px.
+   ⚠⚠ WIDTH: the button computes display:block — set somewhere outside this file,
+   probably the Style panel — and a block element fills its container whatever
+   align-self says. It was full-width before this rule existed too; making the
+   card a flex column only made it visible, at 610px on a 612px card.
+   display:inline-block and width:auto are what return it to its own label.
+   align-self alone did NOT fix it, and an earlier version of this comment said
+   it did. ALL THREE DECLARATIONS STAY.
+   ⚠⚠ POSITION: the card has NO horizontal padding — measured 0px 0px 22px. Every
+   other child carries its own indent and the button never had one, so it sat 1px
+   from the card edge while the heading sat at 21. 21px here is COPIED FROM THE
+   HEADING'S OWN MARGIN, not a shared value. If the card ever gains real padding,
+   DELETE this line rather than tuning it, or the button indents twice. */
 .landing-plan-card .landing-cta-primary {
   margin-top: auto;
+  margin-left: 21px;
   align-self: flex-start;
   display: inline-block;
   width: auto;
 }
-
-
