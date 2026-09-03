@@ -1900,7 +1900,11 @@ html.landing-ready .landing-q.is-open .landing-answer-wrap {
        DO NOT RESTORE −6px TO TIGHTEN THIS BLOCK. */
     margin-top: 5px;
   }
-
+  /* the teaser is a click target as of S300 — landing.js fires its row's
+     toggle. Scoped for the same reason as the rule above: a bare
+     .landing-teaser puts a pointer cursor on the section intros, which
+     do nothing when clicked. */
+  .landing-q .landing-teaser { cursor: pointer; }
   /* --- TEASER → ANSWER, LOOSER. HERS. -------------------------------
      ⚠⚠⚠ THIS IS A MARGIN ON THE FIRST CHILD, NEVER ON .landing-answer.
      That element is the grid item inside a track that collapses to 0fr,
