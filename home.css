@@ -4120,3 +4120,75 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   z-index: 4;
   background: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png") center / contain no-repeat;
 }
+
+/* ═══ PHONE STAR PLACEMENTS — S303, HERS. 479 ONLY, DESKTOP UNTOUCHED. ═══
+   ⚠⚠⚠ WHY THESE ARE PSEUDO-ELEMENTS ON THE HEADING RATHER THAN POSITIONED
+       DIVS. Her ask is "tip touching the d, never covering a letter". A star
+       positioned at a fixed left/top cannot do that on a phone, because the
+       heading REWRAPS and the last letter moves. An inline-block ::after flows
+       after the final character by construction, so it lands beside the last
+       letter at every phone width and every wrap. The small negative margin is
+       what gives the layered overlap without eating a glyph.
+   ⚠⚠ THE REAL STAR DIVS ARE HIDDEN AT THIS WIDTH, not deleted — desktop still
+       uses them, and this whole block is inside the 479 query. */
+@media screen and (max-width: 479px) {
+
+  /* ── hero: star after "Childhood" ── */
+  .hero-section .home-hero-star-upper,
+  .hero-section .home-hero-star-lower { display: none !important; }
+  .hero-section .h1-light-leftaligned::after {
+    content: "";
+    display: inline-block;
+    vertical-align: -0.22em;
+    width: 68px;
+    height: 68px;
+    margin-left: -12px;
+    background: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png") center / contain no-repeat;
+  }
+
+  /* ── closet standard: big star after "purpose.", 30% smaller than 130 ── */
+  .closet-standard-star-two { display: none !important; }
+  .closet-standard-heading::after {
+    content: "";
+    display: inline-block;
+    vertical-align: -0.24em;
+    width: 91px;
+    height: 91px;
+    margin-left: -10px;
+    background: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png") center / contain no-repeat;
+  }
+
+  /* ── closet standard: small star on the guidelines button's top-left corner ── */
+  .closet-standard-star { display: none !important; }
+  .closet-standard-text .closet-standard-cta { position: relative; }
+  .closet-standard-text .closet-standard-cta::after {
+    content: "";
+    position: absolute;
+    left: -22px;
+    top: -22px;
+    width: 65px;
+    height: 65px;
+    pointer-events: none;
+    background: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png") center / contain no-repeat;
+  }
+
+  /* ── pricing: star after "pricing." in the heading ── */
+  .pricing-preview-section .pricing-preview-container::after { display: none !important; }
+  .pricing-preview-section .h2-light::after {
+    content: "";
+    display: inline-block;
+    vertical-align: -0.22em;
+    width: 84px;
+    height: 84px;
+    margin-left: -10px;
+    background: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png") center / contain no-repeat;
+  }
+
+  /* ── faq: 15% smaller, 84 -> 71 ── */
+  .faq-section .faq-photo-panel::after {
+    width: 71px;
+    height: 71px;
+    right: -28px;
+    top: -28px;
+  }
+}
