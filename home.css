@@ -138,7 +138,7 @@
      The pink is a placeholder colour, NOT a ruling; both stars share it deliberately so
      the mockup's two-colour version is not mistaken for a decision. */
   aspect-ratio: 1 / 1;
-  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
+  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -158,6 +158,12 @@
    rather than a percentage that drifts as the card narrows. Desktop only by construction:
    the 991 block hides this star outright. */
 .hero-section .home-hero-star-lower {
+  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");   /* BIG star = the face one. The shared rule
+                                    above sets the PLAIN star for its small
+                                    twin, so this line is what splits them.
+                                    Her rule, S303: a big star has a face, a
+                                    small one does not, because at small sizes
+                                    the face is unreadable anyway. */
   width: 66px;
   top: 63%;
   left: calc(54% - 75px);
@@ -974,8 +980,8 @@
   z-index: 3;
   top: 244px;
   left: 248px;
-  width: 76px;
-  height: 76px;
+  width: 61px;
+  height: 61px;
   pointer-events: none;
   background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
   background-size: contain;
@@ -1142,8 +1148,8 @@
   .closet-preview-star {
     top: 184px;
     left: 176px;
-    width: 62px;
-    height: 62px;
+    width: 50px;
+    height: 50px;
   }
   .closet-preview-grid {
     gap: 16px;
@@ -1192,9 +1198,9 @@
     display: block;
     top: 155px;
     left: 125px;
-    width: 44px;
-    height: 44px;
-    background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
+    width: 35px;
+    height: 35px;
+    background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
   }
   .closet-preview-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -1255,10 +1261,11 @@
     padding: 34px 20px 0;
   }
   .closet-preview-star {
-    top: 96px;
-    left: 152px;
-    width: 128px;
-    height: 128px;
+    top: 104px;
+    left: 150px;
+    width: 102px;
+    height: 102px;
+    background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
   }
   .closet-preview-eyebrow {
     font-size: 19px;
@@ -1372,7 +1379,7 @@
   width: 46px;
   height: 46px;
   pointer-events: none;
-  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
+  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -1757,10 +1764,10 @@
   grid-row: 1;
   justify-self: end;
   align-self: end;
-  width: 34px;
-  height: 34px;
+  width: 84px;
+  height: 84px;
   margin-bottom: 6px;
-  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
+  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -2758,7 +2765,7 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
     width: 44px;
     right: 28px;
     bottom: calc(48px + var(--faq-photo-height) - 22px);
-    background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
+    background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
   }
 
   .faq-section .faq-heading {
@@ -3146,7 +3153,7 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
 .instagram-preview-star-lower {
   position: absolute;
   pointer-events: none;
-  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
+  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
