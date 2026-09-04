@@ -4122,15 +4122,19 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
 }
 
 /* ═══ PHONE STAR PLACEMENTS — S303, HERS. 479 ONLY, DESKTOP UNTOUCHED. ═══
-   ⚠⚠⚠ WHY THESE ARE PSEUDO-ELEMENTS ON THE HEADING RATHER THAN POSITIONED
-       DIVS. Her ask is "tip touching the d, never covering a letter". A star
-       positioned at a fixed left/top cannot do that on a phone, because the
-       heading REWRAPS and the last letter moves. An inline-block ::after flows
-       after the final character by construction, so it lands beside the last
-       letter at every phone width and every wrap. The small negative margin is
-       what gives the layered overlap without eating a glyph.
-   ⚠⚠ THE REAL STAR DIVS ARE HIDDEN AT THIS WIDTH, not deleted — desktop still
-       uses them, and this whole block is inside the 479 query. */
+   ⚠⚠⚠ THE STARS MUST NOT ADD HEIGHT TO THE LINE THEY SIT ON. First attempt used
+       a plain inline-block ::after, which works for placement — it flows after the
+       final character, so it finds the last letter whatever the heading wraps to —
+       but an inline box CONTRIBUTES ITS HEIGHT TO THE LINE BOX, so an 84px star in
+       a 40px line opened a huge gap between the heading's lines. She caught it on
+       the phone immediately.
+   ✅ THE FIX: the ::after stays inline so it still lands after the last letter, but
+       is given width:0 / height:0 so it adds nothing to the line, and the artwork is
+       drawn as an ABSOLUTELY POSITIONED box hung off it. Absolute boxes are out of
+       flow and cannot affect line height. The heading needs position:relative for
+       nothing — the star is positioned against the ::after's own zero-size box.
+   ⚠ DO NOT "SIMPLIFY" THIS BACK TO A SIZED INLINE-BLOCK. That is the version that
+       broke the line heights. */
 @media screen and (max-width: 479px) {
 
   /* ── hero: star after "Childhood" ── */
@@ -4139,56 +4143,69 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   .hero-section .h1-light-leftaligned::after {
     content: "";
     display: inline-block;
-    vertical-align: -0.22em;
-    width: 68px;
-    height: 68px;
-    margin-left: -12px;
     background: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png") center / contain no-repeat;
+    width: 68px; height: 68px;
+    position: absolute;
+    margin-left: -14px;
+    margin-top: -0.72em;
   }
 
-  /* ── closet standard: big star after "purpose.", 30% smaller than 130 ── */
+  /* ── closet standard: big star after "purpose." ── */
   .closet-standard-star-two { display: none !important; }
   .closet-standard-heading::after {
     content: "";
+    position: absolute;
     display: inline-block;
-    vertical-align: -0.24em;
-    width: 91px;
-    height: 91px;
-    margin-left: -10px;
     background: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png") center / contain no-repeat;
+    width: 91px; height: 91px;
+    margin-left: -12px;
+    margin-top: -0.74em;
   }
 
-  /* ── closet standard: small star on the guidelines button's top-left corner ── */
+  /* ── closet standard: small star on the guidelines button, 20% smaller (65 -> 52) ── */
   .closet-standard-star { display: none !important; }
   .closet-standard-text .closet-standard-cta { position: relative; }
   .closet-standard-text .closet-standard-cta::after {
     content: "";
     position: absolute;
-    left: -22px;
-    top: -22px;
-    width: 65px;
-    height: 65px;
+    left: -16px; top: -16px;
+    width: 52px; height: 52px;
     pointer-events: none;
     background: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png") center / contain no-repeat;
   }
 
-  /* ── pricing: star after "pricing." in the heading ── */
+  /* ── pricing: star after "pricing." ── */
   .pricing-preview-section .pricing-preview-container::after { display: none !important; }
   .pricing-preview-section .h2-light::after {
     content: "";
+    position: absolute;
     display: inline-block;
-    vertical-align: -0.22em;
-    width: 84px;
-    height: 84px;
-    margin-left: -10px;
     background: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png") center / contain no-repeat;
+    width: 84px; height: 84px;
+    margin-left: -12px;
+    margin-top: -0.72em;
   }
 
-  /* ── faq: 15% smaller, 84 -> 71 ── */
+  /* ── faq: 15% smaller ── */
   .faq-section .faq-photo-panel::after {
-    width: 71px;
-    height: 71px;
-    right: -28px;
-    top: -28px;
+    width: 71px; height: 71px;
+    right: -28px; top: -28px;
+  }
+
+  /* ── instagram: bottom star 20% smaller (62 -> 50) ── */
+  .instagram-preview-star-lower {
+    width: 50px !important; height: 50px !important;
+  }
+
+  /* ── instagram: top star hangs off the top-left of the heading's first letter ── */
+  .instagram-preview-star-upper { display: none !important; }
+  .instagram-preview-section .instagram-preview-heading { position: relative; }
+  .instagram-preview-section .instagram-preview-heading::before {
+    content: "";
+    position: absolute;
+    left: -18px; top: -22px;
+    width: 48px; height: 48px;
+    pointer-events: none;
+    background: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png") center / contain no-repeat;
   }
 }
