@@ -1194,6 +1194,7 @@
     left: 125px;
     width: 44px;
     height: 44px;
+    background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
   }
   .closet-preview-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -1254,10 +1255,10 @@
     padding: 34px 20px 0;
   }
   .closet-preview-star {
-    top: 132px;
-    left: 103px;
-    width: 38px;
-    height: 38px;
+    top: 96px;
+    left: 152px;
+    width: 128px;
+    height: 128px;
   }
   .closet-preview-eyebrow {
     font-size: 19px;
@@ -1423,6 +1424,7 @@
     bottom: 74px;
     width: 38px;
     height: 38px;
+    background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
   }
 
   .closet-standard-star-two {
@@ -1474,6 +1476,7 @@
     bottom: 78px;
     width: 34px;
     height: 34px;
+    background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
   }
 
   .closet-standard-star-two {
@@ -1504,17 +1507,18 @@
   }
 
   .closet-standard-star {
-    right: 24px;
-    bottom: 66px;
-    width: 30px;
-    height: 30px;
+    left: 4px;
+    right: auto;
+    bottom: 34px;
+    width: 92px;
+    height: 92px;
   }
 
   .closet-standard-star-two {
-    right: 20px;
-    top: 58px;
-    width: 42px;
-    height: 42px;
+    right: 72px;
+    top: 88px;
+    width: 100px;
+    height: 100px;
   }
 
 }
@@ -1756,7 +1760,7 @@
   width: 34px;
   height: 34px;
   margin-bottom: 6px;
-  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
+  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -2033,9 +2037,15 @@
     grid-row: 3;
     justify-self: end;
     align-self: center;
-    width: 26px;
-    height: 26px;
+    width: 130px;
+    height: 130px;
     margin-bottom: 0;
+    margin-right: 24px;
+    margin-block: -46px;              /* S303: the star is a GRID ITEM, so its
+                                         height sets the row height. Without this
+                                         a 130px star opens ~100px of green under
+                                         the button. Negative block margin lets it
+                                         overflow its own row instead. */
   }
 
   .pricing-preview-section .pricing-cards-row {
@@ -2748,6 +2758,7 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
     width: 44px;
     right: 28px;
     bottom: calc(48px + var(--faq-photo-height) - 22px);
+    background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
   }
 
   .faq-section .faq-heading {
@@ -3149,7 +3160,8 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   left: 46px;
   width: 34px;
   height: 34px;
-}
+    background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
+  }
 
 .instagram-preview-star-lower {
   right: 38px;
@@ -3252,12 +3264,14 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
     left: 30px;
     width: 30px;
     height: 30px;
+    background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
   }
   .instagram-preview-star-lower {
     right: 26px;
     bottom: 72px;
     width: 44px;
     height: 44px;
+    background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
   }
   .instagram-preview-ribbon {
     --ribbon-gap: 22px;
@@ -3291,6 +3305,7 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
     right: 18px;
     width: 26px;
     height: 26px;
+    background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
   }
   /* ⚠⚠⚠ THE PHONE RIBBON IS TALLER THAN THE OTHER TWO, ON PURPOSE — v47 (S253),
      HERS, OFF A LIVE PHONE RENDER WHERE THE FOOTER CREAM SHOWED ABOVE THE BAND.
