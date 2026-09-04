@@ -4081,3 +4081,42 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
     background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
   }
 }
+
+/* ─── S303: TWO STARS DRAWN ON THE ELEMENT THEY BELONG TO, NOT POSITIONED NEAR IT.
+   ⚠⚠⚠ WHY IT IS DONE THIS WAY. Both of these kept drifting when nudged, because
+       their left/top are measured from the SECTION, so a value that looks right at
+       one width is wrong at every other. The obvious fix — make the neighbour
+       position:relative — DOES NOT WORK: the star is not a child of the neighbour,
+       and CSS cannot reparent an element. So the real star is hidden and an
+       identical one is drawn as a ::after on the neighbour itself, which anchors
+       it by construction at every width. ─── */
+
+/* hero small star: left of the Trial for free button */
+.hero-section .home-hero-star-lower { display: none; }
+.hero-section .hero-buttons { position: relative; }
+.hero-section .hero-buttons::after {
+  content: "";
+  position: absolute;
+  left: -44px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 33px;
+  height: 33px;
+  pointer-events: none;
+  background: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png") center / contain no-repeat;
+}
+
+/* FAQ star: top right corner of the photo panel */
+.faq-section .faq-star { display: none; }
+.faq-section .faq-photo-panel { position: relative; }
+.faq-section .faq-photo-panel::after {
+  content: "";
+  position: absolute;
+  right: -34px;
+  top: -34px;
+  width: 84px;
+  height: 84px;
+  pointer-events: none;
+  z-index: 4;
+  background: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png") center / contain no-repeat;
+}
