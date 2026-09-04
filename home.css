@@ -4116,6 +4116,7 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   top: -34px;
   width: 84px;
   height: 84px;
+  rotate: var(--ks-star-rot, 0deg);
   pointer-events: none;
   z-index: 4;
   background: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png") center / contain no-repeat;
@@ -4144,9 +4145,10 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
     content: "";
     display: inline-block;
     background: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png") center / contain no-repeat;
-    width: 68px; height: 68px;
+    width: 58px; height: 58px;
     position: absolute;
-    margin-left: -14px;
+    rotate: var(--ks-star-rot, 0deg);
+    margin-left: -12px;
     margin-top: -0.72em;
   }
 
@@ -4158,6 +4160,7 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
     display: inline-block;
     background: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png") center / contain no-repeat;
     width: 91px; height: 91px;
+    rotate: var(--ks-star-rot, 0deg);
     margin-left: -12px;
     margin-top: -0.74em;
   }
@@ -4170,6 +4173,7 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
     position: absolute;
     left: -16px; top: -16px;
     width: 52px; height: 52px;
+    rotate: var(--ks-star-rot, 0deg);
     pointer-events: none;
     background: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png") center / contain no-repeat;
   }
@@ -4182,6 +4186,7 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
     display: inline-block;
     background: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png") center / contain no-repeat;
     width: 84px; height: 84px;
+    rotate: var(--ks-star-rot, 0deg);
     margin-left: -12px;
     margin-top: -0.72em;
   }

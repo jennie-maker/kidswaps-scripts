@@ -491,14 +491,32 @@
        hidden element is a no-op rather than a throw. Do NOT "fix" it by removing
        the entry; the desktop star would stop turning. */
     { sel: '.instagram-preview-star-upper', rate:  0.052 },
-    { sel: '.instagram-preview-star-lower', rate: -0.084 }
+    { sel: '.instagram-preview-star-lower', rate: -0.084 },
+
+    /* ─── S303: THE PHONE STARS ARE ::after PSEUDO-ELEMENTS AND JS CANNOT REACH
+       THEM. Below 479 most of the real star divs are hidden and the artwork is
+       drawn as a pseudo-element on the heading (or button) it sits beside, because
+       that is the only thing that lands the star after the LAST LETTER whatever the
+       heading wraps to. A pseudo-element is not in the DOM, so `el.style.rotate`
+       has nothing to write to and those stars stopped turning.
+       ✅ THE FIX: for these entries the loop writes a CUSTOM PROPERTY on the HOST
+       instead, and the ::after rule reads `rotate: var(--ks-star-rot)`. A custom
+       property inherits to the pseudo-element; a rotate written on the host itself
+       would spin the HEADING, which is why `prop: true` exists rather than reusing
+       the same line.
+       ⚠ EACH KEEPS ITS OWN RATE AND SIGN, same rule as the eight above. ─── */
+    { sel: '.hero-section .h1-light-leftaligned', rate:  0.060, prop: true },
+    { sel: '.closet-standard-heading',            rate:  0.090, prop: true },
+    { sel: '.closet-standard-text .closet-standard-cta', rate: -0.055, prop: true },
+    { sel: '.pricing-preview-section .h2-light',  rate:  0.068, prop: true },
+    { sel: '.faq-section .faq-photo-panel',       rate: -0.070, prop: true }
   ];
 
   function startSpin() {
     var nodes = [], i, el;
     for (i = 0; i < SPIN.length; i++) {
       el = document.querySelector(SPIN[i].sel);
-      if (el) nodes.push({ el: el, rate: SPIN[i].rate });
+      if (el) nodes.push({ el: el, rate: SPIN[i].rate, prop: SPIN[i].prop });
     }
     if (!nodes.length) return;
 
@@ -508,7 +526,13 @@
       ticking = false;
       var y = window.pageYOffset || document.documentElement.scrollTop || 0, k;
       for (k = 0; k < nodes.length; k++) {
-        nodes[k].el.style.rotate = (y * nodes[k].rate).toFixed(2) + 'deg';
+        var deg = (y * nodes[k].rate).toFixed(2) + 'deg';
+        if (nodes[k].prop) {
+          /* pseudo-element host: set the variable, NEVER rotate the host itself */
+          nodes[k].el.style.setProperty('--ks-star-rot', deg);
+        } else {
+          nodes[k].el.style.rotate = deg;
+        }
       }
     }
 
