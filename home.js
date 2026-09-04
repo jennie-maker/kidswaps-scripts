@@ -473,8 +473,18 @@
      styles per event is a scroll-jank generator on a phone; this coalesces to
      one write per frame and never blocks the scroll itself. */
   var SPIN = [
-    { sel: '.home-hero-star-upper',     rate:  0.060 },
-    { sel: '.home-hero-star-lower',     rate: -0.045 },
+    /* S304: `off` is a STARTING ANGLE in degrees, added to the scroll-derived value so
+       the star is already turned at the top of the page. It CANNOT be done in CSS —
+       paint() runs once at load and writes an inline `rotate:` immediately, and inline
+       beats any stylesheet rule, so a CSS rotation here would verify clean and do
+       nothing. 108deg is 30% of a full turn, hers. */
+    { sel: '.home-hero-star-upper',     rate:  0.060, off: 108 },
+    /* S304: WAS '.home-hero-star-lower', WHICH IS display:none AND HAS BEEN SINCE S303 —
+       so this entry was writing a rotation to a hidden div and the star the member
+       actually sees, drawn as .hero-buttons::after, never turned. prop:true because a
+       pseudo-element is not in the DOM: home.js writes --ks-star-rot on the HOST and the
+       ::after reads it. Rotating the host itself would spin both buttons. */
+    { sel: '.hero-section .hero-buttons', rate: -0.045, prop: true },
     { sel: '.closet-preview-star',      rate:  0.075 },
     { sel: '.closet-standard-star',     rate: -0.055 },
     { sel: '.closet-standard-star-two', rate:  0.090 },
@@ -516,7 +526,7 @@
     var nodes = [], i, el;
     for (i = 0; i < SPIN.length; i++) {
       el = document.querySelector(SPIN[i].sel);
-      if (el) nodes.push({ el: el, rate: SPIN[i].rate, prop: SPIN[i].prop });
+      if (el) nodes.push({ el: el, rate: SPIN[i].rate, prop: SPIN[i].prop, off: SPIN[i].off });
     }
     if (!nodes.length) return;
 
@@ -526,7 +536,7 @@
       ticking = false;
       var y = window.pageYOffset || document.documentElement.scrollTop || 0, k;
       for (k = 0; k < nodes.length; k++) {
-        var deg = (y * nodes[k].rate).toFixed(2) + 'deg';
+        var deg = (y * nodes[k].rate + (nodes[k].off || 0)).toFixed(2) + 'deg';
         if (nodes[k].prop) {
           /* pseudo-element host: set the variable, NEVER rotate the host itself */
           nodes[k].el.style.setProperty('--ks-star-rot', deg);

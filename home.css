@@ -144,14 +144,21 @@
   background-position: center;
 }
 
+/* S304, HERS: 15% SMALLER. 121 -> 103 (121 x 0.85 = 102.85). The top moved 74 -> 83
+   with it, CLAUDE'S CALL AND ONE NUMBER TO REVERT: the box is centred horizontally by
+   translateX(-50%) but its TOP edge is fixed, so shrinking alone would have lifted the
+   star 9px up the headline. +9 keeps the optical centre exactly where she approved it.
+   The 991 and 767 blocks restate width and top but NOT height, which is correct and
+   needs no edit: those widths are unchanged and the box is centred on its own top
+   value by translateY(-50%), so a taller box moves nothing on screen. */
 .hero-section .home-hero-star-upper {
   transform: translateX(-50%);
   left: 538px;
-  top: 74px;
+  top: 83px;
   right: auto;
   bottom: auto;
-  width: 121px;
-  height: 121px;
+  width: 103px;
+  height: 103px;
   background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
 }
 
@@ -1379,18 +1386,26 @@
   color: #EDECE0;
 }
 
+/* S304, HERS: 20% SMALLER. 65 -> 52. This is the star overlapping the See the
+   guidelines CTA — confirmed live S304, not by name: it measures left 590 / top 581
+   against a CTA at left 619 / top 606, while .closet-standard-star-two sits 330px away
+   and is untouched. left and top each moved +7 (half the 13px lost) so the star shrinks
+   IN PLACE and keeps the same overlap with the button. Its containing block is NOT the
+   section — the rule says left:35 where the live rect reads 590 — so these are relative
+   nudges and must never be recomputed from a section-relative measurement.
+   The 991 / 767 / 479 blocks all restate this rule, so this change is desktop only. */
 .closet-standard-star {
   position: absolute;
   pointer-events: none;
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
-  left: 35px;
-  top: 581px;
+  left: 42px;
+  top: 588px;
   right: auto;
   bottom: auto;
-  width: 65px;
-  height: 65px;
+  width: 52px;
+  height: 52px;
   background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
 }
 
@@ -1776,18 +1791,30 @@
    is the cost of the move: it needs one size per breakpoint instead of none.
    ⚠ THE .pricing-heading-star DIV IS STILL DELETED FROM THE DESIGNER. */
 
+/* S304, HERS: THE STAR MOVES RIGHT AND FLOATS BESIDE THE LEARN MORE BUTTON.
+   ⚠⚠⚠ ANCHORED FROM THE RIGHT EDGE, NEVER A NEW `left`. THERE IS NO 991 OVERRIDE ON
+      THIS RULE — the next one down is 767 — so a fixed left:930 holds at 1240 and hangs
+      the star off the container between 768 and 991, where the container is ~300px
+      narrower. The button is justify-self:end, so right-anchoring keeps the SAME gap
+      from it at every width and cannot drift out of step with a breakpoint. Measured
+      live S304: container 1240 wide, button left 1028 w152, i.e. 60px off the right
+      edge; 228 puts a 16px gap between the star and the button.
+   ⚠ top:52 centres it on the button (button 73 + 44/2 = 95; star 52 + 84/2 = 94).
+   ⚠⚠ pointer-events:none IS NEW AND IS NOT COSMETIC. This rule never had it, and the
+      star now sits inches from a live CTA. */
 .pricing-preview-section .pricing-preview-container::after {
   content: "";
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
-  left: 485px;
-  top: 73px;
-  right: auto;
+  left: auto;
+  top: 52px;
+  right: 228px;
   bottom: auto;
   width: 84px;
   height: 84px;
   position: absolute;
+  pointer-events: none;
   margin: 0;
   background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
 }
@@ -4094,14 +4121,31 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
 /* hero small star: left of the Trial for free button */
 .hero-section .home-hero-star-lower { display: none; }
 .hero-section .hero-buttons { position: relative; }
+/* S304, HERS: THE STAR OVERLAPS THE TOP-LEFT CORNER OF "Trial for free".
+   ⚠⚠ top:50% AND transform:translateY(-50%) ARE DELETED, NOT OVERRIDDEN. They centred
+      it on the row and are the whole reason it sat beside the button; leaving either in
+      fights the new offsets. The button is the FIRST child of .hero-buttons (read live
+      S304), so the row's own 0,0 IS that corner, and -16/-16 lands a 33px star centred
+      on it with half of it over the pill.
+   ⚠⚠⚠ IT PAINTS OVER THE BUTTON BECAUSE A ::after IS THE LAST CHILD OF ITS PARENT'S
+      STACKING CONTEXT. No z-index is set and none should be — adding one here is how
+      the scrim/header fault happened elsewhere. pointer-events:none is what stops a
+      sticker eating a click on the page's primary CTA.
+   ⚠⚠ IT SPINS AS OF S304 AND IT DID NOT BEFORE. home.js was writing this star's
+      rotation to .home-hero-star-lower, which is display:none at line ~4095, so the
+      instruction landed on nothing and this was the one still star on the page. The
+      var is read here; home.js now writes it to .hero-buttons. `rotate:` NEVER
+      `transform: rotate()` — a transform here would delete the positioning.
+   ⚠ NO BREAKPOINT RULE GOVERNS THIS ELEMENT, so this reaches every width. The 479
+      block restates the old beside-the-row values to leave her approved phone alone. */
 .hero-section .hero-buttons::after {
   content: "";
   position: absolute;
-  left: -44px;
-  top: 50%;
-  transform: translateY(-50%);
+  left: -16px;
+  top: -16px;
   width: 33px;
   height: 33px;
+  rotate: var(--ks-star-rot, 0deg);
   pointer-events: none;
   background: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png") center / contain no-repeat;
 }
@@ -4137,6 +4181,17 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
    ⚠ DO NOT "SIMPLIFY" THIS BACK TO A SIZED INLINE-BLOCK. That is the version that
        broke the line heights. */
 @media screen and (max-width: 479px) {
+
+  /* S304: THE HERO BUTTON STAR KEEPS ITS PHONE POSITION. The S304 desktop move puts it
+     on the button's top-left corner at every width because that rule is top level with
+     no breakpoint gate. Her phone was approved at S303 with the star BESIDE the row, so
+     the old values are restated here verbatim. This block sits after the top-level rule,
+     so it wins on source order at equal specificity. DELETE THIS AND THE PHONE MOVES. */
+  .hero-section .hero-buttons::after {
+    left: -44px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
 
   /* ── hero: star after "Childhood" ── */
   .hero-section .home-hero-star-upper,
