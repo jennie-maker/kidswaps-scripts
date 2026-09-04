@@ -142,20 +142,17 @@
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
-  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
-  /* ⚠⚠ THIS PAIR WAS SWAPPED AND SWAPPED BACK AT S303 AND THE APPROVED STATE IS
-     THIS ONE: the SHARED rule above serves the PLAIN star, and `lower` overrides
-     to the FACE star here. She approved the hero looking this way; a later commit
-     reversed both and she rejected it on sight. DO NOT "CORRECT" IT AGAIN ON THE
-     STRENGTH OF THE ELEMENT NAMES — they describe position in the original
-     desktop design, not size, and reasoning from them is what caused the swap. */
 }
 
 .hero-section .home-hero-star-upper {
-  width: 104px;
-  top: 13%;
-  left: 54%;
   transform: translateX(-50%);
+  left: 468px;
+  top: 74px;
+  right: auto;
+  bottom: auto;
+  width: 121px;
+  height: 121px;
+  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
 }
 
 /* HER RULING S233, off the live desktop render: the two stars must NOT sit perfectly
@@ -165,16 +162,14 @@
    rather than a percentage that drifts as the card narrows. Desktop only by construction:
    the 991 block hides this star outright. */
 .hero-section .home-hero-star-lower {
-  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");   /* BIG star = the face one. The shared rule
-                                    above sets the PLAIN star for its small
-                                    twin, so this line is what splits them.
-                                    Her rule, S303: a big star has a face, a
-                                    small one does not, because at small sizes
-                                    the face is unreadable anyway. */
-  width: 66px;
-  top: 63%;
-  left: calc(54% - 75px);
   transform: translateX(-50%);
+  left: 318px;
+  top: 432px;
+  right: auto;
+  bottom: auto;
+  width: 33px;
+  height: 33px;
+  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
 }
 
 /* ---- THE BRAND MARQUEE -------------------------------------------------- */
@@ -985,15 +980,17 @@
 .closet-preview-star {
   position: absolute;
   z-index: 3;
-  top: 229px;
-  left: 248px;
-  width: 110px;
-  height: 110px;
   pointer-events: none;
-  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
+  left: 248px;
+  top: 229px;
+  right: auto;
+  bottom: auto;
+  width: 110px;
+  height: 110px;
+  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
 }
 
 /* CARDS 2 AND 4 GET A SHORTER PHOTO BOX THAN 1 AND 3 — HER RULING S238, to break
@@ -1155,8 +1152,8 @@
   .closet-preview-star {
     top: 184px;
     left: 176px;
-    width: 50px;
-    height: 50px;
+    width: 62px;
+    height: 62px;
   }
   .closet-preview-grid {
     gap: 16px;
@@ -1205,9 +1202,9 @@
     display: block;
     top: 155px;
     left: 125px;
-    width: 35px;
-    height: 35px;
-    background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
+    width: 44px;
+    height: 44px;
+    background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
   }
   .closet-preview-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -1268,10 +1265,13 @@
     padding: 34px 20px 0;
   }
   .closet-preview-star {
-    top: 104px;
     left: 100px;
+    top: 104px;
+    right: auto;
+    bottom: auto;
     width: 110px;
     height: 110px;
+    display: block;
     background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
   }
   .closet-preview-eyebrow {
@@ -1381,28 +1381,32 @@
 
 .closet-standard-star {
   position: absolute;
-  left: 336px;
-  bottom: 92px;
-  width: 46px;
-  height: 46px;
   pointer-events: none;
-  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
+  left: 35px;
+  top: 581px;
+  right: auto;
+  bottom: auto;
+  width: 65px;
+  height: 65px;
+  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
 }
 
 .closet-standard-star-two {
   position: absolute;
-  right: 104px;
-  top: 128px;
-  width: 78px;
-  height: 78px;
   pointer-events: none;
-  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
+  left: 365px;
+  top: 248px;
+  right: auto;
+  bottom: auto;
+  width: 82px;
+  height: 82px;
+  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
 }
 
 @media screen and (max-width: 991px) {
@@ -1521,18 +1525,25 @@
   }
 
   .closet-standard-star {
-    left: 4px;
+    left: 161px;
+    top: 318px;
     right: auto;
-    bottom: 34px;
-    width: 92px;
-    height: 92px;
+    bottom: auto;
+    width: 65px;
+    height: 65px;
+    display: block;
+    background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
   }
 
   .closet-standard-star-two {
-    right: 72px;
-    top: 88px;
-    width: 100px;
-    height: 100px;
+    left: 133px;
+    top: 96px;
+    right: auto;
+    bottom: auto;
+    width: 130px;
+    height: 130px;
+    display: block;
+    background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
   }
 
 }
@@ -1767,17 +1778,18 @@
 
 .pricing-preview-section .pricing-preview-container::after {
   content: "";
-  grid-column: 2;
-  grid-row: 1;
-  justify-self: end;
-  align-self: end;
-  width: 84px;
-  height: 84px;
-  margin-bottom: 6px;
-  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
+  left: 485px;
+  top: 103px;
+  right: auto;
+  bottom: auto;
+  width: 84px;
+  height: 84px;
+  position: absolute;
+  margin: 0;
+  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
 }
 
 .pricing-preview-section .pricing-preview-container > .footer-tagline-dark {
@@ -2457,18 +2469,21 @@
   position: absolute;
   z-index: 3;
   pointer-events: none;
-  width: 68px;
   aspect-ratio: 1 / 1;
-  top: 56px;
   /* v43: MIRRORED WITH THE PHOTO. Identical arithmetic, measured from the other
      edge. ⚠⚠ THE 991 BLOCK MUST SET `left: auto` — it sets its own `right`, and
      a star carrying BOTH offsets plus a width is over-constrained and lands in
      the wrong place with nothing erroring. */
-  left: calc(var(--faq-gutter) + (100% - var(--faq-gutter) * 2) * 0.38 - 34px);
-  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
+  left: 471px;
+  top: 54px;
+  right: auto;
+  bottom: auto;
+  width: 84px;
+  height: 84px;
+  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
 }
 
 /* ---- TYPE --------------------------------------------------------------- */
@@ -2772,7 +2787,7 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
     width: 44px;
     right: 28px;
     bottom: calc(48px + var(--faq-photo-height) - 22px);
-    background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
+    background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
   }
 
   .faq-section .faq-heading {
@@ -3160,21 +3175,29 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
 .instagram-preview-star-lower {
   position: absolute;
   pointer-events: none;
-  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
+  left: 1158px;
+  top: 170px;
+  right: auto;
+  bottom: auto;
+  width: 55px;
+  height: 55px;
+  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
 }
 
 /* THE FOUR OFFSETS AND THE TWO SIZES ARE CLAUDE'S CALL, REVERSIBLE, one number
    each. They are kept OFF the type rather than crossing it, because the heading
    is short and the grid starts directly beneath it. */
 .instagram-preview-star-upper {
-  top: -4px;
-  left: 46px;
-  width: 34px;
-  height: 34px;
-    background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
+  left: 35px;
+  top: 47px;
+  right: auto;
+  bottom: auto;
+  width: 48px;
+  height: 48px;
+  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
   }
 
 .instagram-preview-star-lower {
@@ -4013,5 +4036,48 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   .faq-section.faq-page .faq-cta-button,
   .faq-section.faq-page .faq-cta-button:visited {
     margin: 0 0 40px 20px;
+  }
+}
+
+/* ─── STAR PLACEMENTS AT PHONE WIDTH — S303, HERS, PLACED BY DRAGGING ON THE
+       LIVE PAGE AT 390px AND READ BACK, NOT ESTIMATED. These four rules did not
+       exist before; the other five were edited in place above.
+   ⚠⚠ THE HERO PAIR ARE NAMED FOR THEIR POSITION IN THE ORIGINAL DESKTOP
+       DESIGN, NEVER THEIR SIZE — `upper` is the big one. Reasoning from the
+       names is what caused three wrong swaps in one session. And the SHARED
+       rule `.hero-section .home-hero-star-upper, .hero-section .home-hero-star-lower`
+       ends with the lower selector, so a naive text search for
+       `.hero-section .home-hero-star-lower {` matches the SHARED rule first and
+       edits both stars. MATCH ON THE RULE'S OWN LINE, NOT ON A SUBSTRING. ─── */
+@media screen and (max-width: 479px) {
+  .hero-section .home-hero-star-upper {
+    display: block;
+    left: 233px; top: 320px; right: auto; bottom: auto;
+    width: 68px; height: 68px;
+    background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
+  }
+  .hero-section .home-hero-star-lower {
+    display: block;
+    left: 251px; top: 462px; right: auto; bottom: auto;
+    width: 33px; height: 33px;
+    background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
+  }
+  .faq-section .faq-star {
+    display: block;
+    left: 199px; top: 122px; right: auto; bottom: auto;
+    width: 84px; height: 84px;
+    background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
+  }
+  .instagram-preview-star-lower {
+    display: block;
+    left: 325px; top: 387px; right: auto; bottom: auto;
+    width: 62px; height: 62px;
+    background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
+  }
+  .pricing-preview-section .pricing-preview-container::after {
+    left: 187px; top: 193px; right: auto; bottom: auto;
+    width: 84px; height: 84px;
+    margin: 0;
+    background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
   }
 }
