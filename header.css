@@ -478,16 +478,9 @@
 .header-drawer-legal {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;            /* S303, hers. Labels sit against the RIGHT
-                                       edge of the drawer, inside a right thumb's
-                                       arc. Links still SHRINK to their own label
-                                       (that is what flex-end preserves), so the
-                                       neutral scroll column survives — it simply
-                                       moves to the LEFT of the drawer. Reverting
-                                       to flex-start puts the labels back on the
-                                       far edge from the thumb; reverting to
-                                       stretch is the S228 bug, where a scroll
-                                       touch lands inside a full-width anchor. */
+  align-items: flex-start;          /* load-bearing: without this every link
+                                       stretches the full drawer width and there
+                                       is nowhere neutral to start a scroll */
 }
 
 .header-drawer-nav     { gap: 2px; padding-bottom: 14px; }
@@ -497,13 +490,8 @@
 
 .header-drawer-social  { padding: 4px 0 14px; }
 
-.header-drawer-legal   { flex-direction: row; justify-content: flex-end;
-                         gap: 16px; padding-top: 14px;
+.header-drawer-legal   { flex-direction: row; gap: 16px; padding-top: 14px;
                          border-top: 1px solid var(--hdr-line); }
-/* ⚠ THE LEGAL ROW NEEDS justify-content, NOT align-items. It is the one group
-   with flex-direction:row, so align-items there is the CROSS (vertical) axis —
-   setting it to flex-end would bottom-align the two links and move them
-   sideways not at all. Same value name, different axis, silent either way. */
 
 .header-drawer-link {
   font-family: Quicksand, sans-serif;
@@ -513,6 +501,17 @@
   color: var(--hdr-ink);
   text-decoration: none;
   padding: 11px 0;                  /* keeps the tap target at 44px */
+  min-width: 190px;                 /* S303, hers. WIDENS THE TAP TARGET WITHOUT
+                                       GOING FULL WIDTH. The label stays left
+                                       where it was; the clickable box extends
+                                       right past the end of the word. Drawer
+                                       content is 240px (284 minus 2x22 padding),
+                                       so 190 leaves ~50px of neutral column on
+                                       the right to start a scroll in — which is
+                                       the whole point of align-items:flex-start
+                                       above. RAISE THIS AND YOU EAT THAT COLUMN;
+                                       at 240 it is full width and you are back
+                                       to the S228 bug. */
 }
 
 .header-drawer-sublink {
@@ -523,13 +522,13 @@
   color: var(--hdr-muted);
   text-decoration: none;
   padding: 10px 0;
+  min-width: 190px;                 /* matches .header-drawer-link, same reason */
 }
 
 .header-drawer-social-link {
   display: inline-flex;
   align-items: center;
-  align-self: flex-end;             /* must track the group above, or the
-                                       Instagram icon alone stays hard left */
+  align-self: flex-start;
   color: var(--hdr-muted);
   text-decoration: none;
   padding: 8px 0;
