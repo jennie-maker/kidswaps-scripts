@@ -138,10 +138,17 @@
      The pink is a placeholder colour, NOT a ruling; both stars share it deliberately so
      the mockup's two-colour version is not mistaken for a decision. */
   aspect-ratio: 1 / 1;
-  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
+  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
+  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
+  /* ⚠⚠ THIS PAIR WAS SWAPPED AND SWAPPED BACK AT S303 AND THE APPROVED STATE IS
+     THIS ONE: the SHARED rule above serves the PLAIN star, and `lower` overrides
+     to the FACE star here. She approved the hero looking this way; a later commit
+     reversed both and she rejected it on sight. DO NOT "CORRECT" IT AGAIN ON THE
+     STRENGTH OF THE ELEMENT NAMES — they describe position in the original
+     desktop design, not size, and reasoning from them is what caused the swap. */
 }
 
 .hero-section .home-hero-star-upper {
@@ -978,10 +985,10 @@
 .closet-preview-star {
   position: absolute;
   z-index: 3;
-  top: 244px;
+  top: 229px;
   left: 248px;
-  width: 61px;
-  height: 61px;
+  width: 110px;
+  height: 110px;
   pointer-events: none;
   background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
   background-size: contain;
@@ -1262,9 +1269,9 @@
   }
   .closet-preview-star {
     top: 104px;
-    left: 150px;
-    width: 102px;
-    height: 102px;
+    left: 100px;
+    width: 110px;
+    height: 110px;
     background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
   }
   .closet-preview-eyebrow {
