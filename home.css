@@ -4149,7 +4149,7 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
     position: absolute;
     rotate: var(--ks-star-rot, 0deg);
     margin-left: -12px;
-    margin-top: -0.72em;
+    margin-top: -0.34em;   /* dropped 13px, S303 — was clipping the line above */
   }
 
   /* ── closet standard: big star after "purpose." ── */
@@ -4162,7 +4162,7 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
     width: 91px; height: 91px;
     rotate: var(--ks-star-rot, 0deg);
     margin-left: -12px;
-    margin-top: -0.74em;
+    margin-top: -0.11em;   /* dropped 25px, S303 */
   }
 
   /* ── closet standard: small star on the guidelines button, 20% smaller (65 -> 52) ── */
@@ -4188,7 +4188,7 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
     width: 84px; height: 84px;
     rotate: var(--ks-star-rot, 0deg);
     margin-left: -12px;
-    margin-top: -0.72em;
+    margin-top: 0.28em;    /* dropped 40px, S303 */
   }
 
   /* ── faq: 15% smaller ── */
