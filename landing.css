@@ -5962,14 +5962,13 @@ html.landing-motion .landing-wrap.blog-post-page .blog-post-related.is-in {
     height: 124px;
   }
 
-  /* 4 · /the-closet-standard — SITS ON THE NOTE BOX, overlapping its left edge
-     and hanging into the margin, like something stuck to the card. The note box
-     runs 1639 -> 1773; the star spans 1670 -> 1758, inside it. */
-  .landing-wrap.standard-page .landing-star {
-    top: 1670px;
-    right: auto;
-    left: -24px;
-  }
+  /* 4 · /the-closet-standard — RETRACTED S308, HERS: THE NOTE-BOX STAR COVERED
+     TEXT. It is back in the masthead corner, i.e. it takes the base rule and has
+     no override here. ⚠⚠ THE ARITHMETIC SAID IT FITTED AND THE ARITHMETIC WAS
+     ANSWERING THE WRONG QUESTION — the star cleared the note BOX's top and
+     bottom edges, and the note box has its own internal padding and four lines
+     of copy inside it. A GAP BETWEEN TWO ELEMENTS IS NOT A GAP INSIDE ONE.
+     DO NOT PUT A STAR ON THE NOTE BOX AGAIN. */
 
   /* 5 · /bay-area-kids-clothing-swap — VERY DEEP, 2350px down a 2740px page, in
      the widest empty stretch on the site (1694 -> 2560). A reward for scrolling
