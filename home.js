@@ -493,6 +493,11 @@
        new class spins for exactly no reason until it is named. ITS OWN RATE AND
        ITS OWN SIGN, so six stars still never read as one mechanism. */
     { sel: '.faq-star',                 rate: -0.070 },
+    /* S304b: the desktop pricing star, drawn as .pricing-preview-container::after, had
+       no entry at all and was the one still star on the page. prop:true — the host is
+       the container and the artwork is its ::after. Its own rate and sign, so it does
+       not read as the same mechanism as its neighbours. */
+    { sel: '.pricing-preview-section .pricing-preview-container', rate: -0.062, prop: true },
     /* THE SEVENTH AND EIGHTH, S253 — the Instagram band. Same rule as the sixth:
        A STAR JOINS THIS ONLY BY A LINE HERE. Each keeps its own rate and its own
        sign so eight stars still never read as one mechanism.

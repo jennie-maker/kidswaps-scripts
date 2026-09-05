@@ -151,10 +151,21 @@
    The 991 and 767 blocks restate width and top but NOT height, which is correct and
    needs no edit: those widths are unchanged and the box is centred on its own top
    value by translateY(-50%), so a taller box moves nothing on screen. */
+/* S304b, MEASURED ON HER RENDER: A CORNER NOW CROSSES THE "f" OF "Stuff".
+   ⚠⚠⚠ `transform: translateX(-50%)` IS GONE AND MUST NOT COME BACK. The independent
+      `rotate:` property and the `transform` property COMPOSE — transform is applied
+      inside the rotated frame — so a translate here swings the star around a pivot as
+      it turns, and home.js turns it on every scroll. Predicted centre under the swing
+      was 571.8/86.1 and the live render measured 572/86, so this is arithmetic, not a
+      guess. `translate:` composes in a FIXED order (translate, then rotate) and leaves
+      the centre where it is written at every angle. Same family as this file's own
+      "`rotate:` never `transform: rotate()`" rule, arriving from the other side.
+   ⚠ THEREFORE left/top ARE NOW THE BOX'S OWN TOP-LEFT, not a centre. 480/35 reproduces
+      the vertical position she approved (centre y 86) and moves it 41px left, putting
+      the star's box 20px past the "f", which ends at x 485 (measured). */
 .hero-section .home-hero-star-upper {
-  transform: translateX(-50%);
-  left: 538px;
-  top: 83px;
+  left: 480px;
+  top: 35px;
   right: auto;
   bottom: auto;
   width: 103px;
@@ -1814,6 +1825,10 @@
   width: 84px;
   height: 84px;
   position: absolute;
+  /* S304b: it was the only star on the page that never turned — it is a pseudo-element
+     and was in no spin entry. home.js writes --ks-star-rot to the CONTAINER and this
+     reads it. NO transform may ever be added to this rule (see the hero star). */
+  rotate: var(--ks-star-rot, 0deg);
   pointer-events: none;
   margin: 0;
   background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
@@ -2195,7 +2210,10 @@
     top: 320px;
     left: auto;
     right: 24px;
-    transform: translateY(-50%);
+    /* S304b: `translate:`, NEVER `transform:` — see the base rule. A transform here
+       composes with the scroll rotation and swings the star off the photo's bottom
+       edge, which is the one thing top:320px exists to sit on. */
+    translate: 0 -50%;
   }
 
   .hero-section .home-hero-star-lower {
@@ -4190,7 +4208,9 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   .hero-section .hero-buttons::after {
     left: -44px;
     top: 50%;
-    transform: translateY(-50%);
+    /* S304b: `translate:` not `transform:`. This star was given a rotate at S304 and a
+       transform here would have swung it off the button row on every phone scroll. */
+    translate: 0 -50%;
   }
 
   /* ── hero: star after "Childhood" ── */
@@ -4203,7 +4223,9 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
     width: 58px; height: 58px;
     position: absolute;
     rotate: var(--ks-star-rot, 0deg);
-    margin-left: -12px;
+    margin-left: -5px;     /* S304b, HERS: 7px RIGHT, was -12px. It sat too far over
+                              the "d" of Childhood. Horizontal only — margin-top is
+                              untouched so the star does not move up or down. */
     margin-top: -0.34em;   /* dropped 13px, S303 — was clipping the line above */
   }
 
@@ -4240,10 +4262,13 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
     position: absolute;
     display: inline-block;
     background: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png") center / contain no-repeat;
-    width: 84px; height: 84px;
+    /* S304b, HERS: 15% SMALLER AND HIGHER. 84 -> 71 (84 x 0.85 = 71.4). margin-top
+       0.28em -> 0.05em against a 44px heading is ~10px up, and the 13px lost off the
+       height lifts the star's centre a further 6.5px, so it rises ~16px in all. */
+    width: 71px; height: 71px;
     rotate: var(--ks-star-rot, 0deg);
     margin-left: -12px;
-    margin-top: 0.28em;    /* dropped 40px, S303 */
+    margin-top: 0.05em;
   }
 
   /* ── faq: 15% smaller ── */
