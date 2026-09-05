@@ -103,11 +103,13 @@
 
 /* --------------------------------------------------------------------------
    THE STAR
-   A DIV, never an image, filled by clip-path with the pink placeholder — the
-   same pattern as the two hero stars and the closet-standard star.
-   WHEN HER PNG LANDS IT IS ONE PROPERTY SWAP ON THIS SAME ELEMENT: drop
-   background-color and clip-path, add background-image, background-size
-   contain, background-repeat no-repeat. NO DESIGNER WORK.
+   A DIV, never an image. It was filled by clip-path with the pink placeholder,
+   the same pattern as the two hero stars.
+   ⚠⚠ HER ARTWORK LANDED AT v41 AND THE SWAP IS AT THE FOOT OF THIS FILE, NOT
+   HERE. The background-color and clip-path below are still declared and are
+   now OVERRIDDEN by the v41 block, deliberately, so that deleting from the v41
+   comment to the end of the file restores this placeholder exactly.
+   DO NOT DELETE THEM AND DO NOT EDIT THIS RULE TO "TIDY" THE SWAP IN.
 
    THE SPIN IS AN INLINE `rotate:` WRITTEN BY landing.js ON SCROLL.
    There is deliberately NO rotate rule in this file — a stylesheet rule would
@@ -5833,18 +5835,51 @@ html.landing-motion .landing-wrap.blog-post-page .blog-post-related.is-in {
   color: var(--landing-muted);
 }
 
-/* --------------------------------------------------------------------------
-   4. THE INLINE LINK COMES DOWN WITH THE BODY — CLAUDE'S CALL, REVERSIBLE.
-   ⚠⚠ MEASURED S307: `seo-content-link` sets its OWN 15.5px, so it does not
-   inherit. With the body at 16px that was invisible; with the body at 13px the
-   link would render VISIBLY LARGER than the sentence it sits inside. There is
-   no /about precedent for this — that block has no link.
-   ✅ THE COLOUR IS DELIBERATELY LEFT INK while the body goes muted. That
-   contrast is what makes the link findable now that it carries no underline,
-   and it is the one thing in the block that should not blend in.
-   -------------------------------------------------------------------------- */
+/* ==========================================================================
+   v41 — S308 — THE MASTHEAD STAR TAKES HER ARTWORK, SITE-WIDE
+   ROLLBACK: delete from this comment to the end of the file. That restores the
+   pink clip-path placeholder exactly, which is WHY this is an override at the
+   foot of the file rather than an edit to the base rule at the top.
 
-.landing-wrap.how-it-works-page .seo-content-div .seo-content-link {
-  font-size: inherit;
-  line-height: inherit;
+   ⚠⚠⚠ THIS IS THE MASTHEAD STAR ON EVERY LANDING PAGE — /the-closet-standard,
+   /about, /how-it-works, /pricing, the three category pages, the Bay Area page
+   and every blog post. `.landing-star` is the TEMPLATE's class and there is no
+   page-scoped copy of it anywhere in this file. HER RULING S308: site-wide.
+
+   ⚠⚠ IT DOES NOT REACH THE OTHER TWO STARS, AND THAT IS CORRECT BY HER OWN
+   S303 RULE (a big star has a face, a small one does not):
+     .landing-wrap.about-page .landing-founder-star   50px, still the placeholder
+     .landing-wrap.blog-post-page .blog-post-star     46px, still the placeholder
+   Both are small, so they want the FACELESS artwork, not this file. A session
+   that "finishes the job" by pointing them here puts an unreadable face at 46px.
+
+   ⚠⚠ PLACEMENT IS UNTOUCHED AND IS STILL IDENTICAL ON EVERY PAGE — right:0,
+   top:0, set in the base rule. Sizes are 88 / 70 / 52 / 44 across the four
+   breakpoints, also site-wide. Making placement per-page is a SEPARATE pass and
+   is HERS, page by page, judged on renders.
+
+   ⚠⚠⚠ NO width, height, top, right OR rotate IN THIS BLOCK, ON PURPOSE.
+   The three breakpoint rules set width/height ONLY, and an appended bare rule
+   beats a media query at equal specificity by source order — so a size here
+   would silently freeze the star at one size at every width. Checked: this
+   block and those rules share NO property.
+
+   ⚠⚠ AND NO `transform`. The spin is an inline `rotate:` written by landing.js
+   on scroll; `rotate` and `transform` COMPOSE, so a transform here would swing
+   the star around a pivot as it turns. The artwork spins with the scroll, which
+   means the face is upside down for part of every scroll — the same trade she
+   took knowingly on the footer wordmark, and the hero's faced star already does
+   it. To stop it, the change is in landing.js, never here.
+
+   ⚠ THE URL IS PASTED VERBATIM FROM HER, NEVER RETYPED. A retyped asset URL is
+   a derivation, and this one is 92 characters of hex.
+   ========================================================================== */
+
+.landing-star {
+  background-color: transparent;
+  clip-path: none;
+  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abc4fa0fdb5f38aff1183_star-icon.png");
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
 }
