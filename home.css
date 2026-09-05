@@ -4200,18 +4200,13 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
        broke the line heights. */
 @media screen and (max-width: 479px) {
 
-  /* S304: THE HERO BUTTON STAR KEEPS ITS PHONE POSITION. The S304 desktop move puts it
-     on the button's top-left corner at every width because that rule is top level with
-     no breakpoint gate. Her phone was approved at S303 with the star BESIDE the row, so
-     the old values are restated here verbatim. This block sits after the top-level rule,
-     so it wins on source order at equal specificity. DELETE THIS AND THE PHONE MOVES. */
-  .hero-section .hero-buttons::after {
-    left: -44px;
-    top: 50%;
-    /* S304b: `translate:` not `transform:`. This star was given a rotate at S304 and a
-       transform here would have swung it off the button row on every phone scroll. */
-    translate: 0 -50%;
-  }
+  /* S304c: THE PHONE RESTATEMENT IS DELETED, HERS. It held the star 44px left of the
+     button row, which on a ~390px screen puts it outside the card, where
+     hero-container's overflow:hidden slices it in half — visible as a yellow sliver
+     against the navy in every phone screenshot back to S303. S304 preserved those
+     values believing the phone was approved; it was preserving a fault. The phone now
+     falls through to the top-level rule and sits on the top-left corner of "Trial for
+     free", exactly as the desktop does. ONE POSITION FOR THAT STAR AT EVERY WIDTH. */
 
   /* ── hero: star after "Childhood" ── */
   .hero-section .home-hero-star-upper,
