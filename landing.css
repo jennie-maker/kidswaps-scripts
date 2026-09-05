@@ -5740,3 +5740,111 @@ html.landing-motion .landing-wrap.blog-post-page .blog-post-related.is-in {
 .landing-wrap.pricing-page .landing-cta-row .landing-cta-primary {
   padding: 15px 32px;
 }
+
+/* ============================================================================
+   v40 — S307 — /how-it-works: THE SEO BLOCK JOINS THE SET
+   Page-scoped under .landing-wrap.how-it-works-page. Every selector below
+   carries that combo, so nothing here can reach another landing page.
+   APPENDED AT TOP LEVEL. The file up to this comment is a BYTE-EXACT PREFIX,
+   so ROLLBACK IS DELETING FROM THIS COMMENT TO THE END OF THE FILE.
+
+   ⚠ THE VERSION NUMBERING HAS A GAP AND IT IS NOT A MISTAKE: v39 (S299) is the
+   last numbered block, and the S300 /pricing rules were appended without a
+   number. This is the next number, not the next block.
+
+   HER RULING S284, THE STANDARD THIS PAGE IS JOINING: every SEO block on the
+   site looks like /about's — "it doesnt need to stand out on the page at all,
+   the point is actually for it all to blend in."
+
+   ⚠⚠ EVERY VALUE BELOW IS COPIED FROM THE /about RULES ALREADY IN THIS FILE
+   (v21/v22), not re-derived. Only the page combo changes. If /about's block is
+   ever retuned, THIS BLOCK MUST BE RETUNED WITH IT — they are two copies of one
+   decision and there is nothing linking them but this comment.
+
+   ⚠⚠⚠ /pricing IS DELIBERATELY NOT IN THIS SET — HER RULING S307. It keeps the
+   full width she took the cap off for at v18. That is a knowing exception, not
+   an omission, and the S284 standard does not reach it.
+
+   ⚠ THE THREE BROWSE PAGES ARE NOT HERE EITHER, and cannot be: /browse,
+   /clothing and /toys style that block from browse-tool.js AT RUNTIME, so they
+   are a browse commit and a ×3 pin bump, never a landing.css rule.
+   ============================================================================ */
+
+/* --------------------------------------------------------------------------
+   1. THE BLOCK MOVES TO THE CARD'S LEFT EDGE.
+   MEASURED S307 at 1461px: the card sits at left 226 and this block sat at
+   left 331, because the shared `seo-content-div` CENTRES ITSELF with auto
+   margins and an 800px cap. /about and /pricing both already carry this same
+   override. Removing the cap changes WHERE the block starts, not how long its
+   lines are — the 78ch caps below do that job.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.how-it-works-page .seo-content-div {
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* --------------------------------------------------------------------------
+   2. THE HEADING STOPS BEING A HEADING TO LOOK AT.
+   Measured at 35px ink, the loudest thing on the lower half of the page.
+   Values identical to /about's, weight 500 included.
+
+   ⚠⚠ IT IS STILL AN <h2> AND THAT IS THE POINT — the tag is what a crawler and
+   a screen reader read, and it is untouched. Only its appearance changes.
+   ⚠ It already wears the `seo-content-heading` combo, so no Designer edit is
+   owed here. /pricing's heading is a different matter: it is tagged H1 wearing
+   a class called `h4`, making it that page's second H1. NOT FIXED, NOT IN SCOPE.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.how-it-works-page .seo-content-heading {
+  margin: 0 0 14px;
+  max-width: 78ch;
+  font-family: Quicksand, sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1.55;
+  letter-spacing: 0;
+  text-align: left;
+  color: var(--landing-muted);
+}
+
+/* --------------------------------------------------------------------------
+   3. THE BODY MATCHES.
+   ⚠⚠ THE ELEMENT WEARS TWO SHARED CLASSES — `body-text-dark` AND
+   `body-text-dark-left-align` — and BOTH are live on other pages. The rule is
+   written under the page combo at (0,4,0) so it beats them on SPECIFICITY and
+   never on source order. A bare `.body-text-dark{font-size:13px}` would shrink
+   type across the site silently.
+   ⚠ /about has NO body paragraph in its block, so the 78ch cap here is doing
+   real work that it never had to do there: at 13px across the card's 1010px
+   this line would otherwise run ~130 characters, the same over-long measure
+   that made /pricing the exception.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.how-it-works-page .seo-content-div .body-text-dark {
+  max-width: 78ch;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--landing-muted);
+}
+
+/* --------------------------------------------------------------------------
+   4. THE INLINE LINK COMES DOWN WITH THE BODY — CLAUDE'S CALL, REVERSIBLE.
+   ⚠⚠ MEASURED S307: `seo-content-link` sets its OWN 15.5px, so it does not
+   inherit. With the body at 16px that was invisible; with the body at 13px the
+   link would render VISIBLY LARGER than the sentence it sits inside. There is
+   no /about precedent for this — that block has no link.
+   ✅ THE COLOUR IS DELIBERATELY LEFT INK while the body goes muted. That
+   contrast is what makes the link findable now that it carries no underline,
+   and it is the one thing in the block that should not blend in.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.how-it-works-page .seo-content-div .seo-content-link {
+  font-size: inherit;
+  line-height: inherit;
+}
