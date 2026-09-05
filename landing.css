@@ -5883,3 +5883,85 @@ html.landing-motion .landing-wrap.blog-post-page .blog-post-related.is-in {
   background-position: center;
   background-repeat: no-repeat;
 }
+
+/* ==========================================================================
+   v42 — S308 — THE MASTHEAD STAR IS PLACED PER PAGE
+   ROLLBACK: delete from this comment to the end of the file. That returns every
+   star to the shared top-right corner and changes nothing else.
+
+   ⚠⚠⚠ DESKTOP ONLY, AND THE GATE IS THE WHOLE REASON THIS IS SAFE.
+   The masthead heading is capped at 70% of the card, so the right ~300px is
+   free for the full height of the heading and a star can be moved anywhere
+   inside it. That gutter NARROWS to 12% at 991 and 14% at 767, and at 479 the
+   heading goes FULL WIDTH and there is no gutter at all — the only clear space
+   left is the top row beside the short eyebrow, which is where the base rule
+   already puts it. SO EVERY RULE HERE SITS INSIDE @media (min-width: 992px)
+   AND TABLET AND PHONE KEEP THE SHARED CORNER. Take the gate off and the lower
+   stars land ON the heading at phone width, silently.
+
+   ⚠⚠ SIX PAGES CARRY THE MASTHEAD STAR — surveyed live S308, recorded nowhere
+   before: /the-closet-standard · /pricing · /bay-area-kids-clothing-swap ·
+   /used-baby-clothes · /used-toddler-clothes · /used-girls-dresses.
+   THREE LANDING PAGES DO NOT AND THAT IS CORRECT: /about has landing-founder-
+   star instead, blog posts have blog-post-star, and /how-it-works has neither
+   because it has the ring. A rule added here for those three would style
+   nothing.
+
+   ⚠⚠⚠ FOUR OF THESE COMBO CLASSES WERE ADDED IN THE DESIGNER AT S308 AND ARE
+   NOW LOAD-BEARING IN THIS FILE: baby-page, toddler-page, dresses-page,
+   bay-area-page. Before S308 those four pages read `landing-wrap` and NOTHING
+   ELSE, so they were indistinguishable from each other to a stylesheet — which
+   is why per-page placement was impossible until they had names.
+   RENAME ONE IN THE DESIGNER AND ITS STAR SILENTLY RETURNS TO THE SHARED
+   CORNER WITH NOTHING ERRORING. A rename and its repoint ship in ONE commit or
+   neither.
+
+   ⚠ NO width, height, background OR rotate HERE. Sizes live in the three
+   max-width blocks, the artwork lives in v41, and the spin is an inline
+   `rotate:` written by landing.js. This block sets top and right, nothing else.
+
+   ⚠⚠ /the-closet-standard IS DELIBERATELY ABSENT FROM THIS BLOCK. It keeps the
+   base rule's top:0 right:0 — it is the placement she has already seen and
+   approved, so it is the reference the other five vary from. Its absence is
+   the decision, not an omission.
+
+   ⚠ EVERY NUMBER BELOW IS CLAUDE'S AND REVERSIBLE. NONE OF IT HAS BEEN SEEN
+   RENDERED. They are reasoned off the markup — inside the gutter, inside the
+   heading's vertical band — and the lower two assume a heading of at least two
+   lines. SHE JUDGES ALL FIVE ON THE LIVE PAGES AND ANY ONE OF THEM MOVES WITH
+   ONE VALUE.
+   ========================================================================== */
+
+@media (min-width: 992px) {
+
+  /* high, pulled in off the edge */
+  .landing-wrap.baby-page .landing-star {
+    top: 4px;
+    right: 62px;
+  }
+
+  /* mid height, tight to the edge */
+  .landing-wrap.toddler-page .landing-star {
+    top: 44px;
+    right: 0;
+  }
+
+  /* dropped to sit beside the heading's second line */
+  .landing-wrap.pricing-page .landing-star {
+    top: 68px;
+    right: 8px;
+  }
+
+  /* lower, and well in from the edge */
+  .landing-wrap.dresses-page .landing-star {
+    top: 92px;
+    right: 46px;
+  }
+
+  /* lowest, near the foot of the heading block */
+  .landing-wrap.bay-area-page .landing-star {
+    top: 108px;
+    right: 16px;
+  }
+
+}
