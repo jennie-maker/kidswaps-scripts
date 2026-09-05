@@ -5885,95 +5885,111 @@ html.landing-motion .landing-wrap.blog-post-page .blog-post-related.is-in {
 }
 
 /* ==========================================================================
-   v43 — S308 — THE MASTHEAD STAR MOVES OUT OF THE MASTHEAD, PER PAGE
-   ROLLBACK: delete from this comment to the end of the file. That returns every
-   star to the shared top-right corner and changes nothing else.
+   v44 — S308 — SIX DIFFERENT STAR TREATMENTS, NOT ONE TREATMENT SIX TIMES
+   ROLLBACK: delete from this comment to the end of the file. Every star returns
+   to the shared top-right corner and nothing else changes.
 
-   ⚠⚠⚠ IT SUPERSEDES v42, WHICH LIVED FOR ONE COMMIT AND WAS NEVER JUDGED GOOD.
-   v42 kept every star inside the masthead and moved it 4-108px down, which read
-   as "the same corner, slightly lower" — HER WORDS: the stars are supposed to be
-   happy surprises, not the same on every page. Its numbers are DELETED rather
-   than left above these, so the file carries one set of values and not two.
+   ⚠⚠⚠ IT SUPERSEDES v43, WHICH LIVED ONE COMMIT. v43 put all six in the left
+   rail directly below a section heading — HER WORDS: "theyre all in the same
+   spot, under a heading." Six depths of ONE idea is not variety. v43's numbers
+   are DELETED rather than left above these.
 
-   ✅✅ THE POCKET IS THE LEFT RAIL, AND IT WAS MEASURED RATHER THAN GUESSED.
-   A .landing-section is a 290px heading column plus a body column. The section
-   headings run 52-121px tall and the bodies run hundreds, so BELOW EACH SECTION
-   HEADING THE LEFT COLUMN IS EMPTY down to the next section. A star there sits
-   in the margin beside the body text and touches nothing.
-   ⚠⚠ THE EARLIER READ SAID `free right 720` ON EVERY SECTION HEADING AND THAT
-   NUMBER IS A TRAP — it measures the heading ELEMENT, and the body text fills
-   that 720. THERE IS NO POCKET TO THE RIGHT OF A SECTION HEADING.
+   ✅✅ WHAT THE S308 MEASUREMENT ACTUALLY ESTABLISHED, AND IT CONSTRAINS EVERY
+   FUTURE STAR ON THESE PAGES: below the masthead the ONLY free space is the
+   290px LEFT RAIL and the PAGE MARGINS OUTSIDE THE CARD. Section bodies, the
+   note box and the CTA row all run to the card's right edge. So variety cannot
+   come from picking a side — it has to come from SIZE, DEPTH, and WHAT THE STAR
+   RELATES TO. The six below are six relationships, one each.
 
-   ⚠⚠⚠ EVERY `top` IS MEASURED FROM .landing-head's TOP EDGE, because that is
-   the star's containing block — landing-head is position:relative and the star
-   is absolute inside it. NOTHING IN THE CHAIN CLIPS (no overflow:hidden on
-   .landing-wrap, .landing-card or .landing-head, checked), which is the only
-   reason a star can leave the masthead at all. PUT AN overflow:hidden ON ANY OF
-   THOSE THREE AND EVERY STAR BELOW THE MASTHEAD VANISHES AT ONCE.
+   ⚠⚠⚠ NEGATIVE `left` IS SAFE AND `right` WOULD NOT BE. Content overflowing to
+   the LEFT creates no scrollbar in LTR; content overflowing RIGHT does. NEVER
+   REACH FOR A NEGATIVE `right` HERE — that is 19px of sideways page scroll on a
+   phone, which this project has already paid for once.
+   ⚠⚠ AND -24px IS A CEILING, NOT A TASTE VALUE. The card is calc(100% - 56px),
+   so at exactly 992 it sits 28px from the viewport edge. A star at left:-24
+   still starts 4px inside the window; anything past -28 is cut off by the
+   screen at the narrowest desktop width, invisibly, because nobody tests there.
 
-   ⚠⚠ `right: auto` IS LOAD-BEARING ON EVERY RULE. The base rule sets right:0,
-   and an element with BOTH left and right resolves to the left one only after
-   right is released. Drop it and the star snaps back to the right edge.
+   ⚠⚠ THE TWO OVERSIZED STARS KEEP THE FACE AND THAT IS HER S303 RULE WORKING:
+   a big star has a face, a small one does not. These go UP to 124/132px, never
+   down — shrinking one below ~60 would make the face unreadable and break the
+   rule the artwork was chosen under.
 
-   ⚠⚠⚠ DESKTOP ONLY, SAME GATE AS v42 AND FOR A DIFFERENT REASON NOW: below 992
-   the section grid collapses to ONE column, so the left rail does not exist and
-   a star placed there would land ON the body text. Tablet and phone keep the
-   shared top-right corner. TAKE THE GATE OFF AND EVERY ONE OF THESE LANDS ON
-   COPY AT PHONE WIDTH, SILENTLY.
+   ⚠⚠⚠ DESKTOP ONLY. Below 992 the section grid collapses to one column, the
+   left rail stops existing, and every one of these would land on body copy.
+   Tablet and phone keep the shared corner.
 
-   ⚠ EVERY `top` IS A FIXED PIXEL OFFSET, SO A STAR DRIFTS IF THE COPY ABOVE IT
-   CHANGES LENGTH. That is the accepted cost of decoration positioned this way,
-   and it is why each one sits in a gap of 150px or more rather than tight
-   against a heading. AFTER ANY REAL COPY EDIT ON ONE OF THESE SIX PAGES, LOOK
-   AT ITS STAR.
+   ⚠ EVERY `top` IS A FIXED OFFSET FROM .landing-head's TOP EDGE and therefore
+   DRIFTS IF THE COPY ABOVE IT CHANGES LENGTH. Each sits in a measured gap with
+   at least 40px of slack at both ends. AFTER ANY REAL COPY EDIT ON ONE OF THESE
+   SIX PAGES, LOOK AT ITS STAR.
 
-   ⚠ THE NUMBERS ARE CLAUDE'S AND REVERSIBLE. Each one is placed in a measured
-   gap between two section headings, read live at 1386px on 5 Sep. NONE OF IT
-   HAS BEEN SEEN RENDERED. Any single star moves with one value.
+   ⚠ NUMBERS ARE CLAUDE'S AND REVERSIBLE, measured live at 1386px on 5 Sep.
+   NONE HAS BEEN SEEN RENDERED.
    ========================================================================== */
 
 @media (min-width: 992px) {
 
-  /* beside section 2's body, in the gap 934 -> 1099 */
-  .landing-wrap.standard-page .landing-star {
-    top: 960px;
-    right: auto;
-    left: 24px;
-  }
-
-  /* beside section 1's body, in the gap 408 -> 1077 */
+  /* 1 · /pricing — STRADDLES THE HAIRLINE between sections 1 and 2, so it reads
+     as pinned to the seam rather than parked under a heading.
+     ⚠⚠ THE SEAM IS THE BORDER, NOT THE HEADING, AND THEY ARE 46px APART.
+     .landing-section carries padding-top:46px, so section 2's border-top sits at
+     1031 while its heading text starts at 1077. The star spans 985 -> 1073: it
+     crosses the hairline and stops 4px SHORT OF THE TEXT. A first pass at 1010
+     spanned into the heading by 21px, caught by arithmetic before it shipped.
+     ANY CHANGE TO THIS NUMBER RE-CHECKS BOTH EDGES, not just the hairline. */
   .landing-wrap.pricing-page .landing-star {
-    top: 470px;
+    top: 985px;
     right: auto;
-    left: 36px;
+    left: 14px;
   }
 
-  /* beside section 2's body, in the gap 788 -> 1019 */
-  .landing-wrap.baby-page .landing-star {
-    top: 850px;
-    right: auto;
-    left: 20px;
-  }
-
-  /* beside section 2's body, in the gap 639 -> 998 */
+  /* 2 · /used-toddler-clothes — HANGS OFF THE CARD'S LEFT EDGE into the page
+     margin, about a quarter of it outside. The sticker treatment. Gap 639->998. */
   .landing-wrap.toddler-page .landing-star {
-    top: 700px;
+    top: 830px;
     right: auto;
-    left: 44px;
+    left: -24px;
   }
 
-  /* beside section 4's body, in the gap 1062 -> 1293 */
+  /* 3 · /used-baby-clothes — OVERSIZED at 124px, filling the rail rather than
+     sitting in it. Gap 788->1019, so it spans 855 -> 979. */
+  .landing-wrap.baby-page .landing-star {
+    top: 855px;
+    right: auto;
+    left: 10px;
+    width: 124px;
+    height: 124px;
+  }
+
+  /* 4 · /the-closet-standard — SITS ON THE NOTE BOX, overlapping its left edge
+     and hanging into the margin, like something stuck to the card. The note box
+     runs 1639 -> 1773; the star spans 1670 -> 1758, inside it. */
+  .landing-wrap.standard-page .landing-star {
+    top: 1670px;
+    right: auto;
+    left: -24px;
+  }
+
+  /* 5 · /bay-area-kids-clothing-swap — VERY DEEP, 2350px down a 2740px page, in
+     the widest empty stretch on the site (1694 -> 2560). A reward for scrolling
+     rather than something you meet on the way past. */
+  .landing-wrap.bay-area-page .landing-star {
+    top: 2350px;
+    right: auto;
+    left: 22px;
+  }
+
+  /* 6 · /used-girls-dresses — OVERSIZED at 132px and pushed to the INNER edge of
+     the rail, so it nearly touches the body column instead of hugging the card
+     edge. Right edge lands at 300 of the 290 rail, i.e. it just breaks the
+     column line ON PURPOSE. Gap 1062->1293, spans 1120 -> 1252. */
   .landing-wrap.dresses-page .landing-star {
     top: 1120px;
     right: auto;
-    left: 28px;
-  }
-
-  /* beside section 3's body, in the widest gap on any page, 925 -> 1694 */
-  .landing-wrap.bay-area-page .landing-star {
-    top: 1000px;
-    right: auto;
-    left: 40px;
+    left: 168px;
+    width: 132px;
+    height: 132px;
   }
 
 }
