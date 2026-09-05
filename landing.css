@@ -5885,83 +5885,95 @@ html.landing-motion .landing-wrap.blog-post-page .blog-post-related.is-in {
 }
 
 /* ==========================================================================
-   v42 — S308 — THE MASTHEAD STAR IS PLACED PER PAGE
+   v43 — S308 — THE MASTHEAD STAR MOVES OUT OF THE MASTHEAD, PER PAGE
    ROLLBACK: delete from this comment to the end of the file. That returns every
    star to the shared top-right corner and changes nothing else.
 
-   ⚠⚠⚠ DESKTOP ONLY, AND THE GATE IS THE WHOLE REASON THIS IS SAFE.
-   The masthead heading is capped at 70% of the card, so the right ~300px is
-   free for the full height of the heading and a star can be moved anywhere
-   inside it. That gutter NARROWS to 12% at 991 and 14% at 767, and at 479 the
-   heading goes FULL WIDTH and there is no gutter at all — the only clear space
-   left is the top row beside the short eyebrow, which is where the base rule
-   already puts it. SO EVERY RULE HERE SITS INSIDE @media (min-width: 992px)
-   AND TABLET AND PHONE KEEP THE SHARED CORNER. Take the gate off and the lower
-   stars land ON the heading at phone width, silently.
+   ⚠⚠⚠ IT SUPERSEDES v42, WHICH LIVED FOR ONE COMMIT AND WAS NEVER JUDGED GOOD.
+   v42 kept every star inside the masthead and moved it 4-108px down, which read
+   as "the same corner, slightly lower" — HER WORDS: the stars are supposed to be
+   happy surprises, not the same on every page. Its numbers are DELETED rather
+   than left above these, so the file carries one set of values and not two.
 
-   ⚠⚠ SIX PAGES CARRY THE MASTHEAD STAR — surveyed live S308, recorded nowhere
-   before: /the-closet-standard · /pricing · /bay-area-kids-clothing-swap ·
-   /used-baby-clothes · /used-toddler-clothes · /used-girls-dresses.
-   THREE LANDING PAGES DO NOT AND THAT IS CORRECT: /about has landing-founder-
-   star instead, blog posts have blog-post-star, and /how-it-works has neither
-   because it has the ring. A rule added here for those three would style
-   nothing.
+   ✅✅ THE POCKET IS THE LEFT RAIL, AND IT WAS MEASURED RATHER THAN GUESSED.
+   A .landing-section is a 290px heading column plus a body column. The section
+   headings run 52-121px tall and the bodies run hundreds, so BELOW EACH SECTION
+   HEADING THE LEFT COLUMN IS EMPTY down to the next section. A star there sits
+   in the margin beside the body text and touches nothing.
+   ⚠⚠ THE EARLIER READ SAID `free right 720` ON EVERY SECTION HEADING AND THAT
+   NUMBER IS A TRAP — it measures the heading ELEMENT, and the body text fills
+   that 720. THERE IS NO POCKET TO THE RIGHT OF A SECTION HEADING.
 
-   ⚠⚠⚠ FOUR OF THESE COMBO CLASSES WERE ADDED IN THE DESIGNER AT S308 AND ARE
-   NOW LOAD-BEARING IN THIS FILE: baby-page, toddler-page, dresses-page,
-   bay-area-page. Before S308 those four pages read `landing-wrap` and NOTHING
-   ELSE, so they were indistinguishable from each other to a stylesheet — which
-   is why per-page placement was impossible until they had names.
-   RENAME ONE IN THE DESIGNER AND ITS STAR SILENTLY RETURNS TO THE SHARED
-   CORNER WITH NOTHING ERRORING. A rename and its repoint ship in ONE commit or
-   neither.
+   ⚠⚠⚠ EVERY `top` IS MEASURED FROM .landing-head's TOP EDGE, because that is
+   the star's containing block — landing-head is position:relative and the star
+   is absolute inside it. NOTHING IN THE CHAIN CLIPS (no overflow:hidden on
+   .landing-wrap, .landing-card or .landing-head, checked), which is the only
+   reason a star can leave the masthead at all. PUT AN overflow:hidden ON ANY OF
+   THOSE THREE AND EVERY STAR BELOW THE MASTHEAD VANISHES AT ONCE.
 
-   ⚠ NO width, height, background OR rotate HERE. Sizes live in the three
-   max-width blocks, the artwork lives in v41, and the spin is an inline
-   `rotate:` written by landing.js. This block sets top and right, nothing else.
+   ⚠⚠ `right: auto` IS LOAD-BEARING ON EVERY RULE. The base rule sets right:0,
+   and an element with BOTH left and right resolves to the left one only after
+   right is released. Drop it and the star snaps back to the right edge.
 
-   ⚠⚠ /the-closet-standard IS DELIBERATELY ABSENT FROM THIS BLOCK. It keeps the
-   base rule's top:0 right:0 — it is the placement she has already seen and
-   approved, so it is the reference the other five vary from. Its absence is
-   the decision, not an omission.
+   ⚠⚠⚠ DESKTOP ONLY, SAME GATE AS v42 AND FOR A DIFFERENT REASON NOW: below 992
+   the section grid collapses to ONE column, so the left rail does not exist and
+   a star placed there would land ON the body text. Tablet and phone keep the
+   shared top-right corner. TAKE THE GATE OFF AND EVERY ONE OF THESE LANDS ON
+   COPY AT PHONE WIDTH, SILENTLY.
 
-   ⚠ EVERY NUMBER BELOW IS CLAUDE'S AND REVERSIBLE. NONE OF IT HAS BEEN SEEN
-   RENDERED. They are reasoned off the markup — inside the gutter, inside the
-   heading's vertical band — and the lower two assume a heading of at least two
-   lines. SHE JUDGES ALL FIVE ON THE LIVE PAGES AND ANY ONE OF THEM MOVES WITH
-   ONE VALUE.
+   ⚠ EVERY `top` IS A FIXED PIXEL OFFSET, SO A STAR DRIFTS IF THE COPY ABOVE IT
+   CHANGES LENGTH. That is the accepted cost of decoration positioned this way,
+   and it is why each one sits in a gap of 150px or more rather than tight
+   against a heading. AFTER ANY REAL COPY EDIT ON ONE OF THESE SIX PAGES, LOOK
+   AT ITS STAR.
+
+   ⚠ THE NUMBERS ARE CLAUDE'S AND REVERSIBLE. Each one is placed in a measured
+   gap between two section headings, read live at 1386px on 5 Sep. NONE OF IT
+   HAS BEEN SEEN RENDERED. Any single star moves with one value.
    ========================================================================== */
 
 @media (min-width: 992px) {
 
-  /* high, pulled in off the edge */
-  .landing-wrap.baby-page .landing-star {
-    top: 4px;
-    right: 62px;
+  /* beside section 2's body, in the gap 934 -> 1099 */
+  .landing-wrap.standard-page .landing-star {
+    top: 960px;
+    right: auto;
+    left: 24px;
   }
 
-  /* mid height, tight to the edge */
-  .landing-wrap.toddler-page .landing-star {
-    top: 44px;
-    right: 0;
-  }
-
-  /* dropped to sit beside the heading's second line */
+  /* beside section 1's body, in the gap 408 -> 1077 */
   .landing-wrap.pricing-page .landing-star {
-    top: 68px;
-    right: 8px;
+    top: 470px;
+    right: auto;
+    left: 36px;
   }
 
-  /* lower, and well in from the edge */
+  /* beside section 2's body, in the gap 788 -> 1019 */
+  .landing-wrap.baby-page .landing-star {
+    top: 850px;
+    right: auto;
+    left: 20px;
+  }
+
+  /* beside section 2's body, in the gap 639 -> 998 */
+  .landing-wrap.toddler-page .landing-star {
+    top: 700px;
+    right: auto;
+    left: 44px;
+  }
+
+  /* beside section 4's body, in the gap 1062 -> 1293 */
   .landing-wrap.dresses-page .landing-star {
-    top: 92px;
-    right: 46px;
+    top: 1120px;
+    right: auto;
+    left: 28px;
   }
 
-  /* lowest, near the foot of the heading block */
+  /* beside section 3's body, in the widest gap on any page, 925 -> 1694 */
   .landing-wrap.bay-area-page .landing-star {
-    top: 108px;
-    right: 16px;
+    top: 1000px;
+    right: auto;
+    left: 40px;
   }
 
 }
