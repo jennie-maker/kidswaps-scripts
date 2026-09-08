@@ -4709,3 +4709,132 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   }
 
 }
+
+/* ==========================================================================
+   v63 — S314 — THE CLOSET PREVIEW BECOMES COLUMNS, AND THE FAQ ANSWER LINK
+   ROLLBACK: delete from this comment to the end of the file. ⚠⚠⚠ THE CSS ALONE
+   IS NOT A ROLLBACK HERE — home.js now emits four .closet-preview-column
+   wrappers, so reverting this block without also reverting home.js leaves four
+   unstyled divs in a grid. BOTH FILES OR NEITHER.
+
+   ⚠⚠⚠ WHY THE MARKUP CHANGED, AND IT IS NOT A PREFERENCE. In a CSS grid every
+   card in a row is anchored to the same row line and the row is as tall as its
+   tallest card, so a SHORT CARD ALWAYS LEAVES A HOLE BENEATH IT. v61 and v62
+   both tried to close those holes by choosing better offsets and better ratios,
+   and neither could, because card height depends on the photo ratio AND on
+   whether the item name wraps to two lines — and the items rotate as stock is
+   claimed. Stacking each column independently is the only shape where a card
+   sits directly under the one above it at a fixed gap.
+
+   ⚠⚠ EXPLICIT COLUMNS RATHER THAN `columns: 4`. Multi-column balances by height,
+   so which item lands in which column is not deterministic, and browsers
+   TRUNCATE MARGINS AT THE TOP OF A COLUMN — which is exactly where the approved
+   0/36/12/48 stagger lives. This shape has neither problem and needs no
+   feature-query fallback.
+
+   ⚠⚠ THE STAGGER MOVES FROM THE CARDS TO THE COLUMNS AND THE FOUR NUMBERS ARE
+   UNCHANGED. Row one therefore looks exactly as she approved it at S238, and the
+   bottom edge is ragged for free because the columns end at different heights.
+
+   ⚠ v61's AND v62's PER-CARD RULES ARE NOW INERT. Their selectors read
+   `> *:nth-child(...)`, and those children are COLUMNS now rather than cards, so
+   every rule in this block is written at a higher specificity to take the values
+   back cleanly. They are left in place rather than edited so that deleting from
+   the v63 comment restores the previous build exactly. DO NOT "TIDY" THEM OUT
+   without reverting home.js in the same pass.
+   -------------------------------------------------------------------------- */
+
+.closet-preview-grid > .closet-preview-column {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+}
+
+/* THE FOUR APPROVED OFFSETS, ON THE COLUMNS. Same values as S238. */
+.closet-preview-grid > .closet-preview-column:nth-child(1) { margin-top: 0; }
+.closet-preview-grid > .closet-preview-column:nth-child(2) { margin-top: 36px; }
+.closet-preview-grid > .closet-preview-column:nth-child(3) { margin-top: 12px; }
+.closet-preview-grid > .closet-preview-column:nth-child(4) { margin-top: 48px; }
+
+/* THE CHECKERBOARD. Odd columns lead with the tall box, even columns with the
+   square one, and each column alternates going down — so no two neighbours in
+   either direction share a shape. 3/4 is the base ratio and 1/1 is the square;
+   both values are the ones already in the file. */
+.closet-preview-grid > .closet-preview-column:nth-child(odd) > *:nth-child(1) .closet-preview-card-media,
+.closet-preview-grid > .closet-preview-column:nth-child(even) > *:nth-child(2) .closet-preview-card-media {
+  aspect-ratio: 3 / 4;
+}
+
+.closet-preview-grid > .closet-preview-column:nth-child(odd) > *:nth-child(2) .closet-preview-card-media,
+.closet-preview-grid > .closet-preview-column:nth-child(even) > *:nth-child(1) .closet-preview-card-media {
+  aspect-ratio: 1 / 1;
+}
+
+
+/* ---- THE LINK INSIDE A FAQ ANSWER ---------------------------------------
+   ⚠⚠⚠ NOTHING HAS EVER STYLED IT, ON EITHER PAGE. Confirmed by sweeping the
+   whole file for an anchor rule anywhere under .faq-section: there is none. So
+   the "dashboard" link in the cancel answer renders as a browser-default
+   visited purple on the navy home page, and every link in /faq's 26 rows is in
+   the same state. Same species as the SEO block links at S261, where the rules
+   existed and the anchor was never reached.
+
+   ⚠⚠ color: inherit IS THE WHOLE TRICK AND IT IS WHY THIS IS ONE RULE RATHER
+   THAN TWO. The answer text is CREAM on the navy home page and INK on /faq's
+   cream ground, both set on .faq-answer-text. Inheriting takes whichever is
+   right without this rule needing to know which page it is on, and it cannot go
+   out of step the day either colour changes.
+
+   ⚠ THE UNDERLINE IS DOING THE WORK THE COLOUR NORMALLY WOULD. With the link the
+   same colour as its sentence, nothing else marks it, so it is not decorative.
+   Coral was the obvious alternative and was not taken: it already does six jobs
+   on this project and it measures 3.84 on navy, under the bar for body text. */
+.faq-section .faq-answer-text a,
+.faq-section .faq-answer-text a:visited {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+}
+
+.faq-section .faq-answer-text a:hover {
+  text-decoration-thickness: 2px;
+}
+
+
+@media screen and (max-width: 991px) {
+
+  /* the column gap follows the grid's own gap at this width */
+  .closet-preview-grid > .closet-preview-column {
+    gap: 16px;
+  }
+
+}
+
+
+@media screen and (max-width: 767px) {
+
+  /* ⚠⚠⚠ THE PHONE TWINS ARE MANDATORY AND THE SAME TRAP CAUGHT v62. Every rule
+     above is a bare rule sitting LATER IN THE FILE than the phone block, at a
+     HIGHER specificity than anything in it — so without these the stagger and
+     the checkerboard would both apply on a phone, at every width, silently.
+     These match the shape above selector for selector so they win on source
+     order rather than by accident.
+
+     ⚠ THE MARKUP STILL HOLDS FOUR COLUMNS HERE. The grid drops to two tracks,
+     so the four column elements wrap two across and two down, and with two
+     cards each that reads as 2x4 — which is the layout she approved at S238. */
+  .closet-preview-grid > .closet-preview-column {
+    gap: 14px;
+  }
+
+  .closet-preview-grid > .closet-preview-column:nth-child(n) {
+    margin-top: 0;
+  }
+
+  .closet-preview-grid > .closet-preview-column:nth-child(n) > *:nth-child(n) .closet-preview-card-media {
+    aspect-ratio: 1 / 1;
+  }
+
+}

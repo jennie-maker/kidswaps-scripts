@@ -61,6 +61,13 @@
   var TOY_CATEGORY = 'toy';
   var PER_CLASS    = 4;
 
+  // The cards are dealt into this many column elements. home.css collapses the
+  // row to two columns on a phone; the COLUMN COUNT IN THE MARKUP DOES NOT
+  // CHANGE, so at that width the four columns wrap to two across and two down,
+  // which reads as 2x4. Changing this number alone would leave the CSS grid
+  // expecting four.
+  var COLS = 4;
+
   // PUBLIC anon key ONLY. Public-safe by design (it ships in browser code; the
   // sealed table plus the curated RPC are what make exposure safe).
   // NEVER the service_role key.
@@ -162,7 +169,15 @@
       else { clothing.push(it); }
     }
 
-    var show = clothing.slice(0, PER_CLASS).concat(toys.slice(0, PER_CLASS));
+    // INTERLEAVED, not concatenated — her ruling S314. Concatenating put all four
+    // clothing items in row one and all four toys in row two, which read as two
+    // separate bands rather than one mixed shelf. This alternates them, so every
+    // row and every column carries both. ONE LOOP TO REVERSE.
+    var show = [];
+    for (i = 0; i < PER_CLASS; i++) {
+      if (clothing[i]) show.push(clothing[i]);
+      if (toys[i]) show.push(toys[i]);
+    }
 
     if (show.length < CARDS) {
       var taken = {};
@@ -196,8 +211,32 @@
 
       if (!show.length) { hide(section, 'no items available at all'); return; }
 
+      // ---- COLUMNS, NOT A ROW OF CARDS -----------------------------------
+      // ⚠⚠⚠ THIS IS MASONRY AND IT IS WHY THE MARKUP CHANGED. In a CSS grid every
+      // card in a row is anchored to the same row line and the row is as tall as
+      // its tallest card, so a short card ALWAYS leaves a hole beneath it. No
+      // value tuning removes that, because card height depends on the photo ratio
+      // AND on whether the item name wraps to two lines, and the items rotate as
+      // stock is claimed. Stacking each column independently means a card sits
+      // directly under the one above it with a fixed gap and never waits for its
+      // neighbours.
+      //
+      // ⚠⚠ EXPLICIT COLUMNS RATHER THAN `columns: 4`. Multi-column balances by
+      // height, so which item lands in which column is not deterministic, and
+      // browsers truncate margins at the top of a column — which is exactly where
+      // the approved 0/36/12/48 stagger lives. This shape has neither problem.
+      //
+      // ⚠ ROUND ROBIN, NOT CHUNKS. i % COLS keeps the reading order left to right
+      // across the top row; chunking would put items 1 and 2 in the first column
+      // and read top to bottom.
+      //
+      // ⚠ AN EMPTY COLUMN IS NOT APPENDED. Below four items there would otherwise
+      // be empty divs holding grid tracks open.
+      var cols = [], c;
+      for (c = 0; c < COLS; c++) { cols.push(el('div', 'closet-preview-column')); }
+      for (var i = 0; i < show.length; i++) { cols[i % COLS].appendChild(cardEl(show[i])); }
       var frag = document.createDocumentFragment();
-      for (var i = 0; i < show.length; i++) { frag.appendChild(cardEl(show[i])); }
+      for (c = 0; c < COLS; c++) { if (cols[c].childNodes.length) frag.appendChild(cols[c]); }
       grid.appendChild(frag);
 
       // The flagged count is logged for her, not used for anything. It is the
