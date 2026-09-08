@@ -6069,3 +6069,247 @@ html.landing-motion .landing-wrap.blog-post-page .blog-post-related.is-in {
   }
 
 }
+
+/* ==========================================================================
+   v47 — S314 — THE ABOUT MASTHEAD BECOMES A NAVY BLOCK
+   ROLLBACK: delete from this comment to the end of the file. The masthead
+   returns to cream with the wide 5/2 band and the navy panel hanging off its
+   bottom-left, exactly as S284 built it.
+
+   ⚠⚠⚠ NOT ONE ELEMENT MOVES. The whole restructure is grid-template-areas,
+   which is the same property S284 used to reorder this masthead for the phone.
+   The markup stays eyebrow, heading, sub, band — and band still holds the photo
+   and the panel in that order. A crawler reads the page in the same order it
+   reads today.
+
+   THE SHAPE, off her Glow Getters reference — the board she set the /old-home
+   direction from at S231, now applied to the page that never got it:
+     · the masthead is a NAVY INSET BLOCK rather than type on cream
+     · a marquee ribbon crosses near the top
+     · a TALL PORTRAIT sits in the right column and rises above the ribbon
+     · "I'm Jennie" and the Fremont line become the PHOTO'S CAPTION
+
+   ⚠⚠ THE PANEL IS NOT DELETED, IT IS UNPAINTED. It keeps its element, its
+   heading, its star and its body; it loses its navy, its padding and its
+   negative pull and becomes a caption under the portrait. That is why this is
+   a stylesheet change and not a rebuild, and why the rollback is one delete.
+
+   ⚠⚠ NO BUTTON IN THE MASTHEAD, DELIBERATELY, AND THE REFERENCE HAS ONE. That
+   page has no other call to action; /about ends with .landing-cta-row and both
+   middle sections close with an inline link, so a fourth would be one too many.
+
+   ⚠⚠⚠ THE RIBBON RULES BELOW MATCH NOTHING YET. The markup is one Designer
+   addition and it lands AFTER this ships — CSS first, because rules that match
+   nothing are harmless while an unstyled text strip on a live page is not.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.about-page .landing-masthead {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--about-navy);
+  border-radius: 22px;
+  padding: 104px 34px 36px;
+  column-gap: 40px;
+  align-items: start;
+  grid-template-columns: 1fr 0.62fr;
+  grid-template-areas:
+    "eyebrow eyebrow"
+    "head    band"
+    "sub     band";
+}
+
+/* ⚠ THE BAND SPANS BOTH TYPE ROWS AND THAT IS WHAT MAKES THE PORTRAIT TALL.
+   Its height is the headline plus the lede, so there is no ratio holding it and
+   no cream left over — the fault that killed three earlier attempts at this. */
+.landing-wrap.about-page .landing-founder-band {
+  grid-row: 2 / span 2;
+  margin-top: 0;
+}
+
+/* ⚠⚠ THE NEGATIVE PULL IS WHAT LIFTS THE PHOTO ABOVE THE RIBBON, and the
+   masthead's 104px top padding is the clearance it needs. Change either and
+   change both, or the portrait either clips the eyebrow or stops overlapping. */
+.landing-wrap.about-page .landing-founder-photo {
+  aspect-ratio: 3 / 4;
+  border-radius: 16px;
+  margin-top: -58px;
+  position: relative;
+  z-index: 2;
+}
+
+/* the caption. Everything navy about this element goes. */
+.landing-wrap.about-page .landing-founder-panel {
+  position: static;
+  width: auto;
+  margin: 16px 0 0;
+  padding: 0;
+  background-color: transparent;
+}
+
+.landing-wrap.about-page .landing-founder-heading {
+  font-size: 22px;
+  color: var(--landing-cream);
+}
+
+/* the amber rule under the name shortens with it */
+.landing-wrap.about-page .landing-founder-heading::after {
+  width: 24px;
+  margin-top: 10px;
+}
+
+.landing-wrap.about-page .landing-founder-body {
+  max-width: none;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--about-panel-text);
+}
+
+/* ⚠⚠⚠ THE STAR NOW POSITIONS AGAINST THE BAND, NOT THE PANEL, AND THAT IS WHY
+   THE PANEL WENT position:static ABOVE. It is a child of the panel in the
+   markup and absolute boxes resolve against the nearest POSITIONED ancestor —
+   with the panel static that is the band, so the star sits on the portrait's
+   top-right corner instead of on the caption text.
+   ⚠ IT MUST STAY EMPTY. It is a clip-path shape, so anything inside it is cut
+   into a five-pointed hole. */
+.landing-wrap.about-page .landing-founder-star {
+  right: -10px;
+  top: -74px;
+  z-index: 3;
+}
+
+/* type on navy */
+.landing-wrap.about-page .landing-eyebrow {
+  color: var(--landing-amber);
+}
+
+.landing-wrap.about-page .landing-masthead-heading {
+  color: var(--landing-cream);
+}
+
+.landing-wrap.about-page .landing-sub {
+  color: var(--about-panel-text);
+  max-width: 42ch;
+}
+
+/* ---- THE RIBBON --------------------------------------------------------
+   ⚠⚠ TWO IDENTICAL SETS SLIDING -50%. THE SET COUNT AND THE DISTANCE ARE LOCKED
+   TO EACH OTHER — three sets would need -33.333%, and a mismatch makes the strip
+   jump once per cycle, silently, and only on a screen wide enough to show the
+   seam. The same lock the hero marquee and the blog ribbon both carry.
+   ⚠ GATED ON A SECOND SET EXISTING, so the markup and this file can land in
+   either order with no broken state: with one set it is a static strip, never a
+   half-built animation.
+   ⚠ THE SEPARATOR IS A MIDDOT, NOT A STAR. Her rule is that a star must be a
+   DRAWN SHAPE and never a text glyph, because a character depends on whatever
+   font loads. Drawn stars would mean twelve Designer elements instead of four;
+   the middot is house punctuation and already carries the browse tile meta.
+   ⚠ The strip is wider than the block and the masthead clips it, so a start or
+   a stop can never appear on screen — her S231 hidden-end-points rule. */
+.landing-wrap.about-page .about-ribbon {
+  position: absolute;
+  left: -6%;
+  right: -6%;
+  top: 62px;
+  z-index: 1;
+  overflow: hidden;
+  background-color: var(--landing-amber);
+  padding: 7px 0;
+  pointer-events: none;
+}
+
+.landing-wrap.about-page .about-ribbon-track {
+  display: flex;
+  width: max-content;
+}
+
+.landing-wrap.about-page .about-ribbon-set {
+  font-family: Quicksand, sans-serif;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: var(--landing-ink);
+  white-space: nowrap;
+  padding-right: 22px;
+}
+
+html.landing-motion .landing-wrap.about-page .about-ribbon-track:has(> :nth-child(2)) {
+  animation: about-ribbon-slide 26s linear infinite;
+}
+
+@keyframes about-ribbon-slide {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-wrap.about-page .about-ribbon-track {
+    animation: none;
+  }
+}
+
+
+@media (max-width: 991px) {
+
+  .landing-wrap.about-page .landing-masthead {
+    padding: 92px 26px 30px;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "eyebrow"
+      "head"
+      "band"
+      "sub";
+  }
+
+  /* stacked, the band is a row again rather than a spanning column */
+  .landing-wrap.about-page .landing-founder-band {
+    grid-row: auto;
+  }
+
+  .landing-wrap.about-page .landing-founder-photo {
+    aspect-ratio: 4 / 5;
+    margin-top: 20px;
+  }
+
+  .landing-wrap.about-page .landing-founder-star {
+    top: -14px;
+  }
+
+  .landing-wrap.about-page .landing-sub {
+    max-width: 62ch;
+  }
+
+}
+
+
+@media (max-width: 767px) {
+
+  /* ⚠⚠⚠ THIS REVERSES HER S284 RULING KNOWINGLY. That ruling put the photo
+     ABOVE the headline at this width; the layout she approved at S314 puts it
+     between the headline and the caption, so the headline still opens the page.
+     The MARKUP is untouched either way and still reads heading, sub, band, so
+     nothing about the crawler order changes — which was the actual reason S284
+     gave for reordering by areas rather than by moving elements. */
+  .landing-wrap.about-page .landing-masthead {
+    padding: 78px 18px 26px;
+    border-radius: 18px;
+    grid-template-areas:
+      "eyebrow"
+      "head"
+      "band"
+      "sub";
+  }
+
+  .landing-wrap.about-page .about-ribbon {
+    top: 48px;
+  }
+
+  .landing-wrap.about-page .landing-founder-photo {
+    margin-top: 18px;
+  }
+
+  .landing-wrap.about-page .landing-founder-heading {
+    font-size: 20px;
+  }
+
+}
