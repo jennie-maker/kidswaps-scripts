@@ -47,7 +47,19 @@
   var SUPABASE_URL = 'https://ajsobivqxexcniwifxzz.supabase.co';
   var RPC          = '/rest/v1/rpc/get_available_inventory';
   var LOG          = '[ks-home]';
-  var CARDS        = 4;
+  var CARDS        = 8;
+
+  // 4 clothing + 4 toys, her ruling S314. The RPC coalesces clothing_size and
+  // toy_age_range into one `size` field, so size CANNOT tell the two apart —
+  // `category` is the discriminator. Every toy carries the lowercase 'toy'
+  // (a count of that value matched the toy_age_range row count exactly at
+  // S269) and no clothing item does.
+  // ⚠⚠ THAT LOWERCASE VALUE IS ON HER OWN CATEGORY-EDITS LIST. If it is ever
+  // title-cased or retired, pickSplit stops splitting — and FALLS BACK to the
+  // plain featured-first head rather than emptying anything. Deliberate: the
+  // failure direction is "not split", never "no band".
+  var TOY_CATEGORY = 'toy';
+  var PER_CLASS    = 4;
 
   // PUBLIC anon key ONLY. Public-safe by design (it ships in browser code; the
   // sealed table plus the curated RPC are what make exposure safe).
@@ -131,6 +143,38 @@
   }
 
   /* ---- paint -------------------------------------------------------------- */
+  // Takes up to PER_CLASS of each class from the head of the featured-first
+  // ordering, then TOPS UP to CARDS from whatever is left, in the same order.
+  //
+  // ⚠⚠⚠ THE TOP-UP IS THE WHOLE POINT AND IT IS THE S238 LESSON AGAIN. A plain
+  // filter empties the band the moment its matches are claimed; this one cannot
+  // render shorter than the catalogue itself. If there are only two toys
+  // available the band shows two toys and six clothing items, never six tiles.
+  //
+  // ⚠ ORDER IS PRESERVED THROUGHOUT. Nothing is sorted here — each list keeps
+  // the RPC's featured-first, newest-second ordering, so a flagged item still
+  // comes before an unflagged one inside its own class.
+  function pickSplit(items) {
+    var toys = [], clothing = [], i, it;
+    for (i = 0; i < items.length; i++) {
+      it = items[i];
+      if (String(it.category || '').toLowerCase() === TOY_CATEGORY) { toys.push(it); }
+      else { clothing.push(it); }
+    }
+
+    var show = clothing.slice(0, PER_CLASS).concat(toys.slice(0, PER_CLASS));
+
+    if (show.length < CARDS) {
+      var taken = {};
+      for (i = 0; i < show.length; i++) { taken[show[i].sku] = true; }
+      for (i = 0; i < items.length && show.length < CARDS; i++) {
+        if (!taken[items[i].sku]) { show.push(items[i]); taken[items[i].sku] = true; }
+      }
+    }
+
+    return show.slice(0, CARDS);
+  }
+
   function hide(section, why) {
     if (!section) return;
     section.classList.add('is-empty');
@@ -146,9 +190,9 @@
 
     fetchInventory().then(function (items) {
       // The RPC filters to status = 'available' and orders featured first, so
-      // the head of the list is already the right four. NO FUNCTION CHANGE WAS
-      // NEEDED FOR THIS, and no sorting happens in the browser.
-      var show = items.slice(0, CARDS);
+      // the head of the list is already in the right order. NO FUNCTION CHANGE
+      // WAS NEEDED FOR THIS, and no re-sorting happens in the browser.
+      var show = pickSplit(items);
 
       if (!show.length) { hide(section, 'no items available at all'); return; }
 
@@ -159,10 +203,14 @@
       // The flagged count is logged for her, not used for anything. It is the
       // only place the featured pool's size is visible anywhere today — there
       // is a per-item toggle in the listing tool and no list view of the set.
-      var flagged = 0;
+      var flagged = 0, shownToys = 0;
       for (var n = 0; n < items.length; n++) { if (items[n].featured === true) flagged++; }
+      for (var t = 0; t < show.length; t++) {
+        if (String(show[t].category || '').toLowerCase() === TOY_CATEGORY) shownToys++;
+      }
       console.log(LOG, 'painted ' + show.length + ' of ' + items.length +
-        ' available (' + flagged + ' flagged featured)');
+        ' available (' + flagged + ' flagged featured, ' +
+        (show.length - shownToys) + ' clothing / ' + shownToys + ' toys)');
 
       // The band can only render short if the whole catalogue is nearly empty.
       if (show.length < CARDS) {

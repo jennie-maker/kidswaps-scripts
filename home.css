@@ -4557,3 +4557,73 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   }
 
 }
+
+/* ==========================================================================
+   v61 — S314 — EIGHT CARDS IN THE CLOSET PREVIEW, AND THE PRICING STAR SMALLER
+   ROLLBACK: delete from this comment to the end of the file. The grid returns
+   to styling only its first four children and the star returns to 130px.
+
+   ⚠⚠⚠ HER BRIEF: "the design stays the same, just four more boxes." So NOTHING
+   here changes a value. Every rule takes a figure that was hardcoded at
+   nth-child(1..4) and makes it REPEAT EVERY FOUR, so the second row is the
+   first row again — same ragged offsets, same tall/square alternation.
+   0 / 36 / 12 / 48 and the square boxes on 2 and 4 are all untouched.
+
+   ⚠⚠ WHY 4n+ RATHER THAN WRITING OUT 5, 6, 7, 8. The count lives in home.js as
+   CARDS, not here, so hardcoding eight would put the same number in two files
+   and they would drift the first time it moves. This pattern is correct at any
+   count, including the four it has today.
+
+   ⚠ THE OVERLAP IS UNAFFECTED AND STAYS ONE NUMBER. margin-top:-40px is on the
+   GRID, so it lifts the whole block into the heading exactly as before; only
+   the first row can reach the type and the second row sits below it normally.
+   -------------------------------------------------------------------------- */
+
+.closet-preview-grid > *:nth-child(4n+1) { margin-top: 0; }
+.closet-preview-grid > *:nth-child(4n+2) { margin-top: 36px; }
+.closet-preview-grid > *:nth-child(4n+3) { margin-top: 12px; }
+.closet-preview-grid > *:nth-child(4n+4) { margin-top: 48px; }
+
+.closet-preview-grid > *:nth-child(4n+2) .closet-preview-card-media,
+.closet-preview-grid > *:nth-child(4n+4) .closet-preview-card-media {
+  aspect-ratio: 1 / 1;
+}
+
+
+@media screen and (max-width: 767px) {
+
+  /* ⚠⚠⚠ THESE TWO ARE MANDATORY, NOT TIDINESS, AND THE SPECIFICITY IS THE WHOLE
+     REASON THEY ARE WRITTEN THIS WAY. The phone block above resets the offsets
+     and squares the photo boxes at nth-child(1..4) ONLY. The bare rules I have
+     just appended sit LATER IN THE FILE at the same specificity, so without
+     these twins they would win at every width — cards 5 to 8 would keep the
+     desktop stagger on a phone, and 5 and 7 would stay tall while the rest went
+     square. `:nth-child(n)` matches every child and carries the same
+     specificity as `:nth-child(4n+1)`, so it takes the value back cleanly.
+     ⚠ A media query adds NO specificity. Source order is doing this, and that
+     is why these sit below rather than above. */
+  .closet-preview-grid > *:nth-child(n) {
+    margin-top: 0;
+  }
+
+  .closet-preview-grid > *:nth-child(n) .closet-preview-card-media {
+    aspect-ratio: 1 / 1;
+  }
+
+  /* ---- THE PRICING STAR, 15% SMALLER — HERS S314 ------------------------
+     130 -> 111 (130 x 0.85 = 110.5), the same 15% the phone star took at S304.
+     ⚠ THAT PHONE STAR IS NOT TOUCHED. It is a different element, a ::after on
+     .h2-light below 479, and it was already cut to 71px in that pass.
+     ⚠⚠ THE NEGATIVE BLOCK MARGIN STAYS AT -46px. It exists to stop a 130px
+     star opening green under the button by setting its own row's height, and a
+     SMALLER star cannot open any. Shrinking it too would lift the star instead
+     of leaving it where she approved it.
+     ⚠ This rides on top of v60's `position: static` on the same element, which
+     is what finally hands it to the grid. Both are needed; neither works alone
+     for what she asked. */
+  .pricing-preview-section .pricing-preview-container::after {
+    width: 111px;
+    height: 111px;
+  }
+
+}
