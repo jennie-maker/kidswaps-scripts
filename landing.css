@@ -6470,3 +6470,36 @@ html.landing-motion .landing-wrap.about-page .about-ribbon-track:has(> :nth-chil
   }
 
 }
+
+/* ==========================================================================
+   v50 — S314 — HER PHOTOGRAPH, AND THE RIBBON BECOMES CLICKABLE
+   ROLLBACK: delete from this comment to the end of the file. The portrait
+   returns to the grey placeholder and the ribbon stops taking clicks.
+   -------------------------------------------------------------------------- */
+
+/* ⚠ THE PLACEHOLDER COLOUR IS LEFT DECLARED ABOVE, deliberately. It is what
+   shows if this asset ever 404s, and deleting this block restores it exactly.
+   ⚠ THE URL IS PASTED VERBATIM FROM HER, NEVER RETYPED.
+   ⚠ NO POSITION VALUE HERE. Desktop crops a tall column out of a portrait and
+   centre is right for both; if the phone square ever cuts badly, that is one
+   background-position in the 767 block and nothing else. */
+.landing-wrap.about-page .landing-founder-photo {
+  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6aa09b4265fcc5bd69dfa95b_about-page-jennie.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* ⚠⚠ v47 SET pointer-events: none SO THE STRIP COULD NOT SWALLOW CLICKS NEAR THE
+   TOP OF THE PAGE. The ribbon is a LINK now, so that has to come off — but only
+   the ribbon itself takes clicks. THE TRACK STAYS INERT so the moving text
+   cannot become a drag target while it animates. */
+.landing-wrap.about-page .about-ribbon {
+  pointer-events: auto;
+  text-decoration: none;
+  display: block;
+}
+
+.landing-wrap.about-page .about-ribbon-track {
+  pointer-events: none;
+}
