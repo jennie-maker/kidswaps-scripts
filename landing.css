@@ -6503,3 +6503,137 @@ html.landing-motion .landing-wrap.about-page .about-ribbon-track:has(> :nth-chil
 .landing-wrap.about-page .about-ribbon-track {
   pointer-events: none;
 }
+
+/* ==========================================================================
+   v51 — S314 — THE CROP, THE RIBBON CROSSING THE PHOTO, AND THE STAR SPIN
+   ROLLBACK: delete from this comment to the end of the file.
+   -------------------------------------------------------------------------- */
+
+/* ⚠⚠ THE RIBBON CROSSES IN FRONT OF THE PORTRAIT NOW. It was z-index 1 against
+   the photo's 2, so the strip ran the full width and the photo simply covered
+   it — it looked like it stopped at the picture's edge. Her reference does the
+   same thing: the band passes ACROSS the image, not behind it.
+   ⚠ THE STAR GOES UP WITH IT so it still reads as the top-most object. */
+.landing-wrap.about-page .about-ribbon {
+  z-index: 4;
+}
+
+.landing-wrap.about-page .landing-founder-star {
+  z-index: 5;
+  animation: about-star-turn 26s linear infinite;
+}
+
+/* ⚠⚠⚠ `rotate:` NOT `transform: rotate()`, AND THE FILE ALREADY EXPLAINS WHY.
+   A transform keyframe deletes any translate that positions an element and can
+   throw it across the section. This star is placed by top/right so a transform
+   would be survivable here — but the house rule is rotate, and following it
+   means the next person does not have to check.
+   ⚠ SAFE AGAINST landing.js, CHECKED, NOT ASSUMED. That script spins ONE star,
+   `.landing-star`, and writes it as an INLINE `rotate:` — an inline value beats
+   any stylesheet rule silently. `.landing-founder-star` is not in its selector,
+   so nothing is competing for this property. */
+@keyframes about-star-turn {
+  from { rotate: 0deg; }
+  to   { rotate: 360deg; }
+}
+
+/* ⚠⚠⚠ THE landing-motion GATE IS GONE FROM THE RIBBON, DELIBERATELY. That flag
+   exists to ARM HIDING RULES so a script that never runs leaves content visible
+   rather than blank. NOTHING IS HIDDEN HERE — without the animation this is a
+   static strip that reads perfectly — so the gate was buying no safety and
+   adding a way for the marquee to sit still if the script did not load, which
+   is what happened.
+   ⚠ THE TWO-SET GATE STAYS. With one set, -50% would slide the strip half out of
+   frame and leave a gap; the gate means a half-built ribbon is static, never
+   broken.
+   ⚠ prefers-reduced-motion STILL STOPS IT, below, which is the accessibility
+   half and the only half that was ever load-bearing. */
+.landing-wrap.about-page .about-ribbon-track:has(> :nth-child(2)) {
+  animation: about-ribbon-slide 26s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-wrap.about-page .landing-founder-star,
+  .landing-wrap.about-page .about-ribbon-track {
+    animation: none;
+  }
+}
+
+
+@media (max-width: 991px) {
+
+  /* ⚠ HER NOTE: the tops of both heads were cut. Stacked, the crop is a SQUARE
+     taken out of a PORTRAIT, and `center` throws away the top third — which is
+     where the faces are. `top` anchors the crop to the top of the file instead.
+     ⚠ THE HORIZONTAL IS THE OTHER HALF AND IT IS ONE VALUE. If they still sit
+     left of centre, LOWER the percentage — a smaller number reveals more of the
+     image's left side, which pushes the subjects right. 50% is centre.
+     ⚠ DESKTOP IS LEFT ON `center` ON PURPOSE. That crop is a tall column rather
+     than a square and it is not cutting anything. */
+  .landing-wrap.about-page .landing-founder-photo {
+    background-position: 50% top;
+  }
+
+}
+
+/* ==========================================================================
+   v52 — S314 — THE TWO PARAGRAPHS MATCH, AND THE CAPTION HEADING GROWS
+   ROLLBACK: delete from this comment to the end of the file.
+
+   WHERE THE NUMBERS COME FROM. Her note was "somewhere in between what they're
+   both set to now" and "almost as big as the heading".
+     lede 17 + caption body 13 -> BOTH 15        (14 on a phone, from 16 and 13)
+     caption heading 22 -> 44, against a 58px masthead heading    (76%)
+       991: 36 against 46 · 767: 30 against 36
+
+   ⚠⚠ THE CAPTION HEADING DOUBLES AND THAT IS THE POINT, but it is also the one
+   number here worth a second look on the render. At 44px "I'm Jennie" is the
+   second loudest thing in the block, and it sits UNDER the lede rather than
+   above it, so it reads as a second opening rather than a caption. That is what
+   she asked for; it is not what the element was built to be.
+
+   ⚠ THE AMBER RULE WIDENS WITH IT. v47 cut it to 24px for a 22px heading; at
+   44px that reads as a tick rather than a rule. 34px is proportional to the new
+   size, and it is the same relationship the section headings use.
+
+   ⚠ THE PHOTO GROWS TOO, AND SILENTLY. The block's height is the left column's
+   content, so a bigger caption heading makes a taller column and the portrait
+   fills whatever that comes to. Nothing to set — but the crop gets taller, so
+   look at the desktop photo as well as the type.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.about-page .landing-sub,
+.landing-wrap.about-page .landing-founder-body {
+  font-size: 15px;
+}
+
+.landing-wrap.about-page .landing-founder-heading {
+  font-size: 44px;
+}
+
+.landing-wrap.about-page .landing-founder-heading::after {
+  width: 34px;
+}
+
+
+@media (max-width: 991px) {
+
+  .landing-wrap.about-page .landing-founder-heading {
+    font-size: 36px;
+  }
+
+}
+
+
+@media (max-width: 767px) {
+
+  .landing-wrap.about-page .landing-sub,
+  .landing-wrap.about-page .landing-founder-body {
+    font-size: 14px;
+  }
+
+  .landing-wrap.about-page .landing-founder-heading {
+    font-size: 30px;
+  }
+
+}
