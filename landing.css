@@ -6419,3 +6419,54 @@ html.landing-motion .landing-wrap.about-page .about-ribbon-track:has(> :nth-chil
   }
 
 }
+
+/* ==========================================================================
+   v49 — S314 — THE BAND'S ROW SPAN, AND THE PHONE SCALE
+   ROLLBACK: delete from this comment to the end of the file.
+
+   ⚠⚠⚠ v48'S BUG, AND IT IS WORTH KEEPING BECAUSE IT LOOKS LIKE A LAYOUT
+   OPINION AND IS A SHORTHAND COLLISION. v48 wrote:
+       grid-area: band;
+       grid-row: auto;
+   `grid-area` IS A SHORTHAND FOR grid-row-start/end AND grid-column-start/end.
+   The `grid-row: auto` on the next line was meant to clear v47's old
+   `grid-row: 2 / span 2` and instead cleared the ROW HALF OF grid-area, so the
+   band fell back to auto placement and occupied ONE row. The photo is absolute
+   against it, so it came out at a third of its height. NOTHING ERRORED.
+   ▶ NEVER FOLLOW grid-area WITH grid-row OR grid-column. If a longhand has to
+   be cleared, restate grid-area instead — which is exactly what the 991 rule
+   below does.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.about-page .landing-founder-band {
+  grid-row: 2 / -1;
+}
+
+
+@media (max-width: 991px) {
+
+  /* ⚠ RESTATING grid-area IS THE CORRECT WAY TO CLEAR THE DESKTOP SPAN. It sets
+     both axes from the named area, so a single-column map places the band in its
+     own row with no longhand fighting it. */
+  .landing-wrap.about-page .landing-founder-band {
+    grid-area: band;
+  }
+
+}
+
+
+@media (max-width: 767px) {
+
+  /* ⚠⚠ THE PHONE PHOTO WAS THE IMBALANCE. At 4/5 across a full-width column it
+     came out ~540px tall against a 36px headline, so the portrait was most of
+     the screen and everything else read as a caption to it. Square is the same
+     photograph cropped less tall — no new file, no second asset.
+     ⚠ THE REST OF THE PHONE SCALE IS DELIBERATELY NOT TUNED YET. The block still
+     carries 78px of top padding holding space for a ribbon that does not exist,
+     so the top is unbalanced for a reason that is about to go away. Judge the
+     type sizes once it is in. */
+  .landing-wrap.about-page .landing-founder-photo {
+    aspect-ratio: 1 / 1;
+  }
+
+}
