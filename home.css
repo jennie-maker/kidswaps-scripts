@@ -4289,3 +4289,179 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
     background: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png") center / contain no-repeat;
   }
 }
+
+/* ==========================================================================
+   v59 — S314 — THE TWO PHOTOS, THE FAQ TYPE, THE SEAM, THE STAR
+   ROLLBACK: delete from this comment to the end of the file. Both photo panels
+   return to their placeholder colours, the FAQ type returns to 22/15, the blue
+   card sits flush against the green band on a phone again, and the star returns
+   to the card's right edge. Nothing else changes.
+
+   ⚠⚠ EVERY RULE HERE IS AN APPENDED OVERRIDE, NEVER AN EDIT TO THE RULE IT
+   BEATS. That is what makes the rollback a single delete, and it is the same
+   pattern v41 uses in landing.css for the star artwork.
+
+   ⚠⚠⚠ THE BARE RULES IN THIS BLOCK SIT AFTER EVERY @media IN THE FILE, so at
+   equal specificity they win at EVERY width on source order. That is why each
+   one that has a breakpoint twin above is RESTATED in its own @media below.
+   Miss one and the value silently applies at a width it was never meant for.
+   -------------------------------------------------------------------------- */
+
+
+/* ---- 1. THE CLOSET STANDARD PHOTO ---------------------------------------
+   ⚠ THE PANEL IS A DIV, NOT AN IMAGE — flex: 0 0 38% of the FULL VIEWPORT, with
+   its HEIGHT set by the text column beside it (align-items: stretch). So there
+   is no aspect ratio to fit and the photo is always cropped: a tall portrait
+   slice on desktop, a wide band 300px high at 767 and 240 at 479.
+   ⚠ background-color IS LEFT DECLARED ABOVE, deliberately. It is what shows if
+   the asset ever 404s, and deleting this block restores it exactly.
+   ⚠ POSITION IS CENTRE AT EVERY WIDTH. Unlike the FAQ panel she has not asked
+   for a focal point here, and the phone band is the crop to judge it on.
+   ⚠ THE URL IS PASTED VERBATIM FROM HER, NEVER RETYPED. */
+.closet-standard-photo {
+  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9ff9c0c098df709c031339_home-page-closet-standard.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+
+/* ---- 2. THE FAQ PHOTO PANEL ---------------------------------------------
+   ⚠⚠ THE PANEL CARRIES border-radius: 24px AND A STAR OVERHANGING ITS TOP-RIGHT
+   CORNER. background-size: cover clips to the radius for free; the star is a
+   ::after on this same element and is untouched here.
+   ⚠ IT CANNOT REACH /faq — that page sets .faq-section.faq-page .faq-photo-panel
+   to display:none at every width, so this rule paints nothing there. */
+.faq-section .faq-photo-panel {
+  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9ffdf101ab3bb95d68df10_faq-image.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+
+/* ---- 3. THE QUESTION AND THE TEASER ------------------------------------
+   HER RULING S314: 20 and 17, closing a 7px gap to 3. The question was 22 and
+   the teaser 15. Hierarchy is now carried by WEIGHT (600 against 400) and by
+   COLOUR (amber against cream), which is enough.
+
+   ⚠⚠⚠ IT REACHES /faq TOO AND THAT IS HER RULING, NOT AN ACCIDENT. That page
+   overrides only the COLOURS of these two elements — family, weight, size and
+   leading all come from these shared rules, deliberately, so the component
+   reads the same on both pages. She was shown the cost (26 rows she signed off
+   two sessions ago move with it) and ruled both.
+
+   ⚠⚠ THE PHONE RESTATEMENT IS MANDATORY, NOT TIDINESS. The 767 block above sets
+   the question to 19px; this bare 20px sits later in the file and would beat it
+   at phone width. And the teaser has NO breakpoint rule of its own anywhere, so
+   without the twin below it would be 17px on a phone as well.
+
+   ⚠ CONTRAST, MEASURED AND SPENT KNOWINGLY. Amber #EDA920 on this navy reads
+   4.22:1. At 22px/600 it already failed AA for normal text, and 24px/600 would
+   have qualified as large text and cleared it at 3:1 — she was shown that at
+   S249 and kept 22. Going to 20 moves further under the bar, hers, twice now.
+   THE TEASER IS UNAFFECTED: cream on navy is high contrast and rising to 17
+   only helps. DO NOT "CORRECT" THE QUESTION UPWARD ON CONTRAST GROUNDS. */
+.faq-section .faq-question-text {
+  font-size: 20px;
+}
+
+.faq-section .faq-question-teaser {
+  font-size: 17px;
+}
+
+
+/* ---- 4. THE SEAM BELOW THE BLUE CARD ------------------------------------
+   ⚠⚠⚠ THE ARITHMETIC IS THE WHOLE FIX AND IT IS THE TRAP THIS FILE ALREADY
+   DOCUMENTS TWICE FOR THE RIBBON. The green band's scallop is an ::after sitting
+   at top:-27px, so it RISES INTO whatever is above it. A plain --section-gap
+   here renders as gap minus the scallop: 17px of visible cream on desktop and
+   23 at tablet, where every other seam on this page is 44 (her S240 ruling of
+   ONE spacing number). So the margin is gap PLUS the scallop height, and the
+   scallop is 27 / 21 / 15 across the three breakpoints. CHANGE THE SCALLOP,
+   CHANGE THESE THREE NUMBERS WITH IT.
+
+   ⚠⚠ THE PHONE WAS margin-bottom: 0, SET AT S253, AND ITS REASON EXPIRED. Its
+   own comment names the neighbour as the SOURCES EMBED, whose large top padding
+   made a stacked margin read as a blank screen. The section order changed and
+   the neighbour is now the green band, which brings no such padding — so the
+   rule survived its reason and the two sections have been flush ever since.
+
+   ⚠⚠⚠ SCOPED :not(.faq-page) BECAUSE /faq WEARS THIS SAME CLASS. There is no
+   green band on that page and no scallop to subtract, so an unscoped rule would
+   push its footer down by 71px for no reason. :not() takes the specificity of
+   its argument, so this is (0,2,0) and beats the (0,1,0) rules above it on
+   specificity rather than on source order. */
+.faq-section:not(.faq-page) {
+  margin-bottom: calc(var(--section-gap) + 27px);
+}
+
+
+@media screen and (max-width: 991px) {
+
+  /* 2b. HER ASK: the stacked band shows the TOP of the photo, not its middle.
+     Below 992 the panel stops being a tall column and becomes a wide band, so
+     `cover` on a portrait image would crop to the centre and lose the top. */
+  .faq-section .faq-photo-panel {
+    background-position: center top;
+  }
+
+  /* 6. THE STACKED PANEL IS TALLER — HERS, 280 -> 360. It is ONE VARIABLE and
+     the star's own position is computed off it, so the star follows for free.
+     ⚠ NAMED COST: everything below the FAQ moves down 80px in this band. */
+  .faq-section {
+    --faq-photo-height: 360px;
+  }
+
+  /* 4b. scallop is 21px here */
+  .faq-section:not(.faq-page) {
+    margin-bottom: calc(var(--section-gap) + 21px);
+  }
+
+}
+
+
+@media screen and (max-width: 767px) {
+
+  /* 3b. the mandatory phone twins — see the note above */
+  .faq-section .faq-question-text {
+    font-size: 18px;
+  }
+
+  .faq-section .faq-question-teaser {
+    font-size: 16px;
+  }
+
+  /* 6b. 220 -> 300, hers */
+  .faq-section {
+    --faq-photo-height: 300px;
+  }
+
+  /* 4c. scallop is 15px here, and this is the rule that beats the S253
+     margin-bottom: 0 */
+  .faq-section:not(.faq-page) {
+    margin-bottom: calc(var(--section-gap) + 15px);
+  }
+
+  /* 5. THE STAR MOVES 15px LEFT so it stops touching the card's right edge.
+     ⚠⚠ IT LIVES IN TWO PLACES. The base rule is right:-34px and the 479 block
+     overrides it to -28px, so moving it once only fixes one phone band. This is
+     -34 -> -19; the 479 twin below is -28 -> -13.
+     ⚠ ONLY `right` MOVES. `top`, the size and the rotate custom property are all
+     left alone, and no `transform` appears here — the star is turned by
+     `rotate: var(--ks-star-rot)` and a transform would compose with it. */
+  .faq-section .faq-photo-panel::after {
+    right: -19px;
+  }
+
+}
+
+
+@media screen and (max-width: 479px) {
+
+  /* 5b. the 479 twin */
+  .faq-section .faq-photo-panel::after {
+    right: -13px;
+  }
+
+}
