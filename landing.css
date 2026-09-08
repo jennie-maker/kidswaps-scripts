@@ -6313,3 +6313,109 @@ html.landing-motion .landing-wrap.about-page .about-ribbon-track:has(> :nth-chil
   }
 
 }
+
+/* ==========================================================================
+   v48 — S314 — THE ABOUT MASTHEAD, CORRECTED
+   ROLLBACK: delete from this comment to the end of the file, and v47's version
+   returns. ⚠ v47 IS NOT A GOOD STATE TO ROLL BACK TO — see below. To undo this
+   work entirely, delete from the v47 comment instead, and move the panel back
+   inside the band in the Designer.
+
+   ⚠⚠⚠ WHAT WAS WRONG WITH v47, AND NEITHER FAULT WAS TASTE.
+   (1) THE LEDE FELL TO THE BOTTOM OF THE BLOCK. The headline and the lede sat in
+       two separate grid rows and BOTH stretched to the photo's height, so the
+       space between them was slack rather than spacing.
+   (2) THE CAPTION WAS IN THE WRONG COLUMN. The layout she approved put the
+       eyebrow, headline, lede AND caption in the LEFT column with the portrait
+       running the full height beside them. v47 left the caption inside the band,
+       which put copy in the right column, made that column the tall one, and
+       left the left column short with empty navy under it.
+   The panel is now a sibling of the band in the markup — two drags in Navigator,
+   S314 — and this block places it in the left column where it belongs.
+
+   ⚠⚠ THE HEIGHT NOW COMES FROM THE TYPE AND NOTHING ELSE. The left column is
+   headline + lede + caption at their natural heights; the band stretches to
+   match; the photo fills the band. There is no ratio, no min-height and no
+   spacer row, so THE BLOCK CANNOT HAVE SLACK IN IT — which is the fault that
+   killed v47 and the two grid attempts before it.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.about-page .landing-masthead {
+  align-items: start;
+  grid-template-areas:
+    "eyebrow eyebrow"
+    "head    band"
+    "sub     band"
+    "panel   band";
+}
+
+/* ⚠ THE BAND IS STRETCHED DELIBERATELY. Its only child that has size is the
+   photo, and the photo has no intrinsic height — so without this the band
+   collapses to nothing and the portrait disappears. */
+.landing-wrap.about-page .landing-founder-band {
+  grid-area: band;
+  grid-row: auto;
+  align-self: stretch;
+  position: relative;
+}
+
+/* ⚠⚠ ABSOLUTE, NOT A NEGATIVE MARGIN. The photo must FILL the band and also rise
+   above the ribbon. A negative margin-top moves the box without changing its
+   height, so it would lift the top and leave the same gap at the bottom. Insets
+   do both at once, and -58 against the masthead's 104px top padding is what puts
+   the portrait over the ribbon with the eyebrow still clear of it. */
+.landing-wrap.about-page .landing-founder-photo {
+  position: absolute;
+  top: -58px;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  aspect-ratio: auto;
+  margin-top: 0;
+}
+
+.landing-wrap.about-page .landing-founder-panel {
+  grid-area: panel;
+  margin: 26px 0 0;
+}
+
+.landing-wrap.about-page .landing-sub {
+  margin: 18px 0 0;
+}
+
+
+@media (max-width: 991px) {
+
+  /* stacked: the portrait sits between the headline and the lede, so the
+     headline still opens the page and the picture is still above the fold */
+  .landing-wrap.about-page .landing-masthead {
+    grid-template-areas:
+      "eyebrow"
+      "head"
+      "band"
+      "sub"
+      "panel";
+  }
+
+  /* ⚠ BACK IN FLOW AND BACK TO A RATIO. Stacked there is no type column beside
+     it to take a height from, so the photo needs one of its own. */
+  .landing-wrap.about-page .landing-founder-photo {
+    position: static;
+    aspect-ratio: 4 / 5;
+    margin-top: 22px;
+  }
+
+  .landing-wrap.about-page .landing-founder-panel {
+    margin-top: 22px;
+  }
+
+}
+
+
+@media (max-width: 767px) {
+
+  .landing-wrap.about-page .landing-founder-photo {
+    margin-top: 18px;
+  }
+
+}
