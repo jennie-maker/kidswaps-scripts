@@ -4465,3 +4465,95 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   }
 
 }
+
+/* ==========================================================================
+   v60 — S314 — THE SEAM GAP UNDER THE CLOSING RIBBON, AND THE PRICING STAR
+   ROLLBACK: delete from this comment to the end of the file.
+
+   -------------------------------------------------------------------------- */
+
+
+/* ---- 1. THE 23px CREAM BAND BETWEEN THE CORAL AND THE CLOSET STANDARD ----
+   ⚠⚠⚠ MEASURED S314, NOT DERIVED, AND THE CAUSE WAS NOT WHERE THIS FILE SAID.
+   At 1461: .closet-preview-section ends at 1695, .closet-standard-section
+   begins at 1718, and the 23px between them is the ribbon's own
+   `div.w-embed` — parent BODY, background transparent, height 23px, full width.
+   So THE TWO SECTIONS HAVE NEVER TOUCHED. 23 is --ribbon-height / 2: the ribbon
+   pulls half its height up with margin-bottom, and the wrapper keeps the other
+   half as real layout height.
+
+   THE VISIBLE FAULT: the band is rotated 2.8deg, so at the LEFT end it rides UP
+   off that strip and the page background shows through beneath it, over the top
+   of .closet-standard-photo. ~13px at the far left at 1461, tapering to nothing
+   by the middle, and it GROWS WITH VIEWPORT WIDTH like every other wedge on this
+   ribbon (0.56 x viewport x tan 2.8deg).
+
+   ⚠⚠ THE FIX THIS FILE HAD SCOPED WAS AIMED AT THE WRONG ELEMENT. The closing
+   ribbon's own comment says a returning sliver wants "a tilted coral wedge on
+   .closet-standard-section's own top edge". That was written believing the two
+   sections met. They do not, and a wedge on the section would have painted into
+   the wrong box while the 23px strip stayed exactly where it was.
+
+   ⚠⚠ IT IS A SECOND RULE ON THE SAME SELECTOR, DELIBERATELY, NOT AN EDIT TO THE
+   S247 ONE ABOVE. That rule owns `overflow-x: clip` and its comment explains why
+   `hidden` would slice the overhang off — leave it alone. This adds a margin and
+   nothing else, and deleting this block restores the 23px exactly.
+
+   ⚠ --ribbon-height IS ON :root (line 39), so it resolves on a body-level
+   element. Written as the token rather than -23px so it stays in step with the
+   four breakpoint values the ribbon already scales through.
+
+   ⚠⚠ NAMED COST, PAGE-WIDE: everything below the coral section moves UP by half
+   a ribbon at every width. The coral visible below the product cards does NOT
+   change — that is the section's own bottom padding and this does not touch it.
+
+   ⚠ THE OTHER END IS UNTOUCHED AND IS A SEPARATE DECISION. Where the band dips
+   it opens a wedge ABOVE itself, between the coral and the band. v31 filled that
+   with a coral box-shadow and v48 deleted it because a fixed 40px runs out past
+   ~1500px while the wedge keeps growing. A tilted wedge is the shape that has no
+   ceiling. NOT BUILT — she looks at the render first. */
+.w-embed:has(> .closet-preview-ribbon-closing) {
+  margin-bottom: calc(var(--ribbon-height) / -2);
+}
+
+
+@media screen and (max-width: 767px) {
+
+  /* ---- 2. THE PRICING STAR LANDS ON THE LEARN MORE BUTTON ----------------
+     ⚠⚠⚠ AN INERT RULE, AND EVERY GATE PASSED ON IT. The 767 block above places
+     this star as a grid item — grid-row 3, justify-self: end, 130px, pushed to
+     the far right of the button's row, which is the arrangement she picked off
+     the mobile mockup. IT HAS NEVER DONE THAT. The base rule sets
+     `position: absolute` with `right: 228px`, and that block never resets it.
+     An absolutely positioned box with a real `right` value ignores
+     justify-self on that axis, so grid-column, grid-row and justify-self are
+     all dead and the DESKTOP offset is what actually places it. 228px in from
+     the right of a ~500px container puts it squarely on the button.
+
+     ⚠⚠ THE COMMENT ON THE DESKTOP RULE IS ALSO WRONG AND IS WHY THIS SURVIVED.
+     It says right-anchoring "keeps the SAME gap from it at every width and
+     cannot drift out of step with a breakpoint". What moves is the BUTTON'S
+     WIDTH, not its position: measured live at 886 the button is 287px wide
+     starting at 558, and the star sits 574 to 658 — on top of it. There is no
+     991 override, so 768-991 has the same fault and this rule does not reach
+     it. THAT BAND IS STILL WRONG. Its fix is a `right` value that clears a
+     stretched button, and it is a separate decision.
+
+     ⚠ ONE DECLARATION. `position: static` hands the element back to the grid
+     and the placement above does what it was written to do. left, top, right
+     and bottom from the base rule all go inert with it — that is the point,
+     not a side effect.
+
+     ⚠⚠ NOTHING HERE MAY SET `transform`. The star is turned by
+     `rotate: var(--ks-star-rot)`, written to the CONTAINER by home.js and read
+     by this pseudo-element, and rotate composes with transform.
+
+     ⚠ AT 479 AND BELOW THIS PSEUDO-ELEMENT IS display:none and the star is a
+     ::after on .h2-light instead, sitting after "pricing." — read live at 415
+     and correct. This rule reaches that band too and is harmless there, because
+     a display:none element is not placed at all. */
+  .pricing-preview-section .pricing-preview-container::after {
+    position: static;
+  }
+
+}
