@@ -4627,3 +4627,85 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   }
 
 }
+
+/* ==========================================================================
+   v62 — S314 — THE SECOND ROW INTERLOCKS INSTEAD OF REPEATING
+   ROLLBACK: delete from this comment to the end of the file. Row two goes back
+   to being a copy of row one and the coral gaps return.
+
+   ⚠⚠⚠ THE GAPS ARE STRUCTURAL, NOT A FAULT, AND THIS IS THE ARITHMETIC. A grid
+   row is as tall as its tallest item, and v61 gave row two the SAME pattern as
+   row one — so in the two columns carrying a SQUARE box the card ended roughly
+   95px above the row line, and then the card below it took the SAME 36px or
+   48px offset again. Two holes per column, stacked. She named both:
+   shoes-to-lockbox (column 2) and jacket-to-nesting-rainbow (column 4).
+
+   ⚠⚠ SO ROW TWO IS THE INVERSE OF ROW ONE, NOT A COPY. Every offset goes to 0,
+   so all four cards start flush at the row line and no gap can open between the
+   rows at all. And the media ratios FLIP: the two columns that were square in
+   row one are TALL in row two and vice versa, so each column alternates and the
+   short card in row one is followed by the long one.
+   ▶ THE RAGGEDNESS MOVES TO THE BOTTOM EDGE, WHICH IS WHERE IT CAN DO NO HARM.
+   Row one keeps its approved staggered top against the oversized heading; row
+   two ends unevenly against the CTA and the ribbon.
+
+   ⚠⚠⚠ 8n+, NOT 4n+, AND THAT IS THE WHOLE POINT. v61's rules repeat every four
+   deliberately so the count can grow; these repeat every EIGHT so positions 5
+   to 8 differ from 1 to 4. They sit later in the file at one pseudo-class more
+   than nothing extra — same specificity, later source order — so they take
+   positions 5-8 back off v61 and leave 1-4 exactly as she approved them.
+   ▶ AT SIXTEEN CARDS THIS PATTERN WOULD REPEAT CORRECTLY TOO. At twelve it
+   would not: positions 9-12 would read as row one again while sitting under a
+   row that already inverted. Twelve is not a shape anyone has asked for; if it
+   ever is, this block is the thing to re-derive.
+
+   ⚠⚠ IT CANNOT BE PIXEL PERFECT AND SHOULD NOT BE TUNED AS THOUGH IT CAN. Card
+   height depends on whether the item NAME wraps to one line or two, and the
+   items rotate as stock is claimed — the same eight tiles will not be there
+   next week. This closes the holes structurally rather than aligning edges,
+   which is the only version that survives the content changing.
+
+   ⚠⚠⚠ THE PHONE TWIN AT THE FOOT IS MANDATORY AND THE FIRST DRAFT OF THIS BLOCK
+   GOT IT WRONG. v61's phone rules zero every offset and square every box at
+   :nth-child(n) — but they sit at line ~4605 and these bare rules land ~4670,
+   LATER, at the same specificity. Without the twin below, cards 6 and 8 would
+   have gone TALL on a phone while the rest stayed square, at every width,
+   silently. Caught by printing the line numbers rather than by reading the
+   comment I had just written.
+   -------------------------------------------------------------------------- */
+
+.closet-preview-grid > *:nth-child(8n+5),
+.closet-preview-grid > *:nth-child(8n+6),
+.closet-preview-grid > *:nth-child(8n+7),
+.closet-preview-grid > *:nth-child(8n+8) {
+  margin-top: 0;
+}
+
+/* the two columns that were TALL in row one go SQUARE here */
+.closet-preview-grid > *:nth-child(8n+5) .closet-preview-card-media,
+.closet-preview-grid > *:nth-child(8n+7) .closet-preview-card-media {
+  aspect-ratio: 1 / 1;
+}
+
+/* and the two that were SQUARE go TALL — 3/4 is the base value, restated
+   because v61's 4n+2 / 4n+4 square rule reaches these positions too */
+.closet-preview-grid > *:nth-child(8n+6) .closet-preview-card-media,
+.closet-preview-grid > *:nth-child(8n+8) .closet-preview-card-media {
+  aspect-ratio: 3 / 4;
+}
+
+
+@media screen and (max-width: 767px) {
+
+  /* THE TWIN. Takes positions 5-8 back for the phone, which is 2x4 there and
+     wants every box square and every offset zero. Same specificity as the bare
+     rules above, later in the file. */
+  .closet-preview-grid > *:nth-child(n) {
+    margin-top: 0;
+  }
+
+  .closet-preview-grid > *:nth-child(n) .closet-preview-card-media {
+    aspect-ratio: 1 / 1;
+  }
+
+}
