@@ -4838,3 +4838,122 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   }
 
 }
+
+/* ==========================================================================
+   v64 — S314 — FIVE SMALLS: PHONE STARS, THE PRICING STAR, THE PRICING-TO-FAQ
+   GAP, THE SOURCES GROUND, AND THE FAQ PHOTO'S BOTTOM MARGIN
+   ROLLBACK: delete from this comment to the end of the file.
+
+   ⚠⚠ TWO OF THESE ARE SCOPED :not(.faq-page) AND THAT IS NOT OPTIONAL. /faq
+   wears .faq-section too — there the section IS the whole page card, its photo
+   panel is display:none and there is no pricing section above it. Unscoped, the
+   gap change would move /faq's masthead and the padding change would tighten its
+   footer, on a page she signed off two sessions ago. Same guard as v59's seam.
+   -------------------------------------------------------------------------- */
+
+
+/* ---- 4. THE SOURCES GROUND GOES WHITE -----------------------------------
+   ⚠⚠⚠ IT WAS NEVER LIGHT CREAM BY INSTRUCTION — THE BLOCK HAS NO BACKGROUND AT
+   ALL. Swept: there is not one background declaration anywhere under .ks-src in
+   this file. What shows through is the PAGE GROUND, #EDECE0, set on /old-home's
+   Body in the Designer at S253. So this is not a colour being changed, it is a
+   colour being INTRODUCED, and that is why one rule at every width is enough.
+
+   ⚠⚠ HER REASON MATTERS MORE THAN THE VALUE: the footer is that same cream, so
+   with the sources block transparent the two ran together and the footer had no
+   top edge. White gives the footer its edge back and costs nothing else, because
+   the citations are ink and the links are ink.
+
+   ⚠ WRITTEN AT THE SAME TWO CLASSES AS THE EXISTING .w-embed .ks-src RULE. The
+   embed's own <style> lives in the BODY, later in source order than this file,
+   so a ONE-class rule here would tie with it and lose. Two beats it outright,
+   which is the S245 lesson this section already paid for. */
+.w-embed .ks-src {
+  background-color: #FFFFFF;
+}
+
+
+@media screen and (max-width: 991px) {
+
+  /* ---- 5. THE PHOTO'S BOTTOM MARGIN MATCHES ITS SIDES --------------------
+     The panel carries `margin: 48px 40px 0` here, so its sides sit 40px inside
+     the navy and its BOTTOM sits on the section's own padding, which is 64px.
+     40 against 64 is what reads as a heavier border along the bottom edge.
+     ⚠ THE FIX IS THE SECTION'S PADDING, NOT THE PANEL'S MARGIN. The panel is the
+     last child, so the space beneath it belongs to the section and a margin on
+     the panel would simply be added to it. */
+  .faq-section:not(.faq-page) {
+    padding-bottom: 40px;
+  }
+
+}
+
+
+@media screen and (max-width: 767px) {
+
+  /* 5b. sides are 20px here, so the bottom is 20px */
+  .faq-section:not(.faq-page) {
+    padding-bottom: 20px;
+  }
+
+  /* ---- 3. THE GAP BETWEEN PRICING AND THE FAQ CARD ----------------------
+     The card carried `calc(var(--section-gap) + 24px)` on top, so 68px against
+     the 44px every other seam on this page uses. The extra 24 is the last of a
+     ladder (32 desktop, 28 tablet, 24 phone) that nothing in the file explains.
+     ⚠ THIS IS HER OWN S240 RULING ARRIVING LATE: one spacing number for every
+     section, --section-gap, identical at every breakpoint. Now it is.
+     ⚠ ONLY THE TOP CHANGES. The bottom is v59's seam arithmetic and is left
+     exactly alone — it is gap PLUS the scallop, for a reason. */
+  .faq-section:not(.faq-page) {
+    margin-top: var(--section-gap);
+  }
+
+}
+
+
+@media screen and (max-width: 479px) {
+
+  /* ---- 1. THE PHONE STARS, 20% SMALLER — HERS ---------------------------
+     ⚠ ONLY THE PHONE. Between 480 and 767 the closet preview star is a 44px
+     positioned div and the two closet standard stars are hidden entirely, so
+     that band is a different arrangement and she has not looked at it. NOT
+     TOUCHED.
+     ⚠⚠ EACH OF THESE IS ANCHORED BY ITS TOP-LEFT CORNER, so shrinking pulls the
+     artwork up and left rather than shrinking about its centre. Positions are
+     deliberately NOT re-tuned to compensate — that is a judgement off a render,
+     and every one of these positions is already marked in this file as a guess
+     that needs one. */
+
+  /* what you'll find: 110 -> 88 */
+  .closet-preview-star {
+    width: 88px;
+    height: 88px;
+  }
+
+  /* we're picky on purpose, the big star after "purpose.": 91 -> 73 */
+  .closet-standard-heading::after {
+    width: 73px;
+    height: 73px;
+  }
+
+  /* we're picky on purpose, the small star on the guidelines button: 52 -> 42.
+     ⚠ THIS IS THE SECOND 20% IT HAS TAKEN. S303 already cut it 65 -> 52, and its
+     own comment says so. 42 is 65 x 0.8 x 0.8. Deliberate, hers. */
+  .closet-standard-text .closet-standard-cta::after {
+    width: 42px;
+    height: 42px;
+  }
+
+  /* ---- 2. THE PRICING STAR RISES 20px ----------------------------------
+     ⚠⚠ WRITTEN AS calc(0.05em - 20px), NEVER AS A BARE PIXEL VALUE. The 0.05em
+     is measured against the heading's own font-size and was itself the result of
+     an S304 tuning pass; replacing it with pixels would freeze the relationship
+     and silently move the star the next time that heading is resized.
+     ⚠ MARGIN, NOT `top`. This ::after is absolutely positioned with auto offsets,
+     so it hangs off its own static position after "pricing." — a `top` value
+     would take it out of that relationship and anchor it to the container. */
+  .pricing-preview-section .h2-light::after {
+    margin-top: calc(0.05em - 20px);
+  }
+
+}
