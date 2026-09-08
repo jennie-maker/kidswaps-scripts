@@ -5992,3 +5992,80 @@ html.landing-motion .landing-wrap.blog-post-page .blog-post-related.is-in {
   }
 
 }
+
+/* ==========================================================================
+   v46 — S314 — THE FACELESS STAR
+   ROLLBACK: delete from this comment to the end of the file. The two small
+   stars return to the pink clip-path placeholder and the phone masthead star
+   returns to the faced artwork. Nothing else changes.
+
+   ⚠⚠⚠ HER S303 RULE IS WHAT THIS BLOCK IS: A BIG STAR HAS A FACE, A SMALL ONE
+   DOES NOT, because at small sizes the face is unreadable anyway. v41 put the
+   FACED artwork on .landing-star site-wide and its own comment says in terms
+   that the two small stars want the FACELESS one and must not be pointed at it.
+   This is that file, and nothing else.
+
+   THE THREE SITES:
+     .landing-wrap.about-page .landing-founder-star   50px desktop / 40 at 991
+     .landing-wrap.blog-post-page .blog-post-star     46px desktop / 32 at 767
+     .landing-star INSIDE @media (max-width:767px)    52px at 767 / 44 at 479
+
+   ⚠⚠ THE FIRST TWO ARE PER ELEMENT, WHICH IS HER RULE EXACTLY — neither ever
+   carries a face at any width. THE THIRD IS PER BREAKPOINT AND HER RULE CANNOT
+   REACH IT, because ONE element is 124-132px on a placed desktop page and 44px
+   on a phone. That is the case S308 recorded as "nobody decided". The gate is
+   set at 767 so 88 and 70 keep the face and 52 and 44 lose it.
+   ▶ 70px IS THE JUDGEMENT CALL, CLAUDE'S, REVERSIBLE IN ONE NUMBER. Move the
+   gate to max-width:991 and the tablet band goes faceless too. SHE SEES IT ON
+   A RENDER BEFORE THIS IS CALLED DONE.
+
+   ⚠⚠⚠ NO width, height, top, right, left OR transform IN THIS BLOCK, ON
+   PURPOSE, AND THIS IS THE SAME TRAP v41 DOCUMENTS.
+     · The blog star carries transform: rotate(-8deg) in its base rule. A
+       transform here would replace it, not add to it, and the star would snap
+       upright with nothing erroring.
+     · The masthead star is spun by an inline `rotate:` written by landing.js
+       on scroll. `rotate` and `transform` COMPOSE, so a transform here swings
+       it around a pivot as it turns.
+     · Sizes live in the breakpoint rules. An appended bare rule beats a media
+       query at equal specificity by source order, so a size here would freeze
+       the star at one size at every width.
+   CHECKED: this block and every rule it overrides share NO property except
+   background-color, clip-path and the background-* set.
+
+   ⚠⚠ THE PHONE RULE IS INSIDE ITS OWN @media AND MUST STAY THERE. Written bare
+   it would land on every width and strip the face off the 124/132px desktop
+   placements, which is the opposite of her rule.
+
+   ⚠ THE ARTWORK IS GOLD AND THE PLACEHOLDERS WERE PINK, so the two small stars
+   change colour as well as shape. Expected, not a fault.
+
+   ⚠ THE URL IS PASTED VERBATIM FROM HER, NEVER RETYPED. A retyped asset URL is
+   a derivation, and this one is 92 characters of hex.
+   ========================================================================== */
+
+.landing-wrap.about-page .landing-founder-star {
+  background-color: transparent;
+  clip-path: none;
+  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.landing-wrap.blog-post-page .blog-post-star {
+  background-color: transparent;
+  clip-path: none;
+  background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+@media (max-width: 767px) {
+
+  .landing-star {
+    background-image: url("https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a9abf838172650ae71d1248_star-2.png");
+  }
+
+}
