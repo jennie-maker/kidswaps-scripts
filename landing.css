@@ -6869,3 +6869,164 @@ html.landing-motion .landing-wrap.about-page .about-ribbon-track:has(> :nth-chil
   }
 
 }
+
+/* ==========================================================================
+   v57 — S317 — /how-it-works: THE BEATS CENTRE, AND THE NOTE BOX GOES ON
+   THE SPINE
+   ROLLBACK: delete from this comment to the end of the file. v56 is a
+   byte-exact prefix, machine-checked before this block was appended.
+
+   MEASURED S317 AT 1462px, NOT DERIVED:
+     card 1010 at left 226 · beats at card-relative 0 / 263 / 525 / 788, each
+     column 223 wide, every child display:block at left 226 · note box, CTA row
+     and SEO block ALL 1010 at left 226 with marginLeft 0, direct children of
+     .landing-card.
+   ⚠⚠ SO THE S281 `.landing-card > .landing-cta-row` 350px RULE IS NOT REACHING
+   THIS PAGE. The CTA and the SEO block are deliberately UNTOUCHED — they are
+   already at the same edge as each other, and the only real fault on that
+   stretch was the note box's line length. A first pass at this session
+   diagnosed "four different left edges" off the assumption that the CTA sat at
+   350; the measurement said two edges, and the commit shrank accordingly.
+
+   ⚠⚠⚠ THE FOUR PLACEHOLDER ICONS ARE GONE AS OF S317. .landing-beat-icon was a
+   26px grey div; it is now a Webflow Code Embed per beat carrying the
+   /old-home animations (kshw-send / -earn / -swap / -repeat) at 96px. So
+   `.landing-beat-icon` above is INERT, and the four is-send/is-earn/is-swap/
+   is-repeat colour rules are DOUBLY inert. THEY ARE LEFT IN PLACE rather than
+   deleted, against §0's delete-inert-rules rule, because every version in this
+   file is a byte-exact prefix of the next and an edit mid-file breaks the
+   delete-to-the-end rollback the whole file depends on.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. THE TEXT CENTRES. .landing-beat is display:block with three block
+   children, so text-align carries the heading and the body on its own.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.how-it-works-page .landing-beat {
+  text-align: center;
+}
+
+/* --------------------------------------------------------------------------
+   2. THE ICON BOX CENTRES. It is a SIZED BOX, not text, so text-align cannot
+   move it — the auto margins go on the box itself.
+
+   ⚠⚠⚠ WRITTEN AT THREE CLASSES, (0,3,0), ON PURPOSE. Each embed carries its
+   own <style> setting `.kshw-send{margin:0 0 14px}` at (0,1,0), AND AN EMBED'S
+   STYLE SITS IN THE BODY — later in source order than this file in the head.
+   At equal specificity THE EMBED WINS. DO NOT SIMPLIFY THESE SELECTORS: a tie
+   loses silently, which is the S222 sources-block fault exactly.
+
+   ⚠ THE LONGHANDS PRESERVE THE 14px BOTTOM MARGIN. A `margin` shorthand here
+   would reset it and the heading would jump up against the icon.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.how-it-works-page .landing-beat .kshw-send,
+.landing-wrap.how-it-works-page .landing-beat .kshw-earn,
+.landing-wrap.how-it-works-page .landing-beat .kshw-swap,
+.landing-wrap.how-it-works-page .landing-beat .kshw-repeat {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* --------------------------------------------------------------------------
+   3. THE ARTWORK INSIDE RECENTRES. Each embed sets object-position:left center
+   on its own images, so the artwork hugs the left of a box that is now
+   centred.
+
+   ⚠⚠ SWAP IS DELIBERATELY EXCLUDED AND MUST STAY SO. Its three garments are
+   120% wide at left -24% / -10% / 4%, so the fan spans -24% to 124% and is
+   ALREADY CENTRED ON 50% of its box. A first pass at this block invented three
+   new `left` values for them and would have moved a fan that was correct.
+   READ THE EMBED BEFORE WRITING CSS AT IT.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.how-it-works-page .landing-beat .kshw-send img,
+.landing-wrap.how-it-works-page .landing-beat .kshw-earn img,
+.landing-wrap.how-it-works-page .landing-beat .kshw-repeat img {
+  object-position: center;
+}
+
+/* --------------------------------------------------------------------------
+   4. THE AMBER RULE CENTRES.
+
+   ⚠⚠⚠ IT IS position:absolute WITH left:0, READ AT LINE 1683, NOT AN
+   INLINE-BLOCK. `margin: auto` on it does NOTHING — that was the first version
+   of this rule and it would have verified clean and shipped inert. An absolute
+   box centres with left:50% and a translate, never with auto margins.
+
+   ⚠ translateX ONLY, and nothing else writes a transform on this pseudo —
+   checked, not assumed.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.how-it-works-page .landing-beat-heading::after {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* --------------------------------------------------------------------------
+   5. THE PHONE. THE ≤767 BLOCK IS BROKEN BY THE NEW ICONS AND HAS BEEN SINCE
+   THE FOURTH EMBED WENT IN.
+
+   ⚠⚠⚠ v7 turns each beat into `grid-template-columns: 26px 1fr` (line 1755) so
+   the 26px PLACEHOLDER could sit beside the heading on one line. The icons are
+   96px now, so the box overflows a 26px track — live on her phone today. The
+   beat goes back to a block and stacks centred, which matches the desktop and
+   is what her S317 ruling asks for anyway.
+
+   ⚠ grid-column IS RESET ON BOTH CHILDREN. v7 pins them to column 2, and a
+   stale grid-column on a block child is harmless today but lies about the
+   layout to the next person reading it.
+
+   ⚠ THIS BLOCK SITS AFTER v7's 767 RULES, so it wins on source order at equal
+   specificity. That is why it is here and not up there.
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 767px) {
+
+  .landing-wrap.how-it-works-page .landing-beat {
+    display: block;
+    text-align: center;
+  }
+
+  .landing-wrap.how-it-works-page .landing-beat .landing-beat-heading,
+  .landing-wrap.how-it-works-page .landing-beat .landing-beat-body {
+    grid-column: auto;
+  }
+
+}
+
+/* --------------------------------------------------------------------------
+   6. THE NOTE BOX COMES IN TO THE SPINE.
+
+   Measured at 1010px wide at 15px, roughly double a readable line, while the
+   section bodies directly above it start at 350.
+
+   ⚠⚠⚠ THE CHILD COMBINATOR IS LOAD-BEARING, exactly as it is on
+   .landing-cta-row at v19. A note box nested INSIDE a .landing-section-body is
+   ALREADY in the right-hand column, and a bare `.landing-note-box` rule would
+   shove it a further 350px right. DO NOT LOOSEN THIS TO ONE CLASS.
+
+   ⚠ IT IS DELIBERATELY NOT PAGE-SCOPED. /the-closet-standard's note box is the
+   same shape — measured S317 on that page, 1010 at left 226, direct child of
+   the card — so one rule serves both, which is the same call she made on the
+   CTA row at S281.
+
+   ⚠ 350 IS NOT ROUND: it is the section grid's 290px rail plus its 60px gap.
+   Change either and this moves with them.
+   -------------------------------------------------------------------------- */
+
+.landing-card > .landing-note-box {
+  margin-left: 350px;
+}
+
+/* ⚠⚠ THE 991 TWIN IS NOT OPTIONAL. The section grid collapses to one column at
+   991, so below that there is no rail to indent against — and this file ends
+   AFTER its breakpoint blocks, so without this the 350px would govern a 390px
+   phone and push the box off the screen. */
+
+@media (max-width: 991px) {
+  .landing-card > .landing-note-box {
+    margin-left: 0;
+  }
+}
