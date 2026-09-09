@@ -7030,3 +7030,96 @@ html.landing-motion .landing-wrap.about-page .about-ribbon-track:has(> :nth-chil
     margin-left: 0;
   }
 }
+
+/* ==========================================================================
+   v58 — S317 — /how-it-works: THE BEATS GET A HEADING, AND THE PHONE
+   PARAGRAPHS COME IN
+   ROLLBACK: delete from this comment to the end of the file. v57 is a
+   byte-exact prefix, machine-checked before this block was appended.
+
+   HER RULING S317: the seam between the ring and the beats was abrupt —
+   neither section carried a heading, so the page ran hairline, ring, hairline,
+   bag with nothing naming the change of subject. HER COPY, VERBATIM:
+   "Four simple steps". DO NOT REDRAFT IT.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. THE HEADING SPANS THE WHOLE ROW.
+
+   ⚠⚠⚠ .landing-section.landing-beats IS A GRID — repeat(4,1fr) desktop,
+   repeat(2,1fr) at 991, 1fr at 767 — so a heading added inside it becomes a
+   FIFTH GRID ITEM and auto-places into column 1, beside Send. `1 / -1` is what
+   makes it a row of its own. At 767 the grid is one column, so 1/-1 is that
+   single column and the rule is still correct there.
+
+   ⚠⚠ IT IS A NEW CLASS AND IT MUST CARRY ONE. An unclassed H2 meets Webflow's
+   site-wide `All H2` TAG selector, which paints it #F2F1EB at weight 500 —
+   near-invisible on this page, and a synthesised bold on a face that ships one
+   weight. READ THAT SELECTOR, NEVER EDIT IT: it reaches all twenty pages.
+
+   ⚠ NO AMBER RULE ON IT, DELIBERATELY. .landing-section-heading gets one from
+   its own ::after; this is a different class, so it gets nothing — and it must
+   stay that way, because the four beat headings each carry an amber rule
+   directly beneath it and a fifth would read as five of the same thing.
+
+   ⚠ CENTRED, matching the beats it heads rather than the rail headings
+   elsewhere on the page. The face and size ARE the section headings' (serif
+   italic, 30 / 27 / 25), so it reads as a section heading that happens to sit
+   over a full-width row.
+
+   ⚠ THE SPACE BENEATH IT IS THE GRID'S OWN gap — 40px desktop, 36 at 991, 30
+   at 767 — so it needs no bottom margin and cannot drift out of step with the
+   row spacing.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.how-it-works-page .landing-beats-heading {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1.16;
+  text-align: center;
+  text-transform: none;
+  color: var(--landing-ink);
+}
+
+@media (max-width: 991px) {
+  .landing-wrap.how-it-works-page .landing-beats-heading {
+    font-size: 27px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   2. THE PHONE PARAGRAPHS COME IN — HERS, 20% EACH SIDE.
+
+   ⚠⚠ PHONE ONLY. At desktop the four columns are 223px wide and already at a
+   short measure; 20% there would take them to ~134px and rag badly. Her ask
+   was mobile.
+
+   ⚠ PERCENTAGE, NOT PIXELS, so it scales with the screen: 20% of a ~350px
+   column leaves ~210px of text at 15px, roughly 26 characters a line. A pixel
+   value would be right on one phone and wrong on the next.
+
+   ⚠ padding, NOT margin, and NOT a max-width. The paragraph is centred text in
+   a block, so padding pulls both edges in symmetrically and keeps the centring
+   honest; a max-width plus auto margins would do the same thing with two more
+   declarations and one more way to get it wrong.
+
+   ⚠ THE HEADING SIZE IS RESTATED HERE TOO. This file ends AFTER every @media
+   block, so the top-level 30px above would otherwise govern the phone.
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 767px) {
+
+  .landing-wrap.how-it-works-page .landing-beats-heading {
+    font-size: 25px;
+  }
+
+  .landing-wrap.how-it-works-page .landing-beat-body {
+    padding-left: 20%;
+    padding-right: 20%;
+  }
+
+}
