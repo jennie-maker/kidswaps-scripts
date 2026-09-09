@@ -6637,3 +6637,56 @@ html.landing-motion .landing-wrap.about-page .about-ribbon-track:has(> :nth-chil
   }
 
 }
+
+/* ==========================================================================
+   v53 — S314 — THE RIBBON'S WIDTH, ITS DEPTH, AND ITS CLEARANCE
+   ROLLBACK: delete from this comment to the end of the file.
+
+   ⚠⚠⚠ MEASURED, NOT GUESSED. On the live page the ribbon read 249px wide with
+   left AND right both computing to -14.94px — and 249px is EXACTLY the
+   masthead's width. WHEN AN ABSOLUTELY POSITIONED BOX HAS left, right AND A
+   WIDTH, THE BROWSER DISCARDS right. Something is setting width:100% on the
+   element and it is almost certainly Webflow's own Link Block styling, which
+   this file never sees. `width: auto` hands the sizing back to the offsets.
+   ▶ THE LESSON GENERALISES: any left/right stretch on a WEBFLOW-CREATED element
+   wants an explicit width:auto, because the Designer's base styles are outside
+   this stylesheet and cannot be read from it.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.about-page .about-ribbon {
+  width: auto;
+  z-index: 1;
+}
+
+/* ⚠⚠ BACK BEHIND THE PORTRAIT, HERS. v51 put it in front on my reading of "all
+   the way to the border" — wrong: the strip was never short, it was BEING
+   COVERED, and the actual fault was the width above. With the width fixed it
+   reaches the blue on both sides and the photo sits over it, which is what the
+   reference does.
+   ⚠ THE STAR STAYS AT 5 so it remains the top-most object over both. */
+
+
+@media (max-width: 991px) {
+
+  /* ⚠⚠ THE RIBBON WAS TOUCHING THE EYEBROW AND THE ARITHMETIC SAYS SO. The strip
+     is 34px tall and sits at top:62px, so it ends at 96 — against 92px of top
+     padding, which is where the eyebrow starts. FOUR PIXELS OF OVERLAP, at this
+     width and the next, and only visible once real text was in it.
+     ⚠ THE PADDING MOVES, NOT THE RIBBON'S top. On desktop the portrait rises
+     58px above the band and crosses the strip; moving the ribbon up would break
+     that overlap. Adding clearance below it does not touch the relationship. */
+  .landing-wrap.about-page .landing-masthead {
+    padding-top: 124px;
+  }
+
+}
+
+
+@media (max-width: 767px) {
+
+  /* 48 + 34 = 82 against 78px of padding. Same four pixels, same fix. */
+  .landing-wrap.about-page .landing-masthead {
+    padding-top: 110px;
+  }
+
+}
