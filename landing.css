@@ -7123,3 +7123,66 @@ html.landing-motion .landing-wrap.about-page .about-ribbon-track:has(> :nth-chil
   }
 
 }
+
+/* ==========================================================================
+   v59 — S317 — /how-it-works: THE SEO BLOCK GETS ITS SEPARATION
+   ROLLBACK: delete from this comment to the end of the file. v58 is a
+   byte-exact prefix, machine-checked before this block was appended.
+
+   ⚠⚠⚠ MEASURED S317: THE VISIBLE GAP BETWEEN THE CTA ROW AND THE SEO BLOCK
+   IS ZERO. seo-content-div reads marginTop 0, paddingTop 0, borderTop 0 — the
+   block begins at the exact pixel the CTA row ends.
+
+   ⚠⚠ IT IS NOT A MOBILE FAULT AND IT WAS NEVER ONE. The gap is 0 at every
+   width. She met it on a phone because the two CTA pills are full-height
+   there and the collision is unmissable; on desktop the buttons are small and
+   it merely reads tight. A fix scoped to the phone would have left the
+   desktop touching.
+
+   ⚠ v40 (S307) BROUGHT THIS BLOCK INTO THE /about SET BUT ONLY SET ITS TYPE
+   AND ITS HORIZONTAL POSITION — max-width, the two margins and the two
+   paddings, all horizontal. It never set anything vertical, so the block has
+   sat flush against the CTA row since the day it was styled.
+
+   VALUES COPIED FROM /about's OWN RULE (v20, line 3386), not re-derived:
+   46px margin, 30px padding, one hairline. Same standard, same numbers.
+   ⚠ IF /about's SEPARATION IS EVER RETUNED, THIS MUST BE RETUNED WITH IT.
+   They are two copies of one decision and nothing links them but this note.
+   ========================================================================== */
+
+/* ⚠⚠ THE HAIRLINE IS THE PAGE'S OWN DEVICE, NOT A NEW ONE. .landing-section
+   carries border-top and so does .landing-card > .landing-cta-row, so every
+   section boundary on this page is a hairline and this makes the SEO block
+   read as the last one rather than as something stuck underneath.
+   ⚠ THE SELECTOR IS PAGE-SCOPED AT THREE CLASSES. `seo-content-div` is a
+   SHARED Webflow class worn on /about, /pricing, /browse, /clothing and
+   /toys — a bare rule here would reach all of them, and the three browse
+   pages style that block from browse-tool.js at runtime where this file
+   cannot see what it would be fighting. */
+
+.landing-wrap.how-it-works-page .seo-content-div {
+  margin-top: 46px;
+  padding-top: 30px;
+  border-top: 1px solid var(--landing-hairline);
+}
+
+/* ⚠⚠ THE PHONE TWIN IS NOT OPTIONAL. This file ends AFTER every breakpoint
+   block, so the bare rule above wins at every width on source order — without
+   this, 46/30 would govern a 390px screen, where it is more air than the
+   section needs between two blocks that are already full width.
+   ⚠ THE RATIO IS KEPT: 36/24 is the same proportion as 46/30, so the seam
+   reads the same on a phone as it does on a desktop rather than becoming a
+   different decision at a different width.
+   ⚠ /about HAS NO PHONE TWIN FOR THIS and keeps 46/30 everywhere. That is a
+   knowing divergence, not drift: /about's SEO block follows a partner row and
+   a closing CTA that are both quiet, where this one follows two full-height
+   pills. LOOK AT BOTH IF EITHER IS EVER CHANGED. */
+
+@media (max-width: 767px) {
+
+  .landing-wrap.how-it-works-page .seo-content-div {
+    margin-top: 36px;
+    padding-top: 24px;
+  }
+
+}
