@@ -4957,3 +4957,120 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   }
 
 }
+
+/* ============================================================================
+   v65 (S315) — THE PRICING ROWS ON MOBILE. OPTION A, THE LEDGER. HERS.
+
+   ⚠⚠⚠ SCOPED TO max-width:767 AND NOTHING ABOVE IT. Desktop and the 768–991
+   band keep the inline-text row and its middot separators exactly as #PRICING-
+   INLINE ruled them. HER WORDS S315: "desktop is fine as is."
+
+   THE SHAPE: a two-column grid. Name top left, price top right, swap count
+   bottom left, savings bottom right. The right edge does the separating, which
+   is why every separator is switched off below.
+
+   ⚠⚠⚠ EVERY ITEM IS PLACED EXPLICITLY BY ROW AND COLUMN, AND THAT IS LOAD-
+   BEARING. The markup order is name, SWAPS, price, savings — the S271 drag
+   order — so the price is the THIRD child and has to jump to row 1. Explicit
+   placement is also why this needs no Designer work: `order` is useless here
+   (the row was inline text, and inline elements ignore it) and a reorder in
+   Navigator would break the desktop reading order this same file depends on.
+
+   ⚠⚠ THE SEPARATORS ARE KILLED WITH `content: none`, NOT WITH display:none or
+   an empty string. A middot in a grid gap is attached to nothing — it stops
+   being a separator and becomes a mark floating between two columns. THE DOTS
+   AND THE GRID ARE ONE DECISION: if this ever reverts to a packed row, the
+   dots come back with it, and never the other way round.
+
+   ⚠⚠ THIS KNOWINGLY REVERSES THE "LARGER AND BOLDER" PHONE PASS ABOVE (name 26,
+   swaps and price 20/500, savings 18). Those values were hers, made against a
+   packed inline row where size was the only lever available. Two columns give
+   the hierarchy structurally, so the type comes back down and the savings drops
+   from 18 to 11.5 — her ask, "the savings text should be a lot smaller overall."
+   SHE JUDGED THESE VALUES ON A RENDER AT 390px BEFORE THEY WERE WRITTEN.
+
+   ⚠ THE FLOORS OF THE THREE clamp() DECLARATIONS ARE OVERRIDDEN HERE, NEVER THE
+   CLAMPS THEMSELVES. The vw factors and their caps are derived from where
+   .pricing-preview-container hits its max-width and must not be touched.
+
+   ⚠ nowrap STAYS ON THE RIGHT COLUMN AND COMES OFF THE LEFT. Price and savings
+   must never break; the name and the swap count are allowed to wrap, which is
+   what makes a 320px screen degrade into a wrapped line instead of an overflow.
+   ============================================================================ */
+
+@media screen and (max-width: 767px) {
+
+  .pricing-preview-section .pricing-card {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    column-gap: 12px;
+    row-gap: 3px;
+    align-items: baseline;
+    padding: 15px 0;
+  }
+
+  /* TOP LEFT — the plan name. */
+  .pricing-preview-section .pricing-card > .footer-tagline-dark {
+    display: block;
+    grid-column: 1;
+    grid-row: 1;
+    white-space: normal;
+    font-size: 23px;
+    line-height: 1.05;
+  }
+
+  /* BOTTOM LEFT — the swap count, still the one coloured thing on the row.
+     ⚠⚠ #EDA920 reads 3.89 against this green and she accepted that measured,
+     at 20px. IT IS SMALLER HERE, so the number is worse rather than better.
+     Raised deliberately with her; the lever is this font-size, never the hex. */
+  .pricing-preview-section .pricing-card > .body-text-dark {
+    display: block;
+    grid-column: 1;
+    grid-row: 2;
+    white-space: normal;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  /* TOP RIGHT — the price. */
+  .pricing-preview-section .pricing-card > .h3 {
+    display: block;
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    text-align: right;
+    white-space: nowrap;
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.05;
+  }
+
+  /* BOTTOM RIGHT — the savings, quieted as well as shrunk.
+     ⚠ THE COLOUR CHANGE IS MOBILE ONLY. Desktop keeps #FFFFFF. At 11.5px a full
+     white would read as loud as the price it sits under, which is the thing
+     this pass exists to stop. */
+  .pricing-preview-section .pricing-card > .savings-text {
+    display: block;
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+    text-align: right;
+    white-space: nowrap;
+    font-size: 11.5px;
+    line-height: 1.4;
+    color: rgba(237, 236, 224, 0.62);
+  }
+
+  /* EVERY SEPARATOR OFF — both the trailing middots and the leading spaces that
+     gave the inline row its break points. Neither has a job inside a grid. */
+  .pricing-preview-section .pricing-card > .footer-tagline-dark::after,
+  .pricing-preview-section .pricing-card > .body-text-dark::after,
+  .pricing-preview-section .pricing-card > .h3::after,
+  .pricing-preview-section .pricing-card > .body-text-dark::before,
+  .pricing-preview-section .pricing-card > .h3::before,
+  .pricing-preview-section .pricing-card > .savings-text::before {
+    content: none;
+  }
+
+}
