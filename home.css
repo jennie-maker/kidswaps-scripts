@@ -5074,3 +5074,70 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   }
 
 }
+
+/* ============================================================================
+   v66 (S315) — TWO THINGS ON /faq. BOTH HERS.
+
+   1. THE QUESTIONS GO INK. Banked at S310 and taken now because this file was
+      being opened anyway; the doc's own note says do not spend a session on it
+      alone.
+   2. THE PILL ROW WRAPS EVENLY ON A PHONE. Option D of four she was shown.
+   ============================================================================ */
+
+/* ---- 1. THE QUESTION COLOUR — NAVY -> INK ---------------------------------
+   HER RULING S310, made against twenty-six real rows rather than the four the
+   S255 design was drawn on: the questions should match the rest of the page's
+   dark text. The navy was the design working exactly as built, not a fault.
+
+   ⚠⚠ IT IS CONTAINED BY THE COMBO AND THAT IS THE WHOLE REASON THIS IS SAFE.
+   Written .faq-section.faq-page, so it CANNOT reach /old-home's FAQ section,
+   where the questions are amber on navy and stay that way. One file, two pages,
+   and the guard is the only thing keeping them apart.
+   ⚠ SAME SELECTOR AND SAME SPECIFICITY AS THE v41 RULE IT REPLACES — it wins on
+   SOURCE ORDER alone, because this block sits at the end of the file. Move it
+   earlier and the navy comes back with nothing erroring.
+   ⚠ CONTRAST IMPROVES: navy read 8.6:1 on this cream, ink reads about 14. This
+   is the rare change that costs nothing on that axis.
+   ⚠ AFTER THIS, NAVY SURVIVES ON /faq IN EXACTLY TWO PLACES — the masthead and
+   the pill outlines. It is no longer a body-text colour on that page. */
+
+.faq-section.faq-page .faq-question-text {
+  color: #1E1A19;
+}
+
+/* ---- 2. THE PILL ROW ON A PHONE — OPTION D --------------------------------
+   ⚠⚠⚠ THE ROW WAS NEVER BROKEN, IT MISSED BY A PIXEL. At 14px with 16px side
+   padding, "Credits and billing" plus "The Closet Standard" plus the gap came to
+   roughly 335px against roughly 336px of column, so the row fell 2 / 1 / 1 / 1
+   and read as four ragged lines. MEASURED OFF HER OWN RENDER AT 390px, not
+   derived. Three values buy back the second pair; nothing structural changes.
+
+   ⚠⚠ THIS IS NOT A FIX FOR EVERY STRING. It wraps 2 / 2 / 1 for the five group
+   names that exist today. A SIXTH GROUP, OR A LONGER NAME THAN "The Closet
+   Standard", PUTS IT BACK TO RAGGED — silently, and only on a phone. If a group
+   is ever renamed, look at this row at 390px before publishing.
+
+   ⚠ SHE SAW THREE OTHER SHAPES AND CHOSE THIS ONE: a sideways scroll strip with
+   faded ends, a full-width stack, and an even two-up grid. The scroll strip was
+   the strongest of the four and it costs a home.js change — the scroll spy sets
+   .is-current from scroll position, so a current pill sitting off-screen would
+   need scrollIntoView. SHIPPED AND NOT CHOSEN; do not rebuild it as an
+   improvement.
+
+   ⚠ THE TAP TARGET DROPS TO ROUGHLY 33px TALL, under the 44px floor footer.css
+   protects elsewhere. Taken knowingly: these are jump links on the page they
+   already sit on, so a miss costs a second tap and never a wrong destination. */
+
+@media screen and (max-width: 767px) {
+
+  .faq-section.faq-page .faq-pill-row {
+    gap: 7px;
+  }
+
+  .faq-section.faq-page .faq-pill,
+  .faq-section.faq-page .faq-pill:visited {
+    font-size: 13px;
+    padding: 8px 14px;
+  }
+
+}
