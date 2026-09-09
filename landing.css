@@ -7258,3 +7258,118 @@ html.landing-motion .landing-wrap.about-page .about-ribbon-track:has(> :nth-chil
     padding-left: 0;
   }
 }
+
+/* ==========================================================================
+   v61 — S317 — /pricing JOINS THE SEO SET, AND GETS BACK THE SEPARATION THE
+   DESIGNER PASS TOOK AWAY
+   ROLLBACK: delete from this comment to the end of the file. v60 is a
+   byte-exact prefix, machine-checked before this block was appended.
+
+   HER RULING S317: /pricing's SEO text matches the grey, smaller treatment
+   every other landing page uses. That is her S284 standard — "it doesnt need
+   to stand out on the page at all, the point is actually for it all to blend
+   in" — and /pricing was the last page outside it.
+
+   ⚠⚠ THIS KNOWINGLY CLOSES HER v18 EXCEPTION. v18 took the cap OFF this
+   block to make it full width, and v21's comment recorded the collision as
+   "HERS, UNSETTLED". She has now settled it: /pricing joins the set. The 78ch
+   cap comes back as part of that, so the full-width ruling is reversed rather
+   than worked around.
+
+   ⚠⚠⚠ AND IT REPAIRS A REGRESSION FROM THIS SESSION'S OWN DESIGNER PASS.
+   /pricing's separation — 46px, a hairline, 46px padding — lived on
+   .seo-content-bottom-of-page (line 2939). That element was DELETED in the
+   Designer at S317 so the block could become a direct child of the card and
+   match /about and /how-it-works. The rule is therefore INERT and the block
+   is now flush against the CTA row: the exact fault v59 fixed on
+   /how-it-works. READ, NOT ASSUMED — the rule is still in the file and looks
+   live, which is what makes this kind of thing easy to miss.
+   ⚠ THE 2939 AND 2954 RULES ARE LEFT IN PLACE rather than deleted, against
+   §0's delete-inert-rules rule, because every version in this file is a
+   byte-exact prefix of the next and editing mid-file breaks the rollback the
+   whole file depends on.
+
+   ⚠ EVERY VALUE HERE IS COPIED FROM v40 (/how-it-works) AND v59, NOT
+   RE-DERIVED. There are now THREE copies of this one decision — /about,
+   /how-it-works and /pricing — and nothing links them but these comments.
+   RETUNE ONE, RETUNE ALL THREE.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. THE HEADING STOPS BEING A HEADING TO LOOK AT.
+   Values identical to /about's (v22) and /how-it-works' (v40), weight 500
+   included.
+   ⚠⚠ IT IS STILL AN <h2> AND THAT IS THE POINT — the tag is what a crawler
+   and a screen reader read, and it is untouched. Only its appearance changes.
+   ⚠ THE DESIGNER PASS AT S317 RETAGGED IT FROM H1 TO H2 and applied the
+   seo-content-heading combo. Before that it was this page's SECOND H1 wearing
+   a class called `h4`, which v40's comment flagged and left out of scope.
+   That is now fixed, so this rule has something to match.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.pricing-page .seo-content-heading {
+  margin: 0 0 14px;
+  max-width: 78ch;
+  font-family: Quicksand, sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1.55;
+  letter-spacing: 0;
+  text-align: left;
+  color: var(--landing-muted);
+}
+
+/* --------------------------------------------------------------------------
+   2. THE BODY MATCHES.
+   ⚠⚠ THE ELEMENT WEARS SHARED CLASSES — `body-text-dark` and probably
+   `body-text-dark-left-align` — and both are live on other pages. The rule is
+   written under the page combo at (0,4,0) so it beats them on SPECIFICITY and
+   never on source order. A bare `.body-text-dark{font-size:13px}` would shrink
+   type across the site silently.
+   ⚠ THE 78ch CAP IS DOING REAL WORK HERE. At 13px across the card's full
+   width this line would run ~130 characters, which is the over-long measure
+   v18 created and v21 flagged.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.pricing-page .seo-content-div .body-text-dark {
+  max-width: 78ch;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--landing-muted);
+}
+
+/* --------------------------------------------------------------------------
+   3. THE SEPARATION COMES BACK, ON THE ELEMENT THAT STILL EXISTS.
+   Values are v59's, which are /about's: 46px margin, 30px padding, one
+   hairline, and a 36/24 phone twin at the same ratio.
+
+   ⚠⚠ THE HAIRLINE IS THE PAGE'S OWN DEVICE. .landing-section carries
+   border-top and so does .landing-card > .landing-cta-row, so every section
+   boundary here is a hairline and this makes the SEO block read as the last
+   one rather than as something stuck underneath.
+
+   ⚠⚠⚠ IT SETS margin-top AND padding-top ONLY, NEVER THE `padding` SHORTHAND.
+   v60 indents this same element with padding-left:350px, and a shorthand here
+   would sit LATER in the file and silently reset that indent to zero — the
+   alignment fix undone by its own follow-up commit, with nothing erroring.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.pricing-page .seo-content-div {
+  margin-top: 46px;
+  padding-top: 30px;
+  border-top: 1px solid var(--landing-hairline);
+}
+
+/* ⚠⚠ THE PHONE TWIN IS NOT OPTIONAL. This file ends AFTER every breakpoint
+   block, so the bare rules above win at every width on source order. */
+
+@media (max-width: 767px) {
+
+  .landing-wrap.pricing-page .seo-content-div {
+    margin-top: 36px;
+    padding-top: 24px;
+  }
+
+}
