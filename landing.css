@@ -6791,3 +6791,49 @@ html.landing-motion .landing-wrap.about-page .about-ribbon-track:has(> :nth-chil
   }
 
 }
+
+/* ==========================================================================
+   v55 — S314 — THE PHONE CROP, AND THE EYEBROW CLOSER TO THE HEADING
+   ROLLBACK: delete from this comment to the end of the file.
+   -------------------------------------------------------------------------- */
+
+
+@media (max-width: 991px) {
+
+  /* ---- THE PHONE CROP MOVES LEFT — HERS ---------------------------------
+     ⚠⚠⚠ IT MOVES THE OPPOSITE WAY FROM DESKTOP AND THAT IS NOT A CONTRADICTION,
+     IT IS A DIFFERENT CROP OF A DIFFERENT SHAPE. Desktop is a TALL column and
+     the baby was cut on the RIGHT, so v54 raised it to 62%. The phone is a 4/5
+     box anchored to the top of the file and the baby is cut on the LEFT, so it
+     comes DOWN. 50% is centre; a LOWER number reveals more of the image's left
+     side and gives the baby room.
+     ⚠ THE VERTICAL STAYS `top` AND MUST. It is there because a centred crop threw
+     away the top third of a portrait, which is where both faces are. Only the
+     horizontal is in play.
+     ⚠⚠ THIS BLOCK IS ≤991, SO IT COVERS THE TABLET BAND TOO — the photo is 4/5
+     there as well, so it is the same crop and the same fix. Desktop is untouched
+     because v54's 62% is top-level and this rule cannot reach above 991. */
+  .landing-wrap.about-page .landing-founder-photo {
+    background-position: 40% top;
+  }
+
+}
+
+
+@media (max-width: 767px) {
+
+  /* ---- THE EYEBROW SITS CLOSER TO THE HEADING — HERS --------------------
+     ⚠⚠ IT IS ONE NUMBER, NOT TWO, AND THE FIRST READ OF THIS WAS WRONG. There is
+     NO row-gap on the about masthead at any width — the `gap: 14px` nearby
+     belongs to .landing-partner-row. The only thing between the eyebrow and the
+     heading on a phone is this margin: 34px, now 20px.
+     ⚠ margin-top ALONE, NEVER THE `margin` SHORTHAND. The 767 rule above writes
+     `margin: 34px 0 0`, and restating the shorthand here would re-declare the
+     horizontal sides for no reason and hide what actually changed.
+     ⚠ 20 SITS JUST ABOVE DESKTOP'S 18 against a 36px heading rather than a 58px
+     one, so the eyebrow reads as attached to the title without touching it. */
+  .landing-wrap.about-page .landing-masthead-heading {
+    margin-top: 20px;
+  }
+
+}
