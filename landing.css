@@ -6837,3 +6837,35 @@ html.landing-motion .landing-wrap.about-page .about-ribbon-track:has(> :nth-chil
   }
 
 }
+
+/* ==========================================================================
+   v56 — S314 — THE DESKTOP RIBBON RISES
+   ROLLBACK: delete from this comment to the end of the file.
+
+   ⚠⚠⚠ WRITTEN IN A min-width BLOCK, AGAINST THIS FILE'S max-width HABIT, AND
+   THAT IS DELIBERATE. v54's `top: 50px` is TOP-LEVEL, so it governs desktop AND
+   the 991 band; 767 has its own 38. A bare top-level rule here would move the
+   tablet with the desktop, and she ruled the phone finished. min-width:992
+   cannot reach down.
+
+   ⚠⚠ MEASURED OFF HER RENDER, NOT GUESSED. Scale from the screenshot: the card
+   is 1010 CSS px wide, and the photo's top edge sits ~8px ABOVE the ribbon's
+   top. So at top:50 the strip was entirely behind the portrait and the only
+   yellow visible was the stub past the photo's right edge — the "sliver".
+   AT top:30 the strip clears the photo's top edge by ~12px across the whole
+   width, so the band reads as passing BEHIND the picture rather than hiding
+   under it.
+   ✅ AND IT BUYS THE SECOND HALF OF HER NOTE FOR FREE: the gap between the
+   ribbon's bottom and the eyebrow goes 6.4px to 26px, because padding-top is
+   unchanged at 90 and only the strip moved. ONE NUMBER, BOTH EFFECTS.
+   ⚠ THE SPACE ABOVE THE RIBBON DROPS 50 TO 30 AS THE COST. That is the trade she
+   asked for; if the top now reads tight, the lever is padding-top, not this.
+   -------------------------------------------------------------------------- */
+
+@media (min-width: 992px) {
+
+  .landing-wrap.about-page .about-ribbon {
+    top: 30px;
+  }
+
+}
