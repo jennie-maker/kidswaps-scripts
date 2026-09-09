@@ -7186,3 +7186,75 @@ html.landing-motion .landing-wrap.about-page .about-ribbon-track:has(> :nth-chil
   }
 
 }
+
+/* ==========================================================================
+   v60 — S317 — THE SEO BLOCK ALIGNS TO WHATEVER TEXT SITS ABOVE IT
+   ROLLBACK: delete from this comment to the end of the file. v59 is a
+   byte-exact prefix, machine-checked before this block was appended.
+
+   ⚠⚠⚠ HER RULING S317, AND IT IS A SITE-WIDE PRINCIPLE RATHER THAN A PAGE
+   FIX: "if there's no text above it to prove it's aligned, it should move to
+   the place where it does look aligned — under the CTA."
+
+   WHY IT NEEDED A SIBLING SELECTOR AND NOT A PAGE SCOPE. The three pages
+   differ in WHAT PRECEDES the block, and that is the only thing the rule
+   cares about:
+     /about              preceded by .landing-partner-row, whose label sits at
+                         the CARD EDGE. It matches nothing here and keeps its
+                         edge — HER S284 RULING SURVIVES UNTOUCHED.
+     /how-it-works       preceded by .landing-cta-row, whose CONTENT starts at
+                         350 (v19's padding-left). Indents.
+     /pricing            same, after the S317 Designer pass that lifted the
+                         block out of seo-content-bottom-of-page, deleted that
+                         empty wrapper, retagged the heading H2 and applied the
+                         seo-content-heading combo.
+   A per-page rule would need editing every time a landing page is built. This
+   one gets the right answer automatically, including on the three category
+   pages nobody has read.
+
+   ⚠⚠ I MEASURED THE CTA ROW'S BOX AND CALLED IT ALIGNED, AND THAT WAS WRONG.
+   .landing-card > .landing-cta-row spans the full card while v19 indents its
+   CONTENT with padding-left:350px. A getBoundingClientRect on the row returns
+   the card's edge and says nothing about where its text starts, which is how a
+   350px misalignment was read as "already at the same edge".
+   ▶ WHEN CHECKING ALIGNMENT, MEASURE THE CONTENT, NOT THE BOX. A padded
+   element's left edge is not where its words begin.
+
+   ⚠ 350 IS NOT ROUND: the section grid's 290px rail plus its 60px gap. It is
+   the same number v19 and v57's note box both use, and all three move
+   together if the grid ever changes.
+   ========================================================================== */
+
+/* ⚠⚠⚠ THE ADJACENT SIBLING COMBINATOR IS THE WHOLE RULE. `+` matches only a
+   block whose IMMEDIATELY PRECEDING sibling is the CTA row. Loosen it to a
+   general sibling (`~`) and /about matches too, because its CTA row is an
+   earlier sibling — which silently reverses her S284 ruling on a page this
+   commit is supposed to leave alone.
+
+   ⚠⚠ THE `.landing-card >` PART IS ALSO LOAD-BEARING. seo-content-div is a
+   SHARED Webflow class worn on /browse, /clothing and /toys, where the block
+   is styled from browse-tool.js AT RUNTIME and this file cannot see what it
+   would be fighting. Those pages have no .landing-card, so they are out of
+   reach by construction — which is what makes it safe to style them
+   separately, as she has ruled will happen next.
+
+   ⚠ padding-left, NOT margin-left, matching how v19 indents the CTA row
+   itself. The two are then doing the same thing the same way, so a future
+   change to the spine moves both with one search. */
+
+.landing-card > .landing-cta-row + .seo-content-div {
+  padding-left: 350px;
+}
+
+/* ⚠⚠ THE 991 TWIN IS NOT OPTIONAL AND IT MIRRORS v19's OWN. The section grid
+   collapses to one column at 991, so below that there is no rail to indent
+   against — v19 drops the CTA row's indent at exactly this width, and the
+   block has to drop with it or the two stop agreeing on a phone. This file
+   ends AFTER its breakpoint blocks, so without this the 350 governs a 390px
+   screen and pushes the text off the edge. */
+
+@media (max-width: 991px) {
+  .landing-card > .landing-cta-row + .seo-content-div {
+    padding-left: 0;
+  }
+}
