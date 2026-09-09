@@ -7373,3 +7373,63 @@ html.landing-motion .landing-wrap.about-page .about-ribbon-track:has(> :nth-chil
   }
 
 }
+
+/* ==========================================================================
+   v62 — S317 — THE SEO HEADING'S TEXT IS IN A CHILD, NOT IN THE HEADING
+   ROLLBACK: delete from this comment to the end of the file. v61 is a
+   byte-exact prefix, machine-checked before this block was appended.
+
+   ⚠⚠⚠ v61 STYLED THE RIGHT ELEMENT AND THE TEXT WAS SOMEWHERE ELSE. Read
+   live on /pricing at S317:
+       h2.h4.seo-content-heading   13px Quicksand 500 muted   ← v61 landed
+         └ strong.h4                35px                       ← the words
+   The heading obeyed perfectly; its only child kept the 35px that Webflow's
+   shared `h4` CLASS puts on it, and the child is what you can see. Every
+   deploy gate passed and the rule was aimed one level above the text.
+
+   ▶▶ FOURTH TIME THIS FILE HAS MET THIS SHAPE, AND IT IS ALWAYS THE SAME
+   MISTAKE: assuming a Webflow element holds its own text.
+     v4   the note box's three lines were TEXT BLOCKS (divs), so
+          `.landing-note-box p` reached none of them
+     v9   /how-it-works' .landing-answer IS the paragraph, so
+          `.landing-answer p` matched nothing
+     v26  a rich-text blockquote holds a BARE TEXT NODE, so
+          `blockquote p` matched nothing
+     v62  this heading holds a <strong>, so styling the heading is invisible
+   ▶ WHEN A TYPE RULE VERIFIES CLEAN AND CHANGES NOTHING, PRINT
+   element.children.length AND THE COMPUTED STYLE OF EACH CHILD BEFORE
+   CHANGING A VALUE. The rule is usually correct and pointed at the wrong node.
+
+   ⚠⚠ THE `h4` CLASS IS NOT TOUCHED AND MUST NOT BE. It is a SHARED Webflow
+   class and this file cannot see how many pages wear it. Restyling `.h4`
+   would reach every one of them silently. This rule reaches only a descendant
+   of a seo-content-heading inside a landing card.
+   ========================================================================== */
+
+/* ⚠⚠ WRITTEN AT .landing-card RATHER THAN PAGE-SCOPED, DELIBERATELY. Every
+   landing page's SEO heading should behave this way, and a page scope would
+   mean fixing this again the next time a heading is built with a <strong>
+   inside it — which is what a Designer bold does by default.
+   ⚠⚠⚠ IT CANNOT REACH /browse, /clothing OR /toys. Those pages have no
+   .landing-card and their SEO block is styled from browse-tool.js at runtime,
+   where this file cannot see what it would be fighting. That separation is
+   what makes their own styling a safe, separate job.
+
+   ⚠ THE UNIVERSAL SELECTOR CATCHES ANY WRAPPER, not just <strong> — a
+   Designer italic, a span, a link. It contributes NO specificity of its own,
+   so the rule sits at (0,2,0) and still beats `.h4` at (0,1,0).
+
+   ⚠⚠ `font: inherit` IS THE SHORTHAND ON PURPOSE, the same device v26 used on
+   the blog blockquote's paragraph. It resets size, family, weight, style and
+   line-height in one declaration, so a child cannot keep ANY typographic
+   value from a shared class. Listing properties individually is how one gets
+   missed.
+   ⚠ IT TAKES WEIGHT 500 FROM THE HEADING, so a <strong> stops being bolder
+   than its own heading. That is correct here: 500 IS the heading's weight,
+   set at v22 as one findable step above the body, and her ask was that the
+   heading match the body's SIZE. */
+
+.landing-card .seo-content-heading * {
+  font: inherit;
+  color: inherit;
+}
