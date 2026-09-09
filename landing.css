@@ -6690,3 +6690,104 @@ html.landing-motion .landing-wrap.about-page .about-ribbon-track:has(> :nth-chil
   }
 
 }
+
+/* ==========================================================================
+   v54 — S314 — THE RIBBON'S REAL FAULT, ITS CLEARANCE MINUS 20%, AND THE
+   DESKTOP CROP
+   ROLLBACK: delete from this comment to the end of the file.
+
+   ⚠⚠⚠ v53 WAS AIMED ONE PROPERTY TO THE LEFT OF THE FAULT AND ITS COMMENT IS
+   WRONG. `width` WAS NEVER WINNING — forcing `width:auto !important` inline on
+   the live page changed the box by ZERO pixels. THE CLAMP IS `max-width: 100%`,
+   which is WEBFLOW'S OWN `.w-inline-block` BASE STYLE on the Link Block and is
+   outside this stylesheet entirely.
+   THE ARITHMETIC, MEASURED ON HER PAGE AT DESKTOP: left -6% and right -6% ask
+   for 112% of the masthead. max-width:100% clamps that back to exactly 100%,
+   AND A CLAMP HOLDS THE LEFT EDGE AND EATS THE DIFFERENCE OFF THE RIGHT. So the
+   left overhang worked, the right one vanished, and the strip died 6% short —
+   which happened to land inside the star, which is why it read as the star
+   stopping it. Proven by effect before this was written: max-width:none took
+   the box from W1010 L52 R1062 to W1131 L52 R1183 against a masthead of
+   L113 R1123, i.e. 61px of overhang on EACH side.
+   ▶▶ THE RULE, GENERAL: A LEFT+RIGHT STRETCH ON A WEBFLOW-CREATED ELEMENT NEEDS
+   `max-width: none`, NOT `width: auto`. And when an inline !important on the
+   property you suspect changes nothing, THE PROPERTY IS NOT THE SUSPECT — read
+   what else in the computed style could be clamping it.
+   ⚠ v53's `width: auto` IS LEFT IN PLACE. It is inert and harmless, and every
+   version in this file is a byte-exact prefix of the next, so editing inside
+   v53 would break the delete-to-the-end rollback the whole file depends on.
+
+   ⚠⚠ THE MASTHEAD'S `overflow: hidden` IS LOAD-BEARING AND IS WHAT MAKES THE
+   OVERHANG SAFE. It clips the 61px each side back flush to the navy, so the
+   strip reaches both edges and cannot overshoot them. Remove that overflow and
+   the ribbon hangs out over the cream.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.about-page .about-ribbon {
+  max-width: none;
+}
+
+
+/* ---- THE CLEARANCE, 20% LESS ABOVE AND BELOW — HERS ----------------------
+   ⚠⚠ MEASURED, NOT ESTIMATED. The strip is 34px tall at every width, so the
+   space above is the ribbon's `top` and the space below is the masthead's
+   padding-top minus (top + 34). What was there:
+       desktop  62 above /  8 below  (top 62, padding-top 104)
+       991      62 above / 28 below  (top 62, padding-top 124)
+       767      48 above / 28 below  (top 48, padding-top 110)
+   Minus 20%:  50/6.4 · 50/22.4 · 38/22.4, which is the top and padding-top
+   pairs below. BOTH GAPS MOVE TOGETHER — change one number and the other has to
+   move with it or the ratio she approved is gone.
+   ⚠ THE 991 RIBBON INHERITS 50 FROM THIS TOP-LEVEL RULE. There is no 991 `top`
+   override and there must not be one; only 767 sets its own. */
+.landing-wrap.about-page .about-ribbon {
+  top: 50px;
+}
+
+.landing-wrap.about-page .landing-masthead {
+  padding-top: 90px;
+}
+
+
+/* ---- THE DESKTOP CROP ----------------------------------------------------
+   ⚠ HER NOTE: the baby's head cut at the right edge with breathing room on the
+   left. A HIGHER PERCENTAGE SHOWS MORE OF THE IMAGE'S RIGHT AND PULLS THE
+   SUBJECTS LEFT — the inverse of the phone note two versions above, which is
+   about the same property from the other direction. 50% is centre; 62% is an
+   eight-point move.
+   ⚠⚠ DESKTOP ONLY. The phone crop is a SQUARE out of a PORTRAIT and is anchored
+   `50% top` for a different reason (the tops of both heads were cut). It is
+   restated below and must not be swept up by this. */
+.landing-wrap.about-page .landing-founder-photo {
+  background-position: 62% 50%;
+}
+
+
+@media (max-width: 991px) {
+
+  .landing-wrap.about-page .landing-masthead {
+    padding-top: 106px;
+  }
+
+  /* ⚠⚠⚠ RESTATED, AND IT IS NOT OPTIONAL. This file ends AFTER every @media
+     block, so the top-level `62% 50%` above would beat the original `50% top`
+     rule on SOURCE ORDER at equal specificity and silently re-crop the phone.
+     Same trap v64 of home.css just paid for. */
+  .landing-wrap.about-page .landing-founder-photo {
+    background-position: 50% top;
+  }
+
+}
+
+
+@media (max-width: 767px) {
+
+  .landing-wrap.about-page .about-ribbon {
+    top: 38px;
+  }
+
+  .landing-wrap.about-page .landing-masthead {
+    padding-top: 94px;
+  }
+
+}
