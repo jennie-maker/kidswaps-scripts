@@ -688,6 +688,7 @@ function paintCoins(s) {
     paintActivity(s);
     paintReviewPrompt();
     paintImpact(s);   // LAST in the rail — S163
+    paintPackMenu();  // S355 — must follow paintImpact, which appends to the card
    paintChildren(s);
     paintEmailPrefs(s);
 
@@ -1328,6 +1329,41 @@ function paintCloset(s) {
     el.style.display = '';
     el.innerHTML = 'You\'ve earned <b>' + esc(String(earned)) + ' credit' +
                    (earned === 1 ? '' : 's') + '</b> since joining on ' + esc(since) + '.';
+  }
+  /* ⚠⚠ THE CREDIT PACK MENU — S355. Markup is Webflow's; styling is dashboard.css.
+     (1) paintImpact() APPENDS .ks-bank-earned to the card, which would land it BELOW this menu,
+         so the menu is moved back to the end on every paint. appendChild is a MOVE, never a
+         clone, so the data-ms-* attributes ride along untouched.
+     (2) The toggle is a plain div, not a link, so Webflow's anchor handler never touches it.
+         It is given role, tabindex and aria here, and Enter/Space open it.
+     (3) .is-armed is what lets the CSS hide the panel. It is set ONLY once the toggle works,
+         so a script failure leaves the panel OPEN with every price visible.
+     ⚠ The purchase itself is Memberstack's (data-ms-price:add). Nothing here touches it. */
+  function paintPackMenu() {
+    var card = document.querySelector('.ks-hero-card');
+    var menu = document.querySelector('.credit-pack-menu');
+    if (!card || !menu) return;
+    if (menu.parentNode === card && card.lastElementChild !== menu) card.appendChild(menu);
+    if (menu.getAttribute('data-ks-armed') === '1') return;
+    var tog   = menu.querySelector('.credit-pack-menu-toggle');
+    var panel = menu.querySelector('.credit-pack-menu-panel');
+    if (!tog || !panel) return;
+    if (!panel.id) panel.id = 'ks-credit-pack-panel';
+    tog.setAttribute('role', 'button');
+    tog.setAttribute('tabindex', '0');
+    tog.setAttribute('aria-controls', panel.id);
+    tog.setAttribute('aria-expanded', 'false');
+    function flip() {
+      var open = !menu.classList.contains('is-open');
+      menu.classList.toggle('is-open', open);
+      tog.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    tog.addEventListener('click', flip);
+    tog.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); flip(); }
+    });
+    menu.setAttribute('data-ks-armed', '1');
+    menu.classList.add('is-armed');
   }
 // ---------- SEND A BAG (§SB step 7a) ----------
   var BAG_URL = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1/member-bag-request";

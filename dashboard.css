@@ -576,6 +576,124 @@
   }
   .ks-hero-card .ks-bank-earned b { color: #1E1A19; font-weight: 600; }
 
+  /* ⚠⚠ THE CREDIT PACK MENU — S355, HER DESIGN, APPROVED OFF A MOCKUP.
+     Markup is hand-built in Webflow: .credit-pack-menu > .credit-pack-menu-toggle +
+     .credit-pack-menu-panel > heading, note, and one .credit-pack-offer per pack. Each offer
+     carries data-ms-content (Memberstack hides the pack her plan does not cover) and each
+     .credit-pack-button carries data-ms-price:add. dashboard-tool.js moves the menu to the
+     END of the card (after .ks-bank-earned) and arms the toggle.
+     ⚠⚠⚠ THE PANEL IS ONLY HIDDEN WHEN THE SCRIPT HAS ARMED IT (.is-armed). No script means
+     the panel sits open with both prices showing: ugly, never a lie, never a hidden price.
+     ⚠ Rules are written at TWO classes so they beat Webflow's own .w-inline-block on the Link
+     Block by specificity, not by source order.
+     ⚠ The coral arrow is a CSS background, not an element. There is nothing to add in Webflow. */
+  .ks-hero-card .credit-pack-menu {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid #C9C7BC;
+  }
+  .credit-pack-menu .credit-pack-menu-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    max-width: 360px;
+    margin: 0 auto;
+    padding: 11px 20px;
+    box-sizing: border-box;
+    border: 1.5px solid #1E1A19;
+    border-radius: 999px;
+    background: transparent;
+    color: #1E1A19;
+    font-family: 'Quicksand', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.2;
+    cursor: pointer;
+    user-select: none;
+  }
+  .credit-pack-menu .credit-pack-menu-toggle::after {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: translateY(-2px) rotate(45deg);
+    transition: transform .2s ease;
+  }
+  .credit-pack-menu.is-open .credit-pack-menu-toggle::after {
+    transform: translateY(2px) rotate(-135deg);
+  }
+  .credit-pack-menu .credit-pack-menu-toggle:hover { background: rgba(30,26,25,.05); }
+  .credit-pack-menu .credit-pack-menu-toggle:focus-visible {
+    outline: 2px solid #1E1A19;
+    outline-offset: 3px;
+  }
+  .credit-pack-menu .credit-pack-menu-panel {
+    margin: 12px auto 0;
+    max-width: 360px;
+    padding: 16px 16px 6px;
+    box-sizing: border-box;
+    background: #FFFFFF;
+    border-radius: 12px;
+    text-align: left;
+  }
+  .credit-pack-menu.is-armed:not(.is-open) .credit-pack-menu-panel { display: none; }
+  .credit-pack-menu .credit-pack-menu-heading {
+    font-family: 'Instrument Serif', serif;
+    font-size: 24px;
+    font-weight: 400;
+    line-height: 1.1;
+    color: #1E1A19;
+    margin: 0 0 4px;
+  }
+  .credit-pack-menu .credit-pack-menu-note {
+    font-family: 'Quicksand', sans-serif;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #75736E;
+    margin: 0 0 8px;
+  }
+  .credit-pack-menu .credit-pack-offer {
+    border-top: 1px solid #EDECE0;
+  }
+  .credit-pack-offer .credit-pack-button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    max-width: none;
+    padding: 12px 22px 12px 0;
+    box-sizing: border-box;
+    color: #1E1A19;
+    text-decoration: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2 8h11M9 4l4 4-4 4' fill='none' stroke='%23D65A35' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0 center;
+    background-size: 16px 16px;
+    transition: background-position .2s ease;
+  }
+  .credit-pack-offer .credit-pack-button:hover { background-position: right -3px center; }
+  .credit-pack-offer .credit-pack-button:focus-visible {
+    outline: 2px solid #1E1A19;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  .credit-pack-offer .credit-pack-button-text {
+    font-family: 'Quicksand', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    color: #1E1A19;
+  }
+  .credit-pack-offer .credit-pack-button-text strong,
+  .credit-pack-offer .credit-pack-button-text b { font-weight: 700; color: #1E1A19; }
+  @media (prefers-reduced-motion: reduce) {
+    .credit-pack-menu .credit-pack-menu-toggle::after,
+    .credit-pack-offer .credit-pack-button { transition: none; }
+  }
+
   /* ---------- SCRIPT-INJECTED SECTIONS ---------- */
   .ks-closet-sec { max-width: 480px; margin: 36px auto 0; text-align: left; }
   /* ⚠ FLAT. Only the HERO is elevated (§DASH.8: elevated = the payoff, flat = admin).
