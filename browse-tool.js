@@ -1800,6 +1800,7 @@
         '<div class="ks-bag-list">' + rows + '</div>' +
         footer +
       '</div>';
+    liveShortageCheck();   // S357: warn as soon as the bag outgrows her credits
   }
 
   function openBag() {
@@ -2040,7 +2041,9 @@ function showBagBlock(title, msg, cta) {
     // every shortage message. byClass is intentionally unused now (the copy no
     // longer enumerates what to remove); the signature is kept so the call site
     // in finishCheckout doesn't move.
-    return 'Send in more items to earn more credits and you\u2019ll be ready to go. ' +
+    // S357, HERS: reworded from "Send in more items to earn more credits and
+    // you'll be ready to go." Only the first sentence changed.
+    return 'Send more items to earn more credits so you can swap more. ' +
            'If you see something you like and just can\u2019t wait, you can always buy a credit pack.';
   }
 
@@ -2087,6 +2090,71 @@ function outOfCreditsBlock(zeroClasses) {
     };
   }
 
+  // S357: the two shortage messages, chosen in ONE place so the checkout gate and
+  // the live check can never disagree about which one she sees.
+  function shortageBlock(byClass, have, shortClasses, zeroClasses) {
+    if (zeroClasses.length === shortClasses.length) {
+      // every shorted class is truly empty -> earn-or-buy, not "remove N"
+      return outOfCreditsBlock(zeroClasses);
+    }
+    // has some credits, just over-bagged -> point to send-a-bag + pack (one button)
+    return { title: 'Almost there', msg: shortageMessage(byClass),
+             ctas: [{ label: 'Send in a swap bag', href: '/dashboard' }] };
+  }
+
+  /* S357, HERS: show the shortage message the moment the bag outgrows her
+     credits, not only when she taps Check out. THE ITEM STILL GOES IN — the bag
+     is a wishlist and nothing is reserved until checkout.
+     ⚠ Credits are read ONCE per page load (they cannot change while she browses)
+       and reused, so adding stays fast. A failed read resets to idle, so the next
+       render tries again; it never blocks anything.
+     ⚠ SHORTAGE ONLY. Off-plan and the extra-swap cap still wait for checkout,
+       which stays the real gate. Only an `active` member is judged here; every
+       other status is checkout's to explain.
+     ⚠ renderBag rebuilds the drawer and wipes any message, so this re-runs on
+       every render: removing items until she is covered makes it disappear.
+     ⚠ It never paints over a message already showing, and never while Check out
+       is busy, so it cannot overwrite checkout's own answer. `liveGen` drops any
+       answer that arrives after a newer render. */
+  var liveCtx = null, liveCtxState = 'idle', liveWaiters = [], liveGen = 0;
+
+  function liveShortageCheck() {
+    var gen = ++liveGen;
+    if (!bagRead().length) return;
+
+    function paint() {
+      if (gen !== liveGen || !liveCtx) return;
+      var root = document.getElementById('ks-bag-root');
+      if (!root || root.hasAttribute('hidden')) return;
+      if (document.querySelector('.ks-bag-block')) return;
+      var btn = document.querySelector('.ks-bag-checkout');
+      if (btn && btn.disabled) return;
+      if (liveCtx.member_status !== 'active') return;
+      var res = resolveBag(bagRead(), liveCtx);
+      if (res.ok || !res.blocked || res.blocked.type !== 'credit_shortage') return;
+      var byClass = res.blocked.byClass;
+      var have = creditCountByClass(liveCtx);
+      var shortClasses = Object.keys(byClass);
+      var zeroClasses = shortClasses.filter(function (k) { return (have[k] || 0) === 0; });
+      var sb = shortageBlock(byClass, have, shortClasses, zeroClasses);
+      showBagBlock(sb.title, sb.msg, sb.ctas);
+    }
+
+    if (liveCtxState === 'ready') { paint(); return; }
+    liveWaiters.push(paint);
+    if (liveCtxState === 'loading') return;
+    liveCtxState = 'loading';
+    getToken(function (tok) {
+      if (!tok) { liveCtxState = 'idle'; liveWaiters = []; return; }
+      fetchClaimContext(tok, function (err, ctx) {
+        if (err || !ctx) { liveCtxState = 'idle'; liveWaiters = []; return; }
+        liveCtx = ctx; liveCtxState = 'ready';
+        var w = liveWaiters; liveWaiters = [];
+        for (var i = 0; i < w.length; i++) w[i]();
+      });
+    });
+  }
+
   function finishCheckout(items, ctx, btn) {
     var res = resolveBag(items, ctx);
     if (!res.ok) {
@@ -2096,15 +2164,8 @@ function outOfCreditsBlock(zeroClasses) {
         var have = creditCountByClass(ctx);
         var shortClasses = Object.keys(byClass);
         var zeroClasses = shortClasses.filter(function (k) { return (have[k] || 0) === 0; });
-        if (zeroClasses.length === shortClasses.length) {
-          // every shorted class is truly empty -> earn-or-buy, not "remove N"
-  var oc = outOfCreditsBlock(zeroClasses);
-          showBagBlock(oc.title, oc.msg, oc.ctas);
-        } else {
-          // has some credits, just over-bagged -> point to send-a-bag + pack (one button)
-          showBagBlock('Almost there', shortageMessage(byClass),
-            { label: 'Send in a swap bag', href: '/dashboard' });
-        }
+        var sb = shortageBlock(byClass, have, shortClasses, zeroClasses);
+        showBagBlock(sb.title, sb.msg, sb.ctas);
       } else if (res.blocked.type === 'extra_swap_cap') {
         showBagBlock('Past this cycle\u2019s limit', 'You can swap up to 5 extra items per cycle. Edit your bag to check out.');
       } else if (res.blocked.type === 'off_plan') {
