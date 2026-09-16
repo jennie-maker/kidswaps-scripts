@@ -520,6 +520,21 @@ function paintCoins(s) {
     });
   }
 
+  // THE BIG DROP — HER RULING S356. Every coin entrance uses it: page load AND the credit
+  // pack landing. It replaced the S2xx subtle drop (-24px / 650ms), which she found barely
+  // noticeable at real size. ⚠ COIN_SETTLE below is computed from these numbers. Change one,
+  // change the other.
+  var COIN_DROP_MS = 800;
+  var COIN_NUM_AT  = 520;                          // number fades in on the flat face
+  var COIN_DROP = [
+    { transform: 'translateY(-48px)', opacity: 0.4 },
+    { transform: 'translateY(0)',     opacity: 1, offset: 0.5 },
+    { transform: 'translateY(-14px)', offset: 0.68 },
+    { transform: 'translateY(0)',     offset: 0.82 },
+    { transform: 'translateY(-5px)',  offset: 0.92 },
+    { transform: 'translateY(0)' }
+  ];
+
   function tumbleCoin(unit, delay) {
     var coin = unit.querySelector('.ks-coin');
     var img  = unit.querySelector('.ks-coin-img');
@@ -528,14 +543,7 @@ function paintCoins(s) {
    setTimeout(function () {
       unit.style.visibility = 'visible';           // the coin appears WITH its spin, never before
       if (coin.animate) {                          // vertical drop-in + settle bounce                          // vertical drop-in + settle bounce
-        coin.animate([
-          { transform: 'translateY(-24px)', opacity: 0.4 },
-          { transform: 'translateY(0)',     opacity: 1, offset: 0.55 },
-          { transform: 'translateY(-6px)',  offset: 0.72 },
-          { transform: 'translateY(0)',     offset: 0.86 },
-          { transform: 'translateY(-2px)',  offset: 0.94 },
-          { transform: 'translateY(0)' }
-        ], { duration: 650, easing: 'ease-out' });
+        coin.animate(COIN_DROP, { duration: COIN_DROP_MS, easing: 'ease-out' });
       }
       var i = 0;                                   // spin the frames 1 -> 10 -> 1
       var spin = setInterval(function () {
@@ -546,7 +554,7 @@ function paintCoins(s) {
       setTimeout(function () {                      // number fades in on the flat face
         num.style.transition = 'opacity 200ms ease-out';
         num.style.opacity = '1';
-      }, 460);
+      }, COIN_NUM_AT);
     }, delay || 0);
   }
 
@@ -554,13 +562,13 @@ function paintCoins(s) {
      ⚠⚠ ADDED SO THE TWO NUMBERS CAN CHAIN OFF IT WITHOUT A HARDCODED DELAY. A fixed
      wait drifts out of sync on a slow phone and stutters where nobody is testing, so the
      landing time is computed FROM THE SAME TWO CONSTANTS THE TUMBLE ITSELF USES.
-     ⚠ COIN_SETTLE is the drop + spin + the 200ms number fade that starts at 460ms.
+     ⚠ COIN_SETTLE is the drop + spin + the 200ms number fade (starts at COIN_NUM_AT, S356).
      If tumbleCoin's timings ever change, CHANGE THESE TOO — they are one artifact.
      ⚠⚠ markTumblesDone IS ALSO CALLED BY THE WATCHDOG AND ON AN EMPTY LIST, so a
      member with no coins, a backgrounded tab or a dropped rAF still releases the waiters.
      Nothing downstream may ever be left waiting forever on a coin that never spun. */
   var COIN_STAGGER = 120;
-  var COIN_SETTLE  = 660;
+  var COIN_SETTLE  = COIN_DROP_MS;   // S356: the big drop ends last (number fade ends at 720)
   var _tumblesDone = false;
   var _tumbleWaiters = [];
   function onTumblesDone(fn) {
@@ -606,8 +614,11 @@ function paintCoins(s) {
   // ⚠⚠ THE BASELINE: tapping a pack button snapshots the coin's number into sessionStorage
   // (the Stripe round trip keeps the tab, same seam as ks_consent_pending). This is a one-shot
   // post-checkout handoff, cleared on land or give-up, not state persistence.
-  // No snapshot (new tab) -> the first paint is the baseline. If Make wrote the credits BEFORE
-  // that first paint she waits 30s and gets the give-up line. Ugly, never a lie.
+  // ⚠⚠ NO SNAPSHOT, NO WAIT — FIXED S356 AFTER A LIVE FALSE START. The address alone is NOT
+  // evidence of a purchase: reloading or bookmarking an old post-checkout URL armed a 30s blank
+  // coin for nothing. The wait now arms ONLY with a snapshot from THIS tab, under an hour old,
+  // for the same pack. Cost, accepted: a checkout that returns in a DIFFERENT tab shows the old
+  // balance until refresh (Stripe returns in the same tab; signup's consent seam relies on it).
   // ⚠ ONLY the coin and its tier line update on landing. Other figures on the page (the
   // earned line) refresh on the next load. KNOWN, NAMED, ACCEPTED.
   // ⚠ NEVER under ?fake=. Pack price IDs are keys: if a pack price is ever recreated (the live
@@ -644,15 +655,20 @@ function paintCoins(s) {
     }
     var img = unit.querySelector('.ks-coin-img'), coin = unit.querySelector('.ks-coin');
     if (!img || !coin) return false;               // cannot animate -> normal paint
-    var base = n, snap = null;
+    var snap = null;
     try { snap = JSON.parse(sessionStorage.getItem(PACK_KEY) || 'null'); } catch (x) {}
-    if (snap && snap.key === key && typeof snap.n === 'number' && (Date.now() - snap.t) < 3600000) base = snap.n;
+    if (!(snap && snap.key === key && typeof snap.n === 'number' && (Date.now() - snap.t) < 3600000)) {
+      packCleanup();                               // stale address: strip it, paint normally
+      console.log('[ks-dash] credit pack wait NOT armed: no snapshot from this tab');
+      return false;
+    }
+    var base = snap.n;
     _pack = { key: key, base: base, unit: unit, num: el, tier: tierEl, img: img, coin: coin, loop: null, done: false, polling: false };
     el.style.transition = 'none';
     el.style.opacity = '0';
     unit.style.visibility = 'visible';
     if (tierEl) { tierEl.textContent = PACK_WAIT_TEXT; tierEl.style.marginTop = '6px'; }
-    console.log('[ks-dash] credit pack wait:', key, '| baseline', base, snap ? '(snapshot)' : '(first paint)', '| painted', n);
+    console.log('[ks-dash] credit pack wait:', key, '| baseline', base, '| painted', n);
     if (n > base) { packLand(n, tierHTML); return true; }   // already arrived before this paint
     if (COIN_REDUCE) { img.src = COIN_FRAMES[0]; }
     else {
@@ -704,15 +720,8 @@ function paintCoins(s) {
       }
     }
     if (COIN_REDUCE) { p.img.src = COIN_FRAMES[0]; settle(); return; }
-    if (p.coin.animate) {                            // the BIG landing, hers S356: double the page-load drop
-      p.coin.animate([
-        { transform: 'translateY(-48px)', opacity: 0.4 },
-        { transform: 'translateY(0)',     opacity: 1, offset: 0.5 },
-        { transform: 'translateY(-14px)', offset: 0.68 },
-        { transform: 'translateY(0)',     offset: 0.82 },
-        { transform: 'translateY(-5px)',  offset: 0.92 },
-        { transform: 'translateY(0)' }
-      ], { duration: 800, easing: 'ease-out' });
+    if (p.coin.animate) {                            // the shared BIG drop, hers S356
+      p.coin.animate(COIN_DROP, { duration: COIN_DROP_MS, easing: 'ease-out' });
     }
     var j = 0;
     var spin = setInterval(function () {
@@ -720,7 +729,7 @@ function paintCoins(s) {
       j++;
       if (j >= COIN_SPIN.length) { clearInterval(spin); p.img.src = COIN_FRAMES[0]; }
     }, 26);
-    setTimeout(settle, 520);
+    setTimeout(settle, COIN_NUM_AT);
   }
 
   function packGiveUp() {
