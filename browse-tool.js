@@ -1977,7 +1977,11 @@ var GATE_COPY = {
       '.ks-bag-block-ctas{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}' +
       '.ks-bag-block-ctas .ks-bag-block-cta{margin-top:0;}' +
       '.ks-bag-block-ctas .ks-bag-block-cta:nth-child(2){background:#fff;color:#b23c19;' +
-        'border:1px solid #d8a892;}';
+        'border:1px solid #d8a892;}' +
+      // S357: the credit pack link inside the shortage message. Secondary by
+      // design (hers): underlined text in the title colour, never a button.
+      '.ks-bag-block-m .ks-bag-block-pack{color:#b23c19;font-weight:600;' +
+        'text-decoration:underline;text-underline-offset:2px;}';
     var s = document.createElement('style'); s.id = 'ks-bag-block-css'; s.textContent = css;
     document.head.appendChild(s);
   }
@@ -1997,12 +2001,31 @@ function showBagBlock(title, msg, cta) {
     var html =
       '<div class="ks-bag-block" role="alert">' +
         '<div class="ks-bag-block-t">' + escapeHtml(title) + '</div>' +
-        '<div class="ks-bag-block-m">' + escapeHtml(msg) + '</div>' +
+        '<div class="ks-bag-block-m">' + packLinked(escapeHtml(msg)) + '</div>' +
         (btns ? '<div class="ks-bag-block-ctas">' + btns + '</div>' : '') +
       '</div>';
     var foot = sheet.querySelector('.ks-bag-foot');
     if (foot) foot.insertAdjacentHTML('beforebegin', html);
     else sheet.insertAdjacentHTML('beforeend', html);
+  }
+
+  // S357, HERS: "buy a credit pack" in a shortage message becomes a link to the
+  // pack section on /pricing, which scrolls itself there and wiggles the row
+  // (landing.js packArrive). ?show=credits, NEVER #get-more-credits: a hash makes
+  // the browser jump before the page can load at the top.
+  // ⚠ It runs on the ESCAPED message and the phrase has no characters escaping
+  // would change, so the match is exact and nothing unescaped gets in.
+  // ⚠ If the approved sentence is ever reworded and loses the phrase, this
+  // silently does nothing and the sentence is plain text again. Ugly, never a lie.
+  // ⚠ The send-a-bag button stays the only button, so the pack stays secondary.
+  var PACK_PHRASE = 'buy a credit pack';
+  var PACK_HREF   = '/pricing?show=credits';
+  function packLinked(safeHtml) {
+    var i = safeHtml.indexOf(PACK_PHRASE);
+    if (i === -1) return safeHtml;
+    return safeHtml.slice(0, i) +
+      '<a class="ks-bag-block-pack" href="' + PACK_HREF + '">' + PACK_PHRASE + '</a>' +
+      safeHtml.slice(i + PACK_PHRASE.length);
   }
 
   function setCheckoutBusy(btn, on) {
