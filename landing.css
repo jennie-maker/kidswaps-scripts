@@ -7676,3 +7676,85 @@ html.landing-motion .landing-wrap.about-page .about-ribbon-track:has(> :nth-chil
     animation: none;
   }
 }
+
+/* ==========================================================================
+   v66 — S357 — THE ARRIVAL, REBUILT: LOAD, SCROLL, THEN A BIGGER WIGGLE
+   AND A COLOUR FLASH. HERS: "its not noticeable enough".
+   APPENDED AT TOP LEVEL. v65 is a BYTE-EXACT PREFIX of this file, so
+   ROLLBACK IS DELETING FROM THIS COMMENT TO THE END OF THE FILE.
+
+   landing.js (packArrive) adds .is-arriving to the section after it has
+   scrolled there, and removes it 3.4s later.
+   ⚠ v65's :target rule is now INERT — the link uses ?show=credits, not a
+   hash. Left in place because this file only ever grows at the end.
+   v65's scroll-margin-top is also unused (the script offsets by the
+   header's own height) and harmless.
+   ⚠ THE FLASH IS CORAL WITH WHITE TEXT, for about a second and a half,
+   then back to the white row. Coral and white is the site's button pairing.
+   ⚠ The phone gets a smaller scale: a row at 100% width scaled past its
+   column would push the page sideways for a moment.
+   ========================================================================== */
+
+@keyframes landing-pack-shake {
+  0%   { transform: scale(1) rotate(0deg); }
+  12%  { transform: scale(1.1) rotate(0deg); }
+  22%  { transform: scale(1.1) rotate(-4deg); }
+  32%  { transform: scale(1.1) rotate(4deg); }
+  42%  { transform: scale(1.1) rotate(-3deg); }
+  52%  { transform: scale(1.1) rotate(3deg); }
+  62%  { transform: scale(1.08) rotate(-1.5deg); }
+  74%  { transform: scale(1.05) rotate(0deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+@keyframes landing-pack-shake-small {
+  0%   { transform: scale(1) rotate(0deg); }
+  12%  { transform: scale(1.04) rotate(0deg); }
+  22%  { transform: scale(1.04) rotate(-3deg); }
+  32%  { transform: scale(1.04) rotate(3deg); }
+  42%  { transform: scale(1.04) rotate(-2deg); }
+  52%  { transform: scale(1.04) rotate(2deg); }
+  62%  { transform: scale(1.03) rotate(-1deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+@keyframes landing-pack-flash {
+  0%   { background-color: #FFFFFF; border-color: var(--landing-hairline); }
+  12%  { background-color: var(--landing-coral); border-color: var(--landing-coral); }
+  65%  { background-color: var(--landing-coral); border-color: var(--landing-coral); }
+  100% { background-color: #FFFFFF; border-color: var(--landing-hairline); }
+}
+
+@keyframes landing-pack-flash-text {
+  0%   { color: var(--landing-ink); }
+  12%  { color: #FFFFFF; }
+  65%  { color: #FFFFFF; }
+  100% { color: var(--landing-ink); }
+}
+
+@keyframes landing-pack-flash-arrow {
+  0%   { border-top-color: var(--landing-coral); border-right-color: var(--landing-coral); }
+  12%  { border-top-color: #FFFFFF; border-right-color: #FFFFFF; }
+  65%  { border-top-color: #FFFFFF; border-right-color: #FFFFFF; }
+  100% { border-top-color: var(--landing-coral); border-right-color: var(--landing-coral); }
+}
+
+.landing-wrap.pricing-page .credit-pack-section.is-arriving .credit-pack-section-button {
+  animation: landing-pack-shake 1.4s cubic-bezier(.4,0,.2,1) 0s 1 both,
+             landing-pack-flash 2.8s ease 0s 1 both;
+}
+
+.landing-wrap.pricing-page .credit-pack-section.is-arriving .credit-pack-section-button-text {
+  animation: landing-pack-flash-text 2.8s ease 0s 1 both;
+}
+
+.landing-wrap.pricing-page .credit-pack-section.is-arriving .credit-pack-section-button::after {
+  animation: landing-pack-flash-arrow 2.8s ease 0s 1 both;
+}
+
+@media (max-width: 767px) {
+  .landing-wrap.pricing-page .credit-pack-section.is-arriving .credit-pack-section-button {
+    animation: landing-pack-shake-small 1.4s cubic-bezier(.4,0,.2,1) 0s 1 both,
+               landing-pack-flash 2.8s ease 0s 1 both;
+  }
+}

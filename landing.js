@@ -315,12 +315,71 @@
     }
   }
 
+  /* =====================================================================
+     6. ARRIVING AT THE CREDIT PACK SECTION — S357, HERS.
+     The /browse shortage message links to /pricing?show=credits. The page
+     loads normally at the top, then scrolls itself down to the credit pack
+     section, then landing.css plays a big wiggle and a coral flash on the row.
+
+     ⚠⚠ A QUERY PARAMETER, NEVER A #HASH. A hash makes the browser jump to the
+     section BEFORE this script runs, so there is no "load normally, then
+     scroll" — she would land already there. A parameter the browser ignores.
+     ⚠ The parameter is stripped straight away, so a refresh or a copied
+     address does not replay it.
+     ⚠ NOT A MEMBER = NO SECTION = NOTHING HAPPENS. Memberstack removes the
+     section for anyone without a plan, and this checks for it after a pause
+     so that removal has happened. Logged out, the page simply stays at the top.
+     ⚠ REDUCED MOTION: it still takes her to the section, instantly, and
+     skips the wiggle.
+     ⚠ The class is removed after the animation ends. Both animations are
+     filled `both` and end on the resting values, so the removal is invisible.
+     ===================================================================== */
+
+  function packArrive() {
+    var params;
+    try { params = new URLSearchParams(window.location.search); } catch (e) { return; }
+    if (params.get("show") !== "credits") return;
+
+    try {
+      params.delete("show");
+      var q = params.toString();
+      window.history.replaceState(null, "",
+        window.location.pathname + (q ? "?" + q : "") + window.location.hash);
+    } catch (e) {}
+
+    setTimeout(function () {
+      var sec = document.querySelector(".landing-wrap.pricing-page .credit-pack-section");
+      if (!sec || !sec.isConnected || !sec.offsetParent) return;
+
+      var header = document.querySelector(".site-header");
+      var offset = (header ? header.offsetHeight : 72) + 28;
+      var top = sec.getBoundingClientRect().top + window.pageYOffset - offset;
+
+      var done = false;
+      function arrive() {
+        if (done) return;
+        done = true;
+        window.removeEventListener("scrollend", arrive);
+        if (reduced) return;
+        setTimeout(function () {
+          sec.classList.add("is-arriving");
+          setTimeout(function () { sec.classList.remove("is-arriving"); }, 3400);
+        }, 250);
+      }
+
+      if ("onscrollend" in window) window.addEventListener("scrollend", arrive);
+      setTimeout(arrive, 1500);
+      window.scrollTo({ top: Math.max(0, top), behavior: reduced ? "auto" : "smooth" });
+    }, 900);
+  }
+
   function go() {
     start();
     spin();
     accordion();
     lap();
     blogPost();
+    packArrive();
   }
 
   if (document.readyState === "loading") {
