@@ -7587,3 +7587,40 @@ html.landing-motion .landing-wrap.about-page .about-ribbon-track:has(> :nth-chil
     transition: none;
   }
 }
+
+/* ==========================================================================
+   v64 — S357 — THE /pricing STAR, FOR MEMBERS ONLY.
+   APPENDED AT TOP LEVEL. v63 is a BYTE-EXACT PREFIX of this file, so
+   ROLLBACK IS DELETING FROM THIS COMMENT TO THE END OF THE FILE.
+
+   The v45 star sits at top:985px, a fixed offset. The credit pack section
+   (members only) pushes the page down, so for a member the star landed on
+   the "Get more credits" heading. Logged out it is untouched and she approved
+   it: 79px below the includes hairline, in the rail under "All plans include".
+
+   MEASURED S357 AT 1202px, NOT DERIVED:
+     logged out  star 1128 · includes 1049 → star is includes + 79
+     logged in   star 1192 · includes 1336 → needs to move +223
+   So a member with ONE pack row gets 985 + 223 = 1208.
+   An Everything Bag member sees BOTH rows: one more 52px row plus its 10px
+   margin, so 1208 + 62 = 1270. DERIVED FROM THE ROW HEIGHT, not measured on
+   a two-row account — read it the first time one is available.
+
+   ⚠⚠ :has() IS WHAT MAKES THIS MEMBER-ONLY. Memberstack REMOVES the section
+   and any non-matching row from the DOM, so these rules cannot match a
+   logged-out visitor. A browser without :has() keeps 985 — ugly, never lost.
+   ⚠ Specificity (0,4,0) and (0,5,0) beat the v45 rule's (0,3,0).
+   ⚠ STILL A FIXED OFFSET: it drifts if copy above it changes length, exactly
+   like v45. After any copy edit on /pricing, look at the star logged in AND
+   logged out.
+   ========================================================================== */
+
+@media (min-width: 992px) {
+  .landing-wrap.pricing-page:has(.credit-pack-section) .landing-star {
+    top: 1208px;
+  }
+
+  .landing-wrap.pricing-page:has(.credit-pack-section-offer + .credit-pack-section-offer) .landing-star {
+    top: 1270px;
+  }
+}
