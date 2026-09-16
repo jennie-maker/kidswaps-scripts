@@ -340,6 +340,12 @@
     try { params = new URLSearchParams(window.location.search); } catch (e) { return; }
     if (params.get("show") !== "credits") return;
 
+    /* S357b: the browser restores the last scroll position on a reload or a
+       reused tab, so the page opened mid-way. Turn restoration off for this
+       load and pin the page to the top before anything else happens. */
+    try { if ("scrollRestoration" in window.history) window.history.scrollRestoration = "manual"; } catch (e) {}
+    window.scrollTo(0, 0);
+
     try {
       params.delete("show");
       var q = params.toString();
@@ -347,7 +353,15 @@
         window.location.pathname + (q ? "?" + q : "") + window.location.hash);
     } catch (e) {}
 
-    setTimeout(function () {
+    /* S357b: wait for the page to be FULLY loaded (images, fonts, Memberstack),
+       then a beat, then scroll. Heights move while images load, so measuring
+       any earlier lands in the wrong place. */
+    function whenLoaded(fn) {
+      if (document.readyState === "complete") fn();
+      else window.addEventListener("load", fn, { once: true });
+    }
+
+    whenLoaded(function () { window.scrollTo(0, 0); setTimeout(function () {
       var sec = document.querySelector(".landing-wrap.pricing-page .credit-pack-section");
       if (!sec || !sec.isConnected || !sec.offsetParent) return;
 
@@ -370,7 +384,7 @@
       if ("onscrollend" in window) window.addEventListener("scrollend", arrive);
       setTimeout(arrive, 1500);
       window.scrollTo({ top: Math.max(0, top), behavior: reduced ? "auto" : "smooth" });
-    }, 900);
+    }, 900); });
   }
 
   function go() {
