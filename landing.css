@@ -7433,3 +7433,157 @@ html.landing-motion .landing-wrap.about-page .about-ribbon-track:has(> :nth-chil
   font: inherit;
   color: inherit;
 }
+
+/* ==========================================================================
+   v63 — S357 — WHITE BUTTON TEXT, THE MOVED SIGNUP BUTTON, AND THE CREDIT
+   PACK SECTION ON /pricing.
+   APPENDED AT TOP LEVEL. v62 is a BYTE-EXACT PREFIX of this file, so
+   ROLLBACK IS DELETING FROM THIS COMMENT TO THE END OF THE FILE.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. WHITE BUTTON TEXT, SITE-WIDE, HERS S357: "white text on all".
+   The coral pill and the outline button's hover both painted cream. Same
+   selectors as the base rules, so this wins on SOURCE ORDER at equal
+   specificity and reaches every landing page, plan cards included.
+   ⚠ --landing-cream IS NOT TOUCHED. It is also the /about heading colour and
+   the blog sheet fill; changing the variable would move those too.
+   -------------------------------------------------------------------------- */
+
+.landing-cta-primary,
+.landing-cta-row .landing-cta-primary,
+.landing-cta-secondary:hover,
+.landing-cta-row .landing-cta-secondary:hover {
+  color: #FFFFFF;
+}
+
+/* --------------------------------------------------------------------------
+   2. "Get my swap bag" MOVED INTO landing-head, UNDER THE LEDE. HERS S357.
+   The button is logged-out only now (data-ms-content="!members", set in the
+   Designer). Nothing gave it room above, so it sat against the paragraph.
+   ⚠⚠ inline-block AND width:auto ARE LOAD-BEARING ON A PHONE. The 767 block
+   sets every .landing-cta-primary to display:block width:100%, and the rule
+   that used to undo that is scoped to .landing-cta-row, which this button is
+   no longer inside. (0,2,0) here beats the bare (0,1,0) at every width.
+   -------------------------------------------------------------------------- */
+
+.landing-head .landing-cta-primary {
+  display: inline-block;
+  width: auto;
+  margin-top: 28px;
+}
+
+@media (max-width: 767px) {
+  .landing-head .landing-cta-primary {
+    margin-top: 22px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   3. THE CREDIT PACK SECTION ON /pricing, HERS S357, OPTION A.
+   Markup: landing-section credit-pack-section [data-ms-content=credit-pack-menu]
+     > landing-section-heading + landing-section-body
+       > credit-pack-section-note
+       > credit-pack-section-offer [data-ms-content=clothing-pack-button / toy-pack-button]
+         > credit-pack-section-button [data-ms-price:add]
+           > credit-pack-section-button-text (price in a <strong>)
+   ⚠⚠ MEMBERSTACK REMOVES A NON-MATCHING WRAPPER FROM THE DOM, so :last-child
+   is whichever row survives. Nothing here depends on both rows existing.
+   ⚠ Every rule is written at THREE classes or more, so it beats
+   .landing-section-body p (0,1,1) and Webflow's .w-inline-block on
+   specificity, never on source order.
+   ⚠ The arrow is DRAWN, never a typed glyph, so it does not depend on the
+   font that loads. Same reasoning as the announcement bar's plus.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.pricing-page .credit-pack-section .credit-pack-section-note {
+  margin: 0 0 16px;
+  font-family: Quicksand, sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--landing-muted);
+}
+
+.landing-wrap.pricing-page .credit-pack-section .credit-pack-section-offer {
+  margin: 0 0 10px;
+}
+
+.landing-wrap.pricing-page .credit-pack-section .credit-pack-section-offer:last-child {
+  margin-bottom: 0;
+}
+
+.landing-wrap.pricing-page .credit-pack-section .credit-pack-section-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-height: 52px;
+  padding: 14px 18px;
+  border: 1px solid var(--landing-hairline);
+  border-radius: 6px;
+  background-color: #FFFFFF;
+  color: var(--landing-ink);
+  text-decoration: none;
+  transition: border-color .2s ease;
+}
+
+.landing-wrap.pricing-page .credit-pack-section .credit-pack-section-button::after {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-right: 4px;
+  border-top: 2px solid var(--landing-coral);
+  border-right: 2px solid var(--landing-coral);
+  transform: rotate(45deg);
+  transition: transform .2s ease;
+}
+
+.landing-wrap.pricing-page .credit-pack-section .credit-pack-section-button:hover {
+  border-color: var(--landing-coral);
+}
+
+.landing-wrap.pricing-page .credit-pack-section .credit-pack-section-button:hover::after {
+  transform: translateX(3px) rotate(45deg);
+}
+
+.landing-wrap.pricing-page .credit-pack-section .credit-pack-section-button:focus-visible {
+  outline: 2px solid var(--landing-coral);
+  outline-offset: 2px;
+}
+
+.landing-wrap.pricing-page .credit-pack-section .credit-pack-section-button-text {
+  font-family: Quicksand, sans-serif;
+  font-weight: 500;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--landing-ink);
+}
+
+.landing-wrap.pricing-page .credit-pack-section .credit-pack-section-button-text strong {
+  font-weight: 700;
+}
+
+@media (max-width: 767px) {
+  .landing-wrap.pricing-page .credit-pack-section .credit-pack-section-note {
+    font-size: 14px;
+    margin-bottom: 14px;
+  }
+  .landing-wrap.pricing-page .credit-pack-section .credit-pack-section-button {
+    padding: 13px 14px;
+  }
+  .landing-wrap.pricing-page .credit-pack-section .credit-pack-section-button-text {
+    font-size: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-wrap.pricing-page .credit-pack-section .credit-pack-section-button,
+  .landing-wrap.pricing-page .credit-pack-section .credit-pack-section-button::after {
+    transition: none;
+  }
+}
