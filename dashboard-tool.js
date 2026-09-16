@@ -503,6 +503,7 @@ function paintCoins(s) {
       // the coins stay tucked, the labels clear. Do not move this to CSS — inline auto-margins win.
       tierEl.style.cssText = 'margin-top:' + (tierHTML ? '6px' : '0') + ';font-size:12px;line-height:1.7;color:#75736E;min-height:' + tierReserve + ';display:flex;flex-direction:column;align-items:flex-start;width:fit-content;margin-left:auto;margin-right:auto;padding:0 12px;';
       tierEl.innerHTML = tierHTML;
+      if (packWaitArm(key, n, unit, el, tierEl, tierHTML)) return;   // S356 credit pack wait owns this coin
       var img = unit.querySelector('.ks-coin-img');
       if (COIN_REDUCE) {                           // reduced-motion: still coin, number shown
         if (img) img.src = COIN_FRAMES[0];
@@ -592,6 +593,155 @@ function paintCoins(s) {
       });
       markTumblesDone();
     }, 1500);
+  }
+
+  // ---------- CREDIT PACK WAIT (S356) ----------
+  // After a credit pack purchase Memberstack returns her here with ?fromCheckout=true&msPriceId=...
+  // Make writes the credits a few seconds LATER (7s measured S355), so the first paint can carry
+  // the OLD balance. HER RULING S356: the old number is never shown. The purchased coin spins
+  // BLANK with "Adding your credits" until member-state reports MORE credits than before, then
+  // lands with a bigger drop than the page-load entrance (hers, S356). 30s with nothing: stop,
+  // stay blank, say so. Both strings approved by her S356. Do not redraft.
+  // ⚠⚠ THE WAIT IS KEYED ON DATA, NEVER A TIMER. The 30s is only the give-up.
+  // ⚠⚠ THE BASELINE: tapping a pack button snapshots the coin's number into sessionStorage
+  // (the Stripe round trip keeps the tab, same seam as ks_consent_pending). This is a one-shot
+  // post-checkout handoff, cleared on land or give-up, not state persistence.
+  // No snapshot (new tab) -> the first paint is the baseline. If Make wrote the credits BEFORE
+  // that first paint she waits 30s and gets the give-up line. Ugly, never a lie.
+  // ⚠ ONLY the coin and its tier line update on landing. Other figures on the page (the
+  // earned line) refresh on the next load. KNOWN, NAMED, ACCEPTED.
+  // ⚠ NEVER under ?fake=. Pack price IDs are keys: if a pack price is ever recreated (the live
+  // flip), PACK_PRICES must change with it or the wait silently never arms.
+  var PACK_PRICES = { 'prc_clothing-credit-pack-8n6m0ucp': 'clothing', 'prc_toy-credit-pack-kr6v0rrk': 'toy' };
+  var PACK_KEY = 'ks_pack_before';
+  var PACK_POLL_MS = 2000, PACK_GIVEUP_MS = 30000;
+  var PACK_WAIT_TEXT = 'Adding your credits';
+  var PACK_LATE_TEXT = 'On the way. Refresh in a minute if you don\u2019t see them.';
+  var PACK_LOOP = COIN_SPIN.slice(0, -1);   // continuous waiting spin, half the landing speed
+  var _pack = null;
+  var _packQS = new URLSearchParams(window.location.search);
+  var _packFor = (_packQS.get('fromCheckout') === 'true') ? (PACK_PRICES[_packQS.get('msPriceId')] || null) : null;
+
+  function wirePackSnapshot() {
+    document.addEventListener('click', function (e) {
+      var b = e.target && e.target.closest && e.target.closest('[data-ms-price\\:add]');
+      if (!b) return;
+      var k = PACK_PRICES[b.getAttribute('data-ms-price:add')];
+      if (!k) return;
+      var el = document.querySelector('[data-coin="' + k + '"]');
+      var n = el ? parseFloat(el.textContent) : NaN;
+      try { sessionStorage.setItem(PACK_KEY, JSON.stringify({ key: k, n: isNaN(n) ? null : n, t: Date.now() })); } catch (x) {}
+    }, true);   // capture phase: Memberstack's own handler cannot beat it
+  }
+
+  function packWaitArm(key, n, unit, el, tierEl, tierHTML) {
+    if (!_packFor || key !== _packFor || _FAKE) return false;
+    if (_pack) {
+      if (_pack.done) return false;
+      el.style.opacity = '0';                        // a repaint must not reveal the old number
+      if (tierEl) tierEl.textContent = PACK_WAIT_TEXT;
+      return true;
+    }
+    var img = unit.querySelector('.ks-coin-img'), coin = unit.querySelector('.ks-coin');
+    if (!img || !coin) return false;               // cannot animate -> normal paint
+    var base = n, snap = null;
+    try { snap = JSON.parse(sessionStorage.getItem(PACK_KEY) || 'null'); } catch (x) {}
+    if (snap && snap.key === key && typeof snap.n === 'number' && (Date.now() - snap.t) < 3600000) base = snap.n;
+    _pack = { key: key, base: base, unit: unit, num: el, tier: tierEl, img: img, coin: coin, loop: null, done: false, polling: false };
+    el.style.transition = 'none';
+    el.style.opacity = '0';
+    unit.style.visibility = 'visible';
+    if (tierEl) { tierEl.textContent = PACK_WAIT_TEXT; tierEl.style.marginTop = '6px'; }
+    console.log('[ks-dash] credit pack wait:', key, '| baseline', base, snap ? '(snapshot)' : '(first paint)', '| painted', n);
+    if (n > base) { packLand(n, tierHTML); return true; }   // already arrived before this paint
+    if (COIN_REDUCE) { img.src = COIN_FRAMES[0]; }
+    else {
+      var i = 0;
+      _pack.loop = setInterval(function () { img.src = COIN_FRAMES[PACK_LOOP[i % PACK_LOOP.length]]; i++; }, 52);
+    }
+    // BACKSTOP: if polling never starts for any reason, the coin still cannot spin forever.
+    setTimeout(function () { if (_pack && !_pack.done) packGiveUp(); }, PACK_GIVEUP_MS + 5000);
+    return true;
+  }
+
+  function packWaitStart() {
+    if (!_pack || _pack.done || _pack.polling) return;
+    _pack.polling = true;
+    var t0 = Date.now();
+    (function tick() {
+      if (_pack.done) return;
+      if (Date.now() - t0 >= PACK_GIVEUP_MS) { packGiveUp(); return; }
+      setTimeout(function () {
+        if (_pack.done) return;
+        var tk = window.$memberstackDom.getMemberCookie();
+        fetch(FN_URL, { method: 'POST', headers: { 'x-ms-token': tk, 'apikey': ANON, 'Authorization': 'Bearer ' + ANON } })
+          .then(function (r) { return r.json(); })
+          .then(function (st) {
+            if (_pack.done) return;
+            var bank = (st && st.bank) || {};
+            var n = parseFloat(bank.by_class && bank.by_class[_pack.key]);
+            if (!isNaN(n) && n > _pack.base) packLand(n, coinTierHTML(bank.by_class_tier && bank.by_class_tier[_pack.key]));
+            else tick();
+          })
+          .catch(function () { tick(); });
+      }, PACK_POLL_MS);
+    })();
+  }
+
+  function packLand(n, tierHTML) {
+    var p = _pack; p.done = true;
+    if (p.loop) clearInterval(p.loop);
+    packCleanup();
+    console.log('[ks-dash] credit pack landed:', p.key, p.base, '->', n);
+    function settle() {
+      p.num.textContent = String(n);
+      p.num.style.transition = 'opacity 200ms ease-out';
+      p.num.style.opacity = '1';
+      if (p.tier) {
+        p.tier.innerHTML = tierHTML;
+        p.tier.style.marginTop = tierHTML ? '6px' : '0';
+        p.tier.style.minHeight = tierHTML ? '54px' : '0px';
+      }
+    }
+    if (COIN_REDUCE) { p.img.src = COIN_FRAMES[0]; settle(); return; }
+    if (p.coin.animate) {                            // the BIG landing, hers S356: double the page-load drop
+      p.coin.animate([
+        { transform: 'translateY(-48px)', opacity: 0.4 },
+        { transform: 'translateY(0)',     opacity: 1, offset: 0.5 },
+        { transform: 'translateY(-14px)', offset: 0.68 },
+        { transform: 'translateY(0)',     offset: 0.82 },
+        { transform: 'translateY(-5px)',  offset: 0.92 },
+        { transform: 'translateY(0)' }
+      ], { duration: 800, easing: 'ease-out' });
+    }
+    var j = 0;
+    var spin = setInterval(function () {
+      p.img.src = COIN_FRAMES[COIN_SPIN[j]];
+      j++;
+      if (j >= COIN_SPIN.length) { clearInterval(spin); p.img.src = COIN_FRAMES[0]; }
+    }, 26);
+    setTimeout(settle, 520);
+  }
+
+  function packGiveUp() {
+    var p = _pack; if (!p || p.done) return;
+    p.done = true;
+    if (p.loop) clearInterval(p.loop);
+    p.img.src = COIN_FRAMES[0];                      // stays BLANK, hers S356: the old number never shows
+    if (p.tier) p.tier.textContent = PACK_LATE_TEXT;
+    packCleanup();
+    console.log('[ks-dash] credit pack wait gave up after', PACK_GIVEUP_MS, 'ms');
+  }
+
+  // Clear the one-shot snapshot and strip the checkout params, so a refresh or a bookmark
+  // shows the real balance instead of replaying the wait.
+  function packCleanup() {
+    try { sessionStorage.removeItem(PACK_KEY); } catch (x) {}
+    try {
+      var u = new URL(window.location.href);
+      ['fromCheckout', 'msPriceId', 'stripePriceId', 'forceRefetch'].forEach(function (k) { u.searchParams.delete(k); });
+      history.replaceState(history.state, '', u.pathname + u.search + u.hash);
+    } catch (x) {}
   }
 
   // ---------- CARDS ----------
@@ -2358,6 +2508,7 @@ function paintCloset(s) {
   wirePrefToggles();
   wireChildRemove();
   wireAccountToggle();
+  wirePackSnapshot();
   var pName = window.$memberstackDom.getCurrentMember()
     .then(paintHeadline)
     .catch(fallbackHeadline);
@@ -2368,7 +2519,7 @@ function paintCloset(s) {
   })
     .then(function (res) { return res.json(); })
     .then(function (state) {
-if (state && !state.error) { applyFake(state); paint(state); paintGreeting(state); paintBagButton(state); addrBuild(); }
+if (state && !state.error) { applyFake(state); paint(state); paintGreeting(state); paintBagButton(state); addrBuild(); packWaitStart(); }
 else { console.error('member-state error', state); neutralGreeting(); }
     })
     .catch(function (e) { console.error('member-state paint error', e); neutralGreeting(); });
