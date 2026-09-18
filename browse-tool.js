@@ -2275,6 +2275,13 @@ function outOfCreditsBlock(zeroClasses) {
     showBagBlock(blk.title, blk.msg, blk.ctas, { note: blk.note, html: blk.html, sig: sig });
   }
 
+  // S367: the bag minus anything no longer in the available catalog.
+  function liveBagItems(bag) {
+    if (!FETCHED) return bag;
+    var avail = skuSetOf(ALL);
+    return bag.filter(function (it) { return avail[it.sku]; });
+  }
+
   function liveBagCheck() {
     var gen = ++liveGen;
 
@@ -2283,7 +2290,13 @@ function outOfCreditsBlock(zeroClasses) {
       var root = document.getElementById('ks-bag-root');
       if (!root || root.hasAttribute('hidden')) return;
       if (liveCtx.member_status !== 'active') return;
-      var bag = bagRead();
+      // S367, HERS: a "No longer available" item is dropped at checkout, so it must
+      // not count as a swap or an extra here either (S366 read "plus 3 extra" on a bag
+      // whose extras were all gone). Same rule as the row flag: only once a real fetch
+      // has landed, never before -- before that every item counts (fail open).
+      // The live off-plan/shortage message takes the same set, since checkout judges
+      // only what survives. Claude's call on that half, one argument to reverse.
+      var bag = liveBagItems(bagRead());
       var c = paintCounter(liveCtx, bag);
       if (c.painted) maybeAllowance(c.atCap);
       paintLiveBlock(liveCtx, bag);
@@ -2443,14 +2456,15 @@ function outOfCreditsBlock(zeroClasses) {
       /* .ks-bag-subnote DELETED S366 with the element it styled -- its line moved into
          .ks-bag-save under Check out. S0: inert rules are deleted, not left in.
          THE COUNTER, S364 LOOK, HERS: serif "This month", green bar, amber piece plus a
-         dark green extras line when over. NO INK AND NO CORAL ANYWHERE ON IT -- those
-         read as a problem and she wants extra swaps to feel encouraged. */
+         dark green extras line when over. NO CORAL ANYWHERE ON IT -- it reads as a
+         problem and she wants extra swaps to feel encouraged. S367, HERS: the "This
+         month" heading alone is INK #1E1A19; every line, bar and extra stays green. */
       '.ks-bag-counter[hidden]{display:none;}' +
-      /* S366, HERS: ALL COUNTER TEXT IS HER GREEN #309359. It measures ~3.9:1 on white,
+      /* S366, HERS: COUNTER TEXT IS HER GREEN #309359 (the heading went ink S367). ~3.9:1 on white,
          under the 4.5 bar for small text; she was told and ruled it. "This month" is
          Instrument Serif ITALIC, a real loaded face on /browse (measured S267). */
       '.ks-bag-counter{margin:0 18px 12px;padding:11px 14px 12px;border:1px solid #efece2;border-radius:12px;color:#309359;}' +
-      '.ks-bag-count-h{font-family:"Instrument Serif",Quicksand,serif;font-style:italic;font-weight:400;font-size:21px;line-height:1.1;color:#309359;margin-bottom:6px;}' +
+      '.ks-bag-count-h{font-family:"Instrument Serif",Quicksand,serif;font-style:italic;font-weight:400;font-size:21px;line-height:1.1;color:#1E1A19;margin-bottom:6px;}' +
       '.ks-bag-count-row + .ks-bag-count-row{margin-top:9px;}' +
       '.ks-bag-count-line{font-size:13px;color:#309359;}' +
       '.ks-bag-count-line b{font-weight:700;}' +
@@ -3300,10 +3314,15 @@ function outOfCreditsBlock(zeroClasses) {
     // initial load; once data lands, build the rail from in-stock values and
     // wire the mobile sheet toggle. if the URL has ?sku=, open that overlay.
     var initialSku = new URLSearchParams(location.search).get('sku');
+    // S367: the header cart links to /browse?bag=1 from every other page, and the
+    // drawer opens on arrival. Opened AFTER the first fetch so "No longer available"
+    // and the counter judge real stock. ?sku= wins if both are present.
+    var initialBag = new URLSearchParams(location.search).get('bag') === '1';
     load(mount, false, function () {
       if (!RAIL_BUILT) { buildRail(); wireMobileToggle(); }
       if (!SEARCH_BUILT) buildSearch();
       if (initialSku) openDetailFromUrl(initialSku);
+      else if (initialBag) openBagFromUrl();
     });
 
     // refresh-on-focus: silently refetch so stale "available" tiles drop
@@ -3312,6 +3331,18 @@ function outOfCreditsBlock(zeroClasses) {
         load(mount, true);
       }
     });
+  }
+
+  // S367: open the bag once, then drop ?bag=1 so a reload or a filter change
+  // (writeUrl preserves other params) does not reopen it.
+  function openBagFromUrl() {
+    try {
+      var p = new URLSearchParams(location.search);
+      p.delete('bag');
+      var qs = p.toString();
+      history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
+    } catch (e) {}
+    openBag();
   }
 
   if (document.readyState === 'loading') {
