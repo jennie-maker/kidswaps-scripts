@@ -2001,6 +2001,10 @@ var GATE_COPY = {
         'background:transparent;color:#b23c19;cursor:pointer;display:flex;align-items:center;justify-content:center;}' +
       '.ks-bag-block-x svg{width:14px;height:14px;}' +
       '.ks-bag-block-note{margin-top:6px;color:#6f4a3e;font-size:13px;line-height:1.4;}' +
+      // Nunito italic, bold. ⚠ Only Italic 400 was added to the site at S242; if Italic 700
+      // is not loaded the browser fakes the bold. Check document.fonts, add it in Site Settings.
+      '.ks-bag-block-and{font-family:Nunito,Quicksand,sans-serif;font-weight:700;}' +
+      '.ks-bag-block-and i{font-style:italic;}' +
       '.ks-bag-block-t{font-weight:600;color:#b23c19;font-size:14.5px;margin-bottom:3px;}' +
       '.ks-bag-block-m{color:#6f4a3e;font-size:13px;line-height:1.4;}' +
      '.ks-bag-block-cta{display:inline-block;margin-top:10px;padding:7px 13px;border-radius:9px;' +
@@ -2038,7 +2042,7 @@ function showBagBlock(title, msg, cta, opts) {
         (opts.sig ? ' data-sig="' + escapeHtml(opts.sig) + '"' : '') + '>' +
         '<button type="button" class="ks-bag-block-x" data-bag-block-close aria-label="Close message">' + X_SVG + '</button>' +
         '<div class="ks-bag-block-t">' + escapeHtml(title) + '</div>' +
-        '<div class="ks-bag-block-m">' + packLinked(escapeHtml(msg)) + '</div>' +
+        '<div class="ks-bag-block-m">' + (opts.html ? msg : packLinked(escapeHtml(msg))) + '</div>' +
         (opts.note ? '<div class="ks-bag-block-note">' + escapeHtml(opts.note) + '</div>' : '') +
         (btns ? '<div class="ks-bag-block-ctas">' + btns + '</div>' : '') +
       '</div>';
@@ -2119,11 +2123,17 @@ function outOfCreditsBlock(zeroClasses) {
   // ⚠ If a shortage rides along (option B), it is ONE plain sentence inside this
   //   box, NOT a second box and NOT a third button. The sentence is her approved
   //   Out of credits opener, reused rather than drafted.
+  // S366, HERS, REPLACING THE S365 STRINGS OFF THE LIVE RENDER. VERBATIM.
+  // TRUSTED HTML ON PURPOSE -- the bold italic "and" is markup, so this is passed
+  // with opts.html and NOT escaped. It holds no member data, only her words.
+  // ⚠ THE "and" IS NUNITO ITALIC, the site's only italic sans (added S242 because
+  //   Quicksand has no italic face). Never set font-style:italic on Quicksand.
+  var OFF_PLAN_AND = '<strong class="ks-bag-block-and"><i>and</i></strong>';
   var OFF_PLAN_MSG = {
-    clothing: 'To order Clothing, you need to be on a clothing plan AND have clothing credits. ' +
-              'Change your plan, then add a clothing credit pack or send in clothing to earn credits.',
-    toy:      'To order Toys, you need to be on a toy plan AND have toy credits. ' +
-              'Change your plan, then add a toy credit pack or send in toys to earn credits.'
+    clothing: 'In order to get clothing today, you\u2019ll need to switch your plan ' + OFF_PLAN_AND +
+              ' buy a clothing credit pack.',
+    toy:      'In order to get toys today, you\u2019ll need to switch your plan ' + OFF_PLAN_AND +
+              ' buy a toy credit pack.'
   };
   var SHORT_SENTENCE = 'You\u2019ve picked more than your credits cover right now.';
   function offPlanBlock(classes, count, shortage) {
@@ -2131,6 +2141,7 @@ function outOfCreditsBlock(zeroClasses) {
     return {
       title: 'Not on your plan',
       msg: OFF_PLAN_MSG[k],
+      html: true,
       note: shortage ? SHORT_SENTENCE : '',
       ctas: [
         { label: 'See plans', href: '/pricing' },
@@ -2172,7 +2183,8 @@ function outOfCreditsBlock(zeroClasses) {
   var CAP_SEEN_KEY = 'ksBagCapSeen';   // sessionStorage, same life as the bag itself
   // S365, HERS: a STARTING VALUE ONLY. She judges it on the live drawer. One number.
   var ALLOW_FADE_MS = 6000;
-  var ALLOW_MSG = 'You\u2019ve used all your swaps this month. Extra swaps are $5 each.';
+  // S366, HERS, VERBATIM -- adds that each extra swap still needs a credit.
+  var ALLOW_MSG = 'You\u2019ve used all your swaps this month. Extra swaps are $5 each, and you need a credit for each.';
 
   function capNum(v) {
     if (typeof v === 'number') return v;
@@ -2195,18 +2207,18 @@ function outOfCreditsBlock(zeroClasses) {
       var inBag = bag.filter(function (it) { return it.klass === k; }).length;
       var total = (Number(used[k]) || 0) + inBag;
       var within = Math.min(total, cap), extra = Math.max(0, total - cap);
-      var span = Math.max(cap, total);
-      var fillPct = span ? (within / span * 100) : 0;
-      var overPct = span ? (extra / span * 100) : 0;
+      // S366, HERS: THE BAR STAYS ALL GREEN OVER THE ALLOWANCE -- amber read as a
+      // warning. It fills to the cap and stops; the extras ride the line instead.
+      var fillPct = cap ? (within / cap * 100) : 0;
       atCap[k] = inBag > 0 && total >= cap;
       rows +=
         '<div class="ks-bag-count-row">' +
-          '<div class="ks-bag-count-line"><b>' + within + ' of ' + cap + '</b> ' + k + ' swaps used</div>' +
+          '<div class="ks-bag-count-line"><b>' + within + ' of ' + cap + '</b> ' + k + ' swaps used' +
+            (extra ? ', <span class="ks-bag-count-extra">plus ' + extra + ' extra at $5 each</span>' : '') +
+          '</div>' +
           '<div class="ks-bag-count-bar" aria-hidden="true">' +
             '<span class="ks-bag-count-fill" style="width:' + fillPct.toFixed(2) + '%"></span>' +
-            (extra ? '<span class="ks-bag-count-over" style="width:' + overPct.toFixed(2) + '%"></span>' : '') +
           '</div>' +
-          (extra ? '<div class="ks-bag-count-extra">plus ' + extra + ' extra ($5 each)</div>' : '') +
         '</div>';
     });
     if (!rows) { box.setAttribute('hidden', ''); box.innerHTML = ''; return { painted: false, atCap: atCap }; }
@@ -2260,7 +2272,7 @@ function outOfCreditsBlock(zeroClasses) {
     if (!blk) { liveDismissedSig = null; return; }                 // problem gone -> re-arm
     if (sig === liveDismissedSig) return;                          // she closed this one
     liveDismissedSig = null;
-    showBagBlock(blk.title, blk.msg, blk.ctas, { note: blk.note, sig: sig });
+    showBagBlock(blk.title, blk.msg, blk.ctas, { note: blk.note, html: blk.html, sig: sig });
   }
 
   function liveBagCheck() {
@@ -2310,7 +2322,7 @@ function outOfCreditsBlock(zeroClasses) {
         showBagBlock('Past this cycle\u2019s limit', 'You can swap up to 5 extra items per cycle. Edit your bag to check out.');
       } else if (res.blocked.type === 'off_plan') {
         var ob = offPlanBlock(res.blocked.classes, res.blocked.count, res.blocked.shortage);
-        showBagBlock(ob.title, ob.msg, ob.ctas, { note: ob.note });
+        showBagBlock(ob.title, ob.msg, ob.ctas, { note: ob.note, html: ob.html });
       } else {
         showBagBlock('Something\u2019s off', 'Please edit your bag and try again.');
       }
@@ -2434,16 +2446,18 @@ function outOfCreditsBlock(zeroClasses) {
          dark green extras line when over. NO INK AND NO CORAL ANYWHERE ON IT -- those
          read as a problem and she wants extra swaps to feel encouraged. */
       '.ks-bag-counter[hidden]{display:none;}' +
-      '.ks-bag-counter{margin:0 18px 12px;padding:11px 14px 12px;border:1px solid #efece2;border-radius:12px;color:#1F5C38;}' +
-      '.ks-bag-count-h{font-family:"Instrument Serif",Quicksand,serif;font-size:20px;line-height:1.1;color:#1F5C38;margin-bottom:6px;}' +
+      /* S366, HERS: ALL COUNTER TEXT IS HER GREEN #309359. It measures ~3.9:1 on white,
+         under the 4.5 bar for small text; she was told and ruled it. "This month" is
+         Instrument Serif ITALIC, a real loaded face on /browse (measured S267). */
+      '.ks-bag-counter{margin:0 18px 12px;padding:11px 14px 12px;border:1px solid #efece2;border-radius:12px;color:#309359;}' +
+      '.ks-bag-count-h{font-family:"Instrument Serif",Quicksand,serif;font-style:italic;font-weight:400;font-size:21px;line-height:1.1;color:#309359;margin-bottom:6px;}' +
       '.ks-bag-count-row + .ks-bag-count-row{margin-top:9px;}' +
-      '.ks-bag-count-line{font-size:13px;color:#1F5C38;}' +
+      '.ks-bag-count-line{font-size:13px;color:#309359;}' +
       '.ks-bag-count-line b{font-weight:700;}' +
       '.ks-bag-count-bar{display:flex;height:6px;border-radius:3px;background:#EDECE0;overflow:hidden;margin-top:5px;}' +
       '.ks-bag-count-fill{background:#309359;height:100%;}' +
-      '.ks-bag-count-over{background:#EDA920;height:100%;}' +
-      '.ks-bag-count-extra{font-size:12.5px;font-weight:600;color:#1F5C38;margin-top:5px;display:flex;align-items:center;gap:6px;}' +
-      '.ks-bag-count-extra::before{content:"";width:8px;height:8px;border-radius:2px;background:#EDA920;flex:none;}' +
+      /* the extras, one size up and bold so they stand out without a warning colour */
+      '.ks-bag-count-extra{font-size:14px;font-weight:700;}' +
       /* THE ALLOWANCE MESSAGE, S364, HERS: white, green border, dark green text, no button. */
       '.ks-bag-allow{margin-top:10px;padding:9px 12px;background:#fff;border:1.5px solid #309359;border-radius:10px;' +
         'color:#1F5C38;font-size:13px;font-weight:600;line-height:1.4;transition:opacity .45s;}' +
