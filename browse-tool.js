@@ -1737,6 +1737,14 @@
     // attach-once delegated handlers (innerHTML is rebuilt each open)
     root.addEventListener('click', function (e) {
       if (e.target.closest('[data-bag-close]'))    { closeBag(); return; }
+      var bx = e.target.closest('[data-bag-block-close]');
+      if (bx) {
+        var blk = bx.closest('.ks-bag-block');
+        var sg = blk && blk.getAttribute('data-sig');
+        if (sg) liveDismissedSig = sg;          // stays closed while the same problem stands
+        clearBagBlock();
+        return;
+      }
       var rm = e.target.closest('[data-bag-remove]');
       if (rm) { removeFromBag(rm.getAttribute('data-bag-remove')); return; }
       if (e.target.closest('[data-bag-checkout]'))  { goCheckout(); return; }
@@ -1783,6 +1791,10 @@
       ? '<div class="ks-bag-foot">' +
           '<div class="ks-bag-note-line">Credits and any fees are shown at checkout.</div>' +
           '<button type="button" class="ks-bag-checkout" data-bag-checkout>Check out</button>' +
+          // S365 LOCKED, HERS, VERBATIM. The drawer's ONE standing line: it carries both
+          // facts (the bag dies with the tab, nothing is held). DO NOT REDRAFT.
+          '<div class="ks-bag-save"><span class="ks-bag-save-i" aria-hidden="true">i</span>' +
+            '<span>Closing this tab clears your bag. Nothing\u2019s reserved until you check out.</span></div>' +
         '</div>'
       : '';
     root.innerHTML =
@@ -1795,12 +1807,15 @@
             (bag.length ? bag.length + (bag.length === 1 ? ' item' : ' items') : '') +
           '</span>' +
         '</div>' +
-        (bag.length ? '<div class="ks-bag-subnote">Nothing\u2019s reserved until you check out.</div>' : '') +
+        // S366 #CART-NUDGE: the counter replaces the top subnote. It ships HIDDEN and
+        // liveBagCheck fills it once the claim context lands, so a logged-out,
+        // non-active or failed read simply shows no counter. Ugly never, a lie never.
+        '<div class="ks-bag-counter" hidden></div>' +
         (pendingBagNote ? '<div class="ks-bag-removed">' + escapeHtml(pendingBagNote) + '</div>' : '') +
         '<div class="ks-bag-list">' + rows + '</div>' +
         footer +
       '</div>';
-    liveShortageCheck();   // S357: warn as soon as the bag outgrows her credits
+    liveBagCheck();   // S366: counter + allowance + live off-plan/shortage message
   }
 
   function openBag() {
@@ -1851,7 +1866,17 @@
     if (offPlan.length) {
       var offClasses = {};
       offPlan.forEach(function (it) { offClasses[it.klass] = true; });
-      return { ok: false, blocked: { type: 'off_plan', classes: Object.keys(offClasses), count: offPlan.length } };
+      // S365, HERS, OPTION B: she sees BOTH problems in one box. So work out whether
+      // the credits cover the COVERED items, ignoring the off-plan ones. Accurate by
+      // construction: a toy credit can never pay for clothing, so removing the
+      // off-plan item cannot change the answer for the rest. The recursion cannot
+      // loop, because `covered` holds no off-plan item by definition.
+      var covered = bag.filter(function (it) { return (planCaps[it.klass] || 0) !== 0; });
+      var sub = covered.length ? resolveBag(covered, ctx) : null;
+      var shortage = (sub && !sub.ok && sub.blocked && sub.blocked.type === 'credit_shortage')
+        ? sub.blocked.byClass : null;
+      return { ok: false, blocked: { type: 'off_plan', classes: Object.keys(offClasses),
+                                     count: offPlan.length, shortage: shortage } };
     }
 
     var pool = (ctx.claimable_credits || []).slice();
@@ -1969,8 +1994,13 @@ var GATE_COPY = {
   function ensureBagBlockCss() {
     if (document.getElementById('ks-bag-block-css')) return;
     var css =
-      '.ks-bag-block{margin:10px 18px 0;padding:13px 15px;border-radius:13px;' +
+      '.ks-bag-block{position:relative;margin:10px 18px 0;padding:13px 40px 13px 15px;border-radius:13px;' +
         'background:#fbeee9;border:1px solid #efc9bb;font-family:Quicksand,sans-serif;}' +
+      // S366: the close control. 36px box so it stays a fair tap target.
+      '.ks-bag-block-x{position:absolute;top:4px;right:4px;width:36px;height:36px;border:0;padding:0;' +
+        'background:transparent;color:#b23c19;cursor:pointer;display:flex;align-items:center;justify-content:center;}' +
+      '.ks-bag-block-x svg{width:14px;height:14px;}' +
+      '.ks-bag-block-note{margin-top:6px;color:#6f4a3e;font-size:13px;line-height:1.4;}' +
       '.ks-bag-block-t{font-weight:600;color:#b23c19;font-size:14.5px;margin-bottom:3px;}' +
       '.ks-bag-block-m{color:#6f4a3e;font-size:13px;line-height:1.4;}' +
      '.ks-bag-block-cta{display:inline-block;margin-top:10px;padding:7px 13px;border-radius:9px;' +
@@ -1991,18 +2021,25 @@ var GATE_COPY = {
     var b = document.querySelector('.ks-bag-block'); if (b && b.parentNode) b.parentNode.removeChild(b);
   }
 
-function showBagBlock(title, msg, cta) {
+function showBagBlock(title, msg, cta, opts) {
     ensureBagBlockCss();
     var sheet = document.querySelector('.ks-bag-sheet'); if (!sheet) return;
     clearBagBlock();
+    opts = opts || {};
     var list = cta ? (Array.isArray(cta) ? cta : [cta]) : [];
     var btns = list.map(function (c) {
       return '<a class="ks-bag-block-cta" href="' + escapeHtml(c.href) + '">' + escapeHtml(c.label) + '</a>';
     }).join('');
+    // S366, HERS: a message with a button stays until she taps it or CLOSES it, so
+    // every block now carries a close control. data-sig lets liveBagCheck remember a
+    // closed message and not re-show it while the same problem stands.
     var html =
-      '<div class="ks-bag-block" role="alert">' +
+      '<div class="ks-bag-block" role="alert"' +
+        (opts.sig ? ' data-sig="' + escapeHtml(opts.sig) + '"' : '') + '>' +
+        '<button type="button" class="ks-bag-block-x" data-bag-block-close aria-label="Close message">' + X_SVG + '</button>' +
         '<div class="ks-bag-block-t">' + escapeHtml(title) + '</div>' +
         '<div class="ks-bag-block-m">' + packLinked(escapeHtml(msg)) + '</div>' +
+        (opts.note ? '<div class="ks-bag-block-note">' + escapeHtml(opts.note) + '</div>' : '') +
         (btns ? '<div class="ks-bag-block-ctas">' + btns + '</div>' : '') +
       '</div>';
     var foot = sheet.querySelector('.ks-bag-foot');
@@ -2073,20 +2110,32 @@ function outOfCreditsBlock(zeroClasses) {
       ]
     };
   }
-  // Runs the credit picker on a resolved item set and hands off to /checkout.
-  // Shared by the no-removal path and the fail-open path of goCheckout.
   // Block copy for a bag holding items whose class isn't on the member's plan.
-  // Copy approved by Jennie (Session 43). Signature kept (classes/count unused)
-  // so the finishCheckout call site doesn't move -- same pattern as shortageMessage.
-  // NO CTA on purpose: the two remedies (remove it / switch plans) are named in
-  // prose, and there is no self-serve plan-switch path today (Stripe portal
-  // switching is OFF, #PLAN-UPGRADE-IN-CHECKOUT is unbuilt), so a button would be
-  // a dead end. When the in-checkout upgrade ships, add the button then.
-  function offPlanBlock(classes, count) {
+  // S365, HERS, VERBATIM, BOTH VERSIONS MATCH BY SHAPE — the capitals are hers.
+  // Heading stays "Not on your plan" (S43). The buttons exist now because the plan
+  // path is real: /pricing's members-only grid opens a Stripe flow offering THE
+  // PLAN SHE TAPPED plus her current one (proven S365). The message names no plan
+  // on purpose, so it cannot go stale; /pricing does the naming.
+  // ⚠ If a shortage rides along (option B), it is ONE plain sentence inside this
+  //   box, NOT a second box and NOT a third button. The sentence is her approved
+  //   Out of credits opener, reused rather than drafted.
+  var OFF_PLAN_MSG = {
+    clothing: 'To order Clothing, you need to be on a clothing plan AND have clothing credits. ' +
+              'Change your plan, then add a clothing credit pack or send in clothing to earn credits.',
+    toy:      'To order Toys, you need to be on a toy plan AND have toy credits. ' +
+              'Change your plan, then add a toy credit pack or send in toys to earn credits.'
+  };
+  var SHORT_SENTENCE = 'You\u2019ve picked more than your credits cover right now.';
+  function offPlanBlock(classes, count, shortage) {
+    var k = (classes && classes[0] === 'toy') ? 'toy' : 'clothing';
     return {
       title: 'Not on your plan',
-      msg: 'This one\u2019s not covered by your current plan. You can take it ' +
-           'out of your bag, or switch to a plan that includes it.'
+      msg: OFF_PLAN_MSG[k],
+      note: shortage ? SHORT_SENTENCE : '',
+      ctas: [
+        { label: 'See plans', href: '/pricing' },
+        { label: k === 'toy' ? 'Get toy credits' : 'Get clothing credits', href: '/pricing?show=credits' }
+      ]
     };
   }
 
@@ -2102,42 +2151,130 @@ function outOfCreditsBlock(zeroClasses) {
              ctas: [{ label: 'Send in a swap bag', href: '/dashboard' }] };
   }
 
-  /* S357, HERS: show the shortage message the moment the bag outgrows her
-     credits, not only when she taps Check out. THE ITEM STILL GOES IN — the bag
-     is a wishlist and nothing is reserved until checkout.
-     ⚠ Credits are read ONCE per page load (they cannot change while she browses)
-       and reused, so adding stays fast. A failed read resets to idle, so the next
-       render tries again; it never blocks anything.
-     ⚠ SHORTAGE ONLY. Off-plan and the extra-swap cap still wait for checkout,
-       which stays the real gate. Only an `active` member is judged here; every
-       other status is checkout's to explain.
-     ⚠ renderBag rebuilds the drawer and wipes any message, so this re-runs on
-       every render: removing items until she is covered makes it disappear.
-     ⚠ It never paints over a message already showing, and never while Check out
-       is busy, so it cannot overwrite checkout's own answer. `liveGen` drops any
-       answer that arrives after a newer render. */
+  /* S366 #CART-NUDGE — liveBagCheck, replacing S357's liveShortageCheck.
+     ONE claim-context read per page load, then on every drawer render it paints:
+       (1) THE COUNTER, always, empty bag included. One line per kind her plan
+           covers and NOTHING about a kind it does not (hers S365, counter only).
+       (2) THE ALLOWANCE MESSAGE, once, when the bag takes a covered kind to its
+           allowance. No button, fades after ALLOW_FADE_MS.
+       (3) THE BLOCK, for off-plan (with the shortage riding inside it, option B)
+           or for a plain credit shortage. Buttons, so it stays until tapped or
+           closed. A closed message stays closed while the same problem stands.
+     ⚠ THE ITEM STILL GOES IN. The bag is a wishlist; checkout stays the real gate.
+     ⚠ The extra-swap cap still waits for checkout. The counter already shows extras.
+     ⚠ Only an `active` member is judged. Every other status is checkout's to explain.
+     ⚠ It never paints over checkout's own message and never while Check out is busy.
+       `liveGen` drops any answer that lands after a newer render.
+     ⚠ A failed read resets to idle and paints nothing, so the counter just stays
+       hidden. It never blocks anything. */
   var liveCtx = null, liveCtxState = 'idle', liveWaiters = [], liveGen = 0;
+  var liveDismissedSig = null;
+  var CAP_SEEN_KEY = 'ksBagCapSeen';   // sessionStorage, same life as the bag itself
+  // S365, HERS: a STARTING VALUE ONLY. She judges it on the live drawer. One number.
+  var ALLOW_FADE_MS = 6000;
+  var ALLOW_MSG = 'You\u2019ve used all your swaps this month. Extra swaps are $5 each.';
 
-  function liveShortageCheck() {
+  function capNum(v) {
+    if (typeof v === 'number') return v;
+    if (v && typeof v.limit === 'number') return v.limit;
+    var n = Number(v); return isNaN(n) ? 0 : n;
+  }
+  function capSeenRead()  { try { return JSON.parse(sessionStorage.getItem(CAP_SEEN_KEY)) || {}; } catch (e) { return {}; } }
+  function capSeenWrite(o){ try { sessionStorage.setItem(CAP_SEEN_KEY, JSON.stringify(o)); } catch (e) {} }
+
+  // Returns { painted: bool, atCap: {clothing:bool, toy:bool} }.
+  function paintCounter(ctx, bag) {
+    var box = document.querySelector('.ks-bag-counter');
+    var atCap = {};
+    if (!box) return { painted: false, atCap: atCap };
+    var caps = ctx.caps || {}, used = ctx.used_this_cycle || {};
+    var rows = '';
+    ['clothing', 'toy'].forEach(function (k) {
+      var cap = capNum(caps[k]);
+      if (cap <= 0) return;                       // not on her plan -> say nothing at all
+      var inBag = bag.filter(function (it) { return it.klass === k; }).length;
+      var total = (Number(used[k]) || 0) + inBag;
+      var within = Math.min(total, cap), extra = Math.max(0, total - cap);
+      var span = Math.max(cap, total);
+      var fillPct = span ? (within / span * 100) : 0;
+      var overPct = span ? (extra / span * 100) : 0;
+      atCap[k] = inBag > 0 && total >= cap;
+      rows +=
+        '<div class="ks-bag-count-row">' +
+          '<div class="ks-bag-count-line"><b>' + within + ' of ' + cap + '</b> ' + k + ' swaps used</div>' +
+          '<div class="ks-bag-count-bar" aria-hidden="true">' +
+            '<span class="ks-bag-count-fill" style="width:' + fillPct.toFixed(2) + '%"></span>' +
+            (extra ? '<span class="ks-bag-count-over" style="width:' + overPct.toFixed(2) + '%"></span>' : '') +
+          '</div>' +
+          (extra ? '<div class="ks-bag-count-extra">plus ' + extra + ' extra ($5 each)</div>' : '') +
+        '</div>';
+    });
+    if (!rows) { box.setAttribute('hidden', ''); box.innerHTML = ''; return { painted: false, atCap: atCap }; }
+    box.innerHTML = '<div class="ks-bag-count-h">This month</div>' + rows;
+    box.removeAttribute('hidden');
+    return { painted: true, atCap: atCap };
+  }
+
+  // Fires ONCE on the move INTO a kind's allowance. Re-arms only after the bag
+  // drops back under it, so opening the drawer again, or adding past the
+  // allowance, does not repeat it (hers: no nudge on every add).
+  function maybeAllowance(atCap) {
+    var seen = capSeenRead(), changed = false, fire = false;
+    ['clothing', 'toy'].forEach(function (k) {
+      if (atCap[k]) { if (!seen[k]) { seen[k] = true; changed = true; fire = true; } }
+      else if (seen[k]) { delete seen[k]; changed = true; }
+    });
+    if (changed) capSeenWrite(seen);
+    if (!fire) return;
+    var box = document.querySelector('.ks-bag-counter');
+    if (!box || box.hasAttribute('hidden')) return;
+    box.insertAdjacentHTML('beforeend', '<div class="ks-bag-allow" role="status">' + escapeHtml(ALLOW_MSG) + '</div>');
+    var msg = box.querySelector('.ks-bag-allow');
+    setTimeout(function () {
+      if (!msg || !msg.parentNode) return;        // a re-render already took it
+      msg.classList.add('is-fading');
+      setTimeout(function () { if (msg.parentNode) msg.parentNode.removeChild(msg); }, 450);
+    }, ALLOW_FADE_MS);
+  }
+
+  function paintLiveBlock(ctx, bag) {
+    if (!bag.length) { liveDismissedSig = null; return; }
+    if (document.querySelector('.ks-bag-block')) return;          // checkout's own answer
+    var btn = document.querySelector('.ks-bag-checkout');
+    if (btn && btn.disabled) return;
+    var res = resolveBag(bag, ctx);
+    var blk = null, sig = null;
+    if (!res.ok && res.blocked) {
+      if (res.blocked.type === 'off_plan') {
+        blk = offPlanBlock(res.blocked.classes, res.blocked.count, res.blocked.shortage);
+        sig = 'off:' + res.blocked.classes.slice().sort().join(',') + (res.blocked.shortage ? ':short' : '');
+      } else if (res.blocked.type === 'credit_shortage') {
+        var byClass = res.blocked.byClass;
+        var have = creditCountByClass(ctx);
+        var shortClasses = Object.keys(byClass);
+        var zeroClasses = shortClasses.filter(function (k) { return (have[k] || 0) === 0; });
+        blk = shortageBlock(byClass, have, shortClasses, zeroClasses);
+        sig = 'short:' + blk.title + ':' + shortClasses.slice().sort().join(',');
+      }
+    }
+    if (!blk) { liveDismissedSig = null; return; }                 // problem gone -> re-arm
+    if (sig === liveDismissedSig) return;                          // she closed this one
+    liveDismissedSig = null;
+    showBagBlock(blk.title, blk.msg, blk.ctas, { note: blk.note, sig: sig });
+  }
+
+  function liveBagCheck() {
     var gen = ++liveGen;
-    if (!bagRead().length) return;
 
     function paint() {
       if (gen !== liveGen || !liveCtx) return;
       var root = document.getElementById('ks-bag-root');
       if (!root || root.hasAttribute('hidden')) return;
-      if (document.querySelector('.ks-bag-block')) return;
-      var btn = document.querySelector('.ks-bag-checkout');
-      if (btn && btn.disabled) return;
       if (liveCtx.member_status !== 'active') return;
-      var res = resolveBag(bagRead(), liveCtx);
-      if (res.ok || !res.blocked || res.blocked.type !== 'credit_shortage') return;
-      var byClass = res.blocked.byClass;
-      var have = creditCountByClass(liveCtx);
-      var shortClasses = Object.keys(byClass);
-      var zeroClasses = shortClasses.filter(function (k) { return (have[k] || 0) === 0; });
-      var sb = shortageBlock(byClass, have, shortClasses, zeroClasses);
-      showBagBlock(sb.title, sb.msg, sb.ctas);
+      var bag = bagRead();
+      var c = paintCounter(liveCtx, bag);
+      if (c.painted) maybeAllowance(c.atCap);
+      paintLiveBlock(liveCtx, bag);
     }
 
     if (liveCtxState === 'ready') { paint(); return; }
@@ -2149,12 +2286,15 @@ function outOfCreditsBlock(zeroClasses) {
       fetchClaimContext(tok, function (err, ctx) {
         if (err || !ctx) { liveCtxState = 'idle'; liveWaiters = []; return; }
         liveCtx = ctx; liveCtxState = 'ready';
+        console.log(LOG, 'cart nudge ctx', { status: ctx.member_status, caps: ctx.caps, used: ctx.used_this_cycle });
         var w = liveWaiters; liveWaiters = [];
         for (var i = 0; i < w.length; i++) w[i]();
       });
     });
   }
 
+  // Runs the credit picker on a resolved item set and hands off to /checkout.
+  // Shared by the no-removal path and the fail-open path of goCheckout.
   function finishCheckout(items, ctx, btn) {
     var res = resolveBag(items, ctx);
     if (!res.ok) {
@@ -2169,8 +2309,8 @@ function outOfCreditsBlock(zeroClasses) {
       } else if (res.blocked.type === 'extra_swap_cap') {
         showBagBlock('Past this cycle\u2019s limit', 'You can swap up to 5 extra items per cycle. Edit your bag to check out.');
       } else if (res.blocked.type === 'off_plan') {
-        var ob = offPlanBlock(res.blocked.classes, res.blocked.count);
-        showBagBlock(ob.title, ob.msg);
+        var ob = offPlanBlock(res.blocked.classes, res.blocked.count, res.blocked.shortage);
+        showBagBlock(ob.title, ob.msg, ob.ctas, { note: ob.note });
       } else {
         showBagBlock('Something\u2019s off', 'Please edit your bag and try again.');
       }
@@ -2288,7 +2428,32 @@ function outOfCreditsBlock(zeroClasses) {
         'font-family:Quicksand,sans-serif;}' +
       '.ks-bag-grip{width:38px;height:4px;border-radius:4px;background:#d8d4c6;margin:12px auto 6px;cursor:pointer;}' +
       '.ks-bag-head{display:flex;align-items:baseline;justify-content:space-between;padding:4px 18px 8px;}' +
-      '.ks-bag-subnote{font-size:11.5px;color:#9a9384;padding:0 18px 10px;margin-top:-2px;}' +
+      /* .ks-bag-subnote DELETED S366 with the element it styled -- its line moved into
+         .ks-bag-save under Check out. S0: inert rules are deleted, not left in.
+         THE COUNTER, S364 LOOK, HERS: serif "This month", green bar, amber piece plus a
+         dark green extras line when over. NO INK AND NO CORAL ANYWHERE ON IT -- those
+         read as a problem and she wants extra swaps to feel encouraged. */
+      '.ks-bag-counter[hidden]{display:none;}' +
+      '.ks-bag-counter{margin:0 18px 12px;padding:11px 14px 12px;border:1px solid #efece2;border-radius:12px;color:#1F5C38;}' +
+      '.ks-bag-count-h{font-family:"Instrument Serif",Quicksand,serif;font-size:20px;line-height:1.1;color:#1F5C38;margin-bottom:6px;}' +
+      '.ks-bag-count-row + .ks-bag-count-row{margin-top:9px;}' +
+      '.ks-bag-count-line{font-size:13px;color:#1F5C38;}' +
+      '.ks-bag-count-line b{font-weight:700;}' +
+      '.ks-bag-count-bar{display:flex;height:6px;border-radius:3px;background:#EDECE0;overflow:hidden;margin-top:5px;}' +
+      '.ks-bag-count-fill{background:#309359;height:100%;}' +
+      '.ks-bag-count-over{background:#EDA920;height:100%;}' +
+      '.ks-bag-count-extra{font-size:12.5px;font-weight:600;color:#1F5C38;margin-top:5px;display:flex;align-items:center;gap:6px;}' +
+      '.ks-bag-count-extra::before{content:"";width:8px;height:8px;border-radius:2px;background:#EDA920;flex:none;}' +
+      /* THE ALLOWANCE MESSAGE, S364, HERS: white, green border, dark green text, no button. */
+      '.ks-bag-allow{margin-top:10px;padding:9px 12px;background:#fff;border:1.5px solid #309359;border-radius:10px;' +
+        'color:#1F5C38;font-size:13px;font-weight:600;line-height:1.4;transition:opacity .45s;}' +
+      '.ks-bag-allow.is-fading{opacity:0;}' +
+      '@media (prefers-reduced-motion: reduce){.ks-bag-allow{transition:none;}}' +
+      /* THE SAVING LINE, S364/S365: soft cream box with a small amber i, under Check out. */
+      '.ks-bag-save{display:flex;gap:9px;align-items:flex-start;margin-top:12px;padding:10px 12px;' +
+        'background:#EDECE0;border-radius:10px;font-size:12px;line-height:1.4;color:#1E1A19;}' +
+      '.ks-bag-save-i{flex:none;width:16px;height:16px;border-radius:50%;background:#EDA920;color:#1E1A19;' +
+        'font-size:11px;font-weight:700;line-height:16px;text-align:center;margin-top:1px;}' +
       '.ks-bag-title{font-family:"Instrument Serif",Quicksand,serif;font-size:30px;color:#1E1A19;line-height:1;}' +
       '.ks-bag-tally{font-size:13px;color:#6f6a60;}' +
       '.ks-bag-list{overflow:auto;-webkit-overflow-scrolling:touch;padding:0 18px;}' +
