@@ -7877,3 +7877,67 @@ html.landing-motion .landing-wrap.about-page .about-ribbon-track:has(> :nth-chil
   }
 
 }
+
+/* ==========================================================================
+   v68 — S375 — THE VIDEO MOVES INTO THE RIGHT COLUMN, AND THE HERO LINE
+   UNDER "Hi, I'm Jennie" GROWS
+   ROLLBACK: delete from this comment to the end of the file.
+
+   (1) THE VIDEO — HERS, OFF THE LIVE v67 RENDER. The card sits in the right
+   column ABOVE "I built this for parents…", not in the left rail. So the
+   closing row goes back to v19's plain block with its 350px indent, and the
+   markup order (video first) does the stacking. The left rail is empty again,
+   as v19 intended. v67's grid is switched off here rather than deleted, so
+   the file stays a byte-exact prefix and rollback is still delete-to-the-end.
+   ⚠ The card is LEFT-ALIGNED with the text at every width now; v67 centred it
+   on phones. Claude's call, one value to reverse.
+   ⚠⚠ padding-left: 350px IS RESTATED ON PURPOSE. v67 set it to 0 at four
+   classes; v19's 350 at two classes cannot win it back.
+
+   (2) THE HERO LINE — HERS. landing-founder-body gets ~30% right padding on
+   desktop, a larger size and more weight. Desktop 15 → 17px, 400 → 500;
+   phone 14 → 15px, 500. Quicksand 500 is a real loaded face.
+   ⚠ The right padding is DESKTOP ONLY — stacked, the line already sits in a
+   narrow column and 30% would squeeze it.
+   ⚠ The photo takes its height from this column, so a larger line makes the
+   photo a little taller too. Expected.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.about-page .about-video {
+  margin: 0 0 28px;
+}
+
+.landing-wrap.about-page .landing-founder-body {
+  font-size: 17px;
+  font-weight: 500;
+}
+
+
+@media (min-width: 992px) {
+
+  .landing-wrap.about-page .landing-card > .landing-cta-row {
+    display: block;
+    padding-left: 350px;
+  }
+
+  .landing-wrap.about-page .landing-card > .landing-cta-row > .about-video {
+    grid-column: auto;
+    grid-row: auto;
+    width: 200px;
+    margin: 0 0 28px;
+  }
+
+  .landing-wrap.about-page .landing-founder-body {
+    padding-right: 30%;
+  }
+
+}
+
+
+@media (max-width: 767px) {
+
+  .landing-wrap.about-page .landing-founder-body {
+    font-size: 15px;
+  }
+
+}
