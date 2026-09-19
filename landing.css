@@ -7758,3 +7758,122 @@ html.landing-motion .landing-wrap.about-page .about-ribbon-track:has(> :nth-chil
                landing-pack-flash 2.8s ease 0s 1 both;
   }
 }
+
+/* ==========================================================================
+   v67 — S375 — /about: THE DESKTOP PHOTO CROPS FROM THE TOP, AND THE VIDEO
+   GOES IN THE CLOSING SECTION
+   ROLLBACK: delete from this comment to the end of the file.
+
+   (1) THE CROP — HERS. The "We are a membership" paragraph was deleted from
+   the masthead S375, the type column got shorter, and the photo (which takes
+   its height from that column) got shorter with it, cutting the tops of both
+   heads. She kept the shape and asked for the top of the photo instead.
+   ⚠⚠ GATED min-width:992, NOT top-level. A top-level rule here would beat the
+   phone's `40% top` on source order and re-crop the phone. The horizontal 62%
+   is v54's, unchanged.
+
+   (2) THE VIDEO — HERS. A placeholder card (grey 9:16 frame, drawn play
+   button, navy caption band) in the closing section's empty left rail, beside
+   "I built this for parents who are tired of the cycle…". The welcome 1
+   emails link here as /about#video, so landing-cta-row carries ID `video`.
+   ⚠⚠ THIS KNOWINGLY FILLS THE RAIL v19 LEFT EMPTY ON PURPOSE. Hers, /about only.
+   MARKUP (Designer, first child of landing-cta-row):
+       about-video > about-video-frame + about-video-caption
+   ⚠ The frame is empty today. When the real video exists, it goes INSIDE
+   about-video-frame and the drawn play button comes off.
+   ⚠⚠ THE 350px INDENT IS REPLACED, NOT ADDED TO, ON DESKTOP: the row becomes
+   the same 290 + 60 grid as .landing-section, so the text still starts at 350.
+   Written at FOUR classes to beat `.landing-card > .landing-cta-row` (two).
+   ⚠ THE THIRD ROW IS 1fr ON PURPOSE. The video spans all three rows; without a
+   flexible last row its extra height would be shared out between the sentence
+   and the button and push them apart.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.about-page .landing-card > .landing-cta-row {
+  scroll-margin-top: 96px;
+}
+
+.landing-wrap.about-page .about-video {
+  width: 220px;
+  max-width: 100%;
+  margin: 0 auto 28px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #1C4A91;
+}
+
+.landing-wrap.about-page .about-video-frame {
+  position: relative;
+  aspect-ratio: 9 / 16;
+  background: #CCCAC5;
+}
+
+.landing-wrap.about-page .about-video-frame::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 52px;
+  height: 52px;
+  margin: -26px 0 0 -26px;
+  border-radius: 50%;
+  background: #FFFFFF;
+}
+
+.landing-wrap.about-page .about-video-frame::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  margin: -11px 0 0 -6px;
+  border-top: 11px solid transparent;
+  border-bottom: 11px solid transparent;
+  border-left: 17px solid var(--landing-ink);
+}
+
+.landing-wrap.about-page .about-video-caption {
+  padding: 10px 12px 12px;
+  color: #EDECE0;
+  font-family: Quicksand, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+
+@media (min-width: 992px) {
+
+  .landing-wrap.about-page .landing-founder-photo {
+    background-position: 62% top;
+  }
+
+  .landing-wrap.about-page .landing-card > .landing-cta-row {
+    display: grid;
+    grid-template-columns: 290px 1fr;
+    grid-template-rows: auto auto 1fr;
+    column-gap: 60px;
+    padding-left: 0;
+    align-items: start;
+  }
+
+  .landing-wrap.about-page .landing-card > .landing-cta-row > .about-video {
+    grid-column: 1;
+    grid-row: 1 / 4;
+    width: 200px;
+    margin: 0;
+  }
+
+  .landing-wrap.about-page .landing-card > .landing-cta-row > .landing-cta-lead {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .landing-wrap.about-page .landing-card > .landing-cta-row > .landing-cta-primary {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: start;
+  }
+
+}
