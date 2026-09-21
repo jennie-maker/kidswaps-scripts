@@ -246,8 +246,10 @@
 
     /* ---- step 1 ---- APPROVED */
     s1: {
-      head: 'So glad you\u2019re here.',
-      sub:  'How would you like to start? Either option is right.',
+      /* S385 HER RULING: the welcome line came off step 1. "This isnt the place
+         for so glad youre here." The question is the heading now. */
+      head: 'How would you like to start?',
+      sub:  'Either option is right.',
       cardA: {
         title: 'Send my swap bag first',
         sub:   'I\u2019d rather send my items first, then shop.'
@@ -273,8 +275,9 @@
       badge: 'Best of both worlds',
       includesHead: 'Every plan includes',
       includes: [
-        'One free round trip per month',
-        'Hand inspected to The Closet Standard',
+        /* S385 HER WORDING, LOCKED. */
+        'One free round-trip shipping per month',
+        'Every item hand checked (no stains, holes or missing labels)',
         'Unused credits roll over, and never expire.'
       ]
     },
@@ -1951,7 +1954,10 @@
          green means toys. Ink carries weight without carrying meaning.
          ⚠ IT STAYS A SOLID FILL. Step 1's own sub line says "Either option
          is right"; an outline against a solid would rank the two paths. */
-      '.ks-wz-fork--shop{background:#1E1A19;color:#EEEFE3;}',
+      /* S385 HER RULING: BOTH FORKS CORAL. "the black shop first option looks
+         like its wrong, lets make them both coral." The S196 ink above is
+         retired; the two paths are told apart by their words. */
+      '.ks-wz-fork--shop{background:#E54F25;color:#FFFFFF;}',
       '.ks-wz-forks.has-pick .ks-wz-fork:not(.is-on){opacity:.5;}',
       '.ks-wz-fork-t{display:block;font-size:17px;font-weight:600;color:inherit;margin-bottom:4px;}',
       '.ks-wz-fork-s{display:block;font-size:14px;font-weight:500;color:inherit;opacity:.82;line-height:1.45;}',
