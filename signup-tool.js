@@ -251,10 +251,13 @@
       head: 'How would you like to start?',
       sub:  'Either option is right.',
       cardA: {
+        /* S385 HER PICK: the emojis are the visual cue now both forks are coral. */
+        emoji: '\uD83D\uDC8C',
         title: 'Send my swap bag first',
         sub:   'I\u2019d rather send my items first, then shop.'
       },
       cardB: {
+        emoji: '\u2728',
         title: 'Shop first',
         sub:   'I want to shop now, and get my empty swap bag with my first order.'
       }
@@ -873,8 +876,13 @@
       var b = el('button', 'ks-wz-fork ks-wz-fork--' + pathKey +
                 (S.path === pathKey ? ' is-on' : ''));
       b.type = 'button';
-      b.appendChild(el('span', 'ks-wz-fork-t', c.title));
-      b.appendChild(el('span', 'ks-wz-fork-s', c.sub));
+      var em = el('span', 'ks-wz-fork-e', c.emoji);
+      em.setAttribute('aria-hidden', 'true');
+      b.appendChild(em);
+      var txt = el('span', 'ks-wz-fork-txt');
+      txt.appendChild(el('span', 'ks-wz-fork-t', c.title));
+      txt.appendChild(el('span', 'ks-wz-fork-s', c.sub));
+      b.appendChild(txt);
       b.appendChild(el('span', 'ks-wz-fork-check'));
       b.addEventListener('click', function () {
         /* Changing path invalidates a plan chosen on the other path. */
@@ -1921,7 +1929,7 @@
 
       /* ---- the fork (step 1) ---- */
       '.ks-wz-forks{display:flex;flex-direction:column;gap:12px;}',
-      '.ks-wz-fork{display:block;width:100%;text-align:left;cursor:pointer;',
+      '.ks-wz-fork{display:flex;align-items:center;gap:14px;width:100%;text-align:left;cursor:pointer;',
         'border:0;border-radius:14px;padding:18px 18px;',
         'font-family:inherit;position:relative;',
         'transition:transform .15s ease,box-shadow .15s ease;}',
@@ -1959,6 +1967,9 @@
          retired; the two paths are told apart by their words. */
       '.ks-wz-fork--shop{background:#E54F25;color:#FFFFFF;}',
       '.ks-wz-forks.has-pick .ks-wz-fork:not(.is-on){opacity:.5;}',
+      /* S385: the emoji sits left of the words, plain, no circle (her pick off the mockup). */
+      '.ks-wz-fork-e{flex:0 0 auto;font-size:30px;line-height:1;}',
+      '.ks-wz-fork-txt{display:block;flex:1 1 auto;min-width:0;}',
       '.ks-wz-fork-t{display:block;font-size:17px;font-weight:600;color:inherit;margin-bottom:4px;}',
       '.ks-wz-fork-s{display:block;font-size:14px;font-weight:500;color:inherit;opacity:.82;line-height:1.45;}',
       /* the drawn check, inheriting ink so it matches the fork text */
