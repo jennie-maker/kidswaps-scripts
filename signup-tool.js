@@ -253,13 +253,15 @@
       cardA: {
         /* S385 HER PICK: the emojis are the visual cue now both forks are coral. */
         emoji: '\uD83D\uDC8C',
-        title: 'Send my swap bag first',
-        sub:   'I\u2019d rather send my items first, then shop.'
+        /* S386 HER WORDING (approved S385): the coral top says what she wants,
+           the white half underneath says what happens next. */
+        title: 'I want to send my items first',
+        sub:   'Send me my empty swap bag, and I\u2019ll send you my kids\u2019 outgrown items'
       },
       cardB: {
         emoji: '\u2728',
-        title: 'Shop first',
-        sub:   'I want to shop now, and get my empty swap bag with my first order.'
+        title: 'I want to shop first',
+        sub:   'Send me my first empty swap bag with my first order'
       }
     },
 
@@ -876,14 +878,19 @@
       var b = el('button', 'ks-wz-fork ks-wz-fork--' + pathKey +
                 (S.path === pathKey ? ' is-on' : ''));
       b.type = 'button';
+      /* S386 HER PICK, OPTION C: a split card. Coral top (emoji, what she
+         wants, the check), white half underneath (what happens next). Both
+         halves sit inside the one button, so the whole card is the tap. */
+      var top = el('span', 'ks-wz-fork-top');
       var em = el('span', 'ks-wz-fork-e', c.emoji);
       em.setAttribute('aria-hidden', 'true');
-      b.appendChild(em);
+      top.appendChild(em);
       var txt = el('span', 'ks-wz-fork-txt');
       txt.appendChild(el('span', 'ks-wz-fork-t', c.title));
-      txt.appendChild(el('span', 'ks-wz-fork-s', c.sub));
-      b.appendChild(txt);
-      b.appendChild(el('span', 'ks-wz-fork-check'));
+      top.appendChild(txt);
+      top.appendChild(el('span', 'ks-wz-fork-check'));
+      b.appendChild(top);
+      b.appendChild(el('span', 'ks-wz-fork-s', c.sub));
       b.addEventListener('click', function () {
         /* Changing path invalidates a plan chosen on the other path. */
         if (S.path !== pathKey) { S.path = pathKey; S.plan = null; }
@@ -1929,8 +1936,10 @@
 
       /* ---- the fork (step 1) ---- */
       '.ks-wz-forks{display:flex;flex-direction:column;gap:12px;}',
-      '.ks-wz-fork{display:flex;align-items:center;gap:14px;width:100%;text-align:left;cursor:pointer;',
-        'border:0;border-radius:14px;padding:18px 18px;',
+      /* S386: the split card. The button is the white card with a coral
+         outline; the coral top is its own span (.ks-wz-fork-top). */
+      '.ks-wz-fork{display:flex;flex-direction:column;align-items:stretch;width:100%;text-align:left;cursor:pointer;',
+        'border:2px solid #E54F25;border-radius:14px;padding:0;overflow:hidden;',
         'font-family:inherit;position:relative;',
         'transition:transform .15s ease,box-shadow .15s ease;}',
       /* HER RULING S80: the two forks get the SAME hover the four plan
@@ -1955,7 +1964,7 @@
          blue #28498D (white text). Pink #F491A9 is UNUSED again - it was
          'the reserved accent, placed' and it is unplaced once more. Borders
          removed; selection is the check + dim, same as the plan cards. */
-      '.ks-wz-fork--send{background:#E54F25;color:#FFFFFF;}',
+      '.ks-wz-fork--send{background:#FFFFFF;color:#1E1A19;}',
       /* ⚠⚠ S196: INK, NOT BLUE - and it exists to VACATE blue for the plan
          cards. The freed gold could not come here (this fork leads to BOTH
          pack plans, so a clothing colour would say something false) and
@@ -1965,15 +1974,18 @@
       /* S385 HER RULING: BOTH FORKS CORAL. "the black shop first option looks
          like its wrong, lets make them both coral." The S196 ink above is
          retired; the two paths are told apart by their words. */
-      '.ks-wz-fork--shop{background:#E54F25;color:#FFFFFF;}',
+      /* S386: the coral moved to .ks-wz-fork-top; the card itself is white. */
+      '.ks-wz-fork--shop{background:#FFFFFF;color:#1E1A19;}',
+      '.ks-wz-fork-top{display:flex;align-items:center;gap:14px;position:relative;',
+        'background:#E54F25;color:#FFFFFF;padding:16px 46px 16px 18px;}',
       '.ks-wz-forks.has-pick .ks-wz-fork:not(.is-on){opacity:.5;}',
       /* S385: the emoji sits left of the words, plain, no circle (her pick off the mockup). */
       '.ks-wz-fork-e{flex:0 0 auto;font-size:30px;line-height:1;}',
       '.ks-wz-fork-txt{display:block;flex:1 1 auto;min-width:0;}',
-      '.ks-wz-fork-t{display:block;font-size:17px;font-weight:600;color:inherit;margin-bottom:4px;}',
-      '.ks-wz-fork-s{display:block;font-size:14px;font-weight:500;color:inherit;opacity:.82;line-height:1.45;}',
+      '.ks-wz-fork-t{display:block;font-size:17px;font-weight:600;color:#FFFFFF;}',
+      '.ks-wz-fork-s{display:block;font-size:14px;font-weight:500;color:#1E1A19;line-height:1.45;padding:12px 18px 14px;}',
       /* the drawn check, inheriting ink so it matches the fork text */
-      '.ks-wz-fork-check{display:none;position:absolute;right:16px;bottom:16px;width:15px;height:15px;}',
+      '.ks-wz-fork-check{display:none;position:absolute;right:18px;top:50%;margin-top:-8px;width:15px;height:15px;}',
       '.ks-wz-fork.is-on .ks-wz-fork-check{display:block;}',
       '.ks-wz-fork-check::after{content:"";position:absolute;left:5px;top:0;',
         'width:5px;height:11px;border:solid currentColor;border-width:0 2px 2px 0;',
