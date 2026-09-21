@@ -256,6 +256,10 @@
         /* S386 HER WORDING (approved S385): the coral top says what she wants,
            the white half underneath says what happens next. */
         title: 'I want to send my items first',
+        /* S386 HER WORDING: true on this path only (billing waits for the
+           first whole credit); the shop path charges today. Lighter and
+           smaller than the title, her pick off the mockup. */
+        note:  '(no charge today)',
         sub:   'Send me my empty swap bag, and I\u2019ll send you my kids\u2019 outgrown items'
       },
       cardB: {
@@ -886,7 +890,12 @@
       em.setAttribute('aria-hidden', 'true');
       top.appendChild(em);
       var txt = el('span', 'ks-wz-fork-txt');
-      txt.appendChild(el('span', 'ks-wz-fork-t', c.title));
+      var t = el('span', 'ks-wz-fork-t', c.title);
+      if (c.note) {
+        t.appendChild(document.createTextNode(' '));
+        t.appendChild(el('span', 'ks-wz-fork-n', c.note));
+      }
+      txt.appendChild(t);
       top.appendChild(txt);
       top.appendChild(el('span', 'ks-wz-fork-check'));
       b.appendChild(top);
@@ -1983,6 +1992,8 @@
       '.ks-wz-fork-e{flex:0 0 auto;font-size:30px;line-height:1;}',
       '.ks-wz-fork-txt{display:block;flex:1 1 auto;min-width:0;}',
       '.ks-wz-fork-t{display:block;font-size:17px;font-weight:600;color:#FFFFFF;}',
+      /* S386: kept whole, so on a phone it drops to the next line in one piece. */
+      '.ks-wz-fork-n{font-size:15px;font-weight:500;white-space:nowrap;}',
       '.ks-wz-fork-s{display:block;font-size:14px;font-weight:500;color:#1E1A19;line-height:1.45;padding:12px 18px 14px;}',
       /* the drawn check, inheriting ink so it matches the fork text */
       '.ks-wz-fork-check{display:none;position:absolute;right:18px;top:50%;margin-top:-8px;width:15px;height:15px;}',
