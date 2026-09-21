@@ -260,12 +260,13 @@
            first whole credit); the shop path charges today. Lighter and
            smaller than the title, her pick off the mockup. */
         note:  '(no charge today)',
-        sub:   'Send me my empty swap bag, and I\u2019ll send you my kids\u2019 outgrown items'
+        sub:   'Send me my first empty swap bag, and I\u2019ll send you my kids\u2019 outgrown items'
       },
       cardB: {
         emoji: '\u2728',
         title: 'I want to shop first',
-        sub:   'Send me my first empty swap bag with my first order'
+        /* S386 HER WORDING: one "first", not two. */
+        sub:   'Send me my first empty swap bag with my order'
       }
     },
 
