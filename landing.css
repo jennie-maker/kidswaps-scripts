@@ -8200,3 +8200,72 @@ html.landing-motion .landing-wrap.about-page .about-ribbon-track:has(> :nth-chil
   margin-left: auto;
   margin-right: auto;
 }
+
+/* ==========================================================================
+   v75 — S390 — /how-it-works: THE TOP CENTRES, AND PHONES GET ONE BIG PICTURE
+   ROLLBACK: delete from this comment to the end of the file, and delete the
+   how-it-works-hero-picture embed from .landing-head in the Designer.
+
+   HERS S390, mockup option 3: on a phone the first screen was all words and
+   the one left-aligned block left on the page. Now:
+   1. .landing-head (eyebrow, heading, intro) centres at every width, matching
+      the steps, facts and details below it.
+   2. PHONES ONLY (767 and below): her full swap bag sits inside her Repeat
+      arrows, one picture under the intro. Both images are the existing
+      /how-it-works step art (bag-full.png, repeat-animation.png), used as is.
+      The arrows turn slowly (40s a lap); reduced motion stops them.
+   ⚠ Hidden above 767 on purpose: on desktop and tablet the four step icons
+      are already on the first screen, and a big picture would push them down.
+   ⚠ MARKUP lives in a Code Embed inside .landing-head, after the intro:
+      .how-it-works-hero-picture > img.how-it-works-hero-loop + img.how-it-works-hero-bag
+   ⚠ Swapping in a painted version later is a src change in that embed only.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.how-it-works-page .landing-head {
+  text-align: center;
+}
+
+.landing-wrap.how-it-works-page .landing-head > * {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.landing-wrap.how-it-works-page .how-it-works-hero-picture {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .landing-wrap.how-it-works-page .how-it-works-hero-picture {
+    display: block;
+    position: relative;
+    width: 78%;
+    max-width: 300px;
+    aspect-ratio: 1 / 1;
+    margin: 24px auto 4px;
+  }
+  .landing-wrap.how-it-works-page .how-it-works-hero-loop {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    animation: how-it-works-hero-turn 40s linear infinite;
+  }
+  .landing-wrap.how-it-works-page .how-it-works-hero-bag {
+    position: absolute;
+    left: 30%;
+    top: 26%;
+    width: 40%;
+    height: auto;
+  }
+}
+
+@keyframes how-it-works-hero-turn {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-wrap.how-it-works-page .how-it-works-hero-loop {
+    animation: none;
+  }
+}
