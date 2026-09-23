@@ -7959,3 +7959,59 @@ html.landing-motion .landing-wrap.about-page .about-ribbon-track:has(> :nth-chil
    .landing-wrap.how-it-works-page .landing-card > .landing-note-box {
      margin-left: 0;
    }
+
+/* ==========================================================================
+   v70 — S390 — /how-it-works: THE FACTS BOX AND THE DETAILS CENTRE (OPTION A)
+   ROLLBACK: delete from this comment to the end of the file.
+
+   HERS S390, picked from three mockups. The steps were centred, the facts box
+   ran from the card's left edge, and the details split into a rail and a
+   column: three layouts in one screen. This stretch now shares the steps'
+   centre line.
+   ⚠ PAGE-SCOPED. The details are the one .landing-section on this page that
+   is neither .landing-beats nor .landing-cycle (read S390 off the live card).
+   /the-closet-standard and every other landing page keep the rail layout.
+   ⚠ The facts box loses its navy bar here and gains the amber mark above it,
+   as in the approved mockup. The v57 hairline ::before becomes that mark.
+   ⚠ NOT TOUCHED: the closing CTA row and the SEO block, which still start
+   their words at 350. Her call once she has seen this live.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.how-it-works-page .landing-card > .landing-note-box {
+  max-width: 640px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 4px 0;
+  border-left: 0;
+  text-align: center;
+}
+
+.landing-wrap.how-it-works-page .landing-card > .landing-note-box::before {
+  left: 50%;
+  right: auto;
+  width: 32px;
+  height: 3px;
+  transform: translateX(-50%);
+  background-color: var(--landing-amber);
+}
+
+.landing-wrap.how-it-works-page .landing-card > .landing-section:not(.landing-beats):not(.landing-cycle) {
+  display: block;
+}
+
+.landing-wrap.how-it-works-page .landing-card > .landing-section:not(.landing-beats):not(.landing-cycle) .landing-section-heading {
+  margin-bottom: 26px;
+  text-align: center;
+}
+
+.landing-wrap.how-it-works-page .landing-card > .landing-section:not(.landing-beats):not(.landing-cycle) .landing-section-heading::after {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.landing-wrap.how-it-works-page .landing-card > .landing-section:not(.landing-beats):not(.landing-cycle) .landing-section-body {
+  width: 100%;
+  max-width: 660px;
+  margin-left: auto;
+  margin-right: auto;
+}
