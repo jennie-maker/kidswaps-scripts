@@ -8152,3 +8152,51 @@ html.landing-motion .landing-wrap.about-page .about-ribbon-track:has(> :nth-chil
     line-height: 1.7;
   }
 }
+
+/* ==========================================================================
+   v74 — S390 — /how-it-works: THE CLOSE AND THE SEO BLOCK JOIN THE CENTRE
+   ROLLBACK: delete from this comment to the end of the file.
+
+   HERS S390: after Option A centred the steps, facts and details, the closing
+   CTA still started its words at 350 (v19) and the SEO block sat at the card's
+   left edge, so the bottom of the page had two more edges.
+   1. THE RING IS HIDDEN HERE (hers S390, "use it somewhere else"). Hidden in
+      this file as well as the Designer, because .landing-section.landing-cycle
+      carries display:block at two classes and wins on source order over a
+      Designer display:none on the same two. The markup stays for its new home.
+      Its section border-top was the empty hairline band under the CTA.
+   2. THE CTA CENTRES: heading and both pills on the page's centre line.
+   3. THE SEO BLOCK'S WORDS sit in the same 660px centred column as the
+      details, left-aligned inside it. The hairline stays full width.
+   ⚠ With the ring hidden, v60's `.landing-cta-row + .seo-content-div` rule
+   still would not match (a hidden element is still a sibling), which is why
+   the block sat at the edge. This rule sets its padding itself.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.how-it-works-page .landing-card > .landing-section.landing-cycle {
+  display: none;
+}
+
+.landing-wrap.how-it-works-page .landing-card > .landing-cta-row {
+  padding-left: 0;
+  text-align: center;
+}
+
+.landing-wrap.how-it-works-page .landing-card > .landing-cta-row > * {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.landing-wrap.how-it-works-page .landing-card > .landing-cta-row .landing-cta-btns {
+  justify-content: center;
+}
+
+.landing-wrap.how-it-works-page .landing-card > .seo-content-div {
+  padding-left: 0;
+}
+
+.landing-wrap.how-it-works-page .landing-card > .seo-content-div > * {
+  max-width: 660px;
+  margin-left: auto;
+  margin-right: auto;
+}
