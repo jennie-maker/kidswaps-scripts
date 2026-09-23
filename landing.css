@@ -7941,3 +7941,21 @@ html.landing-motion .landing-wrap.about-page .about-ribbon-track:has(> :nth-chil
   }
 
 }
+   /* ==========================================================================
+      v69 — S389 — THE NOTE BOX LOSES ITS INDENT ON /how-it-works
+      ROLLBACK: delete from this comment to the end of the file.
+
+      The note box moved ABOVE the accordions to carry the sizes, shipping
+      and pricing line. v57's 350px indent aligned it to the answer column
+      when it sat BELOW them; under the full-width four-step row it just
+      strands the box in the right half with an empty left.
+      ⚠ PAGE-SCOPED ON PURPOSE. /the-closet-standard has its own
+      landing-note-box as a card-level sibling and still needs v57's indent.
+      Do not touch the bare .landing-card > .landing-note-box rule.
+      ⚠ No media query needed: v57 already zeroes the indent below 992,
+      so 0 at every width changes desktop only.
+      -------------------------------------------------------------------------- */
+
+   .landing-wrap.how-it-works-page .landing-card > .landing-note-box {
+     margin-left: 0;
+   }
