@@ -8015,3 +8015,59 @@ html.landing-motion .landing-wrap.about-page .about-ribbon-track:has(> :nth-chil
   margin-left: auto;
   margin-right: auto;
 }
+
+/* ==========================================================================
+   v71 — S390 — /how-it-works: THE FACTS SIT ON HER RIBBON, AND THE STRETCH
+   GETS MORE AIR
+   ROLLBACK: delete from this comment to the end of the file.
+
+   HERS S390: mockup option 4, her own watercolor ribbons, committed at
+   @68cb8f0 as ribbon-facts-desktop.webp (1520x393, her "skinny" one) and
+   ribbon-facts-phone.webp (700x384, her "wide" one). Pinned by full SHA so
+   this file and the pictures move together.
+   ⚠ THE WORDS SIT ON THE FLAT FACE, NOT THE WHOLE PICTURE. Measured off the
+   files: the desktop face runs from 1% to 87% across (the folded tail is the
+   rest), so on the 760px ribbon the padding is 53px left and 152px right.
+   The phone face runs from 2% to 90%, so 7% left and 15% right.
+   ⚠ DESKTOP PADDING IS IN PX ON PURPOSE. A percentage padding is measured
+   against the CARD (1010), not the 760 ribbon, and would miss the face.
+   On a phone the ribbon fills the card, so percentages are safe there.
+   ⚠ background-size 100% 100% STRETCHES the ribbon to the words on purpose.
+   Watercolor hides a small stretch; a fixed height would clip the words on a
+   phone, where they wrap to more lines.
+   ⚠ The v70 amber mark above the box goes: the ribbon is the mark now.
+   ⚠ More air, desktop only: 64px above the ribbon (was 52) and 64/56 above
+   the details (was 46/46). Phones keep their spacing.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.how-it-works-page .landing-card > .landing-note-box {
+  max-width: 760px;
+  padding: 52px 152px 48px 53px;
+  background: url("https://cdn.jsdelivr.net/gh/jennie-maker/kidswaps-scripts@68cb8f052eac52e538da687dac975fd5710022af/ribbon-facts-desktop.webp") center / 100% 100% no-repeat;
+}
+
+.landing-wrap.how-it-works-page .landing-card > .landing-note-box::before {
+  content: none;
+}
+
+@media (min-width: 992px) {
+  .landing-wrap.how-it-works-page .landing-card > .landing-note-box {
+    margin-top: 64px;
+  }
+  .landing-wrap.how-it-works-page .landing-card > .landing-section:not(.landing-beats):not(.landing-cycle) {
+    margin-top: 64px;
+    padding-top: 56px;
+  }
+}
+
+@media (max-width: 767px) {
+  .landing-wrap.how-it-works-page .landing-card > .landing-note-box {
+    max-width: 420px;
+    padding: 40px 15% 44px 7%;
+    background-image: url("https://cdn.jsdelivr.net/gh/jennie-maker/kidswaps-scripts@68cb8f052eac52e538da687dac975fd5710022af/ribbon-facts-phone.webp");
+  }
+  .landing-wrap.how-it-works-page .landing-card > .landing-note-box .landing-note-eyebrow {
+    letter-spacing: 0.1em;
+    line-height: 1.5;
+  }
+}
