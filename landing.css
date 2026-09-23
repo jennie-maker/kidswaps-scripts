@@ -8118,3 +8118,37 @@ html.landing-motion .landing-wrap.about-page .about-ribbon-track:has(> :nth-chil
     letter-spacing: 0.08em;
   }
 }
+
+/* ==========================================================================
+   v73 — S390 — /how-it-works: THE RIBBON'S TOP LINE LEAVES CAPITALS
+   ROLLBACK: delete from this comment to the end of the file.
+
+   HERS S390: she put "Currently accepting sizes" in front of 6M-7 in the
+   Designer, and the line became too long to read in capitals. It now shows
+   as she typed it, still bold and navy, with the wide letter-spacing gone
+   (spacing only suits capitals). She also asked for a little more room on a
+   phone: more air above and below the words, and between the two lines.
+   ⚠ The words themselves live in Webflow, not here. This file only styles.
+   -------------------------------------------------------------------------- */
+
+.landing-wrap.how-it-works-page .landing-card > .landing-note-box .landing-note-eyebrow {
+  font-size: 15px;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+@media (max-width: 767px) {
+  .landing-wrap.how-it-works-page .landing-card > .landing-note-box {
+    padding: 48px 15% 54px 8%;
+  }
+  .landing-wrap.how-it-works-page .landing-card > .landing-note-box .landing-note-eyebrow {
+    margin-bottom: 14px;
+    font-size: 14px;
+    letter-spacing: 0.01em;
+    line-height: 1.4;
+  }
+  .landing-wrap.how-it-works-page .landing-card > .landing-note-box p,
+  .landing-wrap.how-it-works-page .landing-card > .landing-note-box .landing-note-body {
+    line-height: 1.7;
+  }
+}
