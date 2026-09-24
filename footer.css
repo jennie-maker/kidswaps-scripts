@@ -426,3 +426,43 @@
    there deliberately — the phone block already stacks everything to full width
    and there is no layout left to break. If a value ever misbehaves under 479,
    this is the block that does not exist yet. */
+
+/* ============================================================================
+   S391 — THE 3D WORDMARK. HERS S391.
+   The flat <img> and its CSS rotateY turn are REPLACED in the Global Footer by a
+   Code Embed holding a <picture>: an animated WebP of her 3D wordmark (built S391
+   from her own SVG, extruded 14, rounded edge, faces exactly #211b1a, one turn
+   per 6 seconds) with a STILL PNG for anyone whose device asks for reduced
+   motion. Both files live in the repo root, pinned by SHA in the embed.
+   The new <img> keeps the class .footer-logo so every existing rule still
+   reaches it (order, margin), and adds .footer-logo-spin for the three things
+   that must differ:
+   1. animation:none. The old ks-footer-mark-turn would otherwise rotate the
+      already-rotating picture.
+   2. THE WIDTHS ARE 1/0.9248 OF THE OLD ONES. The WebP frame is cropped to the
+      widest point of the whole turn, and the word itself fills 92.48% of it
+      when it faces front, so these widths keep the word the size it was:
+      230 -> 249, 190 -> 205, 210 / 70% -> 227 / 76%.
+   3. The old ks-footer-mark-turn keyframes and the banked rest keyframes above
+      are inert once the old <img> is gone. Left in place: a revert is the old
+      <img> put back, with nothing to restore here.
+   ============================================================================ */
+.footer-section .footer-logo.footer-logo-spin {
+  animation: none;
+  transform: none;
+  width: min(249px, 100%);
+  height: auto;
+  display: block;
+}
+
+@media screen and (max-width: 991px) {
+  .footer-section .footer-logo.footer-logo-spin {
+    width: min(205px, 100%);
+  }
+}
+
+@media screen and (max-width: 767px) {
+  .footer-section .footer-logo.footer-logo-spin {
+    width: min(227px, 76%);
+  }
+}
