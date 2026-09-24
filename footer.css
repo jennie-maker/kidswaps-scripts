@@ -512,3 +512,39 @@
     text-align: center;
   }
 }
+
+/* ============================================================================
+   S391, THIRD PASS, off her phone screenshot. HERS S391: "for mobile- logo can
+   be half the size and the text below it can be tucked up right below it. all
+   the links are centered but still on the left".
+   1. Phone wordmark at half: 227 / 76% -> 114 / 38%.
+   2. The tagline tucks up under the wordmark: no gap on the brand column and
+      no top margin on the tagline. The WebP frame already carries a little air
+      above and below the letters (it is cropped to the tallest point of the
+      whole turn), so zero here still leaves a small breath.
+   3. WHY THE LINKS SAT LEFT: .footer-main is align-items:flex-start (base
+      rule). Once the phone block turns it into a column, flex-start SHRINKS
+      each child to its content width and parks it on the left edge. The brand
+      had width:100% and centred; the columns block did not, so it centred its
+      links inside a narrow box on the left. Stretch the column and give the
+      columns block the full width.
+   ============================================================================ */
+@media screen and (max-width: 767px) {
+  .footer-section .footer-main {
+    align-items: stretch;
+  }
+  .footer-section .footer-columns {
+    width: 100%;
+    align-items: stretch;
+  }
+  .footer-section .footer-logo.footer-logo-spin {
+    width: min(114px, 38%);
+  }
+  .footer-section .footer-brand {
+    gap: 0;
+    row-gap: 0;
+  }
+  .footer-section .footer-tagline {
+    margin-top: 0;
+  }
+}
