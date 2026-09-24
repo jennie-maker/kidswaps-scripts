@@ -5216,3 +5216,34 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
    break the page. Once the Designer change is live the old h1 selectors are
    inert; leave them, they cost nothing and make a revert safe.
    ============================================================================ */
+
+/* ============================================================================
+   v69 (S392) — HER THREE STAR AND HEADING TWEAKS. ALL HERS S392.
+   1. The star on the hero "Sign up for free" button is gone at every width.
+      It was a pseudo on .hero-buttons; home.js still writes --ks-star-rot to
+      that row, and nothing reads it now, which is harmless.
+   2. "We're picky on purpose" loses its big star at every width: the desktop
+      div (.closet-standard-star-two, beside the heading) and the phone pseudo
+      after "purpose." The small star on "See the guidelines" STAYS, hers.
+   3. That heading goes 44 -> 50 on the phone ONLY (479 and below). Desktop
+      stays 112, hers: it is already nearly twice the other headings there.
+   The sources citations got smaller in the sources embed (v6), not here.
+   ============================================================================ */
+
+.hero-section .hero-buttons::after {
+  content: none;
+}
+
+.closet-standard-star-two {
+  display: none !important;
+}
+
+.closet-standard-heading::after {
+  content: none;
+}
+
+@media screen and (max-width: 479px) {
+  .closet-standard-heading {
+    font-size: 50px;
+  }
+}
