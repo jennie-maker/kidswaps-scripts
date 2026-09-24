@@ -8374,3 +8374,23 @@ html.landing-motion .landing-wrap.about-page .about-ribbon-track:has(> :nth-chil
 .landing-wrap.how-it-works-page .how-it-works-wardrobe-hanger.is-pink-tshirt{left:-4.138%}
 .landing-wrap.how-it-works-page .how-it-works-wardrobe-hanger.is-hawaii-dress{left:41.825%}
 }
+
+/* ==========================================================================
+   v77 — S390 — /how-it-works: THE WARDROBE ON DESKTOP AND TABLET TOO
+   ROLLBACK: delete from this comment to the end of the file (v76 then hides
+   the wardrobe above 767 again).
+
+   HERS S390, the same day v76 shipped: with the phone page this styled, the
+   desktop needed the illustration as well, laid out the same way. So the
+   wardrobe shows at every width, centred under the centred intro, exactly as
+   on a phone, a little larger (340px) above 767. The four steps sit below it.
+   -------------------------------------------------------------------------- */
+
+@media (min-width: 768px) {
+  .landing-wrap.how-it-works-page .how-it-works-wardrobe {
+    display: block;
+    width: 340px;
+    max-width: 100%;
+    margin-top: 32px;
+  }
+}
