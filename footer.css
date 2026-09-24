@@ -466,3 +466,49 @@
     width: min(227px, 76%);
   }
 }
+
+/* ============================================================================
+   S391, SECOND PASS. HERS S391: "desktop layout can stay as it is. the logo can
+   be half the size though. on mobile i'd like the content centered".
+   1. DESKTOP ONLY (992 and up): the 3D wordmark at half its width, 249 -> 125.
+      Tablet (205) and phone (227 / 76%) keep their sizes; only desktop was asked.
+   2. PHONE (767 and down): everything centred. This REPLACES the S300 note in
+      the phone block above ("Links stay LEFT aligned even in one column"), which
+      was a recommendation, not her ruling; her S391 ruling wins. The tap-target
+      rule above is untouched: 14px type on a 42px line.
+      .footer-brand is a Webflow flex column, so centring it is align-items, and
+      the wordmark <img> is display:block inside its link, so it centres by
+      auto margins, not by text-align.
+   ============================================================================ */
+@media screen and (min-width: 992px) {
+  .footer-section .footer-logo.footer-logo-spin {
+    width: min(125px, 100%);
+  }
+}
+
+@media screen and (max-width: 767px) {
+  .footer-section .footer-brand {
+    align-items: center;
+    text-align: center;
+  }
+  .footer-section .footer-logo-link {
+    display: block;
+    width: 100%;
+  }
+  .footer-section .footer-logo.footer-logo-spin {
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .footer-section .footer-social {
+    justify-content: center;
+  }
+  .footer-section .footer-tagline {
+    text-align: center;
+  }
+  .footer-section .footer-column,
+  .footer-section .footer-heading,
+  .footer-section .footer-link,
+  .footer-section a.footer-link {
+    text-align: center;
+  }
+}
