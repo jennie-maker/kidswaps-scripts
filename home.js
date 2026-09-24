@@ -81,13 +81,27 @@
     return n;
   }
 
+  // S391: the same guard browse-tool.js runs (her S263 ruling, MISC-1). A
+  // "Miscellaneous ..." or "Unknown" brand is an operator catch-all, never a
+  // brand, so it is dropped from DISPLAY only; the stored value is untouched.
+  // Prefix match and case-insensitive, like browse and Module 55. Keep this
+  // byte-identical to browse's copy so the two surfaces cannot disagree.
+  function displayBrand(b) {
+    if (!b) return '';
+    var s = String(b).trim();
+    var l = s.toLowerCase();
+    if (l.indexOf('miscellaneous') === 0) return '';
+    if (l === 'unknown') return '';
+    return s;
+  }
+
   // Same shape as browse-tool.js's descriptor(): the app name wins when the item
   // has one, otherwise colour plus brand. Kept deliberately identical so the two
   // surfaces cannot start naming the same item two different ways.
   function descriptor(item) {
     if (item.item_name && String(item.item_name).trim()) return item.item_name;
-    var parts = [item.color, item.brand].filter(Boolean);
-    return parts.length ? parts.join(' ') : (item.brand || 'Item');
+    var parts = [item.color, displayBrand(item.brand)].filter(Boolean);
+    return parts.length ? parts.join(' ') : 'Item';
   }
 
   // The RPC coalesces clothing_size and toy_age_range into one `size` field, so
@@ -95,7 +109,8 @@
   // Printed AS STORED, no label word, matching the order-confirmation email.
   function metaLine(item) {
     var parts = [];
-    if (item.brand) parts.push(item.brand);
+    var brand = displayBrand(item.brand);
+    if (brand) parts.push(brand);
     if (item.size) parts.push(item.size);
     return parts.join(' \u00b7 ');
   }

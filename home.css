@@ -5141,3 +5141,62 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
   }
 
 }
+
+/* ============================================================================
+   v67 (S391) — HER PEER-REVIEW PASS ON /old-home. FOUR THINGS, ALL HERS.
+   ----------------------------------------------------------------------------
+   1. THE HOW-IT-WORKS HEADINGS SIT LEVEL. Measured live S391 at 1438 wide: the
+      four icon boxes were all 150px, yet the headings sat at 1110 / 1120 / 1130
+      / 1120. That tracks the paragraph line counts (4 / 3 / 2 / 3), which means
+      each column's content was being CENTRED down its stretched grid cell by a
+      Webflow Designer setting. This pins it to the top. 768 and up only:
+      ⚠ the phone layout below 767 is a 96px / 1fr GRID on .step-1 (v6 block)
+      and an unscoped display:flex here would flatten it.
+   2. SECTION HEADINGS. Hers S391: "What you'll find" and "We're picky on
+      purpose" stay huge; the rest match. Pricing, FAQ and sources now share
+      the pricing heading's ruled sizes: 64 desktop, 52 at 991 and 767, 44 at
+      479. The FAQ rule skips /faq (.faq-page), where that heading is the H1.
+      ⚠ The sources rule needs TWO classes to beat the embed's own <style>
+      (see the v32 SOURCES note).
+   3. STARS OFF, HERS S391: the pricing star (a pseudo on the container) and
+      the FAQ star (a pseudo on the photo panel), /old-home only. home.js still
+      writes --ks-star-rot; nothing reads it now, which is harmless.
+   4. THE 6M-7 LINE TAKES HER DARK GREEN #1F5C38 (was grey #75736E).
+   ============================================================================ */
+
+@media screen and (min-width: 768px) {
+  .how-it-works-section .steps-row .step-1 {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+  }
+}
+
+.faq-section:not(.faq-page) .faq-heading,
+.ks-src .ks-src-in h3 {
+  font-size: 64px;
+}
+
+@media screen and (max-width: 991px) {
+  .faq-section:not(.faq-page) .faq-heading,
+  .ks-src .ks-src-in h3 {
+    font-size: 52px;
+  }
+}
+
+@media screen and (max-width: 479px) {
+  .faq-section:not(.faq-page) .faq-heading,
+  .ks-src .ks-src-in h3 {
+    font-size: 44px;
+  }
+}
+
+.pricing-preview-section .pricing-preview-container::after,
+.faq-section:not(.faq-page) .faq-photo-panel::after {
+  content: none;
+}
+
+.hero-section .hero-highlights {
+  color: #1F5C38;
+}
