@@ -515,7 +515,8 @@
    case stops mattering because text-transform owns it. */
 
 .how-it-works-section .how-it-works-container .h2-dark,
-.how-it-works-section .how-it-works-container > h1 {
+.how-it-works-section .how-it-works-container > h1,
+.how-it-works-section .how-it-works-container > h2 {
   font-family: Quicksand, sans-serif;
   font-weight: 700;
   font-size: 18px;
@@ -573,7 +574,8 @@
   margin: 0;
 }
 
-.how-it-works-section .steps-row .step-1 h1 {
+.how-it-works-section .steps-row .step-1 h1,
+.how-it-works-section .steps-row .step-1 h3 {
   margin: 0;
   text-align: left;
 }
@@ -581,7 +583,8 @@
 /* the amber rule. 36x4, HER RULING S234. It is a pseudo on the heading rather
    than a border, so it cannot be pushed out of line by anything below it. */
 
-.how-it-works-section .steps-row .step-1 h1::after {
+.how-it-works-section .steps-row .step-1 h1::after,
+.how-it-works-section .steps-row .step-1 h3::after {
   content: "";
   display: block;
   width: 36px;
@@ -645,7 +648,8 @@
 
   /* the header steps down with the section, keeping its distance from the row */
   .how-it-works-section .how-it-works-container .h2-dark,
-  .how-it-works-section .how-it-works-container > h1 {
+  .how-it-works-section .how-it-works-container > h1,
+  .how-it-works-section .how-it-works-container > h2 {
     font-size: 16px;
     margin: 0 0 24px;
   }
@@ -689,7 +693,8 @@
     width: 96px;
   }
 
-  .how-it-works-section .steps-row .step-1 h1::after {
+  .how-it-works-section .steps-row .step-1 h1::after,
+  .how-it-works-section .steps-row .step-1 h3::after {
     margin: 10px 0 10px;
   }
 }
@@ -5200,3 +5205,14 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
 .hero-section .hero-highlights {
   color: #1F5C38;
 }
+
+/* ============================================================================
+   v68 (S391) — ONE H1 PER PAGE. HERS S391. No visual change on its own.
+   The page carried six H1s: the hero, the "How It Works" eyebrow, and the four
+   step titles. In the Designer the eyebrow becomes H2 and Send / Earn / Swap /
+   Repeat become H3. Every rule that found those headings BY TAG (v6 block and
+   its 767 overrides) now names the new tag beside the old one, so this file
+   works before AND after the Designer change and the order of the two cannot
+   break the page. Once the Designer change is live the old h1 selectors are
+   inert; leave them, they cost nothing and make a revert safe.
+   ============================================================================ */
