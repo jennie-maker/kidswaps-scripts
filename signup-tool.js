@@ -1559,7 +1559,10 @@
        ⚠ §17602(a)(1) proximity: the price, the checkbox and Create stay on
        one step. This line sits BETWEEN the consent text and Create, so it is
        the only thing separating them - keep it to one line. */
-    body.appendChild(el('p', 'ks-wz-preframe', COPY.s5.preframe));
+    /* S393 HER RULING: SEND-FIRST ONLY. On the shop path she is charged today,
+       so "Nothing is charged until your first whole credit" contradicted the
+       checkbox right above it. Wording untouched. */
+    if (S.path !== 'shop') body.appendChild(el('p', 'ks-wz-preframe', COPY.s5.preframe));
 
     var sub = inForm(SEL.submit);
 
@@ -1953,7 +1956,7 @@
       /* The step 5 pre-frame line. Secondary weight and muted grey: it is
          context for the NEXT screen, and it must not compete with the ARL
          sentence above it, which is the one she actually agrees to. */
-      '.ks-wz-preframe{font-size:13px;color:#75736E;line-height:1.5;margin:14px 0 0;}',
+      '.ks-wz-preframe{font-size:13px;color:inherit;line-height:1.5;margin:14px 0 0;}'   /* S393: grey was unreadable on the coloured card */,
       '.ks-wz-body-text{font-size:16px;color:#1E1A19;line-height:1.6;margin:0 0 22px;}',
 
       /* ---- the fork (step 1) ---- */
