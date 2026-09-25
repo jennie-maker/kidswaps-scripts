@@ -549,7 +549,7 @@
      MACHINERY
      ====================================================================== */
 
-  var root, shell, body, formSlot, nav, backBtn, nextBtn, dots, topbar;
+  var root, shell, body, formSlot, after, nav, backBtn, nextBtn, dots, topbar;
 
   function el(tag, cls, text) {
     var n = document.createElement(tag);
@@ -749,6 +749,9 @@
 
     body     = el('div', 'ks-wz-body');
     formSlot = el('div', 'ks-wz-formslot');
+    /* S393: a row UNDER the form. Step 6's two links live here now, below
+       Confirm my code. render() empties it on every step. */
+    after    = el('div', 'ks-wz-after');
     dots     = el('div', 'ks-wz-dots');
 
     nav      = el('div', 'ks-wz-nav');
@@ -770,7 +773,23 @@
     card.appendChild(topbar);
     card.appendChild(body);
     card.appendChild(formSlot);
+    card.appendChild(after);
     card.appendChild(nav);
+
+    /* S393 FAULT, FIXED HERE (Walk 2): ENTER IN THE STEP 3 EMAIL BOX SUBMITTED
+       MEMBERSTACK'S REAL FORM. It sent a code and showed Memberstack's own code
+       box at step 3, BEFORE the auto-renew consent at step 5. Every Enter
+       burned a send. A form submit is now only allowed on steps 5 and 6 (the
+       two real submits). Anywhere else it is stopped here, at the window, in
+       the capture phase, so neither Memberstack nor Webflow ever sees it.
+       On step 3, Enter does what Continue does. */
+    window.addEventListener('submit', function (e) {
+      if (!root || !e.target || !root.contains(e.target)) return;
+      if (S.step === 5 || S.step === 6) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (S.step === 3 && nextBtn && nextBtn.style.display !== 'none' && !nextBtn.disabled) nextBtn.click();
+    }, true);
     shell.appendChild(card);
 
     /* The shell goes FIRST inside the mount, ahead of the six form-blocks. */
@@ -849,6 +868,7 @@
 
   function render() {
     clear(body);
+    if (after) clear(after);
     /* S200, HER RULING: steps 3, 4 and 5 sit on a coloured ground with white
        text and no white card. Blue on 3 and 5, green on 4. ONE attribute, set
        in the one place that runs on first paint AND on every go().
@@ -1653,8 +1673,11 @@
          codes it does not send. A resolved promise here is NOT evidence that
          an email arrived. STEP 6 SHIPS BUILT, NOT PROVEN. */
     });
-    body.appendChild(again);
-    body.appendChild(said);
+    /* S393 HER RULING: both links sit UNDER Confirm my code, one row. */
+    var row = el('div', 'ks-wz-links');
+    row.appendChild(again);
+    after.appendChild(row);
+    after.appendChild(said);
 
     /* S202: THE WAY OUT OF A MISTYPED EMAIL - HERS, #SIGNUP-EMAIL-DEADEND.
        ⚠⚠ IT SITS UNDER "Send a new code" ON PURPOSE. That button is the only
@@ -1682,7 +1705,7 @@
       try { window.location.href = window.location.pathname; }
       catch (e) { window.location.reload(); }
     });
-    body.appendChild(over);
+    row.appendChild(over);   /* S393: beside Send a new code, still below the confirm button. */
 
     paintNav({ hideNext: true });   /* Back is gone: the account now exists. */
   }
@@ -2591,6 +2614,12 @@
          transparent so the block matches everything else on the card.
          The input keeps its own ink colour, set two rules above, so it does
          NOT inherit the white. */
+      /* S393 HER RULING: the grey panel goes on the white card too, so the
+         label and the box sit on the same left edge as the text above. */
+      '.ks-wz-formslot [data-ms-passwordless="step-2"]{background:transparent;border:0;padding:0;}',
+      '.ks-wz-formslot [data-ms-passwordless="step-2"] input{border:1px solid #D9D6CC;border-radius:12px;}',
+      '.ks-wz-links{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px 20px;margin-top:18px;}',
+      '.ks-wz-after:empty{display:none;}',
       '[data-ground] .ks-wz-formslot [data-ms-passwordless="step-2"]{',
         'background:transparent;border:0;padding:0;color:#FFFFFF;}',
       /* THE WHITE RING ON THE CORAL BUTTON WAS BUILT AND SHE REJECTED IT ON
