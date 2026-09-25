@@ -356,12 +356,16 @@
        what §17602(a)(8)(E) asks for. The renderer linkifies that trailing
        phrase to CANCEL_URL. DO NOT LIFT IT OUT INTO A SEPARATE LINK. */
     s5: {
-      head: 'One last look',
+      head: 'Everything look right?',   /* S394 HERS, replaces "One last look" (read as negative) */
       headline: function (p) {
         return 'You\u2019re signing up for ' + p.name + ' at $' + p.monthly + ' per month.';
       },
       /* S202: CLAUDE'S WORD, REVERSIBLE - one string. */
       editEmail: 'Edit',
+      /* S394 HERS: the three detail rows get a label on the left, like the price rows. */
+      rowName: 'Name',
+      rowEmail: 'Email',
+      rowShip: 'Ship to',
       dueTodayLabel: 'Due today',                      /* line kept, NO NUMBER until the CPA rules */
       consentTrial: function (p) {
         return 'I understand my KidSwaps membership renews automatically at $' + p.monthly +
@@ -1500,7 +1504,10 @@
                            '$' + p.monthly + ' per month'));
     if (p.pack) sum.appendChild(sumRow(p.pack.name, '$' + p.pack.amount + ' once'));
     /* ⚠ RULED S74: one value per row. See .ks-wz-sum-a. */
-    sum.appendChild(sumRow(S.first + ' ' + S.last, ''));
+    /* S394 HERS: SUPERSEDES S74's one-value-per-row. Label left, detail right, so the
+       right side is never empty. The value side wraps (a long email or address breaks
+       onto a second line instead of overflowing on a phone). */
+    sum.appendChild(infoRow(COPY.s5.rowName, S.first + ' ' + S.last));
     /* S202: THE EMAIL ROW CARRIES AN EDIT - HER RULING, #SIGNUP-EMAIL-DEADEND.
        ⚠⚠ THIS SCREEN IS THE LAST FREE MOMENT. The account is created HERE, on
        Create, so a mistyped email is fixable on this screen and NOT fixable one
@@ -1513,14 +1520,13 @@
        IRREVERSIBLE field on this screen. Do not add Edit to the other rows.
        ⚠ It is built inline rather than through sumRow() because that helper's
        second slot is a span, and this one has to be a real control. */
-    var eRow = el('div', 'ks-wz-sum-row');
-    eRow.appendChild(el('span', 'ks-wz-sum-a', S.email));
+    var eRow = infoRow(COPY.s5.rowEmail, S.email);
     var eEdit = el('button', 'ks-wz-link', COPY.s5.editEmail);
     eEdit.type = 'button';
     eEdit.addEventListener('click', function () { go(3); });
-    eRow.appendChild(eEdit);
+    eRow.lastChild.appendChild(eEdit);   /* Edit sits after the email, inside the value side */
     sum.appendChild(eRow);
-    sum.appendChild(sumRow(addrOneLine(), ''));
+    sum.appendChild(infoRow(COPY.s5.rowShip, addrOneLine()));
     /* ⚠⚠ RULED S69: THE DUE TODAY ROW IS HIDDEN ENTIRELY until the CPA
        rules on taxability. It read as broken with an empty value, and a
        stated total is a promise we may not be able to keep — so show
@@ -1630,6 +1636,13 @@
     var r = el('div', 'ks-wz-sum-row');
     r.appendChild(el('span', 'ks-wz-sum-a', a));
     r.appendChild(el('span', 'ks-wz-sum-b', b));
+    return r;
+  }
+  /* S394: a labelled detail row. Label muted on the left, the detail itself on the right. */
+  function infoRow(label, value) {
+    var r = el('div', 'ks-wz-sum-row');
+    r.appendChild(el('span', 'ks-wz-sum-k', label));
+    r.appendChild(el('span', 'ks-wz-sum-v', value));
     return r;
   }
 
@@ -2439,6 +2452,10 @@
         'font-size:14px;color:#1E1A19;padding:6px 0;line-height:1.45;}',
       '.ks-wz-sum-row+.ks-wz-sum-row{border-top:1px solid #FFFFFF;}',
       '.ks-wz-sum-b{color:#75736E;text-align:right;white-space:nowrap;}',
+      /* S394: labelled detail rows (Name / Email / Ship to). */
+      '.ks-wz-sum-k{color:#75736E;white-space:nowrap;}',
+      '.ks-wz-sum-v{min-width:0;text-align:right;overflow-wrap:anywhere;}',
+      '.ks-wz-sum-v .ks-wz-link{margin-left:10px;}',
       /* S202: .ks-wz-link carries margin-top:14px for the two stacked links on
          step 6. Inside a summary row that margin drops the Edit out of line, so
          it is killed here. TWO CLASSES, (0,2,0), so it beats the bare rule on
@@ -2584,6 +2601,8 @@
         '[data-ground] .ks-wz-assent-link,',
         '[data-ground] .ks-wz-btn-quiet{color:#EEEFE3;}',
       '[data-ground] .ks-wz-sum-b{color:rgba(255,255,255,.72);}',
+      '[data-ground] .ks-wz-sum-k{color:rgba(255,255,255,.72);}',
+      '[data-ground] .ks-wz-sum-v{color:#FFFFFF;}',
       /* ⚠⚠⚠ THE STATE RULES MUST BE RESTATED HERE OR THE TINT EATS THEM.
          '[data-ground] .ks-wz-dot' is (0,2,0) and so are '.ks-wz-dot.is-done'
          and '.is-on' - a tie is decided by SOURCE ORDER, and this block is
