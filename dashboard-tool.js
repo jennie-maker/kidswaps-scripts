@@ -955,6 +955,99 @@ function paintCoins(s) {
     } catch (x) {}
   }
 
+  // ---------- SHOP-FIRST LANDING WAIT (S394, hers) ----------
+  // Stripe can land a brand-new shop-first member here a few seconds BEFORE her starter
+  // credits are written. With zero credits pickState says `zero`, so she was shown
+  // send-first's welcome (seen on Walk 3). HER RULING S394: read her PLAN, not her bank.
+  // Memberstack knows the plan the moment she pays, and only the two starter-pack plans
+  // are shop-first. While the credits are on their way: the shop welcome, a spinning coin
+  // with "Adding your credits", a check every 2 seconds, and ONE RELOAD once they land (the
+  // normal load then paints everything). After 30 seconds: the credit pack's late line.
+  // The few seconds of "credits are in your bank" beside "Adding your credits": hers, fine.
+  // ⚠ PRICE IDS ARE KEYS: at the live flip these two are repointed with /signup's PRICE_MAP.
+  // ⚠ Reloads at most once per 2 minutes (sessionStorage), so it can never loop.
+  // ⚠ Never under ?fake= or a ?state= override. Only on `zero` with no history at all.
+  var STARTER_PRICES = {
+    'prc_the-basics-clothing-starter-pack-zv5r0e59': 'clothing',
+    'prc_the-toy-chest-toy-starter-pack-0k2c0abs': 'toy'
+  };
+  var JJW_KEY = 'ks_jj_reloaded';
+  function jjWaitMaybe(s) {
+    try {
+      s = s || {};
+      if (_FAKE) return;
+      if (new URLSearchParams(window.location.search).get('state')) return;
+      if (pickState(s) !== 'zero') return;
+      var lt = s.lifetime || {}, b = s.bags || {};
+      if ((Number(lt.items_received) || 0) > 0 || (Number(lt.items_kept_from_landfill) || 0) > 0) return;
+      if (b.bag_shipped || b.return_delivered) return;
+      var last = 0;
+      try { last = Number(sessionStorage.getItem(JJW_KEY)) || 0; } catch (x) {}
+      if (Date.now() - last < 120000) return;
+    } catch (e) { return; }
+    window.$memberstackDom.getCurrentMember().then(function (m) {
+      var pcs = (m && m.data && m.data.planConnections) || [];
+      var key = null;
+      pcs.forEach(function (pc) {
+        var pid = pc && pc.payment && pc.payment.priceId;
+        if (!key && pid && STARTER_PRICES[pid]) key = STARTER_PRICES[pid];
+      });
+      if (key) jjWaitRun(key);
+    }).catch(function () {});
+  }
+  function jjWaitRun(key) {
+    console.log('[ks-dash] shop-first landing wait:', key);
+    _jjOn = true;
+    var tag = document.querySelector('.ks-greet-welcome'); if (tag) tag.remove();
+    var hh = document.querySelector('.ks-greet-headline'); if (hh) hh.textContent = welcomeHeadline();
+    var jsub = document.querySelector('.ks-greet-sub');
+    if (jsub) { jsub.textContent = JUST_JOINED.shop.sub; jsub.classList.remove('ks-greet-accent'); }
+    setCTA(JUST_JOINED.shop.cta, 'closet', key === 'toy' ? '/toys' : '/clothing');
+    var el = document.querySelector('[data-coin="' + key + '"]');
+    var unit = el && el.closest('.ks-coin-unit');
+    var img = unit && unit.querySelector('.ks-coin-img');
+    var tierEl = null, loop = null;
+    if (unit) {
+      unit.style.display = 'flex'; unit.style.visibility = 'visible';
+      el.style.transition = 'none'; el.style.opacity = '0';
+      tierEl = unit.querySelector('.ks-coin-tier');
+      if (!tierEl) { tierEl = document.createElement('div'); tierEl.className = 'ks-coin-tier'; unit.appendChild(tierEl); }
+      tierEl.style.cssText = 'margin-top:6px;font-size:12px;line-height:1.7;color:#75736E;text-align:center;padding:0 12px;';
+      tierEl.textContent = PACK_WAIT_TEXT;
+      if (img) {
+        if (COIN_REDUCE) { img.src = COIN_FRAMES[0]; }
+        else {
+          var i = 0;
+          loop = setInterval(function () { img.src = COIN_FRAMES[PACK_LOOP[i % PACK_LOOP.length]]; i++; }, 52);
+        }
+      }
+    }
+    var t0 = Date.now();
+    (function tick() {
+      if (Date.now() - t0 >= PACK_GIVEUP_MS) {
+        if (loop) clearInterval(loop);
+        if (img) img.src = COIN_FRAMES[0];
+        if (tierEl) tierEl.textContent = PACK_LATE_TEXT;
+        console.log('[ks-dash] shop-first landing wait gave up after', PACK_GIVEUP_MS, 'ms');
+        return;
+      }
+      setTimeout(function () {
+        var tk = window.$memberstackDom.getMemberCookie();
+        fetch(FN_URL, { method: 'POST', headers: { 'x-ms-token': tk, 'apikey': ANON, 'Authorization': 'Bearer ' + ANON } })
+          .then(function (r) { return r.json(); })
+          .then(function (st) {
+            var sig = (st && st.signals) || {};
+            if (sig.has_credits) {
+              try { sessionStorage.setItem(JJW_KEY, String(Date.now())); } catch (x) {}
+              console.log('[ks-dash] shop-first credits landed; reloading once');
+              window.location.reload();
+            } else { tick(); }
+          })
+          .catch(function () { tick(); });
+      }, PACK_POLL_MS);
+    })();
+  }
+
   // ---------- CARDS ----------
   function paint(s) {
     var bt = (s.bank && s.bank.by_tier) || {};
@@ -2773,8 +2866,8 @@ function paintCloset(s) {
   })
     .then(function (res) { return res.json(); })
     .then(function (state) {
-if (state && !state.error) { applyFake(state); paint(state); paintGreeting(state); paintBagButton(state); addrBuild(); packWaitStart(); }
-else { console.error('member-state error', state); neutralGreeting(); }
+if (state && !state.error) { applyFake(state); paint(state); paintGreeting(state); paintBagButton(state); addrBuild(); packWaitStart(); jjWaitMaybe(state); }
+else { console.error('member-state error', state); neutralGreeting(); jjWaitMaybe(null); }
     })
     .catch(function (e) { console.error('member-state paint error', e); neutralGreeting(); });
 Promise.allSettled([pName, pState]).then(function () { reveal(); });
