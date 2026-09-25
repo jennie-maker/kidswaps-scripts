@@ -170,6 +170,14 @@ function paintHeadline(member) {
         // @80dfafc. The manage control is now the utility row's link, so point at THAT.
         // ⚠ Never point this at an element that can be hidden. Fail loudly, not silently.
         e.preventDefault();
+        // S393: the portal link now sits INSIDE the Manage Membership menu, so open the
+        // menu first - scrollIntoView on a hidden element does nothing.
+        var mwrap = document.querySelector('.ks-mem-wrap');
+        if (mwrap) {
+          mwrap.classList.add('is-open');
+          var mtrig = mwrap.querySelector('.ks-mem-trigger');
+          if (mtrig) mtrig.setAttribute('aria-expanded', 'true');
+        }
         var m = document.querySelector('.ks-util .ks-membership-manage') ||
                 document.querySelector('.ks-membership-manage');
         if (!m) return;
@@ -310,6 +318,25 @@ function paintHeadline(member) {
   // ---------- JUST JOINED: the extras (S393, hers) ----------
   // (1) "What happens next" under the button, shop-first only.
   // (2) "Short on credits?" hidden and (3) "How credits work" folded shut while she is new.
+  function memMenuCss() {
+    if (document.getElementById('ks-mem-css')) return;
+    var st = document.createElement('style');
+    st.id = 'ks-mem-css';
+    st.textContent =
+      '.ks-mem-wrap{position:relative;display:inline-block;}' +
+      '.ks-mem-trigger{all:unset;cursor:pointer;color:#D24F28;font-weight:500;font-family:inherit;font-size:inherit;}' +
+      '.ks-mem-menu{display:none;position:absolute;right:0;top:calc(100% + 8px);z-index:50;min-width:230px;' +
+        'background:#fff;border:1px solid #E4E1D8;border-radius:12px;padding:12px 14px;' +
+        'box-shadow:0 8px 20px rgba(0,0,0,.08);text-align:left;}' +
+      '.ks-mem-wrap.is-open .ks-mem-menu{display:block;}' +
+      '@media (hover:hover){.ks-mem-wrap:hover .ks-mem-menu,.ks-mem-wrap:focus-within .ks-mem-menu{display:block;}}' +
+      '.ks-mem-menu .ks-plan-chip{all:unset;display:block;font-size:13px;color:#76716C;line-height:1.5;' +
+        'padding-bottom:10px;margin-bottom:6px;border-bottom:1px solid #EEE;}' +
+      '.ks-mem-menu .ks-plan-chip b{color:#1E1A19;font-weight:600;}' +
+      '.ks-mem-item{display:block;padding:6px 0;font-size:14px;color:#D24F28;text-decoration:none;cursor:pointer;}' +
+      '.ks-mem-item:hover{text-decoration:underline;}';
+    document.head.appendChild(st);
+  }
   function nextCss() {
     if (document.getElementById('ks-next-css')) return;
     var st = document.createElement('style');
@@ -621,23 +648,23 @@ label.textContent = 'Your Credit Bank';
     //   cancel-path question with Shahin.
     // ⚠ Inserted AFTER buildAccordion has run, and it is NOT a section, so ACC_LABELS'
     //   positional index is untouched.
-    var old = document.querySelector('.ks-greet-sub ~ .ks-plan-chip');
-    if (old) old.remove();
-    var panel = document.querySelector('.ks-account-panel');
-    if (!panel) return;
-    var chip = panel.querySelector('.ks-plan-chip');
+    // (S393, option A: it now lives inside the Manage Membership menu, not the account panel.)
+    var chip = document.querySelector('.ks-plan-chip');
     if (!chip) {
       chip = document.createElement('div');
       chip.className = 'ks-plan-chip';
-      chip.style.cssText = 'margin:0 0 12px;font-size:15px;color:#76716C;';
-      panel.insertBefore(chip, panel.firstChild);
+      var menuEl = document.querySelector('.ks-mem-menu');
+      var sub = document.querySelector('.ks-greet-sub');
+      if (menuEl) menuEl.insertBefore(chip, menuEl.firstChild);
+      else if (sub && sub.parentNode) sub.parentNode.insertBefore(chip, sub.nextSibling);
+      else return;
     }
     var raw = (s && s.plan) ? String(s.plan).trim() : '';
     var key = raw.toLowerCase().replace(/^the\s+/, '');
     var price = PLAN_PRICE[key];
     if (!raw || price === undefined) { chip.style.display = 'none'; return; }
     chip.style.display = '';
-    chip.textContent = 'Your plan: ' + raw + ' \u00B7 $' + price + '/mo';
+    chip.innerHTML = 'Your plan<br><b>' + esc(raw) + ' \u00B7 $' + price + '/mo</b>';
   }
 
 function paintCoins(s) {
@@ -1352,16 +1379,57 @@ function paintCoins(s) {
       sep.className = 'ks-util-sep';
       sep.textContent = '\u00b7';
       grp.appendChild(sep);
-      grp.appendChild(mng);                        // MOVE - attribute rides along
+      // ⚠⚠ S393 HER RULING (option A): MANAGE MEMBERSHIP IS A MENU. The trigger keeps the
+      //   visible words "Manage Membership"; inside sit her plan and price, "Change plan"
+      //   (/pricing) and the REAL portal link, relabelled "Billing and cancel". The portal
+      //   element is MOVED, never cloned, so data-ms-action="customer-portal" rides along.
+      // ⚠ CANCEL IS NOW TWO CLICKS (open menu, then Billing and cancel). This is on Shahin's
+      //   cancel-path question (§17602(d)). If he says a menu does not count, undo THIS block.
+      var mw = document.createElement('span');
+      mw.className = 'ks-mem-wrap';
+      var mt = document.createElement('button');
+      mt.type = 'button';
+      mt.className = 'ks-mem-trigger';
+      mt.setAttribute('aria-expanded', 'false');
+      mt.setAttribute('aria-haspopup', 'true');
+      mt.textContent = 'Manage Membership \u25BE';
+      var mm = document.createElement('div');
+      mm.className = 'ks-mem-menu';
+      var cp = document.createElement('a');
+      cp.className = 'ks-mem-item';
+      cp.href = '/pricing';
+      cp.textContent = 'Change plan';
+      mm.appendChild(cp);
+      mng.classList.add('ks-mem-item');
+      mng.textContent = 'Billing and cancel';
+      mm.appendChild(mng);                         // MOVE - attribute rides along
+      mw.appendChild(mt);
+      mw.appendChild(mm);
+      grp.appendChild(mw);
       util.appendChild(grp);
+      memMenuCss();
+      mt.addEventListener('click', function (e) {
+        e.preventDefault();
+        var open = !mw.classList.contains('is-open');
+        mw.classList.toggle('is-open', open);
+        mt.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+      document.addEventListener('click', function (e) {
+        if (!mw.contains(e.target)) { mw.classList.remove('is-open'); mt.setAttribute('aria-expanded', 'false'); }
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { mw.classList.remove('is-open'); mt.setAttribute('aria-expanded', 'false'); }
+      });
     }
 
     // The plan chip is account chrome too. It was a lone coral pill floating under the
     // greeting; here it sits with the things it belongs to. ⚠ paintPlanChip() injects it
     // relative to .ks-greet-sub and HIDES ITSELF on an unknown/null plan (a cancelled
     // member has no plan), so it may not exist yet or at all. Re-home it if it turns up.
+    // S393: the plan chip goes INSIDE the Manage Membership menu, first line.
     var chip = document.querySelector('.ks-plan-chip');
-    if (chip) util.insertBefore(chip, util.firstChild);
+    var menuEl = document.querySelector('.ks-mem-menu');
+    if (chip && menuEl) menuEl.insertBefore(chip, menuEl.firstChild);
 
     // ACCOUNT & SETTINGS IS A REAL DROPDOWN NOW, anchored to its own button.
     // ⚠ THE PANEL MUST BE A SIBLING OF THE TOGGLE INSIDE A position:relative BOX, or
