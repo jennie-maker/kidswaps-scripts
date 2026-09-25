@@ -972,6 +972,7 @@ function paintCoins(s) {
     'prc_the-toy-chest-toy-starter-pack-0k2c0abs': 'toy'
   };
   var JJW_KEY = 'ks_jj_reloaded';
+  var JJW_POLL_MS = 1000;   // S394: every second, not every 2 - she sees her credits a second sooner
   function jjWaitMaybe(s) {
     try {
       s = s || {};
@@ -985,7 +986,7 @@ function paintCoins(s) {
       try { last = Number(sessionStorage.getItem(JJW_KEY)) || 0; } catch (x) {}
       if (Date.now() - last < 120000) return;
     } catch (e) { return; }
-    window.$memberstackDom.getCurrentMember().then(function (m) {
+    function decide(m) {
       var pcs = (m && m.data && m.data.planConnections) || [];
       var key = null;
       pcs.forEach(function (pc) {
@@ -993,44 +994,49 @@ function paintCoins(s) {
         if (!key && pid && STARTER_PRICES[pid]) key = STARTER_PRICES[pid];
       });
       if (key) jjWaitRun(key);
-    }).catch(function () {});
+    }
+    // The member usually landed already (the name paints first), so decide SYNCHRONOUSLY
+    // and the cover goes up before the page is revealed - no flash of the wrong welcome.
+    if (_member) { decide(_member); return; }
+    window.$memberstackDom.getCurrentMember().then(decide).catch(function () {});
+  }
+
+  // S394 HERS: "the loading screen looks broken... hide it all and use a loading animation".
+  // While her credits are on their way, ONE clean screen covers the whole page: the gold
+  // coin spinning, and "Adding your credits" (the credit pack wait's approved line).
+  // Credits land -> reload once, and the finished dashboard is what she sees.
+  // 30 seconds and nothing -> the cover lifts, the shop welcome is painted, and her coin
+  // (if the plan shows it yet) carries the pack wait's late line.
+  function jjCover() {
+    var ov = document.createElement('div');
+    ov.id = 'ks-jjw-cover';
+    ov.setAttribute('role', 'status');
+    ov.setAttribute('aria-live', 'polite');
+    ov.style.cssText = 'position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147483000;background:#FFFFFF;' +
+      'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;';
+    var img = document.createElement('img');
+    img.src = COIN_FRAMES[0];
+    img.alt = '';
+    img.style.cssText = 'width:120px;height:auto;display:block;';
+    var txt = document.createElement('div');
+    txt.textContent = PACK_WAIT_TEXT;
+    txt.style.cssText = 'font-size:16px;color:#75736E;text-align:center;padding:0 24px;';
+    ov.appendChild(img);
+    ov.appendChild(txt);
+    (document.body || document.documentElement).appendChild(ov);
+    var loop = null;
+    if (!COIN_REDUCE) {
+      var i = 0;
+      loop = setInterval(function () { img.src = COIN_FRAMES[PACK_LOOP[i % PACK_LOOP.length]]; i++; }, 52);
+    }
+    return { remove: function () { if (loop) clearInterval(loop); if (ov.parentNode) ov.parentNode.removeChild(ov); } };
   }
   function jjWaitRun(key) {
     console.log('[ks-dash] shop-first landing wait:', key);
-    _jjOn = true;
-    var tag = document.querySelector('.ks-greet-welcome'); if (tag) tag.remove();
-    var hh = document.querySelector('.ks-greet-headline'); if (hh) hh.textContent = welcomeHeadline();
-    var jsub = document.querySelector('.ks-greet-sub');
-    if (jsub) { jsub.textContent = JUST_JOINED.shop.sub; jsub.classList.remove('ks-greet-accent'); }
-    setCTA(JUST_JOINED.shop.cta, 'closet', key === 'toy' ? '/toys' : '/clothing');
-    var el = document.querySelector('[data-coin="' + key + '"]');
-    var unit = el && el.closest('.ks-coin-unit');
-    var img = unit && unit.querySelector('.ks-coin-img');
-    var tierEl = null, loop = null;
-    if (unit) {
-      unit.style.display = 'flex'; unit.style.visibility = 'visible';
-      el.style.transition = 'none'; el.style.opacity = '0';
-      tierEl = unit.querySelector('.ks-coin-tier');
-      if (!tierEl) { tierEl = document.createElement('div'); tierEl.className = 'ks-coin-tier'; unit.appendChild(tierEl); }
-      tierEl.style.cssText = 'margin-top:6px;font-size:12px;line-height:1.7;color:#75736E;text-align:center;padding:0 12px;';
-      tierEl.textContent = PACK_WAIT_TEXT;
-      if (img) {
-        if (COIN_REDUCE) { img.src = COIN_FRAMES[0]; }
-        else {
-          var i = 0;
-          loop = setInterval(function () { img.src = COIN_FRAMES[PACK_LOOP[i % PACK_LOOP.length]]; i++; }, 52);
-        }
-      }
-    }
+    var cover = jjCover();
     var t0 = Date.now();
     (function tick() {
-      if (Date.now() - t0 >= PACK_GIVEUP_MS) {
-        if (loop) clearInterval(loop);
-        if (img) img.src = COIN_FRAMES[0];
-        if (tierEl) tierEl.textContent = PACK_LATE_TEXT;
-        console.log('[ks-dash] shop-first landing wait gave up after', PACK_GIVEUP_MS, 'ms');
-        return;
-      }
+      if (Date.now() - t0 >= PACK_GIVEUP_MS) { jjGiveUp(key, cover); return; }
       setTimeout(function () {
         var tk = window.$memberstackDom.getMemberCookie();
         fetch(FN_URL, { method: 'POST', headers: { 'x-ms-token': tk, 'apikey': ANON, 'Authorization': 'Bearer ' + ANON } })
@@ -1040,12 +1046,33 @@ function paintCoins(s) {
             if (sig.has_credits) {
               try { sessionStorage.setItem(JJW_KEY, String(Date.now())); } catch (x) {}
               console.log('[ks-dash] shop-first credits landed; reloading once');
-              window.location.reload();
+              window.location.reload();          // the cover stays up until the new page replaces it
             } else { tick(); }
           })
           .catch(function () { tick(); });
-      }, PACK_POLL_MS);
+      }, JJW_POLL_MS);
     })();
+  }
+  function jjGiveUp(key, cover) {
+    console.log('[ks-dash] shop-first landing wait gave up after', PACK_GIVEUP_MS, 'ms');
+    _jjOn = true;
+    var tag = document.querySelector('.ks-greet-welcome'); if (tag) tag.remove();
+    var hh = document.querySelector('.ks-greet-headline'); if (hh) hh.textContent = welcomeHeadline();
+    var jsub = document.querySelector('.ks-greet-sub');
+    if (jsub) { jsub.textContent = JUST_JOINED.shop.sub; jsub.classList.remove('ks-greet-accent'); }
+    setCTA(JUST_JOINED.shop.cta, 'closet', key === 'toy' ? '/toys' : '/clothing');
+    var el = document.querySelector('[data-coin="' + key + '"]');
+    var unit = el && el.closest('.ks-coin-unit');
+    if (unit) {
+      unit.style.display = 'flex'; unit.style.visibility = 'visible';
+      el.style.transition = 'none'; el.style.opacity = '0';
+      var img = unit.querySelector('.ks-coin-img'); if (img) img.src = COIN_FRAMES[0];
+      var tierEl = unit.querySelector('.ks-coin-tier');
+      if (!tierEl) { tierEl = document.createElement('div'); tierEl.className = 'ks-coin-tier'; unit.appendChild(tierEl); }
+      tierEl.style.cssText = 'margin-top:6px;font-size:12px;line-height:1.7;color:#75736E;text-align:center;padding:0 12px;';
+      tierEl.textContent = PACK_LATE_TEXT;
+    }
+    cover.remove();
   }
 
   // ---------- CARDS ----------
