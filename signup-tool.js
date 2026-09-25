@@ -112,7 +112,7 @@
       monthly: 30,
       swaps:   'Up to 6 clothing swaps per month',
       pitch:   'Start here if you\u2019re swapping for one kid.',
-      value:   'Up to $150 value',
+      value:   'Up to $210 value/month',   /* S393: matches /pricing */
       pack:    null
     },
     'toychest-trial': {
@@ -125,7 +125,7 @@
       monthly: 45,
       swaps:   'Up to 5 toy swaps per month',
       pitch:   'Keep toys moving so they never pile up.',
-      value:   'Up to $100 value',
+      value:   'Up to $150 value/month',   /* S393: matches /pricing */
       pack:    null
     },
     'wardrobe-trial': {
@@ -138,7 +138,7 @@
       monthly: 45,
       swaps:   'Up to 10 clothing swaps per month',
       pitch:   'For more than one kid, a fast grower, or a toddler with taste.',
-      value:   'Up to $250 value',
+      value:   'Up to $350 value/month',   /* S393: matches /pricing */
       pack:    null
     },
     'everything-trial': {
@@ -151,7 +151,7 @@
       monthly: 70,
       swaps:   'Up to 10 clothing and 3 toy swaps per month',   /* ⚠ NEEDS-CONFIRM */
       pitch:   'For families who want variety.',
-      value:   'Up to $310 value',
+      value:   'Up to $440 value/month',   /* S393: matches /pricing */
       pack:    null
     },
 
@@ -170,7 +170,7 @@
       titleSub:  'with a Clothing Starter Pack',
       swaps:     'Up to 6 clothing swaps per month',
       pitch:     'Start here if you\u2019re swapping for one kid.',
-      value:     'Up to $150 value',
+      value:     'Up to $210 value/month',   /* S393: matches /pricing */
       pack: {
         name:    'Clothing Starter Pack',
         amount:  75,
@@ -191,7 +191,7 @@
       titleSub:  'with a Toy Starter Pack',
       swaps:     'Up to 5 toy swaps per month',
       pitch:     'Keep toys moving so they never pile up.',
-      value:     'Up to $100 value',
+      value:     'Up to $150 value/month',   /* S393: matches /pricing */
       pack: {
         name:    'Toy Starter Pack',
         amount:  85,
@@ -288,8 +288,11 @@
         /* S385 HER WORDING, LOCKED. */
         'One free round-trip shipping per month',
         'Every item hand checked (no stains, holes or missing labels)',
-        'Unused credits roll over, and never expire.'
-      ]
+        /* S393 HER RULING: matches /pricing. "never expire" is off every page. */
+        'Swaps reset each month, but credits roll over'
+      ],
+      /* S393 HER WORDING: shop-first only, under the two pack cards. */
+      packNote: 'Starter packs come with these two plans.'
     },
 
     /* ---- step 3 ---- APPROVED Session 63.
@@ -995,6 +998,7 @@
       list.appendChild(planCard(PLANS[slug]));
     });
     body.appendChild(list);
+    if (S.path === 'shop') body.appendChild(el('p', 'ks-wz-plans-note', COPY.s2.packNote));
 
     var inc = el('div', 'ks-wz-includes');
     inc.appendChild(el('div', 'ks-wz-includes-h', COPY.s2.includesHead));
@@ -1997,11 +2001,15 @@
       '.ks-wz-fork-n{font-size:15px;font-weight:500;white-space:nowrap;}',
       '.ks-wz-fork-s{display:block;font-size:14px;font-weight:500;color:#1E1A19;line-height:1.45;padding:12px 18px 14px;}',
       /* the drawn check, inheriting ink so it matches the fork text */
-      '.ks-wz-fork-check{display:none;position:absolute;right:18px;top:50%;margin-top:-8px;width:15px;height:15px;}',
-      '.ks-wz-fork.is-on .ks-wz-fork-check{display:block;}',
-      '.ks-wz-fork-check::after{content:"";position:absolute;left:5px;top:0;',
-        'width:5px;height:11px;border:solid currentColor;border-width:0 2px 2px 0;',
+      /* S393 HER RULING: an EMPTY RING always shows, so the card reads as a
+         choice before she taps. Picked = filled white with an ink check. */
+      '.ks-wz-fork-check{display:block;position:absolute;right:16px;top:50%;margin-top:-12px;',
+        'width:24px;height:24px;box-sizing:border-box;border:2px solid #FFFFFF;border-radius:50%;}',
+      '.ks-wz-fork.is-on .ks-wz-fork-check{background:#FFFFFF;}',
+      '.ks-wz-fork-check::after{content:"";position:absolute;left:7px;top:3px;display:none;',
+        'width:5px;height:10px;border:solid #1E1A19;border-width:0 2px 2px 0;',
         'transform:rotate(45deg);}',
+      '.ks-wz-fork.is-on .ks-wz-fork-check::after{display:block;}',
 
       /* ---- plan cards (step 2) ---- */
       '.ks-wz-plans{display:flex;flex-direction:column;gap:12px;}',
@@ -2164,12 +2172,18 @@
       '.ks-wz-plans.has-pick .ks-wz-plan:not(.is-on){opacity:.5;}',
       /* The check is DRAWN, not a glyph, and inherits the card's text colour
          so it is ink on yellow and white on green/blue. */
-      '.ks-wz-plan-check{display:none;position:absolute;right:16px;bottom:14px;',
-        'width:15px;height:15px;}',
-      '.ks-wz-plan.is-on .ks-wz-plan-check{display:block;}',
-      '.ks-wz-plan-check::after{content:"";position:absolute;left:5px;top:0;',
-        'width:5px;height:11px;border:solid currentColor;border-width:0 2px 2px 0;',
+      /* S393 HER RULING: the same EMPTY RING as step 1, always showing.
+         Picked = filled white, ink check, plus an ink outline round the card.
+         outline, not border, so the box never resizes on tap. */
+      '.ks-wz-plan-check{display:block;position:absolute;right:16px;bottom:14px;',
+        'width:24px;height:24px;box-sizing:border-box;border:2px solid currentColor;border-radius:50%;}',
+      '.ks-wz-plan.is-on .ks-wz-plan-check{background:#FFFFFF;border-color:#FFFFFF;}',
+      '.ks-wz-plan-check::after{content:"";position:absolute;left:7px;top:3px;display:none;',
+        'width:5px;height:10px;border:solid #1E1A19;border-width:0 2px 2px 0;',
         'transform:rotate(45deg);}',
+      '.ks-wz-plan.is-on .ks-wz-plan-check::after{display:block;}',
+      '.ks-wz-plan.is-on{outline:3px solid #1E1A19;outline-offset:2px;}',
+      '.ks-wz-plans-note{font-size:14px;color:#75736E;line-height:1.5;margin:10px 0 0;}',
       '.ks-wz-plan-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}',
       /* ⚠⚠ S196: WEIGHT 400, NOT 600, AND THE SIZE DOES THE WORK. Instrument
          Serif is loaded at 400 ONLY - read live off /signup's document.fonts
@@ -2187,7 +2201,7 @@
       /* price sits TOP RIGHT on every card, no exceptions */
       '.ks-wz-plan-price{flex:0 0 auto;font-size:14px;font-weight:600;color:inherit;',
         'text-align:right;white-space:nowrap;}',
-      '.ks-wz-plan-lines{margin-top:10px;padding-right:26px;}',
+      '.ks-wz-plan-lines{margin-top:10px;padding-right:36px;}',
       /* ⚠⚠ RULED S74: the badge is ENLARGED and STRADDLES THE JOIN between
          the green band and the gold - half on each. THIS IS NOT THE S70 BUG
          COMING BACK. S70's clipping was the badge against the CARD'S OUTER
