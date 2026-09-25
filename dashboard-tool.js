@@ -128,6 +128,9 @@ function paintHeadline(member) {
     fname = (typeof fname === 'string') ? fname.trim() : '';
     var h = document.querySelector('.ks-greet-headline');
     if (!h) return;
+    if (fname) _fnameDisp = displayName(fname);
+    // S393: while she is new the welcome is the headline, whichever promise lands first.
+    if (_jjOn) { h.textContent = welcomeHeadline(); if (fname) paintReviewPrompt(); return; }
     if (!fname) { h.textContent = 'Welcome back.'; return; }
     var hr = new Date().getHours();
     var t = hr < 12 ? 'Good morning' : (hr < 18 ? 'Good afternoon' : 'Good evening');
@@ -278,9 +281,20 @@ function paintHeadline(member) {
   //   stops a month-six member with a new bag on the desk from being welcomed again.
   // ⚠ Send-first keeps PRECREDIT.prebag's S164 line, which is locked. Only the tag is added.
   var JUST_JOINED = {
-    tag:  'Welcome to KidSwaps!',
-    shop: { sub: 'So glad you joined. Your credits are in your bank, ready to spend.', cta: 'Start shopping' }
+    shop: { sub: 'So glad you joined. Your credits are in your bank, ready to spend.', cta: 'Start shopping' },
+    // S393 HERS: shop-first "What happens next". Built from her approved S81 welcome
+    // paragraph, so nothing here is a new promise. Icons are placeholders (numbers) until
+    // she paints her own.
+    steps: [
+      'Pick up to {n} items for your kids.',
+      'Your order ships with your empty swap bag, prepaid label already attached.',
+      'Fill it with what they\u2019ve outgrown and send it back to earn more credits.'
+    ]
   };
+  var _jjOn = false, _fnameDisp = null;
+  function welcomeHeadline() {
+    return _fnameDisp ? ('Welcome to KidSwaps, ' + _fnameDisp + '.') : 'Welcome to KidSwaps!';
+  }
   function justJoined(s, state) {
     if (state === 'cancelled' || state === 'paused') return false;
     var b = s && s.bags, lt = s && s.lifetime;
@@ -293,31 +307,112 @@ function paintHeadline(member) {
     if (!since || isNaN(since.getTime())) return false;
     return (Date.now() - since.getTime()) < 60 * 24 * 3600 * 1000;
   }
-  function paintWelcomeTag(on) {
-    var h = document.querySelector('.ks-greet-headline');
-    if (!h || !h.parentNode) return;
-    var tag = document.querySelector('.ks-greet-welcome');
-    if (!on) { if (tag) tag.remove(); return; }
-    if (!document.getElementById('ks-greet-welcome-css')) {
-      var st = document.createElement('style');
-      st.id = 'ks-greet-welcome-css';
-      st.textContent = '.ks-greet-welcome{display:table;margin:0 auto 14px;padding:5px 14px;' +
-        'border-radius:999px;background:#FBE3DA;color:#D24F28;font-family:Quicksand,sans-serif;' +
-        'font-size:13px;font-weight:600;letter-spacing:.02em;}';
-      document.head.appendChild(st);
+  // ---------- JUST JOINED: the extras (S393, hers) ----------
+  // (1) "What happens next" under the button, shop-first only.
+  // (2) "Short on credits?" hidden and (3) "How credits work" folded shut while she is new.
+  function nextCss() {
+    if (document.getElementById('ks-next-css')) return;
+    var st = document.createElement('style');
+    st.id = 'ks-next-css';
+    st.textContent =
+      '.ks-next{max-width:620px;margin:30px auto 8px;font-family:Quicksand,sans-serif;}' +
+      '.ks-next-h{text-align:center;font-size:12px;letter-spacing:.16em;color:#76716C;font-weight:600;}' +
+      '.ks-next-path{display:grid;grid-template-columns:repeat(3,1fr);position:relative;margin-top:14px;}' +
+      '.ks-next-path:before{content:"";position:absolute;top:27px;left:16.6%;right:16.6%;height:2px;' +
+        'background:repeating-linear-gradient(90deg,#D9D6CC 0 6px,transparent 6px 12px);}' +
+      '.ks-next-st{text-align:center;padding:0 10px;position:relative;}' +
+      '.ks-next-ic{width:56px;height:56px;border-radius:50%;margin:0 auto 12px;display:flex;align-items:center;' +
+        'justify-content:center;font-size:22px;font-weight:600;background:#F4F2EC;color:#9A958C;' +
+        'border:2px solid #E4E1D8;position:relative;z-index:1;}' +
+      '.ks-next-st.is-now .ks-next-ic{background:#FBE3DA;color:#D24F28;border-color:#D24F28;}' +
+      '.ks-next-nm{font-size:12px;letter-spacing:.12em;font-weight:600;color:#9A958C;margin-bottom:6px;}' +
+      '.ks-next-st.is-now .ks-next-nm{color:#D24F28;}' +
+      '.ks-next-tx{font-size:14px;line-height:1.5;color:#76716C;}' +
+      '.ks-next-st.is-now .ks-next-tx{color:#1E1A19;font-weight:500;}' +
+      '.ks-next-ship{font-size:12px;color:#76716C;margin-top:8px;}' +
+      '.ks-next-ship button{all:unset;cursor:pointer;color:#D24F28;text-decoration:underline;}' +
+      '@media (max-width:640px){.ks-next-path{grid-template-columns:1fr;gap:18px;}' +
+        '.ks-next-path:before{top:28px;bottom:28px;left:27px;right:auto;width:2px;height:auto;' +
+        'background:repeating-linear-gradient(180deg,#D9D6CC 0 6px,transparent 6px 12px);}' +
+        '.ks-next-st{display:grid;grid-template-columns:56px 1fr;gap:0 14px;text-align:left;padding:0;}' +
+        '.ks-next-ic{margin:0;grid-row:span 3;}}' +
+      '.ks-hcw-fold{all:unset;cursor:pointer;}';
+    document.head.appendChild(st);
+  }
+  function openShippingEdit() {
+    var panel = document.querySelector('.ks-account-panel');
+    var btn = document.querySelector('.ks-account-toggle');
+    if (!panel) return;
+    panel.classList.add('is-open');
+    if (btn) btn.classList.add('is-open');
+    var pair = null;
+    _accPairs.forEach(function (p) { if (p.head.textContent === 'Shipping address') pair = p; });
+    _accPairs.forEach(function (p) { closeAcc(p.head, p.body); });
+    if (pair) {
+      openAcc(pair.head, pair.body);
+      pair.head.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-    if (!tag) {
-      tag = document.createElement('div');
-      tag.className = 'ks-greet-welcome';
-      tag.textContent = JUST_JOINED.tag;
-      h.parentNode.insertBefore(tag, h);
+  }
+  function paintNewMemberExtras(s, shopNew) {
+    var cta = document.querySelector('.ks-greet-cta');
+    var box = document.querySelector('.ks-next');
+    if (!shopNew) { if (box) box.remove(); }
+    else if (cta && cta.parentNode) {
+      nextCss();
+      if (!box) {
+        box = document.createElement('div');
+        box.className = 'ks-next';
+        cta.parentNode.insertBefore(box, cta.nextSibling);
+      }
+      var caps = s.caps || {};
+      var n = (Number(caps.clothing) || 0) + (Number(caps.toy) || 0);
+      var sh = s.shipping || {};
+      var where = [sh.city, sh.state].filter(Boolean).map(function (v) { return displayName(v); });
+      if (sh.state) where[where.length - 1] = String(sh.state).toUpperCase();
+      var html = '<div class="ks-next-h">WHAT HAPPENS NEXT</div><div class="ks-next-path">';
+      JUST_JOINED.steps.forEach(function (tx, i) {
+        html += '<div class="ks-next-st' + (i === 0 ? ' is-now' : '') + '">' +
+                  '<div class="ks-next-ic">' + (i + 1) + '</div>' +
+                  '<div class="ks-next-nm">' + (i === 0 ? 'YOU ARE HERE' : 'STEP ' + (i + 1)) + '</div>' +
+                  '<div class="ks-next-tx">' + esc(tx.replace('{n}', String(n || 'a few'))) + '</div>' +
+                  ((i === 1 && where.length) ? '<div class="ks-next-ship">Shipping to ' +
+                    esc(where.join(', ')) + ' \u00B7 <button type="button">Change</button></div>' : '') +
+                '</div>';
+      });
+      box.innerHTML = html + '</div>';
+      var ch = box.querySelector('.ks-next-ship button');
+      if (ch) ch.addEventListener('click', openShippingEdit);
+    }
+    // Hidden / folded for BOTH paths while she is new; restored the moment she is not.
+    var pack = document.querySelector('.credit-pack-menu');
+    if (pack) pack.style.display = _jjOn ? 'none' : '';
+    var hcw = document.querySelector('.ks-sec-hcw');
+    if (hcw) {
+      var rowsEls = hcw.querySelectorAll('.ks-hcw-row');
+      var h = hcw.querySelector('.ks-panel-h');
+      [].forEach.call(rowsEls, function (r0) { r0.style.display = _jjOn ? 'none' : ''; });
+      if (h && _jjOn && !h.querySelector('.ks-hcw-fold')) {
+        var label = h.textContent;
+        h.innerHTML = '<button type="button" class="ks-hcw-fold" aria-expanded="false">' +
+                      esc(label) + ' \u25BE</button>';
+        h.querySelector('.ks-hcw-fold').addEventListener('click', function () {
+          var open = this.getAttribute('aria-expanded') !== 'true';
+          this.setAttribute('aria-expanded', open ? 'true' : 'false');
+          [].forEach.call(hcw.querySelectorAll('.ks-hcw-row'), function (r0) { r0.style.display = open ? '' : 'none'; });
+        });
+      }
     }
   }
 
   function paintGreeting(s) {
     var state = pickState(s);
     var jj = justJoined(s, state);
-    paintWelcomeTag(jj);
+    _jjOn = jj;
+    var oldTag = document.querySelector('.ks-greet-welcome'); if (oldTag) oldTag.remove();
+    // S393 HER RULING: while she is new, the welcome IS the headline (no tag, no pill).
+    var hh = document.querySelector('.ks-greet-headline');
+    if (hh && jj) hh.textContent = welcomeHeadline();
+    paintNewMemberExtras(s, jj && state === 'active');
     // Shop-first: she holds credits, so pickState says `active`. The welcome replaces
     // active's line and button. Send-first lands on `zero` -> PRECREDIT.prebag below.
     if (jj && state === 'active') {
@@ -411,21 +506,27 @@ function paintHeadline(member) {
 function cycleLineString(s) {
     var cyc = s.cycle || {};
     var reset = cyc.cycle_reset ? fmtDate(cyc.cycle_reset) : '';
-    return reset ? ('Your cycle resets ' + reset) : '';
+    // S393 HER RULING: say WHAT resets. No year - it is always within the month.
+    reset = reset.replace(/,\s*\d{4}$/, '');
+    return reset ? ('Your swaps reset ' + reset + '.') : '';
   }
 
   function swapsReadyString(s) {
-    var av = s.available_this_cycle || {};
-    var c = parseFloat(av.clothing); if (isNaN(c)) c = 0;
-    var t = parseFloat(av.toy);      if (isNaN(t)) t = 0;
+    // ⚠⚠ S393 HER RULING: THIS LINE COUNTS CREDITS, NOT SWAPS. It used to read
+    //   available_this_cycle and call them "swaps in your bank" - two words for one thing,
+    //   the exact mix-up /pricing was fixed for. Credits are what she HOLDS (bank.by_class);
+    //   swaps are the monthly limit, and they now have their own line (paintCycleBar).
+    var bc = (s.bank && s.bank.by_class) || {};
+    var c = parseFloat(bc.clothing); if (isNaN(c)) c = 0;
+    var t = parseFloat(bc.toy);      if (isNaN(t)) t = 0;
     var parts = [];
-    if (c > 0) parts.push('<b>' + c + ' clothing swap' + (c === 1 ? '' : 's') + '</b>');
-    if (t > 0) parts.push('<b>' + t + ' toy swap' + (t === 1 ? '' : 's') + '</b>');
+    if (c > 0) parts.push('<b>' + c + ' clothing credit' + (c === 1 ? '' : 's') + '</b>');
+    if (t > 0) parts.push('<b>' + t + ' toy credit' + (t === 1 ? '' : 's') + '</b>');
     if (!parts.length) return '';
+    return 'You have ' + parts.join(' and ') + '. They roll over.';
     // ⚠⚠ "this cycle" IMPLIED THE CREDITS EXPIRE AT CYCLE END — S214, her catch. They don't;
     //   credits persist across cycles (the never-expire rule / "safe for next month" promise).
     //   "in your bank" is accurate and drops the false expiry implication.
-    return 'You have ' + parts.join(' and ') + ' in your bank';
   }
 
   function paintSwapsReady(s) {
@@ -458,39 +559,44 @@ function cycleLineString(s) {
   }
 
   function paintCycleBar(s) {
-    var cyc = s.cycle || {};
+    // ⚠⚠ S393 HER RULING: THE BAR IS SWAPS LEFT THIS MONTH, NOT DAYS GONE. The old bar was
+    //   time elapsed, so on day one it was a lone dot on an empty track and read as broken.
+    //   It now starts FULL and shrinks as she uses swaps. Her plan is named here, because
+    //   the plan is WHY she has this many (the old top-of-page chip is gone).
+    // ⚠ FAILS CLOSED: no caps or no used_this_cycle in the payload = no bar at all.
     var line = document.querySelector('.ks-cycle-line');
     if (!line || !line.parentNode) return;
     var wrap = document.querySelector('.ks-cycle-bar-wrap');
     if (!wrap) {
       wrap = document.createElement('div');
       wrap.className = 'ks-cycle-bar-wrap';
-      wrap.innerHTML =
-        '<div class="ks-cycle-bar-head">' +
-          '<span class="ks-cycle-bar-label">This cycle</span>' +
-          '<span class="ks-cycle-bar-left"></span>' +
-        '</div>' +
-        '<div class="ks-cycle-bar-track"><i class="ks-cycle-bar-fill"></i></div>';
       line.parentNode.insertBefore(wrap, line);
     }
-    var start = cyc.cycle_start ? new Date(cyc.cycle_start).getTime() : NaN;
-    var end   = cyc.cycle_reset ? new Date(cyc.cycle_reset).getTime() : NaN;
-    if (isNaN(start) || isNaN(end) || end <= start) { wrap.style.display = 'none'; return; }
+    var caps = s.caps || {}, used = s.used_this_cycle;
+    if (!used) { wrap.style.display = 'none'; return; }
+    var rows = [];
+    [['clothing', 'Clothing'], ['toy', 'Toys']].forEach(function (k) {
+      var cap = parseFloat(caps[k[0]]); if (isNaN(cap) || cap <= 0) return;
+      var u = parseFloat(used[k[0]]); if (isNaN(u)) u = 0;
+      var left = Math.max(cap - u, 0);
+      rows.push({ name: k[1], left: left, cap: cap });
+    });
+    if (!rows.length) { wrap.style.display = 'none'; return; }
     wrap.style.display = '';
-    var now = Date.now();
-    var pct = ((now - start) / (end - start)) * 100;
-    if (pct < 0) pct = 0;
-    if (pct > 100) pct = 100;
-    var daysLeft = Math.ceil((end - now) / 86400000);
-    if (daysLeft < 0) daysLeft = 0;
-    var leftEl = wrap.querySelector('.ks-cycle-bar-left');
-    if (leftEl) {
-      leftEl.innerHTML = (daysLeft === 0)
-        ? '<b>Resets today</b>'
-        : '<b>' + daysLeft + ' day' + (daysLeft === 1 ? '' : 's') + '</b> left';
-    }
-    var fill = wrap.querySelector('.ks-cycle-bar-fill');
-    if (fill) fill.style.width = pct.toFixed(1) + '%';
+    var plan = (s.plan ? String(s.plan).trim() + ': ' : '');
+    var html = '';
+    rows.forEach(function (r0, i) {
+      var label = (rows.length === 1) ? (plan + 'swaps left this month')
+                : (i === 0 ? plan + r0.name.toLowerCase() + ' swaps left' : r0.name + ' swaps left');
+      var pct = (r0.left / r0.cap) * 100;
+      html += '<div class="ks-cycle-bar-head">' +
+                '<span class="ks-cycle-bar-label">' + esc(label) + '</span>' +
+                '<span class="ks-cycle-bar-left"><b>' + r0.left + ' of ' + r0.cap + '</b></span>' +
+              '</div>' +
+              '<div class="ks-cycle-bar-track"><i class="ks-cycle-bar-fill" style="width:' +
+                pct.toFixed(1) + '%"></i></div>';
+    });
+    wrap.innerHTML = html;
   }
 
 function paintBankLabel() {
@@ -508,20 +614,30 @@ label.textContent = 'Your Credit Bank';
   var PLAN_PRICE = { 'basics': 30, 'toy chest': 45, 'full wardrobe': 45, 'everything bag': 70 };
 
   function paintPlanChip(s) {
-    var sub = document.querySelector('.ks-greet-sub');
-    if (!sub || !sub.parentNode) return;
-    var chip = document.querySelector('.ks-plan-chip');
+    // ⚠⚠ S393 HER RULING: THE PLAN CHIP LEFT THE TOP OF THE PAGE - it read as a button.
+    //   The plan NAME now sits in the swaps bar; the plan AND PRICE sit as the first line of
+    //   the Account & Settings panel. Manage Membership STAYS a visible link on its own:
+    //   it is the cancel path, and "visible on the dashboard" is part of the open
+    //   cancel-path question with Shahin.
+    // ⚠ Inserted AFTER buildAccordion has run, and it is NOT a section, so ACC_LABELS'
+    //   positional index is untouched.
+    var old = document.querySelector('.ks-greet-sub ~ .ks-plan-chip');
+    if (old) old.remove();
+    var panel = document.querySelector('.ks-account-panel');
+    if (!panel) return;
+    var chip = panel.querySelector('.ks-plan-chip');
     if (!chip) {
       chip = document.createElement('div');
       chip.className = 'ks-plan-chip';
-      sub.parentNode.insertBefore(chip, sub.nextSibling);
+      chip.style.cssText = 'margin:0 0 12px;font-size:15px;color:#76716C;';
+      panel.insertBefore(chip, panel.firstChild);
     }
     var raw = (s && s.plan) ? String(s.plan).trim() : '';
     var key = raw.toLowerCase().replace(/^the\s+/, '');
     var price = PLAN_PRICE[key];
     if (!raw || price === undefined) { chip.style.display = 'none'; return; }
     chip.style.display = '';
-    chip.textContent = raw + ' \u00B7 $' + price + '/mo';
+    chip.textContent = 'Your plan: ' + raw + ' \u00B7 $' + price + '/mo';
   }
 
 function paintCoins(s) {
@@ -1545,8 +1661,10 @@ function paintCloset(s) {
       card.appendChild(el);                            // sits after the cycle bar, bank footer
     }
     el.style.display = '';
-    el.innerHTML = 'You\'ve earned <b>' + esc(String(earned)) + ' credit' +
-                   (earned === 1 ? '' : 's') + '</b> since joining on ' + esc(since) + '.';
+    // S393 HER RULING: "added", not "earned" - a starter pack is bought, not earned,
+    // and "added" is true of both.
+    el.innerHTML = '<b>' + esc(String(earned)) + ' credit' + (earned === 1 ? '' : 's') +
+                   '</b> added since you joined on ' + esc(since) + '.';
   }
   /* ⚠⚠ THE CREDIT PACK MENU — S355. Markup is Webflow's; styling is dashboard.css.
      (1) paintImpact() APPENDS .ks-bank-earned to the card, which would land it BELOW this menu,
