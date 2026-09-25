@@ -222,7 +222,9 @@ function paintHeadline(member) {
   var PRECREDIT = {
     prebag: {
       sub: 'We\u2019re getting your first swap bag ready. It will arrive already prelabeled, so all you have to do is fill it up and send it back. Outgrowing things is about to get a lot more fun.',
-      cta: 'See The Closet Standard', href: '/the-closet-standard'
+      /* S393 HER RULING: "See what we accept", same page. She already knows how it
+         works; what she needs now is what to put in the bag. */
+      cta: 'See what we accept', href: '/the-closet-standard'
     },
     bagout: {
       sub: 'You\u2019ve got a swap bag out right now, it\u2019s already prelabeled so you can fill it up and send it back whenever you\u2019re ready.',
@@ -265,8 +267,65 @@ function paintHeadline(member) {
     return null;
   }
 
+  // ---------- JUST JOINED (S393, hers) ----------
+  // A brand-new member gets a welcome on the dashboard, and /signup's own welcome screen
+  // retires (Stripe will land her here instead). It shows until HER FIRST SWAP BAG SHIPS:
+  //   shop-first  - the empty bag rides with her first order, so until that order ships
+  //   send-first  - until her empty bag is marked shipped
+  // ⚠ FAILS CLOSED. No bags payload, no lifetime block, cancelled or paused = no welcome.
+  // ⚠ "First" is read from what the payload has: nothing she has sent was ever accepted,
+  //   she has never received an item, and she joined in the last 60 days. That is what
+  //   stops a month-six member with a new bag on the desk from being welcomed again.
+  // ⚠ Send-first keeps PRECREDIT.prebag's S164 line, which is locked. Only the tag is added.
+  var JUST_JOINED = {
+    tag:  'Welcome to KidSwaps!',
+    shop: { sub: 'So glad you joined. Your credits are in your bank, ready to spend.', cta: 'Start shopping' }
+  };
+  function justJoined(s, state) {
+    if (state === 'cancelled' || state === 'paused') return false;
+    var b = s && s.bags, lt = s && s.lifetime;
+    if (!b || !lt) return false;
+    if (b.bag_shipped || b.return_delivered) return false;
+    if (!(b.has_bag_history === false || b.bag_out)) return false;
+    if ((Number(lt.items_received) || 0) > 0) return false;
+    if ((Number(lt.items_kept_from_landfill) || 0) > 0) return false;
+    var since = lt.member_since ? new Date(lt.member_since) : null;
+    if (!since || isNaN(since.getTime())) return false;
+    return (Date.now() - since.getTime()) < 60 * 24 * 3600 * 1000;
+  }
+  function paintWelcomeTag(on) {
+    var h = document.querySelector('.ks-greet-headline');
+    if (!h || !h.parentNode) return;
+    var tag = document.querySelector('.ks-greet-welcome');
+    if (!on) { if (tag) tag.remove(); return; }
+    if (!document.getElementById('ks-greet-welcome-css')) {
+      var st = document.createElement('style');
+      st.id = 'ks-greet-welcome-css';
+      st.textContent = '.ks-greet-welcome{display:table;margin:0 auto 14px;padding:5px 14px;' +
+        'border-radius:999px;background:#FBE3DA;color:#D24F28;font-family:Quicksand,sans-serif;' +
+        'font-size:13px;font-weight:600;letter-spacing:.02em;}';
+      document.head.appendChild(st);
+    }
+    if (!tag) {
+      tag = document.createElement('div');
+      tag.className = 'ks-greet-welcome';
+      tag.textContent = JUST_JOINED.tag;
+      h.parentNode.insertBefore(tag, h);
+    }
+  }
+
   function paintGreeting(s) {
     var state = pickState(s);
+    var jj = justJoined(s, state);
+    paintWelcomeTag(jj);
+    // Shop-first: she holds credits, so pickState says `active`. The welcome replaces
+    // active's line and button. Send-first lands on `zero` -> PRECREDIT.prebag below.
+    if (jj && state === 'active') {
+      var jsub = document.querySelector('.ks-greet-sub');
+      if (jsub) { jsub.textContent = JUST_JOINED.shop.sub; jsub.classList.remove('ks-greet-accent'); }
+      setCTA(JUST_JOINED.shop.cta, 'closet', closetHref(s));
+      return;
+    }
     var cfg = GREET[state] || GREET.active;
     // ⚠ PRE-CREDIT ONLY. Any other state and this is null, so every line below behaves
     // exactly as it did before this commit.
