@@ -1897,7 +1897,17 @@
     S.plan = p.slug;
     S.path = p.path;
 
-    endState(p.pack ? 'pack' : 'plan', p);
+    /* ⚠⚠ S393 HER RULING: THE /signup WELCOME SCREENS ARE RETIRED. Every plan's
+       Memberstack "On Signup / On Purchase" redirect now reads dashboard, and the
+       dashboard greets a new member itself ("Welcome to KidSwaps, <name>." plus What
+       happens next), with her REAL credit count. This stays as a SAFETY NET: a paid,
+       logged-in member who still lands here with the stash (an old redirect, a stale
+       tab) is sent on to the dashboard instead of being shown step 1 again.
+       The token gate above still decides, so an unpaid abandon-at-step-6 is never sent.
+       endState() and COPY.endA / endB are now unused and can be deleted in a tidy pass. */
+    track('end_redirect');
+    try { window.location.replace('/dashboard'); }
+    catch (e) { window.location.href = '/dashboard'; }
     return true;
   }
 
