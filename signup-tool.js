@@ -905,11 +905,19 @@
       b.appendChild(top);
       b.appendChild(el('span', 'ks-wz-fork-s', c.sub));
       b.addEventListener('click', function () {
+        /* S393 HER RULING: she SEES her pick before the page moves. The card
+           fills its check and the other dims for half a second, then step 2.
+           One tap still does it. The guard stops a second tap in the pause. */
+        if (wrap.getAttribute('data-ks-going')) return;
+        wrap.setAttribute('data-ks-going', '1');
         /* Changing path invalidates a plan chosen on the other path. */
         if (S.path !== pathKey) { S.path = pathKey; S.plan = null; }
         S.dirty = true;
         track('path_pick', { picked: pathKey });
-        go(2);
+        [].forEach.call(wrap.querySelectorAll('.ks-wz-fork'), function (f) { f.classList.remove('is-on'); });
+        b.classList.add('is-on');
+        wrap.classList.add('has-pick');
+        setTimeout(function () { go(2); }, 500);
       });
       wrap.appendChild(b);
     });
@@ -2001,8 +2009,10 @@
       '.ks-wz-fork-n{font-size:15px;font-weight:500;white-space:nowrap;}',
       '.ks-wz-fork-s{display:block;font-size:14px;font-weight:500;color:#1E1A19;line-height:1.45;padding:12px 18px 14px;}',
       /* the drawn check, inheriting ink so it matches the fork text */
-      /* S393 HER RULING: an EMPTY RING always shows, so the card reads as a
-         choice before she taps. Picked = filled white with an ink check. */
+      /* S393 HER RULING, OPTION A: a white ring with an ARROW always shows,
+         so the card reads as tap-me. Picked = filled white, the arrow gives
+         way to an ink check. The plan cards keep a plain ring: they do not
+         move on by themselves, so an arrow there would say something false. */
       '.ks-wz-fork-check{display:block;position:absolute;right:16px;top:50%;margin-top:-12px;',
         'width:24px;height:24px;box-sizing:border-box;border:2px solid #FFFFFF;border-radius:50%;}',
       '.ks-wz-fork.is-on .ks-wz-fork-check{background:#FFFFFF;}',
@@ -2010,6 +2020,9 @@
         'width:5px;height:10px;border:solid #1E1A19;border-width:0 2px 2px 0;',
         'transform:rotate(45deg);}',
       '.ks-wz-fork.is-on .ks-wz-fork-check::after{display:block;}',
+      '.ks-wz-fork-check::before{content:"";position:absolute;left:4px;top:6px;',
+        'width:6px;height:6px;border:solid #FFFFFF;border-width:2px 2px 0 0;transform:rotate(45deg);}',
+      '.ks-wz-fork.is-on .ks-wz-fork-check::before{display:none;}',
 
       /* ---- plan cards (step 2) ---- */
       '.ks-wz-plans{display:flex;flex-direction:column;gap:12px;}',
