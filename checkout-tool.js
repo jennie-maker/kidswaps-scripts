@@ -98,6 +98,29 @@
  *     style on .ks-coin-label, not from this file. Scoped to checkout only.
  *   - the header bag count clears when the order goes through (sessionStorage was
  *     already cleared; the .ks-cart-badge painted by browse-tool.js was not).
+ *
+ * rev S398 (2026-09-26), her NEXT CHECKOUT COMMIT off the approved S398 mockup
+ * (https://claude.ai/artifact/8qZLt3rwk2svMJV6ebAvmb):
+ *   - HER SEVEN SHADES ONLY (S249): #e54f25 #eda920 #309359 #1c4a91 #f491a9 #211b1a
+ *     #edece0, plus white and her tier grey #6E6A63. The old #d24f28/#54935f/#e0a93f/
+ *     #eeece1/#1f1a17 set is gone. The top-right coin component is left as it was on
+ *     purpose (its gold numeral is her S53 ruling; it gets its own smaller idea later).
+ *   - Essentials carries NO DOT anywhere on this page (S218). Elevated dot #1c4a91.
+ *   - Item tiles white on both screens. Shipping note in ink, not grey.
+ *   - Rows: no "1 credit" badge; the upgrade fee sits under the tier line; no per-row
+ *     extra-swap fee (the line above the items and the summary carry it).
+ *   - Summary: Upgrade fees / Extra swaps (N x $5) / Shipping / Total today.
+ *   - Top line names upgrade and extra swap fees together.
+ *   - Extras line above the items: "You've used this month's 6 swaps, so each extra is
+ *     $5." The reset-date sentence prints only when the fn sends a reset date, which it
+ *     does not yet (a checkout fn passthrough, its own session).
+ *   - "Worth about $X new" bigger and green; the Closet Standard line quiet (ink, small).
+ *   - Change credit menu (hers S396): a higher-tier credit is offered only when she has
+ *     no free credit of the item's own tier. The applied credit always stays listed.
+ *   - Thank-you screen reordered (hers S398): heading + order no, thank-you in green
+ *     text, what she paid, what she saved (gold number, no box), LEFT IN YOUR BANK (the
+ *     S397 watercolor bowl, coins pour in), YOUR ORDER, address, timeline, buttons
+ *     (stacked on phones). The old top coin band is gone from this screen.
  * ========================================================================== */
 (function () {
   "use strict";
@@ -283,6 +306,20 @@
     var cur = currentCreditFor(line.sku);
     var inUse = [], free = [];
     opts.forEach(function (o) { (o.in_use_elsewhere ? inUse : free).push(o); });
+    // S398, hers S396: offer a HIGHER-tier credit only when she has no free credit of
+    // the item's own tier left. The credit applied right now always stays listed, so
+    // the menu never hides her current choice. Lower-tier choices (with a fee) stay.
+    var RANK = { essentials: 1, elevated: 2, special: 3 };
+    var own = RANK[String(line.tier || "").toLowerCase()] || 0;
+    if (own) {
+      var hasOwn = free.some(function (o) { return RANK[String(o.tier || "").toLowerCase()] === own; });
+      if (hasOwn) {
+        free = free.filter(function (o) {
+          var t = RANK[String(o.tier || "").toLowerCase()] || 0;
+          return t <= own || o.credit_id === cur;
+        });
+      }
+    }
     var groups = {};
     free.forEach(function (o) {
       var key = String(o.tier) + "|" + String(o.total_owed_cents);
@@ -305,13 +342,13 @@
   var CSS = [
     // palette + container
     ID + "{",
-    "  --ks-orange:#d24f28; --ks-orange-d:#b23f1f;",
-    "  --ks-ink:#1f1a17; --ks-cream:#eeece1;",
-    "  --ks-green:#54935f; --ks-gold:#e0a93f;",
-    "  --ks-muted:#847b6f; --ks-line:#e0d9ca;",
-    "  --ks-card:#f6f4ec;",
-    "  --ks-green-d:#467a50;",
-    "  --ks-chg-bg:#eeece1; --ks-chg-tx:#1f1a17;",
+    // S398: HER SEVEN SHADES ONLY (S249), plus white and her tier grey #6E6A63.
+    // Lines are her ink at low alpha, not a new colour.
+    "  --ks-orange:#e54f25;",
+    "  --ks-ink:#211b1a; --ks-cream:#edece0;",
+    "  --ks-green:#309359; --ks-gold:#eda920; --ks-blue:#1c4a91;",
+    "  --ks-muted:#6E6A63; --ks-line:rgba(33,27,26,.14);",
+    "  --ks-card:#fff;",
     "  max-width:560px; margin:0 auto; padding:24px 18px 64px; text-align:left;",
     "  font-family:Quicksand,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;",
     "  color:var(--ks-ink); -webkit-font-smoothing:antialiased; box-sizing:border-box;",
@@ -354,20 +391,21 @@
     // ⚠ ONE TIER LANGUAGE EVERYWHERE (her S213/S214 rulings): essentials green, elevated
     // blue, special brand yellow. These match dashboard.css and browse-tool.js. A change
     // here is a change on all three.
-    ID + " .ks-dot--ess{background:#1F5C38;}",
-    ID + " .ks-dot--elev{background:#28498D;}",
-    ID + " .ks-dot--spec{background:#EDA920;}",
+    ID + " .ks-dot--ess{display:none;}",   // S398: Essentials carries no dot (S218)
+    ID + " .ks-dot--elev{background:#1c4a91;}",
+    ID + " .ks-dot--spec{background:#eda920;}",
     // header / savings (all-left)
     ID + " .ksc-head{text-align:left; font-family:'Instrument Serif',Georgia,serif; font-weight:400; font-size:3.2rem; line-height:1.05; letter-spacing:-.01em; margin:0 0 8px; color:var(--ks-ink);}",
-    ID + " .ksc-value{text-align:left; font-size:1.02rem; color:var(--ks-ink); margin:0 0 2px; font-weight:700;}",
+    ID + " .ksc-value{text-align:left; font-size:1.3rem; color:var(--ks-green); margin:0 0 4px; font-weight:700; line-height:1.2;}",
     ID + " .ksc-sub{text-align:left; font-size:.92rem; color:var(--ks-muted); margin:0 0 20px; font-weight:500;}",
     // seal (KidSwaps green)
-    ID + " .ksc-seal{display:flex; align-items:center; gap:9px; padding:2px 2px; margin:0 0 18px;}",
+    ID + " .ksc-seal{display:flex; align-items:center; gap:8px; padding:2px 2px; margin:0 0 14px;}",
     ID + " .ksc-seal svg{flex:0 0 auto;}",
-    ID + " .ksc-seal span{font-size:.95rem; color:var(--ks-green); font-weight:700;}",
+    ID + " .ksc-seal span{font-size:.86rem; color:var(--ks-ink); font-weight:500;}",
+    ID + " .ksc-extraline{font-size:.9rem; line-height:1.45; color:var(--ks-ink); font-weight:600; margin:0 0 12px;}",
     // item tiles (thumb + name + tag)
     ID + " .ksc-items{display:flex; flex-direction:column; gap:10px; margin:0 0 18px;}",
-    ID + " .ksc-item{display:flex; align-items:center; gap:13px; background:var(--ks-card);",
+    ID + " .ksc-item{display:flex; align-items:center; gap:13px; background:#fff;",
     "  border:1px solid var(--ks-line); border-radius:12px; padding:12px 14px;}",
     ID + " .ksc-thumb{position:relative; flex:0 0 auto; width:54px; height:54px; border-radius:8px;",
     "  overflow:hidden; background:#ece5d6; border:1px solid var(--ks-line);}",
@@ -379,11 +417,9 @@
     ID + " .ksc-main{flex:1 1 auto; min-width:0;}",
     ID + " .ksc-main .nm{font-weight:700; font-size:.98rem; line-height:1.25; color:var(--ks-ink);}",
     ID + " .ksc-tierline{display:flex; align-items:center; gap:6px; margin-top:4px; font-size:.78rem; font-weight:600; color:var(--ks-muted);}",
-    ID + " .ksc-tag{flex:0 0 auto; text-align:right;}",
-    ID + " .ksc-badge{display:inline-block; font-size:.78rem; font-weight:700; padding:3px 9px; border-radius:999px; white-space:nowrap;}",
-    ID + " .ksc-badge.covered{background:var(--ks-green); color:#fff;}",
-    ID + " .ksc-badge.charge{background:var(--ks-chg-bg); color:var(--ks-chg-tx);}",
     ID + " .ksc-fee{margin-top:4px; font-size:.86rem; font-weight:700; color:var(--ks-ink);}",
+    ID + " .ksc-main .ksc-fee{margin-top:3px; font-size:.84rem;}",
+    ID + " .ksc-main .ksc-note{margin-top:2px;}",
     ID + " .ksc-note{margin-top:3px; font-size:.76rem; color:var(--ks-muted);}",
     // summary
     ID + " .ksc-sum{border-top:1px solid var(--ks-line); padding-top:14px; margin:0 0 20px;}",
@@ -395,13 +431,13 @@
     // shipping note: renders ONLY in the charged state (see renderReceipt).
     // Full-width sentence between the Shipping row and Total — not a .ksc-row
     // (it has no right-hand value), so it must not inherit the flex layout.
-    ID + " .ksc-shipnote{font-size:.78rem; line-height:1.45; color:var(--ks-muted);",
+    ID + " .ksc-shipnote{font-size:.8rem; line-height:1.45; color:var(--ks-ink);",
     "  padding:2px 0 6px; max-width:44ch;}",
     // button + secure
     ID + " .ksc-btn{display:block; width:100%; border:0; cursor:pointer; background:var(--ks-orange);",
     "  color:#fff; font-weight:700; font-size:1.02rem; font-family:inherit; border-radius:50px;",
     "  padding:15px 18px; transition:background .15s;}",
-    ID + " .ksc-btn:hover{background:var(--ks-orange-d);}",
+    ID + " .ksc-btn:hover{filter:brightness(.93);}",
     ID + " .ksc-secure{display:flex; align-items:center; justify-content:center; gap:7px; margin-top:11px; font-size:.8rem; color:var(--ks-muted);}",
     ID + " .ksc-stub{margin-top:12px; text-align:center; font-size:.78rem; color:var(--ks-orange);}",
     // block / failure / error screens — tight centered cluster
@@ -416,33 +452,33 @@
     // loading
     ID + " .ksc-load{display:flex; flex-direction:column; gap:12px; padding:8px 0;}",
     ID + " .ksc-skel{height:64px; border-radius:12px; background:linear-gradient(90deg,",
-    "  rgba(31,26,23,.05) 25%,rgba(31,26,23,.025) 37%,rgba(31,26,23,.05) 63%); background-size:400% 100%;",
+    "  rgba(33,27,26,.05) 25%,rgba(33,27,26,.025) 37%,rgba(33,27,26,.05) 63%); background-size:400% 100%;",
     "  animation:ksc-sh 1.3s ease infinite;}",
     "@keyframes ksc-sh{0%{background-position:100% 0}100%{background-position:0 0}}",
     // ---- editable cart (rev 6): chip + value-loss note + gate + modal --------
     ID + " .ksc-item-wrap{display:flex; flex-direction:column;}",
     ID + " .ksc-item-extra{display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; padding:8px 14px 0;}",
     ID + " .ksc-chip{display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-family:inherit;",
-    "  background:#faf8f2; border:1px solid var(--ks-line); border-radius:999px; padding:6px 13px;",
+    "  background:#fff; border:1px solid var(--ks-line); border-radius:999px; padding:6px 13px;",
     "  font-size:.82rem; font-weight:700; color:var(--ks-ink);}",
     ID + " .ksc-chip:hover{border-color:var(--ks-gold);}",
     ID + " .ksc-chip .cv{color:var(--ks-orange); font-weight:700;}",
     ID + " .ksc-freehint{flex:1 1 100%; font-size:.78rem; font-weight:700; color:var(--ks-green); padding-top:2px;}",
     ID + " .ksc-vlnote{display:flex; align-items:flex-start; gap:6px; font-size:.78rem; line-height:1.35;",
-    "  color:#9a6b12; font-weight:600; flex:1 1 220px; min-width:0;}",
+    "  color:var(--ks-ink); font-weight:600; flex:1 1 220px; min-width:0;}",
     ID + " .ksc-vlconfirm{display:flex; align-items:flex-start; gap:10px; background:var(--ks-card);",
     "  border:1px solid var(--ks-gold); border-radius:12px; padding:12px 14px; margin:0 0 14px; cursor:pointer;}",
     ID + " .ksc-vlconfirm input{margin-top:1px; width:17px; height:17px; accent-color:var(--ks-green); flex:0 0 auto;}",
     ID + " .ksc-vlconfirm span{font-size:.86rem; line-height:1.4; color:var(--ks-ink); font-weight:600;}",
-    ID + " .ksc-btn:disabled{background:#c9c2b8; cursor:not-allowed;}",
+    ID + " .ksc-btn:disabled{background:var(--ks-muted); cursor:not-allowed;}",
     ID + " .ksc-busy{opacity:.55; pointer-events:none;}",
     // modal (bottom-sheet on mobile, centered on desktop)
     ID + " .ksc-modal[hidden]{display:none;}",
     ID + " .ksc-modal{position:fixed; inset:0; z-index:99999; display:flex; align-items:flex-end; justify-content:center;}",
-    ID + " .ksc-modal-bd{position:absolute; inset:0; background:rgba(31,26,23,.45);}",
-    ID + " .ksc-modal-card{position:relative; width:100%; max-width:460px; background:#fbf9f2;",
+    ID + " .ksc-modal-bd{position:absolute; inset:0; background:rgba(33,27,26,.45);}",
+    ID + " .ksc-modal-card{position:relative; width:100%; max-width:460px; background:#edece0;",
     "  border:1px solid var(--ks-line); border-radius:18px 18px 0 0; padding:18px 18px 22px;",
-    "  box-shadow:0 -8px 40px rgba(31,26,23,.18); max-height:82vh; overflow:auto;}",
+    "  box-shadow:0 -8px 40px rgba(33,27,26,.18); max-height:82vh; overflow:auto;}",
     ID + " .ksc-modal-hd{display:flex; align-items:center; justify-content:space-between; margin:0 0 4px;}",
     ID + " .ksc-modal-hd .t{font-family:'Instrument Serif',Georgia,serif; font-weight:400; font-size:1.5rem; color:var(--ks-ink);}",
     ID + " .ksc-modal-hd .x{border:0; background:transparent; font-size:1.7rem; line-height:1; cursor:pointer; color:var(--ks-muted); font-family:inherit; padding:0 4px;}",
@@ -461,6 +497,33 @@
     ID + " .ksc-opt .fee{font-weight:700; color:var(--ks-ink); font-size:.96rem; white-space:nowrap;}",
     ID + " .ksc-opt .curtag{display:block; margin-top:2px; font-size:.7rem; font-weight:700; color:var(--ks-green); text-align:right;}",
     ID + " .ksc-modal-ft{font-size:.76rem; color:var(--ks-muted); margin-top:14px; text-align:center; font-weight:500;}",
+    // ---- S398 thank-you screen -----------------------------------------------
+    ID + " .ksc-ty-order{display:inline-block; background:#fff; color:var(--ks-ink); border:1px solid var(--ks-line); font-size:.75rem; font-weight:700; letter-spacing:.02em; padding:4px 11px; border-radius:20px; margin:0 0 18px;}",
+    ID + " .ksc-ty-thanks{text-align:center; color:var(--ks-green); margin:0 0 18px;}",
+    ID + " .ksc-ty-thanks .t{font-weight:700; font-size:1.1rem; margin:6px 0 4px;}",
+    ID + " .ksc-ty-thanks .b{font-size:.9rem; line-height:1.55; max-width:34ch; margin:0 auto;}",
+    ID + " .ksc-ty-paid{border-top:1px solid var(--ks-line); border-bottom:1px solid var(--ks-line); padding:12px 0; margin:0 0 18px; display:flex; flex-direction:column; gap:8px; font-size:.9rem;}",
+    ID + " .ksc-ty-save{text-align:center; margin:0 0 30px;}",
+    ID + " .ksc-ty-save .n{font-size:3rem; font-weight:700; line-height:1; color:var(--ks-gold);}",
+    ID + " .ksc-ty-save .l{font-size:.85rem; margin-top:6px; color:var(--ks-ink);}",
+    ID + " .ksc-ty-h{font-size:1rem; font-weight:700; color:var(--ks-ink); margin:0 0 8px;}",
+    ID + " .ksc-ty-h.c{text-align:center; margin-bottom:2px;}",
+    ID + " .ksc-ty-item{display:flex; align-items:center; gap:10px; background:#fff; border:1px solid var(--ks-line); border-radius:10px; padding:6px 10px; margin-bottom:6px;}",
+    ID + " .ksc-ty-item .ksc-thumb{width:36px; height:36px; border-radius:6px;}",
+    ID + " .ksc-ty-item .nm{font-weight:700; font-size:.9rem; line-height:1.25; color:var(--ks-ink);}",
+    ID + " .ksc-ty-btns{display:flex; gap:8px;}",
+    // THE BOWL (her S397 look). World is 460x305 and scales to the box width.
+    ID + " .ksc-pile{position:relative; max-width:190px; margin:0 auto;}",
+    ID + " .ksc-pile-scene{position:relative; overflow:hidden;}",
+    ID + " .ksc-pile-world{position:absolute; left:0; top:0; width:460px; height:305px; transform-origin:0 0;}",
+    ID + " .ksc-pile-world img, " + ID + " .ksc-pile-world .sh{position:absolute; left:0; top:0; will-change:transform; max-width:none;}",
+    ID + " .ksc-pile-world .sh{border-radius:50%; background:rgba(33,27,26,.55); filter:blur(4px);}",
+    ID + " .ksc-pile-lines{text-align:center; display:flex; flex-direction:column; align-items:center; gap:2px; margin:0 0 4px;}",
+    ID + " .ksc-pile-line{display:inline-flex; align-items:center; gap:7px; font-family:'Instrument Serif',Georgia,serif; font-size:18px; color:var(--ks-ink);}",
+    ID + " .ksc-pile-line img{width:16px; height:auto;}",
+    "@media (max-width:480px){",
+    ID + " .ksc-ty-btns{flex-direction:column;}",
+    "}",
     "@media (max-width:600px){",
     // ⚠ THE MOBILE FLIP TO flex-start IS RETIRED - HER RULING S217. The coins sit TOP
     // RIGHT at every width, on both screens. Do not restore a left-align breakpoint.
@@ -482,33 +545,32 @@
 
   // ---- inline SVGs ----------------------------------------------------------
   function shieldCheck() {
-    return '<svg width="22" height="22" viewBox="0 0 24 24" fill="none">' +
-      '<path d="M12 2l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V5l7-3z" fill="#e0a93f" opacity=".22"/>' +
-      '<path d="M12 2l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V5l7-3z" stroke="#e0a93f" stroke-width="1.5"/>' +
-      '<path d="M8.6 12.2l2.2 2.2 4.6-4.8" stroke="#e0a93f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none">' +
+      '<path d="M12 2l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V5l7-3z" stroke="#309359" stroke-width="1.5"/>' +
+      '<path d="M8.6 12.2l2.2 2.2 4.6-4.8" stroke="#309359" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   }
   function lockIcon() {
     return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none">' +
-      '<rect x="5" y="11" width="14" height="9" rx="2" stroke="#8a8278" stroke-width="1.6"/>' +
-      '<path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="#8a8278" stroke-width="1.6"/></svg>';
+      '<rect x="5" y="11" width="14" height="9" rx="2" stroke="#6E6A63" stroke-width="1.6"/>' +
+      '<path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="#6E6A63" stroke-width="1.6"/></svg>';
   }
   function phSvg() {
     return '<svg class="phsvg" viewBox="0 0 24 24" fill="none">' +
-      '<rect x="3" y="4" width="18" height="16" rx="2" stroke="#1f1a17" stroke-width="1.5"/>' +
-      '<circle cx="8.5" cy="9.5" r="1.6" fill="#1f1a17"/>' +
-      '<path d="M5 18l4.5-5 3 3 3-3.5L20 18" stroke="#1f1a17" stroke-width="1.5" stroke-linejoin="round"/></svg>';
+      '<rect x="3" y="4" width="18" height="16" rx="2" stroke="#211b1a" stroke-width="1.5"/>' +
+      '<circle cx="8.5" cy="9.5" r="1.6" fill="#211b1a"/>' +
+      '<path d="M5 18l4.5-5 3 3 3-3.5L20 18" stroke="#211b1a" stroke-width="1.5" stroke-linejoin="round"/></svg>';
   }
   function bigIcon() {
     return '<svg class="ic" viewBox="0 0 56 56" fill="none">' +
-      '<circle cx="28" cy="28" r="26" stroke="#d24f28" stroke-width="2"/>' +
-      '<path d="M28 17v16" stroke="#d24f28" stroke-width="2.6" stroke-linecap="round"/>' +
-      '<circle cx="28" cy="39.5" r="1.6" fill="#d24f28"/></svg>';
+      '<circle cx="28" cy="28" r="26" stroke="#e54f25" stroke-width="2"/>' +
+      '<path d="M28 17v16" stroke="#e54f25" stroke-width="2.6" stroke-linecap="round"/>' +
+      '<circle cx="28" cy="39.5" r="1.6" fill="#e54f25"/></svg>';
   }
   function warnDot() {
     return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="flex:0 0 auto;margin-top:1px;">' +
-      '<path d="M12 3l9 16H3L12 3z" stroke="#c9962a" stroke-width="1.6" stroke-linejoin="round"/>' +
-      '<path d="M12 10v4" stroke="#c9962a" stroke-width="1.6" stroke-linecap="round"/>' +
-      '<circle cx="12" cy="16.6" r=".9" fill="#c9962a"/></svg>';
+      '<path d="M12 3l9 16H3L12 3z" stroke="#eda920" stroke-width="1.6" stroke-linejoin="round"/>' +
+      '<path d="M12 10v4" stroke="#eda920" stroke-width="1.6" stroke-linecap="round"/>' +
+      '<circle cx="12" cy="16.6" r=".9" fill="#eda920"/></svg>';
   }
 
   // ---- thumbnail (only renders when a real image exists; hidden until then) --
@@ -527,12 +589,41 @@
   // (f) S395, hers: a plain count. "2 credits used, plus $23.25 in upgrade fees".
   // Only the UPGRADE total goes in the "plus" (see the warning above: shipping and
   // extra-swap are not upgrade fees). UNITS: upgradeCents is CENTS.
-  function creditsUsedLine(lines, upgradeCents) {
+  // S398: names upgrade AND extra swap fees ("5 credits used, plus $62.50 in upgrade and
+  // extra swap fees"). Shipping is never in this line: it is a logistics fee, not a
+  // credit matter (the standing rule).
+  function creditsUsedLine(lines, upgradeCents, extraCents) {
     var n = 0;
     (lines || []).forEach(function (l) { if (l && l.credit_applied) n++; });
     var t = n + (n === 1 ? " credit used" : " credits used");
-    if ((Number(upgradeCents) || 0) > 0) t += ", plus " + moneyc(upgradeCents) + " in upgrade fees";
+    var up = Number(upgradeCents) || 0, ex = Number(extraCents) || 0;
+    if (up > 0 && ex > 0) t += ", plus " + moneyc(up + ex) + " in upgrade and extra swap fees";
+    else if (up > 0) t += ", plus " + moneyc(up) + " in upgrade fees";
+    else if (ex > 0) t += ", plus " + moneyc(ex) + " in extra swap fees";
     return t;
+  }
+  function moneyShort(d) { d = Number(d) || 0; return d % 1 === 0 ? "$" + d : money(d); }   // "$5"
+
+  // S398: the line above the items when the order has extras. Reads the plan's monthly
+  // swaps from cap.<class>.limit. The reset sentence prints only if the fn sends a date.
+  function extrasLineHtml(p, lines) {
+    var ex = (lines || []).filter(function (l) { return (Number(l.extra_swap_fee) || 0) > 0; });
+    if (!ex.length) return "";
+    var fee = moneyShort(ex[0].extra_swap_fee);
+    var classes = {};
+    ex.forEach(function (l) { if (l.item_class) classes[l.item_class] = 1; });
+    var keys = Object.keys(classes);
+    var cap = p && p.cap;
+    var lim = (keys.length === 1 && cap && cap[keys[0]]) ? Number(cap[keys[0]].limit) : 0;
+    var t = lim > 0
+      ? "You\u2019ve used this month\u2019s " + lim + " swaps, so each extra is " + fee + "."
+      : "You\u2019ve used this month\u2019s swaps, so each extra is " + fee + ".";
+    var reset = (p && (p.cycle_reset || (p.cycle && p.cycle.cycle_reset))) || null;
+    if (reset) {
+      var d = new Date(reset);
+      if (!isNaN(d.getTime())) t += " Your swaps reset " + d.toLocaleDateString("en-US", { month: "long", day: "numeric" }) + ".";
+    }
+    return '<p class="ksc-extraline">' + esc(t) + "</p>";
   }
 
   // (d) S395: the item's tier with its dot, e.g. "● Elevated". Size left out (hers S395).
@@ -541,19 +632,6 @@
     var m = map[String(t || "").toLowerCase()];
     if (!m) return "";
     return '<div class="ksc-tierline"><i class="ks-dot ' + m[1] + '"></i><span>' + esc(m[0]) + "</span></div>";
-  }
-
-  // ---- coverage tile --------------------------------------------------------
-  function tileFor(line) {
-    var up = Number(line.upgrade_fee) || 0, ex = Number(line.extra_swap_fee) || 0;
-    switch (line.coverage) {
-      // (c) S395, hers: each row says what its charge is. "1 credit + $17.25 upgrade fee".
-      case "covered": return { cls: "covered", label: "1 credit", fee: null, note: null };
-      case "covered_extra": return { cls: "covered", label: "1 credit", fee: ex ? "+" + money(ex) : null, note: "one extra this month" };
-      case "upgrade": return { cls: "charge", label: "1 credit", fee: up ? "+ " + money(up) + " upgrade fee" : null, extraFee: ex ? "+" + money(ex) : null, note: null };
-      case "special_upgrade": return { cls: "charge", label: "1 credit", fee: up ? "+ " + money(up) + " upgrade fee" : null, extraFee: ex ? "+" + money(ex) : null, note: up <= 40 ? "designer find" : null };
-      default: return { cls: "charge", label: "1 credit", fee: up ? "+ " + money(up) + " upgrade fee" : (ex ? "+" + money(ex) : null), note: null };
-    }
   }
 
   // ==== THE COINS =============================================================
@@ -747,6 +825,138 @@
 
   }
 
+  // ==== THE BOWL (S398) ======================================================
+  // Her S397 coin bank, approved at https://claude.ai/artifact/FSL6eyHZYwZuSExbkvhpZ7,
+  // placed on the thank-you screen as LEFT IN YOUR BANK. Geometry, timings and art are a
+  // COPY of that test page; when the dashboard bank ships, the two must be diffed.
+  // Clothing coins gold, toy coins green. Coins tumble in, squash, hop once, rock, and
+  // nudge the coins under them. No sparkles anywhere (hers). Up to 30 spots; past 30 the
+  // pile stops growing and the number keeps counting. The tier panel waits on her copy.
+  // ⚠ FAILURE DIRECTION: the count lines are real text written first; reduced motion or
+  // a missing image leaves the numbers correct and the coins sitting still.
+  var PILE_ART = "https://cdn.jsdelivr.net/gh/jennie-maker/kidswaps-scripts@b1c24101b87e8842d1bba248a7ecc8ff78d8c494/";
+  var PILE_H = { bowl: 239, "bowl-rim": 239, fall1: 164, fall2: 145, fall3: 177, flatA: 74, flatB: 74, flatC: 83, leanA: 114, leanB: 114 };
+  var PW = 460, PH = 305, PCW = 96, PBOWL = { w: 300, x: 80, y: 110 }, PFLOOR = 190, PTABLE = 233, PCX = PW / 2;
+  // [x offset, height above floor, landed coin, tilt, spill x or 0, spill drop]
+  var PSPOTS = [[0,4,"flatC",2],[-64,0,"flatA",-3],[59,2,"flatB",4],[-34,16,"leanA",-6],[36,18,"leanB",6],[0,28,"flatA",-2],
+    [-75,20,"leanA",-10],[77,22,"leanB",9],[-40,34,"flatA",-2,-150],[-17,42,"flatB",5],[44,36,"flatB",3,152],[10,54,"leanA",-8],
+    [-50,48,"flatB",4],[52,50,"leanB",8],[-90,36,"leanA",-12],[92,38,"leanB",12],[-24,62,"flatA",-3],[28,64,"flatC",3],
+    [0,76,"leanA",-6],[-60,62,"leanA",-9],[62,66,"leanB",9],[-60,50,"flatA",-2,-118,18],[-12,88,"flatB",4],[60,50,"flatB",3,116,20],
+    [20,96,"leanB",7],[-38,80,"flatC",-4],[-40,70,"flatC",-3,-182,6],[42,84,"flatA",5],[0,108,"flatC",-2],[30,90,"flatB",-3,178,8]];
+  var PFALL = ["fall1", "fall2", "fall3"];
+  (function preloadPile() {
+    try {
+      ["bowl", "bowl-rim", "clothing-face", "toy-face"].concat(
+        ["clothing", "toy"].reduce(function (a, k) { return a.concat(PFALL.concat(["flatA","flatB","flatC","leanA","leanB"]).map(function (f) { return k + "-" + f; })); }, [])
+      ).forEach(function (f) { var im = new Image(); im.src = PILE_ART + f + ".webp"; });
+    } catch (e) {}
+  })();
+
+  function pileCount(v) { var n = parseFloat(v); return isNaN(n) || n < 0 ? 0 : n; }
+  function pileLabel(n, word) { return String(n) + " " + word + " credit" + (n === 1 ? "" : "s"); }
+
+  // clothing / toy counts AFTER this order (by_class.after, the S395 success rule).
+  function pileHtml(bank, cap) {
+    var bc = (bank && bank.by_class) || {};
+    function after(k) { var v = bc[k]; return v ? pileCount(v.after != null ? v.after : v.now) : 0; }
+    function covered(k) { var v = bc[k]; return (cap && cap[k] && Number(cap[k].limit) > 0) || pileCount(v && v.now) > 0; }
+    var c = after("clothing"), t = after("toy");
+    var lines = [];
+    if (covered("clothing") || c > 0) lines.push('<span class="ksc-pile-line"><img alt="" src="' + PILE_ART + 'clothing-face.webp">' + esc(pileLabel(c, "clothing")) + "</span>");
+    if (covered("toy") || t > 0) lines.push('<span class="ksc-pile-line"><img alt="" src="' + PILE_ART + 'toy-face.webp">' + esc(pileLabel(t, "toy")) + "</span>");
+    if (!lines.length) return "";
+    return '<div class="ksc-ty-h c">Left in your bank</div>' +
+      '<div class="ksc-pile" id="ksc-pile" data-c="' + Math.floor(c) + '" data-t="' + Math.floor(t) + '">' +
+        '<div class="ksc-pile-scene"><div class="ksc-pile-world"></div></div>' +
+      "</div>" +
+      '<div class="ksc-pile-lines" style="margin-bottom:26px;">' + lines.join("") + "</div>";
+  }
+
+  function armPile() {
+    var box = document.getElementById("ksc-pile");
+    if (!box) return;
+    var scene = box.querySelector(".ksc-pile-scene"), world = box.querySelector(".ksc-pile-world");
+    var nc = parseInt(box.getAttribute("data-c"), 10) || 0, nt = parseInt(box.getAttribute("data-t"), 10) || 0;
+    var n = Math.min(PSPOTS.length, nc + nt);
+    // spread toy coins through the pile in proportion, so neither kind sits all on top
+    var total = nc + nt;
+    function isToy(i) { return total ? Math.floor((i + 1) * nt / total) > Math.floor(i * nt / total) : false; }
+    function K(i, key) { return (isToy(i) ? "toy-" : "clothing-") + key; }
+    function src(k) { return PILE_ART + k + ".webp"; }
+    function hOf(k) { var base = k.replace(/^(clothing|toy)-/, ""); return PCW * (PILE_H[base] || 100) / 180; }
+    function el(tag, cls) { var e = document.createElement(tag); if (cls) e.className = cls; world.appendChild(e); return e; }
+    function img(key, z, w) { var e = el("img"); e.alt = ""; e.src = src(key); e.style.width = (w || PCW) + "px"; e.style.zIndex = z; return e; }
+    var bsh = el("div");
+    bsh.style.cssText = "position:absolute;left:0;top:0;z-index:0;width:250px;height:26px;border-radius:50%;background:radial-gradient(closest-side,rgba(33,27,26,.32),rgba(33,27,26,0));transform:translate(105px,212px)";
+    var bowl = img("bowl", 1, PBOWL.w); bowl.style.transform = "translate(" + PBOWL.x + "px," + PBOWL.y + "px)";
+    var rim = img("bowl-rim", 100, PBOWL.w); rim.style.transform = "translate(" + PBOWL.x + "px," + PBOWL.y + "px)";
+    function fit() { var k = scene.clientWidth / PW; world.style.transform = "scale(" + k + ")"; scene.style.height = (PH * k) + "px"; }
+    fit(); window.addEventListener("resize", fit);
+
+    var coins = [];
+    function rnd(a, b) { return a + Math.random() * (b - a); }
+    function place(c, x, bot, rot, sx, sy) {
+      c.e.style.transformOrigin = "50% 100%";
+      c.e.style.transform = "translate(" + (x - PCW / 2) + "px," + (bot - hOf(c.key)) + "px) rotate(" + rot + "deg) scale(" + (sx || 1) + "," + (sy || 1) + ")";
+    }
+    function shadow(c, x, bot, k) {
+      var w = 86 * (0.35 + 0.65 * k);
+      c.sh.style.width = w + "px"; c.sh.style.height = (14 * (0.5 + 0.5 * k)) + "px";
+      c.sh.style.opacity = k * 0.6; c.sh.style.transform = "translate(" + (x - w / 2) + "px," + (bot - 10) + "px)";
+    }
+    function setKey(c, k) { c.key = k; c.e.src = src(k); }
+    function finalPos(i) { var s = PSPOTS[i]; return s[4] ? { x: PCX + s[4], b: PTABLE + (s[5] || 0), z: 200 + i * 2 } : { x: PCX + s[0], b: PFLOOR - s[1], z: 10 + i * 2 }; }
+    function settle(c, i) { var s = PSPOTS[i], p = finalPos(i); setKey(c, K(i, s[2])); c.e.style.zIndex = p.z; c.sh.style.zIndex = p.z - 1; place(c, p.x, p.b, s[3]); shadow(c, p.x, p.b, 1); }
+    function anim(d, step, done) { var t0 = null; function f(t) { if (t0 === null) t0 = t; var k = Math.min(1, (t - t0) / d); step(k); if (k < 1) requestAnimationFrame(f); else if (done) done(); } requestAnimationFrame(f); }
+    function nudge(i, x) {
+      coins.forEach(function (o, j) {
+        if (j >= i || !o || o.busy || PSPOTS[j][4]) return;
+        var p = finalPos(j); if (Math.abs(p.x - x) > 70) return;
+        var s = PSPOTS[j], a = rnd(1, 2.2), w = rnd(-0.6, 0.6);
+        anim(140, function (k) { place(o, p.x, p.b + Math.sin(k * Math.PI) * a, s[3] + Math.sin(k * Math.PI) * w); });
+      });
+    }
+    function drop(i) {
+      var s = PSPOTS[i], spill = !!s[4], c = { key: K(i, PFALL[i % 3]), busy: 1 };
+      c.e = img(c.key, 10 + i * 2); c.sh = el("div", "sh"); c.sh.style.zIndex = 9 + i * 2; coins[i] = c;
+      var land = spill ? { x: PCX + s[4] * 0.3, b: PFLOOR - s[1] - 8 } : finalPos(i);
+      var x0 = land.x + rnd(-36, 36), y0 = -60, T = rnd(380, 440), spin = rnd(200, 340) * (Math.random() < 0.5 ? -1 : 1), fl = Math.random() < 0.5 ? 1 : 2, r0 = s[3] - spin;
+      place(c, x0, y0, r0);
+      anim(T, function (k) {           // 1. fall, tumbling
+        var g = k * k, x = x0 + (land.x - x0) * (1 - (1 - k) * (1 - k)), b = y0 + (land.b - y0) * g, ph = Math.cos(k * fl * Math.PI * 2);
+        place(c, x, b, r0 + spin * (1 - (1 - k) * (1 - k)), 1, 0.3 + 0.7 * Math.abs(ph)); shadow(c, land.x, land.b, g * 0.8);
+      }, function () {                 // 2. land: squash, one small hop, rock flat
+        setKey(c, K(i, s[2])); nudge(i, land.x);
+        var hop = rnd(2, 4), rock = rnd(2, 3.5) * (Math.random() < 0.5 ? -1 : 1), rot = s[3];
+        anim(60, function (k) { place(c, land.x, land.b, rot, 1 + 0.07 * Math.sin(k * Math.PI), 1 - 0.14 * Math.sin(k * Math.PI)); shadow(c, land.x, land.b, 1); }, function () {
+          anim(110, function (k) { place(c, land.x, land.b - Math.sin(k * Math.PI) * hop, rot + rock * k); }, function () {
+            anim(220, function (k) { place(c, land.x, land.b, rot + rock * Math.cos(k * Math.PI * 2) * Math.pow(1 - k, 2)); }, function () {
+              if (!spill) { c.busy = 0; settle(c, i); return; }
+              var p = finalPos(i), dir = Math.sign(s[4]);   // 3. spill onto the table
+              c.e.style.zIndex = p.z; c.sh.style.zIndex = p.z - 1;
+              anim(340, function (k) {
+                var x = land.x + (p.x - land.x) * (1 - (1 - k) * (1 - k) * 0.4 - 0.6 * (1 - k)), b = land.b + (p.b - land.b) * k * k;
+                place(c, x, b, rot + dir * 28 * Math.sin(k * Math.PI)); shadow(c, x, p.b, 0.4 + 0.6 * k);
+              }, function () {
+                anim(160, function (k) { place(c, p.x, p.b - Math.sin(k * Math.PI) * 2, s[3] + dir * 4 * (1 - k)); }, function () { c.busy = 0; settle(c, i); });
+              });
+            });
+          });
+        });
+      });
+    }
+    if (COIN_REDUCE || !window.requestAnimationFrame) {
+      for (var i = 0; i < n; i++) { var c = { key: K(i, PSPOTS[i][2]) }; c.e = img(c.key, 1); c.sh = el("div", "sh"); coins[i] = c; settle(c, i); }
+      return;
+    }
+    // the first 15 fall one by one; the rest pour in together (her S397 look)
+    var t = 350;
+    for (var j = 0; j < n; j++) {
+      (function (j) { setTimeout(function () { drop(j); }, t); })(j);
+      t += j < 14 ? (110 + Math.random() * 90) : (30 + Math.random() * 25);
+    }
+  }
+
   // ---- receipt --------------------------------------------------------------
   function renderReceipt(p) {
     LAST_PREVIEW = p;   // success screen reads items / value_of_items / bank-after from here
@@ -769,7 +979,10 @@
     // tile already knew this: an over-cap item renders "Covered" with a +$5 beside it.
     // UNITS: fees.upgrade_total is DOLLARS (claims-native); creditsUsedLine wants CENTS.
     var upgradeCents = Math.round(((p.fees && Number(p.fees.upgrade_total)) || 0) * 100);
-    var subText = creditsUsedLine(lines, upgradeCents);
+    // S398: fees.extra_swap_total is DOLLARS too (same claims-native units).
+    var extraCents = Math.round(((p.fees && Number(p.fees.extra_swap_total)) || 0) * 100);
+    var extraCount = lines.filter(function (l) { return (Number(l.extra_swap_fee) || 0) > 0; }).length;
+    var subText = creditsUsedLine(lines, upgradeCents, extraCents);
 
     // keep the rendered lines for modal open + count value-loss lines
     LAST_LINES = {};
@@ -777,19 +990,19 @@
     lines.forEach(function (l) { LAST_LINES[l.sku] = l; if (l.value_loss) vlCount++; });
 
     var itemsHtml = lines.map(function (ln) {
-      var t = tileFor(ln);
-      var tag = '<span class="ksc-badge ' + t.cls + '">' + esc(t.label) + "</span>";
-      if (t.fee) tag += '<div class="ksc-fee">' + esc(t.fee) + "</div>";
-      if (t.extraFee) tag += '<div class="ksc-fee">' + esc(t.extraFee) + '</div><div class="ksc-note">one extra this month</div>';
-      if (t.note) tag += '<div class="ksc-note">' + esc(t.note) + "</div>";
+      // S398: no "1 credit" badge (every row takes one, the top line counts them) and no
+      // per-row extra-swap fee (the extras line + summary carry it). Only an upgrade fee,
+      // under the tier line so a phone never squeezes the item name.
+      var up = Number(ln.upgrade_fee) || 0;
+      var feeHtml = up > 0 ? '<div class="ksc-fee">+ ' + esc(money(up)) + " upgrade fee</div>" : "";
+      if (ln.coverage === "special_upgrade" && up > 0 && up <= 40) feeHtml += '<div class="ksc-note">designer find</div>';
       var href = "/browse?sku=" + encodeURIComponent(ln.sku);
       var tile =
         '<div class="ksc-item">' +
           '<a class="ksc-itemlink" href="' + esc(href) + '" target="_blank" rel="noopener">' +
             thumbHtml(ln) +
-            '<div class="ksc-main"><div class="nm">' + esc(ln.item_name || ln.sku) + "</div>" + tierDotLine(ln.tier) + "</div>" +
+            '<div class="ksc-main"><div class="nm">' + esc(ln.item_name || ln.sku) + "</div>" + tierDotLine(ln.tier) + feeHtml + "</div>" +
           "</a>" +
-          '<div class="ksc-tag">' + tag + "</div>" +
         "</div>";
 
       // editable-cart extras: change-credit chip (only when a real choice exists)
@@ -832,8 +1045,12 @@
       ? '<div class="ksc-shipnote">' + esc(ship.note) + "</div>"
       : "";
 
+    // S398: the total adds up at a glance. Each fee row shows only when it is above zero.
+    var exEach = extraCount ? moneyShort(lines.filter(function (l) { return (Number(l.extra_swap_fee) || 0) > 0; })[0].extra_swap_fee) : "";
     var summary =
       '<div class="ksc-sum">' +
+        (upgradeCents > 0 ? '<div class="ksc-row"><span class="k">Upgrade fees</span><span>' + esc(moneyc(upgradeCents)) + "</span></div>" : "") +
+        (extraCents > 0 ? '<div class="ksc-row"><span class="k">Extra swaps (' + extraCount + " \u00d7 " + esc(exEach) + ')</span><span>' + esc(moneyc(extraCents)) + "</span></div>" : "") +
         '<div class="ksc-row"><span class="k">Shipping</span><span>' + esc(shipVal) + "</span></div>" +
         shipNote +
         '<div class="ksc-row total"><span class="k">Total today</span><span>' + moneyc(totalCents) + "</span></div>" +
@@ -869,6 +1086,7 @@
       '<p class="ksc-value">Worth about ' + moneyRound(value) + " new</p>" +
       '<p class="ksc-sub">' + esc(subText) + "</p>" +
       '<div class="ksc-seal">' + shieldCheck() + "<span>Every piece meets The Closet Standard</span></div>" +
+      extrasLineHtml(p, lines) +
       '<div class="ksc-items">' + itemsHtml + "</div>" +
       summary +
       '<div style="margin-bottom:22px;">' + shipToBlock() + "</div>" +
@@ -1024,11 +1242,10 @@
     var icTruck = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17h4V5H2v12h3"/><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5v8h1"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="17.5" cy="17.5" r="1.5"/></svg>';
     var icMail = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>';
 
+    // S398: her new order (off the approved mockup). Compact white item rows.
     var itemsHtml = lines.map(function (ln) {
-      return '<div class="ksc-item" style="padding:10px 12px; margin-bottom:8px;">' +
-        thumbHtml(ln) +
-        '<div class="ksc-main"><div class="nm">' + esc(ln.item_name || ln.sku) + "</div></div>" +
-      "</div>";
+      return '<div class="ksc-ty-item">' + thumbHtml(ln) +
+        '<div class="ksc-main"><div class="nm">' + esc(ln.item_name || ln.sku) + "</div></div></div>";
     }).join("");
 
     var payLine = charged === 0
@@ -1039,14 +1256,6 @@
     var mailLine = '<div style="display:flex; align-items:center; gap:9px; color:var(--ks-muted);">' + icMail +
       "<span>We\u2019ll email tracking when it ships</span></div>";
 
-    // lifetime saved: render ONLY if the payload carries it (not wired yet -> hidden, never blocks)
-    var lifetime = (p.lifetime && p.lifetime.saved_dollars != null) ? Number(p.lifetime.saved_dollars) : null;
-    var lifetimeBlock = (lifetime != null)
-      ? '<div style="border-top:1px solid var(--ks-line); margin-top:11px; padding-top:9px;">' +
-          '<div style="font-size:1.05rem; font-weight:700; color:var(--ks-orange); line-height:1.1;">' + esc(moneyRound(lifetime)) + "</div>" +
-          '<div style="font-size:.74rem; color:var(--ks-muted); margin-top:3px;">Saved with KidSwaps so far</div></div>'
-      : "";
-
     function step(label, active) {
       var dot = active
         ? '<div style="width:16px; height:16px; border-radius:50%; background:var(--ks-orange); margin:0 auto 6px;"></div>'
@@ -1056,31 +1265,26 @@
         '<span style="font-size:.7rem; ' + tx + '">' + esc(label) + "</span></div>";
     }
     var timeline =
-      '<div style="background:var(--ks-card); border:1px solid var(--ks-line); border-radius:12px; padding:15px 14px; margin:12px 0;">' +
+      '<div style="background:#fff; border:1px solid var(--ks-line); border-radius:12px; padding:15px 14px; margin:16px 0;">' +
         '<div style="display:flex; justify-content:space-between; position:relative;">' +
           '<div style="position:absolute; top:7px; left:16%; right:16%; height:2px; background:var(--ks-line);"></div>' +
           step("Confirmed", true) + step("Shipped", false) + step("Delivered", false) +
         "</div>" +
       "</div>";
 
-    // savings = retail total (value_of_items); full-width gold; hidden when the retail figure is missing/0 so we never show "$0"
+    // savings = retail total (value_of_items). S398: no box, the number itself is her gold.
+    // Hidden when the retail figure is missing or 0, so we never show "$0".
     var savingsBlock = (value > 0)
-      ? '<div style="background:var(--ks-card); border:1px solid var(--ks-line); border-radius:12px; padding:16px; margin-bottom:14px; text-align:center;">' +
-          '<div style="font-size:2.1rem; font-weight:700; color:var(--ks-gold); line-height:1;">' + esc(moneyRound(value)) + "</div>" +
-          '<div style="font-size:.8rem; color:var(--ks-ink); margin-top:5px;">What you\u2019d pay for these new</div>' +
-        "</div>"
+      ? '<div class="ksc-ty-save"><div class="n">' + esc(moneyRound(value)) + '</div>' +
+          '<div class="l">What you\u2019d pay for these new</div></div>'
       : "";
-    // ⚠⚠⚠ "The more you send, the more you earn" IS DELETED OUTRIGHT - HER RULING S215,
-    // "just lose it." Heading and sub, both gone. Do NOT reposition it, restyle it, or
-    // move it below the coins. She saw the placement problem and chose removal over
-    // restyling, superseding her own "can be styled more" earlier in the same session.
-    // ⚠ THE CARD AND ITS BORDER WENT WITH IT: the band existed to hold two things side by
-    // side, and a bordered box around a lone right-aligned coin row is a frame around
-    // nothing. #ksc-bank already carries justify-content:flex-end.
-    // ⚠⚠ ON THIS SCREEN THE BALANCE IS GENUINELY ZERO - she has just spent the credits -
-    // and the tier line is empty with it. THAT IS THE REAL RENDER AND SHE HAS ACCEPTED IT
-    // (S216: "i want her to know her balance"). Do not hide the coins to avoid a zero.
-    var bankBandHtml = '<div style="margin:6px 0 10px;">' + coinsHtml(p.bank, p.cap, lines) + "</div>";
+
+    // ⚠⚠ THE THANK-YOU IS NOW GREEN TEXT WITH NO PANEL - HER RULING S395/S398. The S216
+    // green panel (#309359 fill, cream text) is retired. Her green is #309359, one green.
+    var leaf = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg>';
+    var thanks = '<div class="ksc-ty-thanks">' + leaf +
+      '<div class="t">Thank you for swapping</div>' +
+      '<div class="b">You chose a new way to shop for your kids, and gave good things a second life.</div></div>';
 
     // greet by name when present; count-neutral, drops cleanly to "You're all set." with no fallback word
     var firstName = displayName(msField("first-name"));
@@ -1088,51 +1292,26 @@
 
     // order number = first 8 hex of the idempotency key (per-checkout identity; exact-match lookup on claim_idempotency PK)
     var orderNo = IDEM_KEY ? ("#" + String(IDEM_KEY).replace(/-/g, "").slice(0, 8).toUpperCase()) : "";
-    var orderNoHtml = orderNo
-      ? '<div style="margin:0 0 14px;"><span style="display:inline-block; background:#efe6d3; color:#6b6152; font-size:.75rem; font-weight:700; letter-spacing:.02em; padding:4px 11px; border-radius:20px;">Order ' + esc(orderNo) + "</span></div>"
-      : "";
-
-    var shipToHtml = shipToBlock();
+    var orderNoHtml = orderNo ? '<span class="ksc-ty-order">Order ' + esc(orderNo) + "</span>" : "";
 
     setHtml(
-      bankBandHtml +
-      '<div style="background:var(--ks-card); border:1px solid var(--ks-line); border-radius:12px; padding:16px; margin:6px 0 12px;">' +
-        '<h1 class="ksc-head" style="font-size:2.4rem; margin:0 0 2px;">' + headline + "</h1>" +
-        orderNoHtml +
-        itemsHtml +
-        '<div style="border-top:1px solid var(--ks-line); margin-top:6px; padding-top:12px; display:flex; flex-direction:column; gap:8px; font-size:.9rem;">' +
-          payLine + shipLine + mailLine +
-        "</div>" +
-        shipToHtml +
-        // ⚠⚠ THE THANK-YOU PANEL IS FIVE COLOUR VALUES AND ALL FIVE MOVED - HER RULING
-        // S216, off a rendered mockup. Was: fill #f4e3d9, circle #e9c9b8, leaf #c0491f,
-        // heading ink, body #8a5f4d. Now her brand green #309359 with cream #EEEFE3 text,
-        // the circle a WHITE TINT over the fill (not a second green - #2A7F4C was Claude's
-        // invention and she withdrew it: "my green shade has always been 309359"), and the
-        // leaf cream.
-        // ⚠⚠⚠ THIS KNOWINGLY REVERSES HER OWN S72/S73 RULE - "any green background takes
-        // white text ... DARKEN THE GREEN, NEVER WHITEN THE TEXT" - FOR THIS ELEMENT ONLY.
-        // Cream reads ~3.5 on #309359 and white 3.86, both UNDER the 4.5 AA bar for the
-        // small body line. SHE CHOSE IT HAVING SEEN IT RENDER, which beats the
-        // measurement. The rule still binds /signup's toy card, and #1F5C38 remains the
-        // DASHBOARD's green - two greens, deliberately. DO NOT "correct" this back.
-        '<div style="background:#309359; border-radius:12px; padding:15px; margin-top:14px; display:flex; gap:12px; align-items:flex-start;">' +
-          '<div style="flex-shrink:0; width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,.18); color:#EEEFE3; display:flex; align-items:center; justify-content:center;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg></div>' +
-          '<div>' +
-            '<div style="font-weight:700; font-size:1.05rem; color:#EEEFE3; margin-bottom:4px;">Thank you for swapping</div>' +
-            '<div style="font-size:.88rem; color:#EEEFE3; line-height:1.55;">You chose a new way to shop for your kids, and gave good things a second life.</div>' +
-          "</div>" +
-        "</div>" +
-      "</div>" +
-      timeline +
+      '<h1 class="ksc-head" style="font-size:2.4rem; margin:0 0 6px;">' + headline + "</h1>" +
+      orderNoHtml +
+      thanks +
+      '<div class="ksc-ty-paid">' + payLine + shipLine + mailLine + "</div>" +
       savingsBlock +
-      '<div style="display:flex; gap:8px;">' +
+      pileHtml(p.bank, p.cap) +
+      '<div class="ksc-ty-h">Your order</div>' +
+      itemsHtml +
+      shipToBlock() +
+      timeline +
+      '<div class="ksc-ty-btns">' +
         '<a class="ksc-btn" href="/dashboard" style="flex:1; width:auto; font-size:.9rem; padding:14px 10px; text-decoration:none; text-align:center; box-sizing:border-box;">Go to my dashboard</a>' +
         '<a href="/browse" style="flex:1; box-sizing:border-box; text-align:center; background:transparent; color:var(--ks-orange); border:1px solid var(--ks-line); border-radius:50px; padding:14px 10px; font-weight:700; font-size:.9rem; text-decoration:none;">Keep browsing</a>' +
       "</div>"
     );
 
-    armCoins();
+    armPile();
   }
 
   // ---- block / failure / error / loading ------------------------------------
