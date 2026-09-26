@@ -950,11 +950,44 @@
       return;
     }
     // the first 15 fall one by one; the rest pour in together (her S397 look)
-    var t = 350;
-    for (var j = 0; j < n; j++) {
-      (function (j) { setTimeout(function () { drop(j); }, t); })(j);
-      t += j < 14 ? (110 + Math.random() * 90) : (30 + Math.random() * 25);
+    function pour() {
+      var t = 350;
+      for (var j = 0; j < n; j++) {
+        (function (j) { setTimeout(function () { drop(j); }, t); })(j);
+        t += j < 14 ? (110 + Math.random() * 90) : (30 + Math.random() * 25);
+      }
     }
+    whenPileReady(box, pour);
+  }
+
+  // S400, hers: the coins wait until the confetti is done, and until the bowl is on
+  // screen (on a phone the bowl starts below the fold, so they wait for her to scroll).
+  // Both must be true. The bowl sits empty until then; the count lines are already text.
+  // ⚠ FAILURE DIRECTION: no confetti library, no promise, or reduced motion counts as
+  // "confetti done"; a stuck promise is capped at 6s; no IntersectionObserver counts as
+  // "on screen". Worst case is the old behaviour, never a bowl that never fills on view.
+  function whenPileReady(box, go) {
+    var fired = false, confettiDone = false, onScreen = false;
+    function tryGo() { if (!fired && confettiDone && onScreen) { fired = true; go(); } }
+    var p = CONFETTI_DONE;
+    if (p && typeof p.then === "function") {
+      var cap = setTimeout(function () { confettiDone = true; tryGo(); }, 6000);
+      var fin = function () { clearTimeout(cap); confettiDone = true; tryGo(); };
+      p.then(fin, fin);
+    } else {
+      confettiDone = true;
+    }
+    if (typeof window.IntersectionObserver !== "function") {
+      onScreen = true;
+    } else {
+      var io = new IntersectionObserver(function (es) {
+        for (var k = 0; k < es.length; k++) {
+          if (es[k].isIntersecting) { onScreen = true; io.disconnect(); tryGo(); return; }
+        }
+      }, { threshold: 0.6 });
+      io.observe(box);
+    }
+    tryGo();
   }
 
   // ---- receipt --------------------------------------------------------------
@@ -1365,12 +1398,16 @@
   }
 
   // ---- celebration burst (decorative only; never load-bearing) --------------
+  // S400: canvas-confetti returns a promise that settles when the burst has faded.
+  // The bowl's pour waits on it (whenPileReady). Stays null when nothing fires.
+  var CONFETTI_DONE = null;
   function ksConfetti() {
     if (typeof window.confetti !== "function") return;   // library absent -> silent no-op
     if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     var KS = ["#E54F25", "#EDA920", "#309359", "#1C4A91", "#F491A9"];
-    window.confetti({ particleCount: 70, angle: 60,  spread: 60, startVelocity: 55, origin: { x: 0, y: 0.9 }, colors: KS, zIndex: 9999 });
-    window.confetti({ particleCount: 70, angle: 120, spread: 60, startVelocity: 55, origin: { x: 1, y: 0.9 }, colors: KS, zIndex: 9999 });
+    var a = window.confetti({ particleCount: 70, angle: 60,  spread: 60, startVelocity: 55, origin: { x: 0, y: 0.9 }, colors: KS, zIndex: 9999 });
+    var b = window.confetti({ particleCount: 70, angle: 120, spread: 60, startVelocity: 55, origin: { x: 1, y: 0.9 }, colors: KS, zIndex: 9999 });
+    if (typeof Promise === "function" && a && typeof a.then === "function") CONFETTI_DONE = Promise.all([a, b]);
   }
 
   function route(data, status) {
@@ -1381,8 +1418,8 @@
         var bd = document.querySelectorAll('.ks-cart-badge');
         for (var bi = 0; bi < bd.length; bi++) { bd[bi].textContent = ''; bd[bi].style.display = 'none'; }
       } catch (e) {}  // clear browse bag on confirmed commit (hygiene, §1)
-      renderSuccess(data);
       try { ksConfetti(); } catch (e) {}                        // celebration burst; decorative, never blocks the screen
+      renderSuccess(data);                                      // S400: after the burst starts, so the bowl can wait on it
       return;
     }
     if (data && data.can_claim === false && data.block_reason) { renderBlock(data.block_reason, data.note); return; }
