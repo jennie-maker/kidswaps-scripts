@@ -76,6 +76,22 @@
  *       over-cap item renders "Covered" with a +$5 beside it.
  *   ⚠ The button label + Total row still use total_cents, correctly — she really
  *     does owe it. ONLY the subline's input changed.
+ *
+ * rev S395 (2026-09-25), her nine approved checkout changes, one commit:
+ *   (a) coin gate matches the dashboard: a class shows when the plan covers it OR she
+ *       holds credits in it (S218, "never anything they dont have").
+ *   (b) "soonest to expire" deleted from the credit picker (no-expiry ruling S220).
+ *   (c) each row says what it charges: "1 credit" / "+ $17.25 upgrade fee".
+ *   (d) each row shows its tier dot. SIZE LEFT OUT, hers S395 ("not worried about the
+ *       size right now"); the checkout fn does not send a size anyway.
+ *   (e) full shipping address shown before Confirm (same Memberstack fields as the
+ *       success screen). The Change link waits on a dashboard link (core 1B item 6).
+ *   (f) the subline is a plain count: "2 credits used, plus $23.25 in upgrade fees".
+ *   (g) button: "Confirm my swap" / "Confirm my swaps", " · $X" when there is a charge.
+ *   (h) coin label "Clothes" -> "Clothing".
+ *   (i) success screen coins show the balance AFTER the order (by_class.after), and the
+ *       tier rows are worked out on the page (now minus the tier each line used), since
+ *       the fn sends no after-figure per tier.
  * ========================================================================== */
 (function () {
   "use strict";
@@ -356,6 +372,7 @@
     ID + " .ksc-itemlink:hover .ksc-thumb{opacity:.88;}",
     ID + " .ksc-main{flex:1 1 auto; min-width:0;}",
     ID + " .ksc-main .nm{font-weight:700; font-size:.98rem; line-height:1.25; color:var(--ks-ink);}",
+    ID + " .ksc-tierline{display:flex; align-items:center; gap:6px; margin-top:4px; font-size:.78rem; font-weight:600; color:var(--ks-muted);}",
     ID + " .ksc-tag{flex:0 0 auto; text-align:right;}",
     ID + " .ksc-badge{display:inline-block; font-size:.78rem; font-weight:700; padding:3px 9px; border-radius:999px; white-space:nowrap;}",
     ID + " .ksc-badge.covered{background:var(--ks-green); color:#fff;}",
@@ -501,25 +518,35 @@
   // must receive: only an UPGRADE fee means the member's credit fell short of
   // the item. Shipping and extra-swap are NOT shortfalls (§2). Feeding this
   // total_cents is the bug fixed 2026-07-12 — do not "simplify" it back.
-  function savingsSubline(upgradeCents, valueDollars) {
-    if ((Number(upgradeCents) || 0) === 0) return { text: "Your credits covered it all", flat: false };
-    var valueCents = Math.round((Number(valueDollars) || 0) * 100);
-    if (valueCents <= 0) return { text: "Here's your swap", flat: true };
-    var ratio = upgradeCents / valueCents;
-    if (ratio <= 0.34) return { text: "Your credits covered most of it", flat: false };
-    if (ratio <= 0.67) return { text: "Your credits covered the bulk of it", flat: false };
-    return { text: "Here's your swap", flat: true };
+  // (f) S395, hers: a plain count. "2 credits used, plus $23.25 in upgrade fees".
+  // Only the UPGRADE total goes in the "plus" (see the warning above: shipping and
+  // extra-swap are not upgrade fees). UNITS: upgradeCents is CENTS.
+  function creditsUsedLine(lines, upgradeCents) {
+    var n = 0;
+    (lines || []).forEach(function (l) { if (l && l.credit_applied) n++; });
+    var t = n + (n === 1 ? " credit used" : " credits used");
+    if ((Number(upgradeCents) || 0) > 0) t += ", plus " + moneyc(upgradeCents) + " in upgrade fees";
+    return t;
+  }
+
+  // (d) S395: the item's tier with its dot, e.g. "● Elevated". Size left out (hers S395).
+  function tierDotLine(t) {
+    var map = { essentials: ["Essentials", "ks-dot--ess"], elevated: ["Elevated", "ks-dot--elev"], special: ["Special", "ks-dot--spec"] };
+    var m = map[String(t || "").toLowerCase()];
+    if (!m) return "";
+    return '<div class="ksc-tierline"><i class="ks-dot ' + m[1] + '"></i><span>' + esc(m[0]) + "</span></div>";
   }
 
   // ---- coverage tile --------------------------------------------------------
   function tileFor(line) {
     var up = Number(line.upgrade_fee) || 0, ex = Number(line.extra_swap_fee) || 0;
     switch (line.coverage) {
-      case "covered": return { cls: "covered", label: "Covered", fee: null, note: null };
-      case "covered_extra": return { cls: "covered", label: "Covered", fee: ex ? "+" + money(ex) : null, note: "one extra this month" };
-      case "upgrade": return { cls: "charge", label: "Credit applied", fee: money(up), extraFee: ex ? "+" + money(ex) : null, note: null };
-      case "special_upgrade": return { cls: "charge", label: "Special credit applied", fee: money(up), extraFee: ex ? "+" + money(ex) : null, note: up <= 40 ? "designer find" : null };
-      default: return { cls: "charge", label: "Credit applied", fee: (up || ex) ? money(up || ex) : null, note: null };
+      // (c) S395, hers: each row says what its charge is. "1 credit + $17.25 upgrade fee".
+      case "covered": return { cls: "covered", label: "1 credit", fee: null, note: null };
+      case "covered_extra": return { cls: "covered", label: "1 credit", fee: ex ? "+" + money(ex) : null, note: "one extra this month" };
+      case "upgrade": return { cls: "charge", label: "1 credit", fee: up ? "+ " + money(up) + " upgrade fee" : null, extraFee: ex ? "+" + money(ex) : null, note: null };
+      case "special_upgrade": return { cls: "charge", label: "1 credit", fee: up ? "+ " + money(up) + " upgrade fee" : null, extraFee: ex ? "+" + money(ex) : null, note: up <= 40 ? "designer find" : null };
+      default: return { cls: "charge", label: "1 credit", fee: up ? "+ " + money(up) + " upgrade fee" : (ex ? "+" + money(ex) : null), note: null };
     }
   }
 
@@ -574,13 +601,34 @@
   // S215. "0 left after this" is retired. Her reason: "we should always show what they
   // currently have. after their order is placed, theyll see their new balance on their
   // dashboard." Both figures ride the payload; read .now, never .after.
-  function coinsHtml(bank, cap) {
+  // (i) S395: afterLines is passed ONLY by the success screen. Then the number is
+  // by_class.after and the tier rows are now minus what each line used (the fn sends
+  // no per-tier after). The receipt passes nothing and still reads .now (S215 ruling).
+  function coinsHtml(bank, cap, afterLines) {
     var bc = (bank && bank.by_class) || {};
     var bt = (bank && bank.by_class_tier) || {};
+    var useAfter = Array.isArray(afterLines);
+    if (useAfter) {
+      var btAfter = {};
+      Object.keys(bt).forEach(function (k) {
+        btAfter[k] = {};
+        Object.keys(bt[k] || {}).forEach(function (t) { btAfter[k][t] = parseFloat(bt[k][t]) || 0; });
+      });
+      afterLines.forEach(function (l) {
+        var k = l && l.item_class, t = l && l.credit_applied && l.credit_applied.tier;
+        if (k && t && btAfter[k] && btAfter[k][t] != null) btAfter[k][t] = Math.max(0, btAfter[k][t] - 1);
+      });
+      bt = btAfter;
+    }
+    function countFor(key) {
+      var v = bc[key];
+      if (!v) return 0;
+      var x = useAfter ? v.after : v.now;
+      return x != null ? x : 0;
+    }
     var out = [];
     function coin(key, label) {
-      var v = bc[key];
-      var n = (v && v.now != null) ? v.now : 0;
+      var n = countFor(key);
       return '<div class="ks-coin-unit">' +
           '<div class="ks-coin">' +
             '<img class="ks-coin-img" src="' + COIN_FRAMES[0] + '" alt="">' +
@@ -590,8 +638,15 @@
           '<div class="ks-coin-tier">' + coinTierHTML(bt[key]) + "</div>" +
         "</div>";
     }
-    if (cap && cap.clothing && Number(cap.clothing.limit) > 0) out.push(coin("clothing", "Clothes"));
-    if (cap && cap.toy && Number(cap.toy.limit) > 0) out.push(coin("toy", "Toys"));
+    // (a) S395, ruled S218: show a class when her plan covers it OR she holds credits in
+    // it, matching the dashboard. Gate reads the CURRENT bank so a coin never vanishes
+    // from the success screen just because this order spent it.
+    function showClass(key) {
+      var v = bc[key];
+      return (cap && cap[key] && Number(cap[key].limit) > 0) || (Number(v && v.now) > 0);
+    }
+    if (showClass("clothing")) out.push(coin("clothing", "Clothing"));
+    if (showClass("toy")) out.push(coin("toy", "Toys"));
     if (!out.length) return "";
     return '<div id="ksc-bank"><div class="ks-coins-row">' + out.join("") + "</div></div>";
   }
@@ -657,6 +712,35 @@
     }, delay || 0);
   }
 
+  // (e) S395: shared by the receipt and the success screen (same fields, same look).
+  function shipToBlock() {
+    // shipping-to (Memberstack customFields; render only when a street is on file; apartment line only when present)
+    var shStreet = msField("shipping-street");
+    var shApt    = msField("shipping-apartment-or-unit");
+    var shCity   = msField("shipping-city");
+    var shState  = msField("shipping-state");
+    var shZip    = msField("shipping-zip");
+    var shName   = [displayName(msField("first-name")), displayName(msField("last-name"))].filter(Boolean).join(" ");
+    var cityStateZip = "";
+    if (shCity || shState || shZip) {
+      cityStateZip = shCity;
+      if (shState) cityStateZip += (cityStateZip ? ", " : "") + shState.toUpperCase();
+      if (shZip)   cityStateZip += (cityStateZip ? " " : "") + shZip;
+    }
+    return shStreet
+      ? '<div style="border-top:1px solid var(--ks-line); margin-top:14px; padding-top:12px;">' +
+          '<div style="font-weight:700; font-size:1rem; color:var(--ks-ink); margin-bottom:6px;">Shipping to</div>' +
+          '<div style="font-size:.9rem; color:var(--ks-muted); line-height:1.6;">' +
+            (shName ? esc(shName) + "<br>" : "") +
+            esc(shStreet) + "<br>" +
+            (shApt ? esc(shApt) + "<br>" : "") +
+            (cityStateZip ? esc(cityStateZip) : "") +
+          "</div>" +
+        "</div>"
+      : "";
+
+  }
+
   // ---- receipt --------------------------------------------------------------
   function renderReceipt(p) {
     LAST_PREVIEW = p;   // success screen reads items / value_of_items / bank-after from here
@@ -677,9 +761,9 @@
     // shortfall. Extra-swap is a QUANTITY fee (she still had to hold a credit to use
     // it) and shipping is a LOGISTICS fee — neither says her credit fell short. The
     // tile already knew this: an over-cap item renders "Covered" with a +$5 beside it.
-    // UNITS: fees.upgrade_total is DOLLARS (claims-native); savingsSubline wants CENTS.
+    // UNITS: fees.upgrade_total is DOLLARS (claims-native); creditsUsedLine wants CENTS.
     var upgradeCents = Math.round(((p.fees && Number(p.fees.upgrade_total)) || 0) * 100);
-    var sub = savingsSubline(upgradeCents, value);
+    var subText = creditsUsedLine(lines, upgradeCents);
 
     // keep the rendered lines for modal open + count value-loss lines
     LAST_LINES = {};
@@ -697,7 +781,7 @@
         '<div class="ksc-item">' +
           '<a class="ksc-itemlink" href="' + esc(href) + '" target="_blank" rel="noopener">' +
             thumbHtml(ln) +
-            '<div class="ksc-main"><div class="nm">' + esc(ln.item_name || ln.sku) + "</div></div>" +
+            '<div class="ksc-main"><div class="nm">' + esc(ln.item_name || ln.sku) + "</div>" + tierDotLine(ln.tier) + "</div>" +
           "</a>" +
           '<div class="ksc-tag">' + tag + "</div>" +
         "</div>";
@@ -756,7 +840,9 @@
         " a higher-value credit than the item needed. I\u2019m good with that.</span></label>"
       : "";
 
-    var btnLabel = totalCents > 0 ? "Confirm swap \u00b7 " + moneyc(totalCents) : "Confirm swap";
+    // (g) S395, hers: "Confirm my swaps", singular for one item, amount only when charged.
+    var btnBase = lines.length === 1 ? "Confirm my swap" : "Confirm my swaps";
+    var btnLabel = totalCents > 0 ? btnBase + " \u00b7 " + moneyc(totalCents) : btnBase;
 
     // modal scaffold (populated on chip tap; hidden until then)
     var modalHtml =
@@ -775,10 +861,11 @@
       coinsHtml(p.bank, p.cap) +
       '<h1 class="ksc-head">' + esc(head) + "</h1>" +
       '<p class="ksc-value">Worth about ' + moneyRound(value) + " new</p>" +
-      '<p class="ksc-sub">' + esc(sub.text) + "</p>" +
+      '<p class="ksc-sub">' + esc(subText) + "</p>" +
       '<div class="ksc-seal">' + shieldCheck() + "<span>Every piece meets The Closet Standard</span></div>" +
       '<div class="ksc-items">' + itemsHtml + "</div>" +
       summary +
+      shipToBlock() +
       vlGate +
       '<button class="ksc-btn" id="ksc-confirm" type="button">' + esc(btnLabel) + "</button>" +
       '<div class="ksc-secure">' + lockIcon() + "<span>Secured by Stripe</span></div>" +
@@ -837,7 +924,6 @@
       : '<span class="fee">+' + moneyc(o.total_owed_cents) + "</span>";
     var subs = [];
     if (o.value_loss) subs.push("uses a higher-value credit");
-    if (o.is_soonest) subs.push("soonest to expire");
     var sub = subs.length ? '<div class="osub">' + esc(subs.join(" \u00b7 ")) + "</div>" : "";
     var cur = isCurrent ? '<span class="curtag">Current</span>' : "";
     return '<button type="button" class="ksc-opt' + (isCurrent ? " is-current" : "") + '" data-credit="' + esc(o.credit_id) + '">' +
@@ -988,7 +1074,7 @@
     // ⚠⚠ ON THIS SCREEN THE BALANCE IS GENUINELY ZERO - she has just spent the credits -
     // and the tier line is empty with it. THAT IS THE REAL RENDER AND SHE HAS ACCEPTED IT
     // (S216: "i want her to know her balance"). Do not hide the coins to avoid a zero.
-    var bankBandHtml = '<div style="margin:6px 0 10px;">' + coinsHtml(p.bank, p.cap) + "</div>";
+    var bankBandHtml = '<div style="margin:6px 0 10px;">' + coinsHtml(p.bank, p.cap, lines) + "</div>";
 
     // greet by name when present; count-neutral, drops cleanly to "You're all set." with no fallback word
     var firstName = displayName(msField("first-name"));
@@ -1000,30 +1086,7 @@
       ? '<div style="margin:0 0 14px;"><span style="display:inline-block; background:#efe6d3; color:#6b6152; font-size:.75rem; font-weight:700; letter-spacing:.02em; padding:4px 11px; border-radius:20px;">Order ' + esc(orderNo) + "</span></div>"
       : "";
 
-    // shipping-to (Memberstack customFields; render only when a street is on file; apartment line only when present)
-    var shStreet = msField("shipping-street");
-    var shApt    = msField("shipping-apartment-or-unit");
-    var shCity   = msField("shipping-city");
-    var shState  = msField("shipping-state");
-    var shZip    = msField("shipping-zip");
-    var shName   = [displayName(msField("first-name")), displayName(msField("last-name"))].filter(Boolean).join(" ");
-    var cityStateZip = "";
-    if (shCity || shState || shZip) {
-      cityStateZip = shCity;
-      if (shState) cityStateZip += (cityStateZip ? ", " : "") + shState.toUpperCase();
-      if (shZip)   cityStateZip += (cityStateZip ? " " : "") + shZip;
-    }
-    var shipToHtml = shStreet
-      ? '<div style="border-top:1px solid var(--ks-line); margin-top:14px; padding-top:12px;">' +
-          '<div style="font-weight:700; font-size:1rem; color:var(--ks-ink); margin-bottom:6px;">Shipping to</div>' +
-          '<div style="font-size:.9rem; color:var(--ks-muted); line-height:1.6;">' +
-            (shName ? esc(shName) + "<br>" : "") +
-            esc(shStreet) + "<br>" +
-            (shApt ? esc(shApt) + "<br>" : "") +
-            (cityStateZip ? esc(cityStateZip) : "") +
-          "</div>" +
-        "</div>"
-      : "";
+    var shipToHtml = shipToBlock();
 
     setHtml(
       bankBandHtml +
