@@ -514,13 +514,33 @@
     ID + " .ksc-ty-btns{display:flex; gap:8px;}",
     // THE BOWL (her S397 look). World is 460x305 and scales to the box width.
     ID + " .ksc-pile{position:relative; max-width:190px; margin:0 auto;}",
-    ID + " .ksc-pile-scene{position:relative; overflow:hidden;}",
+    ID + " .ksc-pile-scene{position:relative; overflow:hidden; -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 9%); mask-image:linear-gradient(to bottom,transparent 0,#000 9%);}",   // S400: no hard top edge
     ID + " .ksc-pile-world{position:absolute; left:0; top:0; width:460px; height:305px; transform-origin:0 0;}",
     ID + " .ksc-pile-world img, " + ID + " .ksc-pile-world .sh{position:absolute; left:0; top:0; will-change:transform; max-width:none;}",
     ID + " .ksc-pile-world .sh{border-radius:50%; background:rgba(33,27,26,.55); filter:blur(4px);}",
-    ID + " .ksc-pile-lines{text-align:center; display:flex; flex-direction:column; align-items:center; gap:2px; margin:0 0 4px;}",
-    ID + " .ksc-pile-line{display:inline-flex; align-items:center; gap:7px; font-family:'Instrument Serif',Georgia,serif; font-size:18px; color:var(--ks-ink);}",
-    ID + " .ksc-pile-line img{width:16px; height:auto;}",
+    // S400: the approved S397 bank, under the bowl and in the tier panel
+    ID + " .ksc-bankwrap{position:relative; margin:0 0 26px;}",
+    ID + " .ksc-pile-meta{text-align:center; padding:2px 16px 0;}",
+    ID + " .ksc-pile-cap{font-family:'Instrument Serif',Georgia,serif; font-size:22px; color:var(--ks-ink); margin:0 0 6px;}",
+    ID + " .ksc-pile-tiers{display:flex; flex-direction:column; align-items:center; gap:6px; font-size:14px; line-height:1.5;}",
+    ID + " .ksc-pk{display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:2px 14px;}",
+    ID + " .ksc-pk .lab{display:inline-flex; align-items:center; gap:8px;}",
+    ID + " .ksc-pk img{width:18px; height:auto;}",
+    ID + " .ksc-pk b{font-weight:600; color:var(--ks-ink);}",
+    ID + " .ksc-pk .tl{display:flex; flex-wrap:wrap; justify-content:center; gap:2px 14px;}",
+    ID + " .ksc-tw-ess{color:#6E6A63;}" + ID + " .ksc-tw-elev{color:#1c4a91; font-weight:600;}" + ID + " .ksc-tw-spec{color:#e54f25; font-weight:600;}",
+    ID + " .ksc-pile-hint{margin:8px auto 0; display:block; border:0; background:none; padding:4px 8px; font-family:inherit; font-size:13px; color:#6E6A63; text-decoration:underline; text-underline-offset:3px; border-radius:6px; cursor:pointer;}",
+    ID + " .ksc-pile-hint:focus-visible{outline:2px solid var(--ks-ink); outline-offset:2px;}",
+    ID + " .ksc-pile-hint .tp{display:none;}",
+    "@media (hover:none){" + ID + " .ksc-pile-hint .hv{display:none;}" + ID + " .ksc-pile-hint .tp{display:inline;}}",
+    ID + " .ksc-pile{cursor:pointer;}",
+    ID + " .ksc-pile-pop{position:absolute; left:50%; bottom:calc(100% - 34px); transform:translate(-50%,8px); width:min(92%,420px); box-sizing:border-box; background:#fff; border:1px solid var(--ks-line); border-radius:16px; box-shadow:0 10px 30px rgba(30,26,25,.14); padding:16px 18px 14px; text-align:center; opacity:0; pointer-events:none; transition:opacity .18s ease, transform .18s ease; z-index:600;}",
+    ID + " .ksc-pile-pop.open{opacity:1; pointer-events:auto; transform:translate(-50%,0);}",
+    ID + " .ksc-pile-pop .pop-h{font-family:'Instrument Serif',Georgia,serif; font-size:19px; color:var(--ks-ink); margin:0 0 10px;}",
+    ID + " .ksc-pile-pop .ksc-pile-tiers{gap:10px;}",
+    ID + " .ksc-pile-pop .ksc-pk{flex-direction:column; gap:2px;}",
+    ID + " .ksc-pile-pop .pop-p{font-size:13px; line-height:1.5; color:#6E6A63; margin:12px 0 0;}",
+    "@media (prefers-reduced-motion:reduce){" + ID + " .ksc-pile-pop{transition:none;}}",
     "@media (max-width:480px){",
     ID + " .ksc-ty-btns{flex-direction:column;}",
     "}",
@@ -688,22 +708,25 @@
   // (i) S395: afterLines is passed ONLY by the success screen. Then the number is
   // by_class.after and the tier rows are now minus what each line used (the fn sends
   // no per-tier after). The receipt passes nothing and still reads .now (S215 ruling).
+  // S400: one copy of the tier-after rule, shared by the top coins and the bowl, so the
+  // two can never disagree. Current tiers minus the credit tier each line used.
+  function tiersAfter(bank, lines) {
+    var bt = (bank && bank.by_class_tier) || {}, out = {};
+    Object.keys(bt).forEach(function (k) {
+      out[k] = {};
+      Object.keys(bt[k] || {}).forEach(function (t) { out[k][t] = parseFloat(bt[k][t]) || 0; });
+    });
+    (lines || []).forEach(function (l) {
+      var k = l && l.item_class, t = l && l.credit_applied && l.credit_applied.tier;
+      if (k && t && out[k] && out[k][t] != null) out[k][t] = Math.max(0, out[k][t] - 1);
+    });
+    return out;
+  }
   function coinsHtml(bank, cap, afterLines) {
     var bc = (bank && bank.by_class) || {};
     var bt = (bank && bank.by_class_tier) || {};
     var useAfter = Array.isArray(afterLines);
-    if (useAfter) {
-      var btAfter = {};
-      Object.keys(bt).forEach(function (k) {
-        btAfter[k] = {};
-        Object.keys(bt[k] || {}).forEach(function (t) { btAfter[k][t] = parseFloat(bt[k][t]) || 0; });
-      });
-      afterLines.forEach(function (l) {
-        var k = l && l.item_class, t = l && l.credit_applied && l.credit_applied.tier;
-        if (k && t && btAfter[k] && btAfter[k][t] != null) btAfter[k][t] = Math.max(0, btAfter[k][t] - 1);
-      });
-      bt = btAfter;
-    }
+    if (useAfter) bt = tiersAfter(bank, afterLines);
     function countFor(key) {
       var v = bc[key];
       if (!v) return 0;
@@ -856,20 +879,92 @@
   function pileLabel(n, word) { return String(n) + " " + word + " credit" + (n === 1 ? "" : "s"); }
 
   // clothing / toy counts AFTER this order (by_class.after, the S395 success rule).
-  function pileHtml(bank, cap) {
+  // S400, hers: everything under the bowl matches the approved S397 page
+  // (https://claude.ai/artifact/FSL6eyHZYwZuSExbkvhpZ7): the total, one line per kind with a
+  // small coin, "Hover to see your tiers" / "Tap to see your tiers", and the white
+  // "Your credits by tier" panel with the tier words in colour. "They should always look
+  // the same" (hers S400): change the approved page and this together, never one alone.
+  // Fonts map Georgia -> Instrument Serif and system -> the site's body font.
+  // Panel heading, panel line and the total are the test page's placeholders (copy owed, hers).
+  function pileTierWords(obj) {
+    var order = [["essentials","Essential","Essentials","ess"], ["elevated","Elevated","Elevated","elev"], ["special","Special","Special","spec"]];
+    var parts = [];
+    order.forEach(function (t) {
+      var n = parseFloat(obj && obj[t[0]]);
+      if (!isNaN(n) && n > 0) parts.push('<span class="ksc-tw-' + t[3] + '">' + esc(String(n) + " " + (n === 1 ? t[1] : t[2])) + "</span>");
+    });
+    return parts.join("");
+  }
+  function pileHtml(bank, cap, lines) {
     var bc = (bank && bank.by_class) || {};
     function after(k) { var v = bc[k]; return v ? pileCount(v.after != null ? v.after : v.now) : 0; }
     function covered(k) { var v = bc[k]; return (cap && cap[k] && Number(cap[k].limit) > 0) || pileCount(v && v.now) > 0; }
-    var c = after("clothing"), t = after("toy");
-    var lines = [];
-    if (covered("clothing") || c > 0) lines.push('<span class="ksc-pile-line"><img alt="" src="' + PILE_ART + 'clothing-face.webp">' + esc(pileLabel(c, "clothing")) + "</span>");
-    if (covered("toy") || t > 0) lines.push('<span class="ksc-pile-line"><img alt="" src="' + PILE_ART + 'toy-face.webp">' + esc(pileLabel(t, "toy")) + "</span>");
-    if (!lines.length) return "";
+    var c = after("clothing"), t = after("toy"), total = c + t;
+    var bt = tiersAfter(bank, lines);
+    var shown = [];
+    if (covered("clothing") || c > 0) shown.push(["clothing", c, "clothing-face"]);
+    if (covered("toy") || t > 0) shown.push(["toy", t, "toy-face"]);
+    if (!shown.length) return "";
+    function kind(x, withTiers) {
+      if (!x[1]) return "";
+      return '<div class="ksc-pk"><span class="lab"><img alt="" src="' + PILE_ART + x[2] + '.webp"><b>' + esc(pileLabel(x[1], x[0])) + "</b></span>" +
+        (withTiers ? '<span class="tl">' + pileTierWords(bt[x[0]]) + "</span>" : "") + "</div>";
+    }
+    var capText = total === 0 ? "No credits yet" : (total === 1 ? "1 credit" : String(total) + " credits");
+    var kinds = shown.map(function (x) { return kind(x, false); }).join("");
+    var popKinds = shown.map(function (x) { return kind(x, true); }).join("");
     return '<div class="ksc-ty-h c">Left in your bank</div>' +
-      '<div class="ksc-pile" id="ksc-pile" data-c="' + Math.floor(c) + '" data-t="' + Math.floor(t) + '">' +
-        '<div class="ksc-pile-scene"><div class="ksc-pile-world"></div></div>' +
-      "</div>" +
-      '<div class="ksc-pile-lines" style="margin-bottom:26px;">' + lines.join("") + "</div>";
+      '<div class="ksc-bankwrap" id="ksc-bankwrap">' +
+        '<div class="ksc-pile" id="ksc-pile" data-c="' + Math.floor(c) + '" data-t="' + Math.floor(t) + '">' +
+          '<div class="ksc-pile-scene"><div class="ksc-pile-world"></div></div>' +
+        "</div>" +
+        '<div class="ksc-pile-meta" id="ksc-pile-meta">' +
+          '<div class="ksc-pile-cap">' + esc(capText) + "</div>" +
+          (total ? '<div class="ksc-pile-tiers">' + kinds + "</div>" +
+            '<button class="ksc-pile-hint" id="ksc-pile-btn" type="button" aria-expanded="false" aria-controls="ksc-pile-pop">' +
+              '<span class="hv">Hover to see your tiers</span><span class="tp">Tap to see your tiers</span></button>' : "") +
+        "</div>" +
+        (total ? '<div class="ksc-pile-pop" id="ksc-pile-pop" role="region" aria-label="Your credits by tier">' +
+          '<div class="pop-h">Your credits by tier</div>' +
+          '<div class="ksc-pile-tiers">' + popKinds + "</div>" +
+          '<p class="pop-p">Every item is tagged Essentials, Elevated or Special. Use a credit on an item in the same tier.</p>' +
+        "</div>" : "") +
+      "</div>";
+  }
+
+  // S400: the tier panel. Hover on desktop (the lines or the panel), tap on phones (the
+  // hint or the bowl), click outside or Escape closes. Same behaviour as the approved page.
+  var _pilePopDocBound = false;
+  function armPilePop() {
+    var wrap = document.getElementById("ksc-bankwrap"), pop = document.getElementById("ksc-pile-pop");
+    var btn = document.getElementById("ksc-pile-btn"), meta = document.getElementById("ksc-pile-meta");
+    var pile = document.getElementById("ksc-pile");
+    if (!wrap || !pop || !btn || !meta) return;
+    function openPop(on) { pop.classList.toggle("open", on); btn.setAttribute("aria-expanded", on ? "true" : "false"); }
+    function place() { pop.style.bottom = (meta.offsetHeight - 6) + "px"; }
+    place(); window.addEventListener("resize", place);
+    if (window.matchMedia && window.matchMedia("(hover:hover)").matches) {
+      var ht;
+      [meta, pop].forEach(function (z) {
+        z.addEventListener("mouseenter", function () { clearTimeout(ht); openPop(true); });
+        z.addEventListener("mouseleave", function () { ht = setTimeout(function () { openPop(false); }, 150); });
+      });
+    }
+    btn.addEventListener("click", function (e) { e.stopPropagation(); openPop(!pop.classList.contains("open")); });
+    if (pile) pile.addEventListener("click", function (e) { e.stopPropagation(); openPop(!pop.classList.contains("open")); });
+    if (!_pilePopDocBound) {
+      _pilePopDocBound = true;
+      document.addEventListener("click", function (e) {
+        var p = document.getElementById("ksc-pile-pop");
+        if (p && !p.contains(e.target)) { p.classList.remove("open"); var b = document.getElementById("ksc-pile-btn"); if (b) b.setAttribute("aria-expanded", "false"); }
+      });
+      document.addEventListener("keydown", function (e) {
+        var p = document.getElementById("ksc-pile-pop");
+        if ((e.key === "Escape" || e.keyCode === 27) && p && p.classList.contains("open")) {
+          p.classList.remove("open"); var b = document.getElementById("ksc-pile-btn"); if (b) { b.setAttribute("aria-expanded", "false"); b.focus(); }
+        }
+      });
+    }
   }
 
   function armPile() {
@@ -921,12 +1016,15 @@
       c.e = img(c.key, 10 + i * 2); c.sh = el("div", "sh"); c.sh.style.zIndex = 9 + i * 2; coins[i] = c;
       var land = spill ? { x: PCX + s[4] * 0.3, b: PFLOOR - s[1] - 8 } : finalPos(i);
       var x0 = land.x + rnd(-36, 36), y0 = -60, T = rnd(380, 440), spin = rnd(200, 340) * (Math.random() < 0.5 ? -1 : 1), fl = Math.random() < 0.5 ? 1 : 2, r0 = s[3] - spin;
-      place(c, x0, y0, r0);
+      // S400, hers: fade in while falling, fully solid by the time its top is inside the bowl scene
+      var fadeTo = Math.max(30, Math.min(90, land.b - 10));
+      c.e.style.opacity = 0; place(c, x0, y0, r0);
       anim(T, function (k) {           // 1. fall, tumbling
         var g = k * k, x = x0 + (land.x - x0) * (1 - (1 - k) * (1 - k)), b = y0 + (land.b - y0) * g, ph = Math.cos(k * fl * Math.PI * 2);
+        c.e.style.opacity = Math.max(0, Math.min(1, b / fadeTo));
         place(c, x, b, r0 + spin * (1 - (1 - k) * (1 - k)), 1, 0.3 + 0.7 * Math.abs(ph)); shadow(c, land.x, land.b, g * 0.8);
       }, function () {                 // 2. land: squash, one small hop, rock flat
-        setKey(c, K(i, s[2])); nudge(i, land.x);
+        c.e.style.opacity = 1; setKey(c, K(i, s[2])); nudge(i, land.x);
         var hop = rnd(2, 4), rock = rnd(2, 3.5) * (Math.random() < 0.5 ? -1 : 1), rot = s[3];
         anim(60, function (k) { place(c, land.x, land.b, rot, 1 + 0.07 * Math.sin(k * Math.PI), 1 - 0.14 * Math.sin(k * Math.PI)); shadow(c, land.x, land.b, 1); }, function () {
           anim(110, function (k) { place(c, land.x, land.b - Math.sin(k * Math.PI) * hop, rot + rock * k); }, function () {
@@ -1306,7 +1404,7 @@
     // Hidden when the retail figure is missing or 0, so we never show "$0".
     var savingsBlock = (value > 0)
       ? '<div class="ksc-ty-save"><div class="n">' + esc(moneyRound(value)) + '</div>' +
-          '<div class="l">What you\u2019d pay for these new</div></div>'
+          '<div class="l">What you\u2019d pay for ' + (lines.length === 1 ? "it" : "these") + ' new</div></div>'
       : "";
 
     // ⚠⚠ THE THANK-YOU IS NOW GREEN TEXT WITH NO PANEL - HER RULING S395/S398. The S216
@@ -1330,7 +1428,7 @@
       thanks +
       '<div class="ksc-ty-paid">' + payLine + shipLine + mailLine + "</div>" +
       savingsBlock +
-      pileHtml(p.bank, p.cap) +
+      pileHtml(p.bank, p.cap, lines) +
       '<div class="ksc-ty-h">Your order</div>' +
       itemsHtml +
       shipToBlock() +
@@ -1342,6 +1440,7 @@
     );
 
     armPile();
+    armPilePop();
   }
 
   // ---- block / failure / error / loading ------------------------------------
