@@ -960,23 +960,20 @@
     whenPileReady(box, pour);
   }
 
-  // S400, hers: the coins wait until the confetti is done, and until the bowl is on
-  // screen (on a phone the bowl starts below the fold, so they wait for her to scroll).
-  // Both must be true. The bowl sits empty until then; the count lines are already text.
-  // ⚠ FAILURE DIRECTION: no confetti library, no promise, or reduced motion counts as
-  // "confetti done"; a stuck promise is capped at 6s; no IntersectionObserver counts as
-  // "on screen". Worst case is the old behaviour, never a bowl that never fills on view.
+  // S400, hers: the coins wait for the confetti, and until the bowl is on screen (on a
+  // phone the bowl starts below the fold, so they wait for her to scroll). Both must be
+  // true. The bowl sits empty until then; the count lines are already text.
+  // S400 retune, hers: waiting for the last speck to fade felt too long, so the coins
+  // start while the confetti is ending: CONFETTI_OVERLAP_MS after the burst began.
+  // ⚠ FAILURE DIRECTION: no confetti library or reduced motion leaves CONFETTI_AT null,
+  // which counts as "confetti done"; no IntersectionObserver counts as "on screen".
+  var CONFETTI_OVERLAP_MS = 2000;
   function whenPileReady(box, go) {
     var fired = false, confettiDone = false, onScreen = false;
     function tryGo() { if (!fired && confettiDone && onScreen) { fired = true; go(); } }
-    var p = CONFETTI_DONE;
-    if (p && typeof p.then === "function") {
-      var cap = setTimeout(function () { confettiDone = true; tryGo(); }, 6000);
-      var fin = function () { clearTimeout(cap); confettiDone = true; tryGo(); };
-      p.then(fin, fin);
-    } else {
-      confettiDone = true;
-    }
+    var wait = CONFETTI_AT ? CONFETTI_OVERLAP_MS - (Date.now() - CONFETTI_AT) : 0;
+    if (wait > 0) setTimeout(function () { confettiDone = true; tryGo(); }, wait);
+    else confettiDone = true;
     if (typeof window.IntersectionObserver !== "function") {
       onScreen = true;
     } else {
@@ -1398,16 +1395,16 @@
   }
 
   // ---- celebration burst (decorative only; never load-bearing) --------------
-  // S400: canvas-confetti returns a promise that settles when the burst has faded.
-  // The bowl's pour waits on it (whenPileReady). Stays null when nothing fires.
-  var CONFETTI_DONE = null;
+  // S400: when the burst began, so the bowl's pour can time itself off it
+  // (whenPileReady). Stays null when nothing fires.
+  var CONFETTI_AT = null;
   function ksConfetti() {
     if (typeof window.confetti !== "function") return;   // library absent -> silent no-op
     if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     var KS = ["#E54F25", "#EDA920", "#309359", "#1C4A91", "#F491A9"];
-    var a = window.confetti({ particleCount: 70, angle: 60,  spread: 60, startVelocity: 55, origin: { x: 0, y: 0.9 }, colors: KS, zIndex: 9999 });
-    var b = window.confetti({ particleCount: 70, angle: 120, spread: 60, startVelocity: 55, origin: { x: 1, y: 0.9 }, colors: KS, zIndex: 9999 });
-    if (typeof Promise === "function" && a && typeof a.then === "function") CONFETTI_DONE = Promise.all([a, b]);
+    window.confetti({ particleCount: 70, angle: 60,  spread: 60, startVelocity: 55, origin: { x: 0, y: 0.9 }, colors: KS, zIndex: 9999 });
+    window.confetti({ particleCount: 70, angle: 120, spread: 60, startVelocity: 55, origin: { x: 1, y: 0.9 }, colors: KS, zIndex: 9999 });
+    CONFETTI_AT = Date.now();
   }
 
   function route(data, status) {
