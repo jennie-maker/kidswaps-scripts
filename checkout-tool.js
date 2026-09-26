@@ -92,6 +92,12 @@
  *   (i) success screen coins show the balance AFTER the order (by_class.after), and the
  *       tier rows are worked out on the page (now minus the tier each line used), since
  *       the fn sends no after-figure per tier.
+ * rev S395b (2026-09-25), off her live look at @903d107:
+ *   - space between the address and the Confirm button (receipt only).
+ *   - coin label letter-spacing reset: the wide tracking came from a site-wide Webflow
+ *     style on .ks-coin-label, not from this file. Scoped to checkout only.
+ *   - the header bag count clears when the order goes through (sessionStorage was
+ *     already cleared; the .ks-cart-badge painted by browse-tool.js was not).
  * ========================================================================== */
 (function () {
   "use strict";
@@ -337,7 +343,7 @@
     "  font-weight:600; font-size:29px; line-height:1; display:flex; align-items:center;",
     "  justify-content:center; color:#D9AF4A; opacity:0;",
     "  text-shadow:0 -1px 0 rgba(120,84,16,.55), 0 1px 0 rgba(255,250,222,.95);}",
-    ID + " .ks-coin-label{font-size:.82rem; font-weight:700; color:var(--ks-ink); text-align:center; padding:0 12px;}",
+    ID + " .ks-coin-label{font-size:.82rem; font-weight:700; color:var(--ks-ink); text-align:center; padding:0 12px; letter-spacing:normal;}",
     // tier breakdown - ALWAYS SHOWN, her S216 ruling. Empty when the class has no tiers,
     // and the reserve collapses so a zero coin holds no empty gap open.
     ID + " .ks-coin-tier{margin-top:6px; font-size:12px; line-height:1.7; color:var(--ks-muted);",
@@ -865,7 +871,7 @@
       '<div class="ksc-seal">' + shieldCheck() + "<span>Every piece meets The Closet Standard</span></div>" +
       '<div class="ksc-items">' + itemsHtml + "</div>" +
       summary +
-      shipToBlock() +
+      '<div style="margin-bottom:22px;">' + shipToBlock() + "</div>" +
       vlGate +
       '<button class="ksc-btn" id="ksc-confirm" type="button">' + esc(btnLabel) + "</button>" +
       '<div class="ksc-secure">' + lockIcon() + "<span>Secured by Stripe</span></div>" +
@@ -1191,7 +1197,11 @@
   function route(data, status) {
     if (data && data.ok === true && data.mode === "preview") { renderReceipt(data); return; }
     if (data && data.ok === true && Array.isArray(data.claim_ids)) {
-      try { sessionStorage.removeItem('ksBag'); } catch (e) {}  // clear browse bag on confirmed commit (hygiene, §1)
+      try { sessionStorage.removeItem('ksBag'); } catch (e) {}
+      try {   // S395b: the header count is painted by browse-tool.js at load; clear it now too
+        var bd = document.querySelectorAll('.ks-cart-badge');
+        for (var bi = 0; bi < bd.length; bi++) { bd[bi].textContent = ''; bd[bi].style.display = 'none'; }
+      } catch (e) {}  // clear browse bag on confirmed commit (hygiene, §1)
       renderSuccess(data);
       try { ksConfetti(); } catch (e) {}                        // celebration burst; decorative, never blocks the screen
       return;
