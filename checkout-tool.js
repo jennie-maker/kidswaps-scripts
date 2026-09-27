@@ -165,6 +165,17 @@
  * the page and they're the hardest to read." Summary rows 1.08rem in ink (labels were
  * grey), amounts bold, the shipping note .9rem, Total today 1.4rem bold with a thin
  * rule above it.
+ *
+ * rev S408 (2026-09-27), THE MATCHING CHECKOUT COMMIT (hers S400: every bank the same),
+ * copied from dashboard-tool.js @0fa3b57:
+ *   - Tier panel line is her S406 wording (BANK_PANEL_LINE), word for word.
+ *   - A kind the plan covers shows at 0 in grey ("0 toy credits"), hers S406.
+ *   - "No credits yet" retired. Under one credit is the EMPTY BANK: "0 credits" or
+ *     "Half a credit", a line, and on the thank-you a "Buy a credit pack" button
+ *     (/pricing, same as the dashboard's fallback). See bankEmpty(). The empty bowl rocks
+ *     once on the thank-you; the receipt sits still.
+ *   - Pile fixes from S407: every picture downloaded before the pour; the scene grows to
+ *     fit the lowest coin.
  * ========================================================================== */
 (function () {
   "use strict";
@@ -566,6 +577,12 @@
     ID + " .ksc-pk .lab{display:inline-flex; align-items:center; gap:7px;}",
     ID + " .ksc-pk img{width:16px; height:auto;}",
     ID + " .ksc-pk b{font-weight:600; color:var(--ks-ink);}",
+    ID + " .ksc-pk.zero b{color:#6E6A63; font-weight:500;}",   // S408, hers S406: a kind the plan covers shows at 0, grey
+    // S408: the empty bank's words and buttons, the same values as the dashboard bank (hers S403/S406)
+    ID + " .ksc-bank--empty .ksc-pile-meta{flex:1; min-width:0; max-width:340px; white-space:normal;}",
+    ID + " .ksc-pile-line{font-size:14.5px; line-height:1.5; color:#4d4843; margin:0 0 14px;}",
+    ID + " .ksc-pile-ctas{display:flex; flex-wrap:wrap; gap:10px;}",
+    ID + " .ksc-pile-cta{display:inline-block; font-family:inherit; font-size:15px; font-weight:700; border-radius:999px; padding:11px 18px; border:1.5px solid var(--ks-ink); background:var(--ks-ink); color:#fff; text-decoration:none; line-height:1.2;}",
     ID + " .ksc-pk .tl{display:flex; flex-wrap:wrap; justify-content:center; gap:2px 12px;}",
     ID + " .ksc-tw-ess{color:#6E6A63;}" + ID + " .ksc-tw-elev{color:#1c4a91; font-weight:600;}" + ID + " .ksc-tw-spec{color:#e54f25; font-weight:600;}",
     ID + " .ksc-pile-hint{display:inline-block; margin:10px 0 0; border:0; background:none; padding:3px 0; font-family:inherit; font-size:12.5px; color:#6E6A63; text-decoration:underline; text-underline-offset:3px; border-radius:4px; cursor:pointer;}",
@@ -591,6 +608,7 @@
     "@media (max-width:360px){",
     ID + " .ksc-rhead .ksc-pile{width:110px;}",
     ID + " .ksc-bank{gap:14px;}",
+    ID + " .ksc-bank--empty{flex-direction:column; align-items:flex-start; gap:12px;}",
     "}",
     "@media (max-width:600px){",
     // S401: on a phone the bank gets its own row ABOVE the headline (column-reverse keeps
@@ -777,6 +795,8 @@
     [0,76,"leanA",-6],[-60,62,"leanA",-9],[62,66,"leanB",9],[-60,50,"flatA",-2,-118,18],[-12,88,"flatB",4],[60,50,"flatB",3,116,20],
     [20,96,"leanB",7],[-38,80,"flatC",-4],[-40,70,"flatC",-3,-182,6],[42,84,"flatA",5],[0,108,"flatC",-2],[30,90,"flatB",-3,178,8]];
   var PFALL = ["fall1", "fall2", "fall3"];
+  // Warms the cache on page load. ⚠ S408: the pour no longer trusts this alone; armPile()
+  // waits for every picture it will use (the dashboard's S407 fix, copied).
   (function preloadPile() {
     try {
       ["bowl", "bowl-rim", "clothing-face", "toy-face"].concat(
@@ -784,6 +804,19 @@
       ).forEach(function (f) { var im = new Image(); im.src = PILE_ART + f + ".webp"; });
     } catch (e) {}
   })();
+
+  // S408, hers S406: the tier panel line, word for word the dashboard's BANK_PANEL_LINE
+  var BANK_PANEL_LINE = "Every item is tagged Essentials, Elevated or Special. A credit covers an item in its own tier or a lower one. A higher-tier item adds a small upgrade fee.";
+  // S408, THE EMPTY BANK on checkout (hers S403: always shown, never hidden). Copied from
+  // dashboard-tool.js bankEmpty() @0fa3b57, cut to the two cases checkout can know:
+  //   thank-you ("after") = her last credit just went on this order, and her next swap bag
+  //     rides inside it: the dashboard's "coming with your order" case, word for word.
+  //   receipt ("now") = her S403 line, no button (she is mid-checkout; never pull her away).
+  // Paused and cancelled members never reach checkout, so the dashboard's case 5 isn't here.
+  function bankEmpty(useAfter) {
+    if (useAfter) return { line: "Your next swap bag is coming with your order. You can also buy a credit pack to shop now.", btns: [["Buy a credit pack", "/pricing"]] };
+    return { line: "To get more credits you can send in more items, or buy a credit pack.", btns: [] };
+  }
 
   function pileCount(v) { var n = parseFloat(v); return isNaN(n) || n < 0 ? 0 : n; }
   function pileLabel(n, word) { return String(n) + " " + word + " credit" + (n === 1 ? "" : "s"); }
@@ -822,30 +855,41 @@
     var shown = [];
     if (covered("clothing") || c > 0) shown.push(["clothing", c, "clothing-face"]);
     if (covered("toy") || t > 0) shown.push(["toy", t, "toy-face"]);
-    if (!shown.length) return "";
+    var empty = total < 1;   // S408: 0 or half a credit is the empty bank (dashboard rule)
     function kind(x, withTiers) {
-      if (!x[1]) return "";
-      return '<div class="ksc-pk"><span class="lab"><img alt="" src="' + PILE_ART + x[2] + '.webp"><b>' + esc(pileLabel(x[1], x[0])) + "</b></span>" +
+      return '<div class="ksc-pk' + (x[1] ? "" : " zero") + '"><span class="lab"><img alt="" src="' + PILE_ART + x[2] + '.webp"><b>' + esc(pileLabel(x[1], x[0])) + "</b></span>" +
         (withTiers ? '<span class="tl">' + pileTierWords(bt[x[0]]) + "</span>" : "") + "</div>";
     }
-    var capText = total === 0 ? "No credits yet" : (total === 1 ? "1 credit" : String(total) + " credits");
+    // S408: "No credits yet" retired; the dashboard's words (hers S406/S407)
+    var capText = total === 0 ? "0 credits" : (empty ? "Half a credit" : (total === 1 ? "1 credit" : String(total) + " credits"));
     var kinds = shown.map(function (x) { return kind(x, false); }).join("");
     var popKinds = shown.map(function (x) { return kind(x, true); }).join("");
-    var cls = "ksc-bank" + (opts.center ? " ksc-bank--c" : "") + (opts.pour ? " ksc-bank--pour" : "");
+    var cls = "ksc-bank" + (opts.center ? " ksc-bank--c" : "") + (opts.pour ? " ksc-bank--pour" : "") + (empty ? " ksc-bank--empty" : "");
+    var emptyWords = "";
+    if (empty) {
+      var e = bankEmpty(useAfter);
+      // half a credit: one line in front, as on the dashboard (S406)
+      var line = total > 0 ? "Another half makes it whole. " + e.line : e.line;
+      emptyWords = '<p class="ksc-pile-line">' + esc(line) + "</p>" +
+        (e.btns.length ? '<div class="ksc-pile-ctas">' + e.btns.map(function (b) {
+          return '<a class="ksc-pile-cta" href="' + b[1] + '">' + esc(b[0]) + "</a>";
+        }).join("") + "</div>" : "");
+    }
     return '<div class="' + cls + '" id="ksc-bankwrap">' +
         '<div class="ksc-pile" id="ksc-pile" data-c="' + Math.floor(c) + '" data-t="' + Math.floor(t) + '">' +
           '<div class="ksc-pile-scene"><div class="ksc-pile-world"></div></div>' +
         "</div>" +
         '<div class="ksc-pile-meta" id="ksc-pile-meta">' +
           '<div class="ksc-pile-cap">' + esc(capText) + "</div>" +
-          (total ? '<div class="ksc-pile-tiers">' + kinds + "</div>" +
+          (empty ? emptyWords : "") +
+          (!empty ? '<div class="ksc-pile-tiers">' + kinds + "</div>" +
             '<button class="ksc-pile-hint" id="ksc-pile-btn" type="button" aria-expanded="false" aria-controls="ksc-pile-pop">' +
               '<span class="hv">Hover to see your tiers</span><span class="tp">Tap to see your tiers</span></button>' : "") +
         "</div>" +
-        (total ? '<div class="ksc-pile-pop" id="ksc-pile-pop" role="region" aria-label="Your credits by tier">' +
+        (!empty ? '<div class="ksc-pile-pop" id="ksc-pile-pop" role="region" aria-label="Your credits by tier">' +
           '<div class="pop-h">Your credits by tier</div>' +
           '<div class="ksc-pile-tiers">' + popKinds + "</div>" +
-          '<p class="pop-p">Every item is tagged Essentials, Elevated or Special. Use a credit on an item in the same tier.</p>' +
+          '<p class="pop-p">' + esc(BANK_PANEL_LINE) + "</p>" +
         "</div>" : "") +
       "</div>";
   }
@@ -914,7 +958,11 @@
     // bowl's table shadow). Same numbers as the approved mockup.
     var top = 110;
     for (var q = 0; q < n; q++) top = Math.min(top, finalPos(q).b - hOf(K(q, PSPOTS[q][2])));
-    var CROP = Math.max(0, top - 8), PBOT = 248;
+    // S408, the dashboard's S407 fix: the floor grows to fit the lowest coin, so spilled
+    // coins on the table are never cut off
+    var PBOT = 248;
+    for (var q2 = 0; q2 < n; q2++) PBOT = Math.max(PBOT, finalPos(q2).b + 10);
+    var CROP = Math.max(0, top - 8);
     function fit() { var k = scene.clientWidth / PW; world.style.transform = "scale(" + k + ") translateY(" + (-CROP) + "px)"; scene.style.height = ((PBOT - CROP) * k) + "px"; }
     fit(); _bankFit = fit;
 
@@ -973,6 +1021,17 @@
         });
       });
     }
+    // S408: the empty bowl rocks once on the thank-you (hers S403, same as the dashboard);
+    // the receipt's sits still
+    if (!n) {
+      if (animate && !COIN_REDUCE && window.requestAnimationFrame) {
+        whenPileReady(box, function () {
+          anim(900, function (k) { var r = 4 * Math.sin(k * Math.PI * 3) * Math.pow(1 - k, 1.4); bowl.style.transformOrigin = rim.style.transformOrigin = "50% 100%"; bowl.style.transform = rim.style.transform = "translate(" + PBOWL.x + "px," + PBOWL.y + "px) rotate(" + r + "deg)"; },
+            function () { bowl.style.transform = rim.style.transform = "translate(" + PBOWL.x + "px," + PBOWL.y + "px)"; });
+        });
+      }
+      return;
+    }
     // the receipt's bowl sits still (S400); reduced motion always sits still
     if (!animate || COIN_REDUCE || !window.requestAnimationFrame) {
       for (var i = 0; i < n; i++) { var c = { key: K(i, PSPOTS[i][2]) }; c.e = img(c.key, 1); c.sh = el("div", "sh"); coins[i] = c; settle(c, i); }
@@ -986,7 +1045,23 @@
         t += j < 14 ? (110 + Math.random() * 90) : (30 + Math.random() * 25);
       }
     }
-    whenPileReady(box, pour);
+    // ⚠ S408, the dashboard's S407 fix: EVERY PICTURE THE POUR USES IS DOWNLOADED FIRST.
+    //   A coin swaps from its falling picture to its resting one as it lands; if the resting
+    //   one isn't downloaded yet, the coin looks like it fell through the bowl. Gives up
+    //   waiting after 3 seconds and pours anyway.
+    var need = {}, held = [], pending = 0, ready = false, readyCbs = [];
+    for (var j0 = 0; j0 < n; j0++) { need[K(j0, PFALL[j0 % 3])] = 1; need[K(j0, PSPOTS[j0][2])] = 1; }
+    function markReady() { if (ready) return; ready = true; readyCbs.forEach(function (f) { f(); }); }
+    function oneDone() { pending--; if (pending <= 0) markReady(); }
+    Object.keys(need).forEach(function (k) {
+      pending++;
+      var im = new Image(); held.push(im);
+      im.onload = function () { if (im.decode) im.decode().then(oneDone, oneDone); else oneDone(); };
+      im.onerror = oneDone;
+      im.src = src(k);
+    });
+    setTimeout(markReady, 3000);
+    whenPileReady(box, function () { if (ready) pour(); else readyCbs.push(pour); });
   }
 
   // S400, hers: the coins wait for the confetti, and until the bowl is on screen (on a
