@@ -160,6 +160,11 @@
  *     (armPile's flag was shadowed by its own inner pour()). Renamed to animate.
  *   - "Free option available. Tap Change." and "Your bag is saved. Please try again."
  *     (both were em dashes; never em dashes, hers).
+ *
+ * rev S401c (2026-09-26), hers: "the pricing lines might be the most important part of
+ * the page and they're the hardest to read." Summary rows 1.08rem in ink (labels were
+ * grey), amounts bold, the shipping note .9rem, Total today 1.4rem bold with a thin
+ * rule above it.
  * ========================================================================== */
 (function () {
   "use strict";
@@ -434,16 +439,18 @@
     ID + " .ksc-main .ksc-note{margin-top:2px;}",
     ID + " .ksc-note{margin-top:3px; font-size:.76rem; color:var(--ks-muted);}",
     // summary
-    ID + " .ksc-sum{border-top:1px solid var(--ks-line); padding-top:14px; margin:0 0 20px;}",
-    ID + " .ksc-row{display:flex; justify-content:space-between; align-items:center; font-size:.95rem; padding:4px 0;}",
-    ID + " .ksc-row .k{color:var(--ks-muted);}",
-    ID + " .ksc-row.total{font-size:1.12rem; font-weight:700; padding-top:10px;}",
-    ID + " .ksc-row.total .k{color:var(--ks-ink);}",
+    // S401, hers: the pricing lines are the most important part of the page, so they are
+    // bigger, in ink (not grey), with the amounts bold.
+    ID + " .ksc-sum{border-top:1px solid var(--ks-line); padding-top:16px; margin:0 0 22px;}",
+    ID + " .ksc-row{display:flex; justify-content:space-between; align-items:center; font-size:1.08rem; font-weight:600; padding:6px 0; color:var(--ks-ink);}",
+    ID + " .ksc-row .k{color:var(--ks-ink); font-weight:500;}",
+    ID + " .ksc-row.total{font-size:1.4rem; font-weight:700; padding-top:14px; margin-top:8px; border-top:1px solid var(--ks-line);}",
+    ID + " .ksc-row.total .k{color:var(--ks-ink); font-weight:700;}",
     ID + " .ksc-row.total span{color:var(--ks-ink);}",
     // shipping note: renders ONLY in the charged state (see renderReceipt).
     // Full-width sentence between the Shipping row and Total — not a .ksc-row
     // (it has no right-hand value), so it must not inherit the flex layout.
-    ID + " .ksc-shipnote{font-size:.8rem; line-height:1.45; color:var(--ks-ink);",
+    ID + " .ksc-shipnote{font-size:.9rem; line-height:1.5; color:var(--ks-ink);",
     "  padding:2px 0 6px; max-width:44ch;}",
     // button + secure
     ID + " .ksc-btn{display:block; width:100%; border:0; cursor:pointer; background:var(--ks-orange);",
