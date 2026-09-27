@@ -412,7 +412,7 @@ function paintHeadline(member) {
     }
     // Hidden / folded for BOTH paths while she is new; restored the moment she is not.
     var pack = document.querySelector('.credit-pack-menu');
-    if (pack) pack.style.display = _jjOn ? 'none' : '';
+    if (pack) pack.style.display = (_jjOn || packHidden(s)) ? 'none' : '';
     var hcw = document.querySelector('.ks-sec-hcw');
     if (hcw) {
       var rowsEls = hcw.querySelectorAll('.ks-hcw-row');
@@ -546,6 +546,7 @@ function cycleLineString(s) {
     var bc = (s.bank && s.bank.by_class) || {};
     var c = parseFloat(bc.clothing); if (isNaN(c)) c = 0;
     var t = parseFloat(bc.toy);      if (isNaN(t)) t = 0;
+    if (c + t < 1) return '';   // S407 hers: half a credit - the bank says it, no "0.5" line
     var parts = [];
     if (c > 0) parts.push('<b>' + c + ' clothing credit' + (c === 1 ? '' : 's') + '</b>');
     if (t > 0) parts.push('<b>' + t + ' toy credit' + (t === 1 ? '' : 's') + '</b>');
@@ -588,11 +589,18 @@ function cycleLineString(s) {
   function paintCycleBar(s) {
     // ⚠⚠ S393 HER RULING: THE BAR IS SWAPS LEFT THIS MONTH, NOT DAYS GONE. The old bar was
     //   time elapsed, so on day one it was a lone dot on an empty track and read as broken.
-    //   It now starts FULL and shrinks as she uses swaps. Her plan is named here, because
+    //   It starts FULL and shrinks as she uses swaps. Her plan is named here, because
     //   the plan is WHY she has this many (the old top-of-page chip is gone).
+    // ⚠⚠ S407 HER RULING (option 1, mockup approved): the number and its words sit together
+    //   ("4 of 6 swaps left this month"), the plan name sits on its own line above, and the
+    //   track is dark enough to read on the card. AT ZERO the bar is replaced by one sentence
+    //   and the separate reset line is hidden, so the date is said once:
+    //   "You've used this month's 6 swaps. Extra swaps are $5 each until your swaps reset
+    //   October 21." Extra swaps are encouraged (hers S395); they work the same for toys (S407).
     // ⚠ FAILS CLOSED: no caps or no used_this_cycle in the payload = no bar at all.
     var line = document.querySelector('.ks-cycle-line');
     if (!line || !line.parentNode) return;
+    cycleBarCss();
     var wrap = document.querySelector('.ks-cycle-bar-wrap');
     if (!wrap) {
       wrap = document.createElement('div');
@@ -602,7 +610,7 @@ function cycleLineString(s) {
     var caps = s.caps || {}, used = s.used_this_cycle;
     if (!used) { wrap.style.display = 'none'; return; }
     var rows = [];
-    [['clothing', 'Clothing'], ['toy', 'Toys']].forEach(function (k) {
+    [['clothing', 'clothing'], ['toy', 'toy']].forEach(function (k) {
       var cap = parseFloat(caps[k[0]]); if (isNaN(cap) || cap <= 0) return;
       var u = parseFloat(used[k[0]]); if (isNaN(u)) u = 0;
       var left = Math.max(cap - u, 0);
@@ -610,20 +618,41 @@ function cycleLineString(s) {
     });
     if (!rows.length) { wrap.style.display = 'none'; return; }
     wrap.style.display = '';
-    var plan = (s.plan ? String(s.plan).trim() + ': ' : '');
-    var html = '';
-    rows.forEach(function (r0, i) {
-      var label = (rows.length === 1) ? (plan + 'swaps left this month')
-                : (i === 0 ? plan + r0.name.toLowerCase() + ' swaps left' : r0.name + ' swaps left');
-      var pct = (r0.left / r0.cap) * 100;
-      html += '<div class="ks-cycle-bar-head">' +
-                '<span class="ks-cycle-bar-label">' + esc(label) + '</span>' +
-                '<span class="ks-cycle-bar-left"><b>' + r0.left + ' of ' + r0.cap + '</b></span>' +
-              '</div>' +
-              '<div class="ks-cycle-bar-track"><i class="ks-cycle-bar-fill" style="width:' +
-                pct.toFixed(1) + '%"></i></div>';
-    });
+    var plan = s.plan ? String(s.plan).trim() : '';
+    var html = plan ? '<div class="ks-cycle-plan">' + esc(plan) + '</div>' : '';
+    var allUsed = rows.every(function (r0) { return r0.left === 0; });
+    if (allUsed) {
+      var reset = cycleLineString(s).replace(/^Your swaps reset /, '').replace(/\.$/, '');
+      var what = rows.length === 1 ? rows[0].cap + ' swaps'
+               : rows.map(function (r0) { return r0.cap + ' ' + r0.name; }).join(' and ') + ' swaps';
+      html += '<p class="ks-cycle-zero">You\u2019ve used this month\u2019s <b>' + esc(what) + '</b>. ' +
+              'Extra swaps are $5 each' + (reset ? ' until your swaps reset ' + esc(reset) : '') + '.</p>';
+      line.style.display = 'none';                 // the date lives in the sentence
+    } else {
+      rows.forEach(function (r0) {
+        var words = rows.length === 1 ? ' swaps left this month' : ' ' + r0.name + ' swaps left';
+        html += '<div class="ks-cycle-num"><b>' + r0.left + ' of ' + r0.cap + '</b>' + esc(words) + '</div>' +
+                '<div class="ks-cycle-bar-track"><i class="ks-cycle-bar-fill" style="width:' +
+                  ((r0.left / r0.cap) * 100).toFixed(1) + '%"></i></div>';
+      });
+    }
     wrap.innerHTML = html;
+  }
+
+  function cycleBarCss() {
+    if (document.getElementById('ks-cycle-css')) return;
+    var st = document.createElement('style');
+    st.id = 'ks-cycle-css';
+    st.textContent =
+      '.ks-cycle-plan{font-size:13px;color:#75736E;margin:0 0 4px;}' +
+      '.ks-cycle-num{font-size:15px;color:#1E1A19;margin:0 0 8px;}' +
+      '.ks-cycle-num b{font-weight:700;}' +
+      '.ks-cycle-num + .ks-cycle-bar-track{margin-bottom:14px;}' +
+      '.ks-cycle-bar-wrap .ks-cycle-bar-track{background:rgba(30,26,25,.14);}' +
+      '.ks-cycle-bar-wrap .ks-cycle-bar-track:last-child{margin-bottom:0;}' +
+      '.ks-cycle-zero{font-size:15px;line-height:1.5;color:#1E1A19;margin:0;}' +
+      '.ks-cycle-zero b{font-weight:700;}';
+    document.head.appendChild(st);
   }
 
 function paintBankLabel() {
@@ -764,7 +793,8 @@ label.textContent = 'Credit Bank';   // hers S406
     if (b.has_bag_history === false || (b.bag_out && firstBag)) {
       // case 1: her first bag is not out yet. No credit pack: a send-first member was told
       // "no charge today", so a pack would be a surprise first charge (S406).
-      return { line: 'Your first swap bag is getting ready. Fill it up and send it back to earn credits.', btns: [['See what we accept', '/the-closet-standard']] };
+      // S407 hers: no button here; the greeting's coral "See what we accept" is the same link.
+      return { line: 'Your first swap bag is getting ready. Fill it up and send it back to earn credits.', btns: [], freeBag: true };
     }
     if (b.bag_out) {
       // found at the S406 build, not in the mockup: a later bag still on the ship desk
@@ -773,6 +803,16 @@ label.textContent = 'Credit Bank';   // hers S406
     }
     // case 4: no bag anywhere. Her next bag comes inside her next order (S357 gap stays open).
     return { line: 'Your next swap bag comes with your next order. Buy a credit pack to shop now.', btns: [PACK] };
+  }
+
+  // S407 hers: "Short on credits?" is hidden when paused or cancelled (she can't swap), and on
+  // the free-bag empty bank (a send-first member was told "no charge today").
+  function packHidden(s) {
+    var ms = String((s && s.member_status) || '').toLowerCase();
+    if (ms === 'paused' || ms === 'cancelled') return true;
+    var bc = (s && s.bank && s.bank.by_class) || {};
+    if (bankNum(bc.clothing) + bankNum(bc.toy) >= 1) return false;
+    return !!bankEmpty(s).freeBag;
   }
 
   function bankHtml(s, capOverride) {
@@ -851,7 +891,7 @@ label.textContent = 'Credit Bank';   // hers S406
   window.addEventListener('resize', function () { if (_bankFit) _bankFit(); });
 
   // from = how many coins are already sitting there; coins from..n-1 fall. from >= n sits still.
-  function bankPile(wrap, info, from) {
+  function bankPile(wrap, info, from, onPour) {
     var box = wrap.querySelector('.ksb-pile'), scene = box.querySelector('.ksb-scene'), world = box.querySelector('.ksb-world');
     var nc = info.c, nt = info.t, n = info.coins, total = nc + nt;
     function isToy(i) { return total ? Math.floor((i + 1) * nt / total) > Math.floor(i * nt / total) : false; }
@@ -869,14 +909,18 @@ label.textContent = 'Credit Bank';   // hers S406
     // trim the sky to the pile's own height, same numbers as checkout (S401)
     var top = 110;
     for (var q = 0; q < n; q++) top = Math.min(top, finalPos(q).b - hOf(K(q, PSPOTS[q][2])));
-    var CROP = Math.max(0, top - 8), PBOT = 248;
+    // S407: the scene's floor grows to fit the lowest coin, so spilled coins on the table
+    // are never cut off (seen on the 50-credit pile)
+    var PBOT = 248;
+    for (var q2 = 0; q2 < n; q2++) PBOT = Math.max(PBOT, finalPos(q2).b + 10);
+    var CROP = Math.max(0, top - 8);
     function fit() { var k = scene.clientWidth / PW; world.style.transform = 'scale(' + k + ') translateY(' + (-CROP) + 'px)'; scene.style.height = ((PBOT - CROP) * k) + 'px'; }
     fit(); _bankFit = fit;
     function anim(d, step, done) { var t0 = null; function f(t) { if (t0 === null) t0 = t; var k = Math.min(1, (t - t0) / d); step(k); if (k < 1) requestAnimationFrame(f); else if (done) done(); } requestAnimationFrame(f); }
     var canMove = !COIN_REDUCE && !!window.requestAnimationFrame;
     if (!n) {                                         // the empty bowl rocks once (hers S403)
       if (canMove) whenBankOnScreen(box, function () { anim(900, function (k) { bowlAt(4 * Math.sin(k * Math.PI * 3) * Math.pow(1 - k, 1.4)); }, function () { bowlAt(0); }); });
-      return;
+      return false;
     }
     var coins = [];
     function rnd(a, b) { return a + Math.random() * (b - a); }
@@ -927,15 +971,37 @@ label.textContent = 'Credit Bank';   // hers S406
     if (!canMove) from = n;
     var still = Math.min(from, n);
     for (var i = 0; i < still; i++) { var cc = { key: K(i, PSPOTS[i][2]) }; cc.e = img(cc.key, 1); cc.sh = el('div', 'sh'); coins[i] = cc; settle(cc, i); }
-    if (still >= n) return;
+    if (still >= n) return false;
+    // ⚠ S407: EVERY PICTURE THE POUR USES IS DOWNLOADED FIRST. A coin swaps from its falling
+    //   picture to its resting one as it lands; on a first visit the resting picture was not
+    //   downloaded yet, so the tall falling picture sat in the resting spot for a moment and
+    //   the coin looked like it fell through the bowl, then jumped back up. Gives up waiting
+    //   after 3 seconds and pours anyway.
+    var need = {}, held = [], pending = 0, ready = false, readyCbs = [];
+    for (var j0 = still; j0 < n; j0++) { need[K(j0, PFALL[j0 % 3])] = 1; need[K(j0, PSPOTS[j0][2])] = 1; }
+    function markReady() { if (ready) return; ready = true; readyCbs.forEach(function (f) { f(); }); }
+    function oneDone() { pending--; if (pending <= 0) markReady(); }
+    Object.keys(need).forEach(function (k) {
+      pending++;
+      var im = new Image(); held.push(im);
+      im.onload = function () { if (im.decode) im.decode().then(oneDone, oneDone); else oneDone(); };
+      im.onerror = oneDone;
+      im.src = src(k);
+    });
+    setTimeout(markReady, 3000);
+    function whenReady(f) { if (ready) f(); else readyCbs.push(f); }
     wrap.classList.add('ksb--pour');
     whenBankOnScreen(box, function () {
-      var t = 350;
-      for (var j = still; j < n; j++) {
-        (function (j) { setTimeout(function () { drop(j); }, t); })(j);
-        t += j < 14 ? (110 + Math.random() * 90) : (30 + Math.random() * 25);
-      }
+      whenReady(function () {
+        if (onPour) onPour();                         // S407: "seen" is written as the coins start falling
+        var t = 350;
+        for (var j = still; j < n; j++) {
+          (function (j) { setTimeout(function () { drop(j); }, t); })(j);
+          t += j < 14 ? (110 + Math.random() * 90) : (30 + Math.random() * 25);
+        }
+      });
     });
+    return true;
   }
 
   // the pour waits until the bowl is on screen (a phone may need a scroll)
@@ -976,8 +1042,10 @@ label.textContent = 'Credit Bank';   // hers S406
     if (opts.still) from = info.coins;
     else if (seen === null) from = 0;                 // first visit: the full pour
     else from = Math.min(seen, info.coins);           // only the new coins fall
-    bankPile(wrap, info, from);
-    if (!opts.still) bankSeenSet(info.coins);
+    // S407: when coins will fall, "seen" is written only as they start falling, so a member who
+    // opens the dashboard in a background tab or leaves early still gets her pour next time.
+    var willPour = bankPile(wrap, info, from, opts.still ? null : function () { bankSeenSet(info.coins); });
+    if (!opts.still && !willPour) bankSeenSet(info.coins);
   }
 
 function paintCoins(s) {
@@ -1326,7 +1394,9 @@ function paintCoins(s) {
     var essNum = parseFloat(bt.essentials);
     var note = document.querySelector('.ks-partial-note');
     if (note) {
-      note.style.display = (!isNaN(essNum) && essNum % 1 !== 0) ? 'block' : 'none';
+      // S407 hers: hidden when the whole bank is under one credit - the bank says "Half a credit"
+      var bankTot = bankNum((s.bank && s.bank.total));
+      note.style.display = (!isNaN(essNum) && essNum % 1 !== 0 && bankTot >= 1) ? 'block' : 'none';
     }
     var expiry = s.expiry || {};
     var numEl  = document.querySelector('.expiry-num');
