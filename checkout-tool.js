@@ -145,6 +145,21 @@
  *     (the approved mockup's desktop frame).
  *   - RULE, hers S400: every bank (checkout top, thank-you, dashboard) always looks the
  *     same; change them together.
+ *
+ * rev S401b (2026-09-26), hers off https://claude.ai/artifact/5BCJd4cyikAycg8YoN9YfL
+ * (option B, "a note in the middle"):
+ *   - Changing a credit: the moment she picks one, the page fades and a white note sits
+ *     in the middle of the screen with a flipping clothing coin and "Updating your
+ *     total…", until the new prices land. It lives on <body>, outside the faded mount,
+ *     so it is never faded itself and is seen wherever she has scrolled to.
+ *   - The busy fade is .45 (was .55), matching the mockup. ⚠ The rule was written as
+ *     "#ks-checkout-app .ksc-busy" (a descendant), but the class goes ON the mount, so it
+ *     never matched: no fade and no tap block on a credit change or on Confirm. Now
+ *     "#ks-checkout-app.ksc-busy".
+ *   - FIX to @8776931: the receipt bowl poured on every render instead of sitting still
+ *     (armPile's flag was shadowed by its own inner pour()). Renamed to animate.
+ *   - "Free option available. Tap Change." and "Your bag is saved. Please try again."
+ *     (both were em dashes; never em dashes, hers).
  * ========================================================================== */
 (function () {
   "use strict";
@@ -468,7 +483,15 @@
     ID + " .ksc-vlconfirm input{margin-top:1px; width:17px; height:17px; accent-color:var(--ks-green); flex:0 0 auto;}",
     ID + " .ksc-vlconfirm span{font-size:.86rem; line-height:1.4; color:var(--ks-ink); font-weight:600;}",
     ID + " .ksc-btn:disabled{background:var(--ks-muted); cursor:not-allowed;}",
-    ID + " .ksc-busy{opacity:.55; pointer-events:none;}",
+    ID + ".ksc-busy{opacity:.45; pointer-events:none; transition:opacity .2s ease;}",
+    // S401b, option B: the "Updating your total…" note. Appended to <body> (outside the
+    // faded mount), so these two rules are NOT scoped under the mount id.
+    "#ksc-updating{position:fixed; left:50%; top:44%; transform:translate(-50%,-50%) scale(.96); z-index:99998; background:#fff; border:1px solid rgba(33,27,26,.14); border-radius:16px; box-shadow:0 10px 30px rgba(30,26,25,.16); padding:16px 20px; display:flex; align-items:center; gap:12px; font-family:Quicksand,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-weight:700; font-size:.95rem; color:#211b1a; white-space:nowrap; opacity:0; pointer-events:none; transition:opacity .15s ease, transform .15s ease;}",
+    "#ksc-updating.on{opacity:1; transform:translate(-50%,-50%) scale(1);}",
+    "#ksc-updating .coin{width:30px; height:30px; flex:none; animation:ksc-flip 1s linear infinite;}",
+    "#ksc-updating .coin img{width:100%; height:100%; display:block;}",
+    "@keyframes ksc-flip{0%{transform:scaleX(1)}25%{transform:scaleX(.1)}50%{transform:scaleX(-1)}75%{transform:scaleX(.1)}100%{transform:scaleX(1)}}",
+    "@media (prefers-reduced-motion:reduce){#ksc-updating .coin{animation:none;} #ksc-updating{transition:none;}}",
     // modal (bottom-sheet on mobile, centered on desktop)
     ID + " .ksc-modal[hidden]{display:none;}",
     ID + " .ksc-modal{position:fixed; inset:0; z-index:99999; display:flex; align-items:flex-end; justify-content:center;}",
@@ -848,7 +871,10 @@
   // every credit change, so per-render listeners would pile up on detached bowls).
   var _bankFit = null;
   window.addEventListener("resize", function () { if (_bankFit) _bankFit(); });
-  function armPile(pour) {
+  // ⚠ The flag is NOT named "pour": a function pour() is declared inside, and a
+  // declaration beats a parameter of the same name, so the flag would always read true
+  // and the receipt bowl would pour (the S401 @8776931 bug).
+  function armPile(animate) {
     var box = document.getElementById("ksc-pile");
     if (!box) return;
     var scene = box.querySelector(".ksc-pile-scene"), world = box.querySelector(".ksc-pile-world");
@@ -932,7 +958,7 @@
       });
     }
     // the receipt's bowl sits still (S400); reduced motion always sits still
-    if (!pour || COIN_REDUCE || !window.requestAnimationFrame) {
+    if (!animate || COIN_REDUCE || !window.requestAnimationFrame) {
       for (var i = 0; i < n; i++) { var c = { key: K(i, PSPOTS[i][2]) }; c.e = img(c.key, 1); c.sh = el("div", "sh"); coins[i] = c; settle(c, i); }
       return;
     }
@@ -1036,7 +1062,7 @@
         var lineFee = (Number(ln.upgrade_fee) || 0) + (Number(ln.extra_swap_fee) || 0);
         var hasFree = info.reps.some(function (r) { return Number(r.total_owed_cents) === 0; });
         if (lineFee > 0 && hasFree) {
-          extras += '<div class="ksc-freehint">Free option available \u2014 tap Change</div>';
+          extras += '<div class="ksc-freehint">Free option available. Tap Change.</div>';
         }
       }
       if (ln.value_loss) {
@@ -1205,11 +1231,32 @@
     if (modal) modal.hidden = true;
   }
 
+  // S401b, hers (option B): the note in the middle of the screen while a credit change
+  // loads. ⚠ FAILURE DIRECTION: every exit from refreshPreview hides it (finally), so it
+  // can never be left sitting over the page.
+  function updatingNote(on) {
+    var el = document.getElementById("ksc-updating");
+    if (!el && on) {
+      el = document.createElement("div");
+      el.id = "ksc-updating";
+      el.setAttribute("role", "status");
+      el.setAttribute("aria-live", "polite");
+      el.innerHTML = '<span class="coin"><img alt="" src="' + PILE_ART + 'clothing-face.webp"></span><span>Updating your total\u2026</span>';
+      document.body.appendChild(el);
+      void el.offsetWidth;   // let the fade-in run from 0
+    }
+    if (el) el.classList.toggle("on", !!on);
+  }
+
   async function refreshPreview() {
     var m = getMount();
     var btn = document.getElementById("ksc-confirm");
     if (btn) { btn.disabled = true; btn.textContent = "Updating\u2026"; }
     if (m) m.classList.add("ksc-busy");
+    updatingNote(true);
+    try { await refreshPreviewInner(m); } finally { updatingNote(false); }
+  }
+  async function refreshPreviewInner(m) {
     var token = getToken();
     if (!token) { if (m) m.classList.remove("ksc-busy"); renderError("Please log in to check out."); return; }
     try {
@@ -1250,7 +1297,7 @@
     } catch (e) {
       if (m) m.classList.remove("ksc-busy");
       if (btn) { btn.disabled = false; btn.textContent = restore; }
-      renderError("We couldn't reach checkout. Your bag is saved \u2014 please try again.");
+      renderError("We couldn't reach checkout. Your bag is saved. Please try again.");
     }
   }
 
