@@ -635,7 +635,7 @@ function paintBankLabel() {
       label.className = 'ks-bank-label';
       row.parentNode.insertBefore(label, row);
     }
-label.textContent = 'Your Credit Bank';
+label.textContent = 'Credit Bank';   // hers S406
   }
 
   var PLAN_PRICE = { 'basics': 30, 'toy chest': 45, 'full wardrobe': 45, 'everything bag': 70 };
@@ -667,59 +667,330 @@ label.textContent = 'Your Credit Bank';
     chip.innerHTML = 'Your plan<br><b>' + esc(raw) + ' \u00B7 $' + price + '/mo</b>';
   }
 
+  // ---------- CREDIT BANK (S406, hers) ----------
+  // The approved S400 bank, the SAME bowl as checkout-tool.js (hers S400: every bank looks
+  // the same; change them together). Mockup approved S406:
+  // https://claude.ai/artifact/Btf8xjhFX5GNKzqWzfjNhP
+  // Bowl on the left, words on the right. A kind the plan covers shows even at 0 ("0 toy
+  // credits", grey, hers S406). Up to 30 coins; past 30 the pile stops and the number keeps
+  // counting (hers S406). The pour plays on a first visit, and when new credits land only
+  // the new coins fall; a return visit shows the pile sitting there (hers S397).
+  // EMPTY BANK (hers S403, cases ruled S406): always shown, the bowl rocks once, and the
+  // words follow where her bag is. See bankEmpty().
+  // ⚠ FAILURE DIRECTION: the words are real text written first. Reduced motion or a
+  // missing image leaves the numbers right and the coins sitting still.
+  // ⚠ The old coin row (.ks-coins-row) is hidden, not deleted: its [data-coin] numbers are
+  // still written because the credit pack snapshot reads them (wirePackSnapshot).
+  var PILE_ART = 'https://cdn.jsdelivr.net/gh/jennie-maker/kidswaps-scripts@b1c24101b87e8842d1bba248a7ecc8ff78d8c494/';
+  var PILE_H = { bowl: 239, 'bowl-rim': 239, fall1: 164, fall2: 145, fall3: 177, flatA: 74, flatB: 74, flatC: 83, leanA: 114, leanB: 114 };
+  var PW = 460, PCW = 96, PBOWL = { w: 300, x: 80, y: 110 }, PFLOOR = 190, PTABLE = 233, PCX = PW / 2;
+  var PSPOTS = [[0,4,'flatC',2],[-64,0,'flatA',-3],[59,2,'flatB',4],[-34,16,'leanA',-6],[36,18,'leanB',6],[0,28,'flatA',-2],
+    [-75,20,'leanA',-10],[77,22,'leanB',9],[-40,34,'flatA',-2,-150],[-17,42,'flatB',5],[44,36,'flatB',3,152],[10,54,'leanA',-8],
+    [-50,48,'flatB',4],[52,50,'leanB',8],[-90,36,'leanA',-12],[92,38,'leanB',12],[-24,62,'flatA',-3],[28,64,'flatC',3],
+    [0,76,'leanA',-6],[-60,62,'leanA',-9],[62,66,'leanB',9],[-60,50,'flatA',-2,-118,18],[-12,88,'flatB',4],[60,50,'flatB',3,116,20],
+    [20,96,'leanB',7],[-38,80,'flatC',-4],[-40,70,'flatC',-3,-182,6],[42,84,'flatA',5],[0,108,'flatC',-2],[30,90,'flatB',-3,178,8]];
+  var PFALL = ['fall1', 'fall2', 'fall3'];
+  var BANK_PANEL_LINE = 'Every item is tagged Essentials, Elevated or Special. A credit covers an item in its own tier or a lower one. A higher-tier item adds a small upgrade fee.';   // hers S406
+  var _bankFit = null, _bankPopBound = false;
+
+  function bankCss() {
+    if (document.getElementById('ks-bank-css')) return;
+    var st = document.createElement('style');
+    st.id = 'ks-bank-css';
+    st.textContent =
+      '.ksb{position:relative;display:flex;align-items:center;justify-content:center;gap:22px;margin:4px 0 0;text-align:left;}' +
+      '.ksb-pile{position:relative;flex:none;width:150px;cursor:pointer;}' +
+      '.ksb-scene{position:relative;overflow:hidden;}' +
+      '.ksb--pour .ksb-scene{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 9%);mask-image:linear-gradient(to bottom,transparent 0,#000 9%);}' +
+      '.ksb-world{position:absolute;left:0;top:0;width:460px;height:305px;transform-origin:0 0;}' +
+      '.ksb-world img,.ksb-world .sh{position:absolute;left:0;top:0;will-change:transform;max-width:none;}' +
+      '.ksb-world .sh{border-radius:50%;background:rgba(33,27,26,.55);filter:blur(4px);}' +
+      '.ksb-meta{flex:none;white-space:nowrap;}' +
+      '.ksb--empty .ksb-meta{flex:1;min-width:0;max-width:340px;white-space:normal;}' +
+      '.ksb-cap{font-weight:700;font-size:19px;line-height:1.2;color:#211b1a;margin:0 0 8px;}' +
+      '.ksb-tiers{display:flex;flex-direction:column;gap:6px;font-size:13.5px;line-height:1.45;}' +
+      '.ksb-pk{display:flex;flex-wrap:wrap;align-items:center;gap:2px 12px;}' +
+      '.ksb-pk .lab{display:inline-flex;align-items:center;gap:7px;}' +
+      '.ksb-pk img{width:16px;height:auto;}' +
+      '.ksb-pk b{font-weight:600;color:#211b1a;}' +
+      '.ksb-pk.zero b{color:#6E6A63;font-weight:500;}' +
+      '.ksb-pk .tl{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 12px;}' +
+      '.ksb-ess{color:#6E6A63;}.ksb-elev{color:#1c4a91;font-weight:600;}.ksb-spec{color:#e54f25;font-weight:600;}' +
+      '.ksb-hint{display:inline-block;margin:10px 0 0;border:0;background:none;padding:3px 0;font-family:inherit;font-size:12.5px;color:#6E6A63;text-decoration:underline;text-underline-offset:3px;border-radius:4px;cursor:pointer;}' +
+      '.ksb-hint:focus-visible{outline:2px solid #211b1a;outline-offset:2px;}' +
+      '.ksb-hint .tp{display:none;}' +
+      '@media (hover:none){.ksb-hint .hv{display:none;}.ksb-hint .tp{display:inline;}}' +
+      '.ksb-pop{position:absolute;top:calc(100% + 6px);left:50%;width:300px;max-width:100%;box-sizing:border-box;background:#fff;border:1px solid rgba(33,27,26,.14);border-radius:16px;box-shadow:0 10px 30px rgba(30,26,25,.14);padding:16px 18px 14px;text-align:center;white-space:normal;opacity:0;pointer-events:none;transform:translate(-50%,-6px);transition:opacity .18s ease,transform .18s ease;z-index:600;}' +
+      '.ksb-pop.open{opacity:1;pointer-events:auto;transform:translate(-50%,0);}' +
+      '.ksb-pop .pop-h{font-family:"Instrument Serif",Georgia,serif;font-size:19px;color:#211b1a;margin:0 0 10px;}' +
+      '.ksb-pop .ksb-tiers{gap:10px;font-size:14px;align-items:center;}' +
+      '.ksb-pop .ksb-pk{flex-direction:column;gap:2px;}' +
+      '.ksb-pop .ksb-pk img{width:18px;}' +
+      '.ksb-pop .pop-p{font-size:13px;line-height:1.5;color:#6E6A63;margin:12px 0 0;}' +
+      '.ksb-line{font-size:14.5px;line-height:1.5;color:#4d4843;margin:0 0 14px;}' +
+      '.ksb-ctas{display:flex;flex-wrap:wrap;gap:10px;}' +
+      '.ksb-btn{display:inline-block;font-family:inherit;font-size:15px;font-weight:700;border-radius:999px;padding:11px 18px;border:1.5px solid #211b1a;text-decoration:none;cursor:pointer;line-height:1.2;}' +
+      '.ksb-btn.pri{background:#211b1a;color:#fff;}.ksb-btn.sec{background:transparent;color:#211b1a;}' +
+      '@media (prefers-reduced-motion:reduce){.ksb-pop{transition:none;}}' +
+      '@media (max-width:600px){.ksb-pile{width:130px;}.ksb--empty .ksb-btn{width:100%;text-align:center;}}' +
+      '@media (max-width:360px){.ksb-pile{width:110px;}.ksb{gap:14px;}.ksb--empty{flex-direction:column;align-items:flex-start;gap:12px;}}';
+    document.head.appendChild(st);
+  }
+
+  function bankNum(v) { var n = parseFloat(v); return (isNaN(n) || n < 0) ? 0 : n; }
+  function bankTierWords(obj) {
+    var parts = [];
+    [['essentials','Essential','Essentials','ess'], ['elevated','Elevated','Elevated','elev'], ['special','Special','Special','spec']].forEach(function (t) {
+      var n = parseFloat(obj && obj[t[0]]);
+      if (!isNaN(n) && n > 0) parts.push('<span class="ksb-' + t[3] + '">' + esc(String(n) + ' ' + (n === 1 ? t[1] : t[2])) + '</span>');
+    });
+    return parts.join('');
+  }
+
+  // THE EMPTY BANK, the six cases ruled S406 (hers: "im going to trust you on this one").
+  // The words follow where her bag is, read the same way precredit() reads it, and
+  // return_delivered is tested FIRST for the same mechanical reason.
+  // Returns { line, btns: [[text, href, isPack]] }.
+  function bankEmpty(s) {
+    var ms = String((s && s.member_status) || '').toLowerCase();
+    if (ms === 'paused' || ms === 'cancelled') return { line: '', btns: [] };   // case 5: the greeting carries Resume / Reactivate
+    var b = s && s.bags, lt = (s && s.lifetime) || {};
+    var PACK = ['Buy a credit pack', '/pricing', true];
+    // ⚠ FAILS CLOSED: no bags payload = her S403 line and no buttons. Never a lie.
+    if (!b) return { line: 'To get more credits you can send in more items, or buy a credit pack.', btns: [] };
+    if (b.return_delivered) return { line: 'Your bag made it back to us. Your credits land once it\u2019s graded, or you can buy a credit pack to shop now.', btns: [PACK] };   // case 3
+    if (b.bag_shipped) return { line: 'To get more credits you can send in more items, or buy a credit pack.', btns: [['How to send your bag', '/how-it-works'], PACK] };   // case 2, her S403 line
+    var firstBag = (Number(lt.items_received) || 0) === 0 && (Number(lt.items_kept_from_landfill) || 0) === 0;
+    if (b.has_bag_history === false || (b.bag_out && firstBag)) {
+      // case 1: her first bag is not out yet. No credit pack: a send-first member was told
+      // "no charge today", so a pack would be a surprise first charge (S406).
+      return { line: 'Your first swap bag is getting ready. Fill it up and send it back to earn credits.', btns: [['See what we accept', '/the-closet-standard']] };
+    }
+    if (b.bag_out) {
+      // found at the S406 build, not in the mockup: a later bag still on the ship desk
+      // (it rides inside an order she has placed). Claude's wording; hers to change.
+      return { line: 'Your next swap bag is coming with your order. You can also buy a credit pack to shop now.', btns: [PACK] };
+    }
+    // case 4: no bag anywhere. Her next bag comes inside her next order (S357 gap stays open).
+    return { line: 'Your next swap bag comes with your next order. Buy a credit pack to shop now.', btns: [PACK] };
+  }
+
+  function bankHtml(s, capOverride) {
+    var bc = (s.bank && s.bank.by_class) || {}, bct = (s.bank && s.bank.by_class_tier) || {}, caps = s.caps || {};
+    var c = bankNum(bc.clothing), t = bankNum(bc.toy), total = c + t;
+    var shown = [];
+    if (bankNum(caps.clothing) > 0 || c > 0) shown.push(['clothing', c]);
+    if (bankNum(caps.toy) > 0 || t > 0) shown.push(['toy', t]);
+    var empty = total < 1;
+    var coins = empty ? 0 : Math.min(PSPOTS.length, Math.floor(c) + Math.floor(t));
+    var cap = capOverride || (total === 0 ? '0 credits' : (empty ? 'Half a credit' : (total === 1 ? '1 credit' : String(total) + ' credits')));
+    function kind(x, withTiers) {
+      return '<div class="ksb-pk' + (x[1] ? '' : ' zero') + '"><span class="lab"><img alt="" src="' + PILE_ART + x[0] + '-face.webp"><b>' +
+        esc(String(x[1]) + ' ' + x[0] + ' credit' + (x[1] === 1 ? '' : 's')) + '</b></span>' +
+        (withTiers ? '<span class="tl">' + bankTierWords(bct[x[0]]) + '</span>' : '') + '</div>';
+    }
+    var meta, pop = '';
+    if (empty) {
+      var e = bankEmpty(s);
+      // case 6: half a credit. Same buttons as her bag case, with one line in front (S406).
+      var line = e.line && total > 0 ? 'Another half makes it whole. ' + e.line : e.line;
+      meta = '<div class="ksb-cap">' + esc(cap) + '</div>' +
+        (line ? '<p class="ksb-line">' + esc(line) + '</p>' : '') +
+        (e.btns.length ? '<div class="ksb-ctas">' + e.btns.map(function (x, i) {
+          return '<a class="ksb-btn ' + (i ? 'sec' : 'pri') + '" href="' + x[1] + '"' + (x[2] ? ' data-ksb-pack="1"' : '') + '>' + esc(x[0]) + '</a>';
+        }).join('') + '</div>' : '');
+    } else {
+      meta = '<div class="ksb-cap">' + esc(cap) + '</div>' +
+        '<div class="ksb-tiers">' + shown.map(function (x) { return kind(x, false); }).join('') + '</div>' +
+        '<button class="ksb-hint" type="button" aria-expanded="false"><span class="hv">Hover to see your tiers</span><span class="tp">Tap to see your tiers</span></button>';
+      pop = '<div class="ksb-pop" role="region" aria-label="Your credits by tier"><div class="pop-h">Your credits by tier</div>' +
+        '<div class="ksb-tiers">' + shown.map(function (x) { return kind(x, true); }).join('') + '</div>' +
+        '<p class="pop-p">' + esc(BANK_PANEL_LINE) + '</p></div>';
+    }
+    return { empty: empty, coins: coins, c: Math.floor(c), t: Math.floor(t),
+      html: '<div class="ksb-pile"><div class="ksb-scene"><div class="ksb-world"></div></div></div><div class="ksb-meta">' + meta + '</div>' + pop };
+  }
+
+  function bankArmPop(wrap) {
+    var pop = wrap.querySelector('.ksb-pop'), btn = wrap.querySelector('.ksb-hint'), meta = wrap.querySelector('.ksb-meta'), pile = wrap.querySelector('.ksb-pile');
+    if (!pop || !btn) return;
+    function openPop(on) { pop.classList.toggle('open', on); btn.setAttribute('aria-expanded', on ? 'true' : 'false'); }
+    if (window.matchMedia && window.matchMedia('(hover:hover)').matches) {
+      var ht;
+      [meta, pop].forEach(function (z) {
+        z.addEventListener('mouseenter', function () { clearTimeout(ht); openPop(true); });
+        z.addEventListener('mouseleave', function () { ht = setTimeout(function () { openPop(false); }, 150); });
+      });
+    }
+    btn.addEventListener('click', function (e) { e.stopPropagation(); openPop(!pop.classList.contains('open')); });
+    pile.addEventListener('click', function (e) { e.stopPropagation(); openPop(!pop.classList.contains('open')); });
+    if (!_bankPopBound) {
+      _bankPopBound = true;
+      document.addEventListener('click', function (e) {
+        var p = document.querySelector('.ksb-pop.open');
+        if (p && !p.contains(e.target)) { p.classList.remove('open'); var b = document.querySelector('.ksb-hint'); if (b) b.setAttribute('aria-expanded', 'false'); }
+      });
+      document.addEventListener('keydown', function (e) {
+        var p = document.querySelector('.ksb-pop.open');
+        if ((e.key === 'Escape' || e.keyCode === 27) && p) { p.classList.remove('open'); var b = document.querySelector('.ksb-hint'); if (b) { b.setAttribute('aria-expanded', 'false'); b.focus(); } }
+      });
+    }
+  }
+
+  // The credit pack button: jump to the dashboard's own pack section when it is on screen,
+  // otherwise it is a plain link to /pricing (which sells both packs). Never a dead button.
+  function bankArmPack(wrap) {
+    wrap.querySelectorAll('[data-ksb-pack]').forEach(function (a) {
+      a.addEventListener('click', function (e) {
+        var m = document.querySelector('.credit-pack-menu');
+        if (m && m.offsetParent !== null) { e.preventDefault(); m.scrollIntoView({ behavior: COIN_REDUCE ? 'auto' : 'smooth', block: 'center' }); }
+      });
+    });
+  }
+
+  window.addEventListener('resize', function () { if (_bankFit) _bankFit(); });
+
+  // from = how many coins are already sitting there; coins from..n-1 fall. from >= n sits still.
+  function bankPile(wrap, info, from) {
+    var box = wrap.querySelector('.ksb-pile'), scene = box.querySelector('.ksb-scene'), world = box.querySelector('.ksb-world');
+    var nc = info.c, nt = info.t, n = info.coins, total = nc + nt;
+    function isToy(i) { return total ? Math.floor((i + 1) * nt / total) > Math.floor(i * nt / total) : false; }
+    function K(i, key) { return (isToy(i) ? 'toy-' : 'clothing-') + key; }
+    function src(k) { return PILE_ART + k + '.webp'; }
+    function hOf(k) { return PCW * (PILE_H[k.replace(/^(clothing|toy)-/, '')] || 100) / 180; }
+    function el(tag, cls) { var e = document.createElement(tag); if (cls) e.className = cls; world.appendChild(e); return e; }
+    function img(key, z, w) { var e = el('img'); e.alt = ''; e.src = src(key); e.style.width = (w || PCW) + 'px'; e.style.zIndex = z; return e; }
+    var bsh = el('div');
+    bsh.style.cssText = 'position:absolute;left:0;top:0;z-index:0;width:250px;height:26px;border-radius:50%;background:radial-gradient(closest-side,rgba(33,27,26,.32),rgba(33,27,26,0));transform:translate(105px,212px)';
+    var bowl = img('bowl', 1, PBOWL.w), rim = img('bowl-rim', 100, PBOWL.w);
+    function bowlAt(r) { var tf = 'translate(' + PBOWL.x + 'px,' + PBOWL.y + 'px) rotate(' + r + 'deg)'; bowl.style.transformOrigin = rim.style.transformOrigin = '50% 100%'; bowl.style.transform = rim.style.transform = tf; }
+    bowlAt(0);
+    function finalPos(i) { var s = PSPOTS[i]; return s[4] ? { x: PCX + s[4], b: PTABLE + (s[5] || 0), z: 200 + i * 2 } : { x: PCX + s[0], b: PFLOOR - s[1], z: 10 + i * 2 }; }
+    // trim the sky to the pile's own height, same numbers as checkout (S401)
+    var top = 110;
+    for (var q = 0; q < n; q++) top = Math.min(top, finalPos(q).b - hOf(K(q, PSPOTS[q][2])));
+    var CROP = Math.max(0, top - 8), PBOT = 248;
+    function fit() { var k = scene.clientWidth / PW; world.style.transform = 'scale(' + k + ') translateY(' + (-CROP) + 'px)'; scene.style.height = ((PBOT - CROP) * k) + 'px'; }
+    fit(); _bankFit = fit;
+    function anim(d, step, done) { var t0 = null; function f(t) { if (t0 === null) t0 = t; var k = Math.min(1, (t - t0) / d); step(k); if (k < 1) requestAnimationFrame(f); else if (done) done(); } requestAnimationFrame(f); }
+    var canMove = !COIN_REDUCE && !!window.requestAnimationFrame;
+    if (!n) {                                         // the empty bowl rocks once (hers S403)
+      if (canMove) whenBankOnScreen(box, function () { anim(900, function (k) { bowlAt(4 * Math.sin(k * Math.PI * 3) * Math.pow(1 - k, 1.4)); }, function () { bowlAt(0); }); });
+      return;
+    }
+    var coins = [];
+    function rnd(a, b) { return a + Math.random() * (b - a); }
+    function place(c, x, bot, rot, sx, sy) { c.e.style.transformOrigin = '50% 100%'; c.e.style.transform = 'translate(' + (x - PCW / 2) + 'px,' + (bot - hOf(c.key)) + 'px) rotate(' + rot + 'deg) scale(' + (sx || 1) + ',' + (sy || 1) + ')'; }
+    function shadow(c, x, bot, k) { var w = 86 * (0.35 + 0.65 * k); c.sh.style.width = w + 'px'; c.sh.style.height = (14 * (0.5 + 0.5 * k)) + 'px'; c.sh.style.opacity = k * 0.6; c.sh.style.transform = 'translate(' + (x - w / 2) + 'px,' + (bot - 10) + 'px)'; }
+    function setKey(c, k) { c.key = k; c.e.src = src(k); }
+    function settle(c, i) { var s = PSPOTS[i], p = finalPos(i); setKey(c, K(i, s[2])); c.e.style.zIndex = p.z; c.sh.style.zIndex = p.z - 1; place(c, p.x, p.b, s[3]); shadow(c, p.x, p.b, 1); }
+    function nudge(i, x) {
+      coins.forEach(function (o, j) {
+        if (!o || j >= i || o.busy || PSPOTS[j][4]) return;
+        var p = finalPos(j); if (Math.abs(p.x - x) > 70) return;
+        var s = PSPOTS[j], a = rnd(1, 2.2), w = rnd(-0.6, 0.6);
+        anim(140, function (k) { place(o, p.x, p.b + Math.sin(k * Math.PI) * a, s[3] + Math.sin(k * Math.PI) * w); });
+      });
+    }
+    function drop(i) {
+      var s = PSPOTS[i], spill = !!s[4], c = { key: K(i, PFALL[i % 3]), busy: 1 };
+      c.e = img(c.key, 10 + i * 2); c.sh = el('div', 'sh'); c.sh.style.zIndex = 9 + i * 2; coins[i] = c;
+      var land = spill ? { x: PCX + s[4] * 0.3, b: PFLOOR - s[1] - 8 } : finalPos(i);
+      var x0 = land.x + rnd(-36, 36), y0 = -60, T = rnd(380, 440), spin = rnd(200, 340) * (Math.random() < 0.5 ? -1 : 1), fl = Math.random() < 0.5 ? 1 : 2, r0 = s[3] - spin;
+      // same fade as checkout (S400/S401): solid before it lands, measured from the trimmed top
+      var fadeTo = Math.max(CROP + 12, Math.min(CROP + 60, land.b - 4));
+      c.e.style.opacity = 0; place(c, x0, y0, r0);
+      anim(T, function (k) {
+        var g = k * k, x = x0 + (land.x - x0) * (1 - (1 - k) * (1 - k)), b = y0 + (land.b - y0) * g, ph = Math.cos(k * fl * Math.PI * 2);
+        c.e.style.opacity = Math.max(0, Math.min(1, (b - CROP) / (fadeTo - CROP)));
+        place(c, x, b, r0 + spin * (1 - (1 - k) * (1 - k)), 1, 0.3 + 0.7 * Math.abs(ph)); shadow(c, land.x, land.b, g * 0.8);
+      }, function () {
+        c.e.style.opacity = 1; setKey(c, K(i, s[2])); nudge(i, land.x);
+        var hop = rnd(2, 4), rock = rnd(2, 3.5) * (Math.random() < 0.5 ? -1 : 1), rot = s[3];
+        anim(60, function (k) { place(c, land.x, land.b, rot, 1 + 0.07 * Math.sin(k * Math.PI), 1 - 0.14 * Math.sin(k * Math.PI)); shadow(c, land.x, land.b, 1); }, function () {
+          anim(110, function (k) { place(c, land.x, land.b - Math.sin(k * Math.PI) * hop, rot + rock * k); }, function () {
+            anim(220, function (k) { place(c, land.x, land.b, rot + rock * Math.cos(k * Math.PI * 2) * Math.pow(1 - k, 2)); }, function () {
+              if (!spill) { c.busy = 0; settle(c, i); return; }
+              var p = finalPos(i), dir = Math.sign(s[4]);
+              c.e.style.zIndex = p.z; c.sh.style.zIndex = p.z - 1;
+              anim(340, function (k) {
+                var x = land.x + (p.x - land.x) * (1 - (1 - k) * (1 - k) * 0.4 - 0.6 * (1 - k)), b = land.b + (p.b - land.b) * k * k;
+                place(c, x, b, rot + dir * 28 * Math.sin(k * Math.PI)); shadow(c, x, p.b, 0.4 + 0.6 * k);
+              }, function () {
+                anim(160, function (k) { place(c, p.x, p.b - Math.sin(k * Math.PI) * 2, s[3] + dir * 4 * (1 - k)); }, function () { c.busy = 0; settle(c, i); });
+              });
+            });
+          });
+        });
+      });
+    }
+    if (!canMove) from = n;
+    var still = Math.min(from, n);
+    for (var i = 0; i < still; i++) { var cc = { key: K(i, PSPOTS[i][2]) }; cc.e = img(cc.key, 1); cc.sh = el('div', 'sh'); coins[i] = cc; settle(cc, i); }
+    if (still >= n) return;
+    wrap.classList.add('ksb--pour');
+    whenBankOnScreen(box, function () {
+      var t = 350;
+      for (var j = still; j < n; j++) {
+        (function (j) { setTimeout(function () { drop(j); }, t); })(j);
+        t += j < 14 ? (110 + Math.random() * 90) : (30 + Math.random() * 25);
+      }
+    });
+  }
+
+  // the pour waits until the bowl is on screen (a phone may need a scroll)
+  function whenBankOnScreen(box, go) {
+    var done = false;
+    function once() { if (!done) { done = true; setTimeout(go, 250); } }
+    if (!('IntersectionObserver' in window)) { once(); return; }
+    var io = new IntersectionObserver(function (ents) { ents.forEach(function (en) { if (en.isIntersecting) { io.disconnect(); once(); } }); }, { threshold: 0.6 });
+    io.observe(box);
+  }
+
+  // How many coins she has already watched land. Separate key under ?fake= so a preview
+  // never changes what her real dashboard pours.
+  function bankSeenKey() { return 'ks_bank_seen' + (_FAKE ? '_fake_' + _FAKE : ''); }
+  function bankSeenGet() { try { var v = localStorage.getItem(bankSeenKey()); return v === null ? null : parseInt(v, 10); } catch (e) { return null; } }
+  function bankSeenSet(n) { try { localStorage.setItem(bankSeenKey(), String(n)); } catch (e) {} }
+
+  // opts.cap    replaces the credit line (the pack wait's "Adding your credits")
+  // opts.still  the pile sits still and "seen" is not updated (during the pack wait)
+  function paintBank(s, opts) {
+    opts = opts || {};
+    var row = document.querySelector('.ks-coins-row');
+    var wrap = document.querySelector('.ksb');
+    if (!wrap) {
+      if (!row || !row.parentNode) return;
+      wrap = document.createElement('div');
+      wrap.className = 'ksb';
+      row.parentNode.insertBefore(wrap, row);
+    }
+    if (row) row.style.display = 'none';
+    bankCss();
+    var info = bankHtml(s, opts.cap);
+    wrap.className = 'ksb' + (info.empty ? ' ksb--empty' : '');
+    wrap.innerHTML = info.html;
+    bankArmPop(wrap);
+    bankArmPack(wrap);
+    var seen = bankSeenGet(), from;
+    if (opts.still) from = info.coins;
+    else if (seen === null) from = 0;                 // first visit: the full pour
+    else from = Math.min(seen, info.coins);           // only the new coins fall
+    bankPile(wrap, info, from);
+    if (!opts.still) bankSeenSet(info.coins);
+  }
+
 function paintCoins(s) {
     _coinToTumble = [];
-
+    // S406: the old coin row is replaced by the bank (paintBank). Its [data-coin] numbers are
+    // still written, because wirePackSnapshot reads them when she taps a pack button.
     var byClass = (s.bank && s.bank.by_class) || {};
-    var byClassTier = (s.bank && s.bank.by_class_tier) || {};
-    var caps = s.caps || {};
     document.querySelectorAll('[data-coin]').forEach(function (el) {
-      var key = el.getAttribute('data-coin');
-      var n = parseFloat(byClass[key]);
-      if (isNaN(n)) n = 0;
-      el.textContent = String(n);                 // 2 -> "2", 1.5 -> "1.5", 0 -> "0"
-      var unit = el.closest('.ks-coin-unit');
-      // Show a coin if the PLAN allows this class, or if the member OWNS credits in it.
-      // A zero coin is a promise: a day-one member sees the shape of the thing they'll fill.
-      // The owns-it half only fires on a downgrade, so a member never loses sight of real credits.
-      var cap = parseFloat(caps[key]); if (isNaN(cap)) cap = 0;
-     var show = (cap > 0) || (n > 0);
-      if (unit) { unit.style.display = show ? 'flex' : 'none'; unit.style.visibility = 'visible'; }
-      if (!show || !unit) return;
-	// tier breakdown: always shown, one tier per line, under the label
-      var tierEl = unit.querySelector('.ks-coin-tier');
-      if (!tierEl) {
-        tierEl = document.createElement('div');
-        tierEl.className = 'ks-coin-tier';
-        unit.appendChild(tierEl);
-      }
-// Reserve tier space only when there ARE tiers. A zero coin has nothing to list,
-      // so the 54px reserve would hold open an empty gap under the label.
-      // The coins stay level via align-items:flex-start on .ks-coins-row, not via this reserve.
-      var tierHTML = coinTierHTML(byClassTier[key]);
-      var tierReserve = tierHTML ? '54px' : '0px';
-      // ⚠⚠ THE TIER LABELS TOUCHED — S214. The two coins overlap by 15px (.ks-coin-unit + margin-left:-15px)
-      // which is deliberate for the COINS, but it dragged the second coin's tier label under the first's.
-      // The fix lives HERE, in the inline style, because a stylesheet margin loses to the margin-left:auto
-      // set on this same line. `padding:0 12px` gives each label breathing room the overlap can't erase;
-      // the coins stay tucked, the labels clear. Do not move this to CSS — inline auto-margins win.
-      tierEl.style.cssText = 'margin-top:' + (tierHTML ? '6px' : '0') + ';font-size:12px;line-height:1.7;color:#75736E;min-height:' + tierReserve + ';display:flex;flex-direction:column;align-items:flex-start;width:fit-content;margin-left:auto;margin-right:auto;padding:0 12px;';
-      tierEl.innerHTML = tierHTML;
-      if (packWaitArm(key, n, unit, el, tierEl, tierHTML)) return;   // S356 credit pack wait owns this coin
-      var img = unit.querySelector('.ks-coin-img');
-      if (COIN_REDUCE) {                           // reduced-motion: still coin, number shown
-        if (img) img.src = COIN_FRAMES[0];
-        el.style.opacity = '1';
-        return;
-      }
-   if (img) img.src = COIN_FRAMES[0];           // arm on the flat face
-      el.style.opacity = '0';                      // hide number until it settles
-      // An ARMED coin has no number on it. Keep it invisible until its spin actually
-      // starts, so a blank gold disc can never be on screen no matter how the load times
-      // fall. visibility (not display) keeps its layout space, so the card doesn't jump.
-      unit.style.visibility = 'hidden';
-      _coinToTumble.push(unit);
+      var n = parseFloat(byClass[el.getAttribute('data-coin')]);
+      el.textContent = String(isNaN(n) ? 0 : n);
     });
+    if (packWaitArm(s)) return;                    // S356 credit pack wait owns the bank
+    paintBank(s);
   }
 
   // THE BIG DROP — HER RULING S356. Every coin entrance uses it: page load AND the credit
@@ -847,37 +1118,29 @@ function paintCoins(s) {
     }, true);   // capture phase: Memberstack's own handler cannot beat it
   }
 
-  function packWaitArm(key, n, unit, el, tierEl, tierHTML) {
-    if (!_packFor || key !== _packFor || _FAKE) return false;
+  // S406: the pack wait now lives in the bank. While waiting, the pile sits still and the
+  // credit line reads "Adding your credits"; when they land the bank repaints and only the
+  // new coins fall. Same snapshot rules as S356.
+  function packWaitArm(s) {
+    if (!_packFor || _FAKE) return false;
+    var bc = (s.bank && s.bank.by_class) || {};
+    var n = parseFloat(bc[_packFor]); if (isNaN(n)) n = 0;
     if (_pack) {
       if (_pack.done) return false;
-      el.style.opacity = '0';                        // a repaint must not reveal the old number
-      if (tierEl) tierEl.textContent = PACK_WAIT_TEXT;
+      paintBank(s, { cap: PACK_WAIT_TEXT, still: true });
       return true;
     }
-    var img = unit.querySelector('.ks-coin-img'), coin = unit.querySelector('.ks-coin');
-    if (!img || !coin) return false;               // cannot animate -> normal paint
     var snap = null;
     try { snap = JSON.parse(sessionStorage.getItem(PACK_KEY) || 'null'); } catch (x) {}
-    if (!(snap && snap.key === key && typeof snap.n === 'number' && (Date.now() - snap.t) < 3600000)) {
-      packCleanup();                               // stale address: strip it, paint normally
+    if (!(snap && snap.key === _packFor && typeof snap.n === 'number' && (Date.now() - snap.t) < 3600000)) {
+      packCleanup();
       console.log('[ks-dash] credit pack wait NOT armed: no snapshot from this tab');
       return false;
     }
-    var base = snap.n;
-    _pack = { key: key, base: base, unit: unit, num: el, tier: tierEl, img: img, coin: coin, loop: null, done: false, polling: false };
-    el.style.transition = 'none';
-    el.style.opacity = '0';
-    unit.style.visibility = 'visible';
-    if (tierEl) { tierEl.textContent = PACK_WAIT_TEXT; tierEl.style.marginTop = '6px'; }
-    console.log('[ks-dash] credit pack wait:', key, '| baseline', base, '| painted', n);
-    if (n > base) { packLand(n, tierHTML); return true; }   // already arrived before this paint
-    if (COIN_REDUCE) { img.src = COIN_FRAMES[0]; }
-    else {
-      var i = 0;
-      _pack.loop = setInterval(function () { img.src = COIN_FRAMES[PACK_LOOP[i % PACK_LOOP.length]]; i++; }, 52);
-    }
-    // BACKSTOP: if polling never starts for any reason, the coin still cannot spin forever.
+    _pack = { key: _packFor, base: snap.n, s: s, done: false, polling: false };
+    console.log('[ks-dash] credit pack wait:', _packFor, '| baseline', snap.n, '| painted', n);
+    if (n > snap.n) { _pack.done = true; packCleanup(); return false; }   // already arrived: paint normally, new coins fall
+    paintBank(s, { cap: PACK_WAIT_TEXT, still: true });
     setTimeout(function () { if (_pack && !_pack.done) packGiveUp(); }, PACK_GIVEUP_MS + 5000);
     return true;
   }
@@ -898,7 +1161,7 @@ function paintCoins(s) {
             if (_pack.done) return;
             var bank = (st && st.bank) || {};
             var n = parseFloat(bank.by_class && bank.by_class[_pack.key]);
-            if (!isNaN(n) && n > _pack.base) packLand(n, coinTierHTML(bank.by_class_tier && bank.by_class_tier[_pack.key]));
+            if (!isNaN(n) && n > _pack.base) packLand(n, st);
             else tick();
           })
           .catch(function () { tick(); });
@@ -906,40 +1169,17 @@ function paintCoins(s) {
     })();
   }
 
-  function packLand(n, tierHTML) {
+  function packLand(n, st) {
     var p = _pack; p.done = true;
-    if (p.loop) clearInterval(p.loop);
     packCleanup();
     console.log('[ks-dash] credit pack landed:', p.key, p.base, '->', n);
-    function settle() {
-      p.num.textContent = String(n);
-      p.num.style.transition = 'opacity 200ms ease-out';
-      p.num.style.opacity = '1';
-      if (p.tier) {
-        p.tier.innerHTML = tierHTML;
-        p.tier.style.marginTop = tierHTML ? '6px' : '0';
-        p.tier.style.minHeight = tierHTML ? '54px' : '0px';
-      }
-    }
-    if (COIN_REDUCE) { p.img.src = COIN_FRAMES[0]; settle(); return; }
-    if (p.coin.animate) {                            // the shared BIG drop, hers S356
-      p.coin.animate(COIN_DROP, { duration: COIN_DROP_MS, easing: 'ease-out' });
-    }
-    var j = 0;
-    var spin = setInterval(function () {
-      p.img.src = COIN_FRAMES[COIN_SPIN[j]];
-      j++;
-      if (j >= COIN_SPIN.length) { clearInterval(spin); p.img.src = COIN_FRAMES[0]; }
-    }, 26);
-    setTimeout(settle, COIN_NUM_AT);
+    paintBank(st);                                 // only the new coins fall
   }
 
   function packGiveUp() {
     var p = _pack; if (!p || p.done) return;
     p.done = true;
-    if (p.loop) clearInterval(p.loop);
-    p.img.src = COIN_FRAMES[0];                      // stays BLANK, hers S356: the old number never shows
-    if (p.tier) p.tier.textContent = PACK_LATE_TEXT;
+    paintBank(p.s, { cap: PACK_LATE_TEXT, still: true });   // hers S356: the old number never shows
     packCleanup();
     console.log('[ks-dash] credit pack wait gave up after', PACK_GIVEUP_MS, 'ms');
   }
@@ -1061,17 +1301,9 @@ function paintCoins(s) {
     var jsub = document.querySelector('.ks-greet-sub');
     if (jsub) { jsub.textContent = JUST_JOINED.shop.sub; jsub.classList.remove('ks-greet-accent'); }
     setCTA(JUST_JOINED.shop.cta, 'closet', key === 'toy' ? '/toys' : '/clothing');
-    var el = document.querySelector('[data-coin="' + key + '"]');
-    var unit = el && el.closest('.ks-coin-unit');
-    if (unit) {
-      unit.style.display = 'flex'; unit.style.visibility = 'visible';
-      el.style.transition = 'none'; el.style.opacity = '0';
-      var img = unit.querySelector('.ks-coin-img'); if (img) img.src = COIN_FRAMES[0];
-      var tierEl = unit.querySelector('.ks-coin-tier');
-      if (!tierEl) { tierEl = document.createElement('div'); tierEl.className = 'ks-coin-tier'; unit.appendChild(tierEl); }
-      tierEl.style.cssText = 'margin-top:6px;font-size:12px;line-height:1.7;color:#75736E;text-align:center;padding:0 12px;';
-      tierEl.textContent = PACK_LATE_TEXT;
-    }
+    // S406: the late line now sits in the bank, where the credits will show
+    var bcap = document.querySelector('.ksb-cap');
+    if (bcap) bcap.textContent = PACK_LATE_TEXT;
     cover.remove();
   }
 
@@ -2825,7 +3057,16 @@ function paintCloset(s) {
                   bag_shipped: true,  return_delivered: false },
     /* the carrier says it reached us; grading has not closed, so returned_at is still null */
     processing: { bag_out: true,  free_bag_used: false, has_bag_history: true, in_flight_count: 1,
-                  bag_shipped: true,  return_delivered: true }
+                  bag_shipped: true,  return_delivered: true },
+    /* S406 empty-bank previews */
+    nobag:      { bag_out: false, free_bag_used: true, has_bag_history: true, in_flight_count: 0,
+                  bag_shipped: false, return_delivered: false },
+    ordered:    { bag_out: true,  free_bag_used: true, has_bag_history: true, in_flight_count: 1,
+                  bag_shipped: false, return_delivered: false },
+    half:       { bag_out: true,  free_bag_used: true, has_bag_history: true, in_flight_count: 1,
+                  bag_shipped: true,  return_delivered: false },
+    paused:     { bag_out: false, free_bag_used: true, has_bag_history: true, in_flight_count: 0,
+                  bag_shipped: false, return_delivered: false }
   };
 
   function applyFake(s) {
@@ -2841,6 +3082,17 @@ function paintCloset(s) {
       s.closet = [];
       s.activity = [];
       s.signals = { is_capped: false, expiring_soon: false, has_credits: false };
+      // S406: nobag, ordered and half are past members (items already received), so the
+      // bank's first-bag case does not claim them; half holds one half credit; paused is paused.
+      if (_FAKE === 'nobag' || _FAKE === 'ordered' || _FAKE === 'half' || _FAKE === 'paused') {
+        s.lifetime.items_received = 3; s.lifetime.items_kept_from_landfill = 3;
+      }
+      if (_FAKE === 'half') { s.bank = { total: 0.5, by_tier: { essentials: 0.5 }, by_class: { clothing: 0.5, toy: 0 }, by_class_tier: { clothing: { essentials: 0.5 }, toy: {} } }; }
+      if (_FAKE === 'paused') { s.member_status = 'paused'; }
+    } else if (_FAKE === 'big') {             // S406: past 30 coins the pile stops, the number counts
+      s.bank = { total: 50, by_tier: { essentials: 30, elevated: 10, special: 10 }, by_class: { clothing: 42, toy: 8 },
+                 by_class_tier: { clothing: { essentials: 30, elevated: 10, special: 2 }, toy: { special: 8 } } };
+      s.signals = Object.assign({}, s.signals || {}, { has_credits: true });
     } else if (_FAKE === 'capped') {           // holds credits, this cycle's swaps all used
       s.available_this_cycle = { total: 0, clothing: 0, toy: 0 };
       s.signals = Object.assign({}, s.signals || {}, { is_capped: true });
