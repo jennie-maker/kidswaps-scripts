@@ -28,6 +28,17 @@
  *   "Empty Cache and Hard Reload" if old behavior persists on a 200 new @sha.
  *
  * MOUNT: <div id="ks-browse-app" data-type="all|clothing|toy"></div>
+ *
+ * S401 (2026-09-26), HER OWN HOLDS ARE HERS: opening /checkout puts a 30-minute
+ *   hold on her items (status 'reserved'), and get_available_inventory only lists
+ *   'available'. So her own held items read "No longer available" in the bag, were
+ *   left out of the swap counter, and were DROPPED when she tapped Check out (seen
+ *   S401 on KS-01133 and KS-01153). Browse now asks the checkout fn
+ *   ({ action: "my_holds" }, same x-ms-token as checkout) for her holds and counts
+ *   them as available in all three places: the bag rows, liveBagItems (counter and
+ *   live messages) and the Check out tap. The bag flags nothing until her holds are
+ *   known. ⚠ FAILURE DIRECTION: logged out, a failed read or a door 403 all give "no
+ *   holds", which is exactly the behaviour before this change, never worse.
  * ==========================================================================*/
 (function () {
   'use strict';
@@ -71,6 +82,10 @@
   var CURRENT = [];           // last rendered (post-type-filter) item set
   var ALL = [];               // last fetched (pre-type-filter) — overlay looks here
   var FETCHED = false;        // true once a real inventory fetch returns — fail-open guard for the bag's "no longer available" flag (never flag before a confirmed fetch)
+  // S401: SKUs this member is holding (checkout's 30-minute hold). Counted as available.
+  var MY_HOLDS = {};
+  var HOLDS_KNOWN = false;    // the bag flags nothing "gone" until her holds are known
+  var HOLDS_GEN = 0;          // drops a slower, older holds answer
   var overlayOpen = false;
   var lastFocusEl = null;     // element to restore focus to when the overlay closes
   var currentDetailItem = null; // live overlay item — read by the mobile swipe gestures
@@ -1610,6 +1625,12 @@
     }
     return s;
   }
+  // S401: available = the public catalog PLUS her own holds.
+  function availSetOf(items, holds) {
+    var s = skuSetOf(items);
+    for (var k in holds) { if (Object.prototype.hasOwnProperty.call(holds, k)) s[k] = true; }
+    return s;
+  }
 
   // Add currentDetailItem's shape to the bag. Returns 'added' | 'dup' | 'noop'.
   function addToBag(item) {
@@ -1761,7 +1782,7 @@
       rows = '<div class="ks-bag-empty">Your bag is empty.' +
              '<span>Tap \u201cAdd to bag\u201d on any piece to start.</span></div>';
     } else {
-      var avail = FETCHED ? skuSetOf(ALL) : null;   // null until a real fetch lands — never flag before then
+      var avail = (FETCHED && HOLDS_KNOWN) ? availSetOf(ALL, MY_HOLDS) : null;   // null until the catalog AND her holds land — never flag before then (S401)
       for (var i = 0; i < bag.length; i++) {
         var it = bag[i];
         var gone = avail && !avail[it.sku];          // bagged but no longer in the available catalog
@@ -1989,6 +2010,42 @@ var GATE_COPY = {
     .then(function (r) { if (!r.ok) throw new Error('status ' + r.status); return r.json(); })
     .then(function (d) { cb(null, d); })
     .catch(function (e) { cb(e, null); });
+  }
+
+  // S401: her own holds, from the checkout fn. cb(set). Never errors: logged out, a
+  // failed or slow read, or the test door's 403 all answer {} (today's behaviour).
+  var CHECKOUT_FN_URL = SUPABASE_URL + '/functions/v1/checkout';
+  function fetchMyHolds(cb) {
+    var done = false;
+    function finish(set) { if (done) return; done = true; cb(set); }
+    setTimeout(function () { finish(null); }, 6000);   // a hung read must never hold up Check out
+    getToken(function (tok) {
+      if (!tok) { finish({}); return; }
+      fetch(CHECKOUT_FN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-ms-token': tok },
+        body: JSON.stringify({ action: 'my_holds' })
+      })
+      .then(function (r) { if (!r.ok) throw new Error('status ' + r.status); return r.json(); })
+      .then(function (d) {
+        var set = {};
+        if (d && d.ok && Array.isArray(d.holds)) d.holds.forEach(function (k) { if (k) set[k] = true; });
+        finish(set);
+      })
+      .catch(function () { finish(null); });
+    });
+  }
+  // Refresh MY_HOLDS in the background and repaint the bag when it lands. A failed
+  // read (null) keeps whatever we last knew; first-ever failure means no holds.
+  function loadMyHolds() {
+    var gen = ++HOLDS_GEN;
+    HOLDS_KNOWN = false;
+    fetchMyHolds(function (set) {
+      if (gen !== HOLDS_GEN) return;
+      if (set) MY_HOLDS = set;
+      HOLDS_KNOWN = true;
+      renderBag();
+    });
   }
 
   function ensureBagBlockCss() {
@@ -2277,8 +2334,8 @@ function outOfCreditsBlock(zeroClasses) {
 
   // S367: the bag minus anything no longer in the available catalog.
   function liveBagItems(bag) {
-    if (!FETCHED) return bag;
-    var avail = skuSetOf(ALL);
+    if (!FETCHED || !HOLDS_KNOWN) return bag;
+    var avail = availSetOf(ALL, MY_HOLDS);   // S401: her own holds count
     return bag.filter(function (it) { return avail[it.sku]; });
   }
 
@@ -2396,8 +2453,13 @@ function outOfCreditsBlock(zeroClasses) {
         // can be claimed by someone else between bagging and now. Drop anything
         // that's gone, tell the member, and run the picker on what survives.
         // Fail-open: a network hiccup here must never block a real member.
-        fetchInventory().then(function (freshItems) {
-          var live = skuSetOf(freshItems);
+        // S401: her own holds count as hers, read fresh alongside the catalog. A
+        // failed holds read falls back to the last holds we knew.
+        var holdsP = new Promise(function (res) { fetchMyHolds(res); });
+        Promise.all([fetchInventory(), holdsP]).then(function (both) {
+          var freshItems = both[0];
+          if (both[1]) { MY_HOLDS = both[1]; HOLDS_KNOWN = true; }
+          var live = availSetOf(freshItems, MY_HOLDS);
           var survivors = [], removed = [];
           for (var i = 0; i < bag.length; i++) {
             (live[bag[i].sku] ? survivors : removed).push(bag[i]);
@@ -2712,6 +2774,7 @@ function outOfCreditsBlock(zeroClasses) {
     fetchInventory()
       .then(function (items) {
         FETCHED = true;
+        loadMyHolds();   // S401: holds refresh with the catalog, so the two never disagree
         render(mount, items);
         if (typeof afterRender === 'function') afterRender();
       })
