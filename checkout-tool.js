@@ -186,6 +186,15 @@
  *     four sections with serif headings: Credit Bank, Your order, Payment ("Payment" is
  *     Claude's word, approved S408), Shipping to. The Closet Standard line sits under the
  *     items and the Worth group closes Your order.
+ *
+ * rev S408c (2026-09-27), Round 2 on the same canvas, hers:
+ *   - Large text is Instrument Serif, small is Quicksand: the bank total and Total today
+ *     are serif now (replaces the S401 Quicksand-bold total).
+ *   - Total today sits centred between a line above and a line below.
+ *   - The extra-swaps line is the note under the Extra swaps row, like the shipping note;
+ *     both notes stop short of the prices.
+ *   - Shipping to has no line of its own (the total's line closes Payment); headline
+ *     52 / 40px, section headings 28px, spacing a little tighter.
  * ========================================================================== */
 (function () {
   "use strict";
@@ -436,13 +445,14 @@
     ID + " .ks-dot--elev{background:#1c4a91;}",
     ID + " .ks-dot--spec{background:#e54f25;}",   // S401: Special is coral (was gold)
     // header / savings (all-left)
-    ID + " .ksc-head{text-align:left; font-family:'Instrument Serif',Georgia,serif; font-weight:400; font-size:3rem; line-height:1.05; letter-spacing:-.01em; margin:0; color:var(--ks-ink);}",
+    ID + " .ksc-head{text-align:left; font-family:'Instrument Serif',Georgia,serif; font-weight:400; font-size:52px; line-height:1.05; letter-spacing:-.01em; margin:0; color:var(--ks-ink);}",
     // S401 groups, with breathing room between them (approved S400 layout)
     ID + " .ksc-g{margin:0 0 36px;}",
     // S408, hers (mockup https://claude.ai/artifact/5mSvveuUkQKr5fDYSN9Pjo): the receipt is
     // four labelled sections, each with a serif heading and a thin line above.
-    ID + " .ksc-sec{border-top:1px solid var(--ks-line); padding-top:26px; margin:0 0 30px;}",
-    ID + " .ksc-sec-h{font-family:'Instrument Serif',Georgia,serif; font-weight:400; font-size:26px; line-height:1.1; color:var(--ks-ink); margin:0 0 16px;}",
+    ID + " .ksc-sec{border-top:1px solid var(--ks-line); padding-top:24px; margin:0 0 28px;}",
+    ID + " .ksc-sec--open{border-top:0; padding-top:0;}",   // S408 Round 2: the total's line already closes Payment
+    ID + " .ksc-sec-h{font-family:'Instrument Serif',Georgia,serif; font-weight:400; font-size:28px; line-height:1.1; color:var(--ks-ink); margin:0 0 16px;}",
     ID + " .ksc-sec .ksc-sum{border-top:0; padding-top:0; margin:0;}",
     ID + " .ksc-sec .ksc-seal{margin:14px 0 14px;}",
     ID + " .ksc-sec .ksc-worth{margin:0;}",
@@ -454,7 +464,8 @@
     ID + " .ksc-seal{display:flex; align-items:center; gap:8px; padding:2px 2px; margin:0 0 14px;}",
     ID + " .ksc-seal svg{flex:0 0 auto;}",
     ID + " .ksc-seal span{font-size:.86rem; color:var(--ks-ink); font-weight:500;}",
-    ID + " .ksc-extraline{font-size:.9rem; line-height:1.45; color:var(--ks-ink); font-weight:600; margin:0 0 12px;}",
+    // S408 Round 2: now the note under the Extra swaps row, styled like the shipping note
+    ID + " .ksc-extraline{font-size:.9rem; line-height:1.5; color:var(--ks-ink); font-weight:400; margin:0; padding:0 0 8px; max-width:min(440px,78%);}",
     // item tiles (thumb + name + tag)
     ID + " .ksc-items{display:flex; flex-direction:column; gap:10px; margin:0 0 18px;}",
     ID + " .ksc-item{display:flex; align-items:center; gap:13px; background:#fff;",
@@ -479,14 +490,15 @@
     ID + " .ksc-sum{border-top:1px solid var(--ks-line); padding-top:16px; margin:0 0 22px;}",
     ID + " .ksc-row{display:flex; justify-content:space-between; align-items:center; font-size:1.08rem; font-weight:600; padding:6px 0; color:var(--ks-ink);}",
     ID + " .ksc-row .k{color:var(--ks-ink); font-weight:500;}",
-    ID + " .ksc-row.total{font-size:1.4rem; font-weight:700; padding-top:14px; margin-top:8px; border-top:1px solid var(--ks-line);}",
-    ID + " .ksc-row.total .k{color:var(--ks-ink); font-weight:700;}",
+    // S408 Round 2: serif, sitting centred between a line above and a line below
+    ID + " .ksc-row.total{font-family:'Instrument Serif',Georgia,serif; font-weight:400; font-size:34px; line-height:1; padding:22px 0; margin-top:12px; border-top:1px solid var(--ks-line); border-bottom:1px solid var(--ks-line);}",
+    ID + " .ksc-row.total .k{color:var(--ks-ink); font-weight:400;}",
     ID + " .ksc-row.total span{color:var(--ks-ink);}",
     // shipping note: renders ONLY in the charged state (see renderReceipt).
     // Full-width sentence between the Shipping row and Total — not a .ksc-row
     // (it has no right-hand value), so it must not inherit the flex layout.
     ID + " .ksc-shipnote{font-size:.9rem; line-height:1.5; color:var(--ks-ink);",
-    "  padding:2px 0 6px; max-width:44ch;}",
+    "  padding:0 0 8px; max-width:min(440px,78%);}",   // S408 Round 2: stops short of the prices
     // button + secure
     ID + " .ksc-btn{display:block; width:100%; border:0; cursor:pointer; background:var(--ks-orange);",
     "  color:#fff; font-weight:700; font-size:1.02rem; font-family:inherit; border-radius:50px;",
@@ -587,7 +599,9 @@
     ID + " .ksc-pile-world .sh{border-radius:50%; background:rgba(33,27,26,.55); filter:blur(4px);}",
     ID + " .ksc-pile-meta{display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center;}",
     // S401, hers S400: the credit total is Quicksand bold everywhere
-    ID + " .ksc-pile-cap{font-family:inherit; font-weight:700; font-size:26px; line-height:1.1; color:var(--ks-ink); margin:0;}",
+    // S408 Round 2, hers: large text is Instrument Serif, small is Quicksand (replaces the
+    // S401 "total in Quicksand bold")
+    ID + " .ksc-pile-cap{font-family:'Instrument Serif',Georgia,serif; font-weight:400; font-size:40px; line-height:1; color:var(--ks-ink); margin:0;}",
     ID + " .ksc-pile-tiers{display:flex; flex-wrap:wrap; justify-content:center; gap:8px 20px; font-size:15px; line-height:1.45;}",
     ID + " .ksc-pk{display:flex; flex-wrap:wrap; align-items:center; gap:2px 12px;}",
     ID + " .ksc-pk .lab{display:inline-flex; align-items:center; gap:7px;}",
@@ -625,7 +639,7 @@
     ID + " .ksc-pile{width:290px;}",
     ID + " .ksc-worth, " + ID + " .ksc-ty-save{padding:18px;}",
     ID + " .ksc-value{font-size:1.9rem;}",
-    ID + " .ksc-head{font-size:2.4rem;}",
+    ID + " .ksc-head{font-size:40px;}",
     ID + " .ksc-screen h2{font-size:1.75rem;}",
     "}",
     "@media (min-width:601px){",
@@ -769,7 +783,7 @@
     }
     if (asSection) {   // S408: the receipt's "Shipping to" section
       return shStreet
-        ? '<section class="ksc-sec"><h2 class="ksc-sec-h">Shipping to</h2><div class="ksc-addr">' +
+        ? '<section class="ksc-sec ksc-sec--open"><h2 class="ksc-sec-h">Shipping to</h2><div class="ksc-addr">' +
             (shName ? esc(shName) + "<br>" : "") + esc(shStreet) + "<br>" +
             (shApt ? esc(shApt) + "<br>" : "") + (cityStateZip ? esc(cityStateZip) : "") +
           "</div></section>"
@@ -1197,7 +1211,8 @@
     var summary =
       '<div class="ksc-sum">' +
         (upgradeCents > 0 ? '<div class="ksc-row"><span class="k">Upgrade fees</span><span>' + esc(moneyc(upgradeCents)) + "</span></div>" : "") +
-        (extraCents > 0 ? '<div class="ksc-row"><span class="k">Extra swaps (' + extraCount + " \u00d7 " + esc(exEach) + ')</span><span>' + esc(moneyc(extraCents)) + "</span></div>" : "") +
+        (extraCents > 0 ? '<div class="ksc-row"><span class="k">Extra swaps (' + extraCount + " \u00d7 " + esc(exEach) + ')</span><span>' + esc(moneyc(extraCents)) + "</span></div>" +
+          extrasLineHtml(p, lines) : "") +   // S408 Round 2: its reason sits under it
         '<div class="ksc-row"><span class="k">Shipping</span><span>' + esc(shipVal) + "</span></div>" +
         shipNote +
         '<div class="ksc-row total"><span class="k">Total today</span><span>' + moneyc(totalCents) + "</span></div>" +
@@ -1236,7 +1251,6 @@
       '<section class="ksc-sec"><h2 class="ksc-sec-h">Credit Bank</h2>' +
         bankHtml(p.bank, p.cap, null, { when: "now" }) + "</section>" +
       '<section class="ksc-sec"><h2 class="ksc-sec-h">Your order</h2>' +
-        extrasLineHtml(p, lines) +
         '<div class="ksc-items" style="margin-bottom:0;">' + itemsHtml + "</div>" +
         '<div class="ksc-seal">' + shieldCheck() + "<span>Every piece meets The Closet Standard</span></div>" +
         '<div class="ksc-worth"><p class="ksc-value">Worth about ' + moneyRound(value) + " new</p>" +

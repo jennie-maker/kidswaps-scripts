@@ -727,42 +727,43 @@ label.textContent = 'Credit Bank';   // hers S406
     var st = document.createElement('style');
     st.id = 'ks-bank-css';
     st.textContent =
-      '.ksb{position:relative;display:flex;align-items:center;justify-content:center;gap:22px;margin:4px 0 0;text-align:left;}' +
-      '.ksb-pile{position:relative;flex:none;width:150px;cursor:pointer;}' +
+      // S408, hers: layout D, "one centre line", the same bank as checkout-tool.js @9cfb4d4.
+      // A white card; the bowl, the total, the two kinds side by side, the tier link, centred.
+      '.ksb{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px;margin:4px 0 0;text-align:center;background:#fff;border:1px solid rgba(33,27,26,.14);border-radius:16px;padding:30px 32px;}' +
+      '.ksb-pile{position:relative;flex:none;width:350px;max-width:100%;cursor:pointer;}' +
       '.ksb-scene{position:relative;overflow:hidden;}' +
       '.ksb--pour .ksb-scene{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 9%);mask-image:linear-gradient(to bottom,transparent 0,#000 9%);}' +
       '.ksb-world{position:absolute;left:0;top:0;width:460px;height:305px;transform-origin:0 0;}' +
       '.ksb-world img,.ksb-world .sh{position:absolute;left:0;top:0;will-change:transform;max-width:none;}' +
       '.ksb-world .sh{border-radius:50%;background:rgba(33,27,26,.55);filter:blur(4px);}' +
-      '.ksb-meta{flex:none;white-space:nowrap;}' +
-      '.ksb--empty .ksb-meta{flex:1;min-width:0;max-width:340px;white-space:normal;}' +
-      '.ksb-cap{font-weight:700;font-size:19px;line-height:1.2;color:#211b1a;margin:0 0 8px;}' +
-      '.ksb-tiers{display:flex;flex-direction:column;gap:6px;font-size:13.5px;line-height:1.45;}' +
+      '.ksb-meta{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;}' +
+      // S408 hers: large text is Instrument Serif, small is Quicksand (same as checkout @S408c)
+      '.ksb-cap{font-family:"Instrument Serif",Georgia,serif;font-weight:400;font-size:40px;line-height:1;color:#211b1a;margin:0;}' +
+      '.ksb-tiers{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 20px;font-size:15px;line-height:1.45;}' +
       '.ksb-pk{display:flex;flex-wrap:wrap;align-items:center;gap:2px 12px;}' +
       '.ksb-pk .lab{display:inline-flex;align-items:center;gap:7px;}' +
-      '.ksb-pk img{width:16px;height:auto;}' +
+      '.ksb-pk img{width:18px;height:auto;}' +
       '.ksb-pk b{font-weight:600;color:#211b1a;}' +
       '.ksb-pk.zero b{color:#6E6A63;font-weight:500;}' +
       '.ksb-pk .tl{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 12px;}' +
       '.ksb-ess{color:#6E6A63;}.ksb-elev{color:#1c4a91;font-weight:600;}.ksb-spec{color:#e54f25;font-weight:600;}' +
-      '.ksb-hint{display:inline-block;margin:10px 0 0;border:0;background:none;padding:3px 0;font-family:inherit;font-size:12.5px;color:#6E6A63;text-decoration:underline;text-underline-offset:3px;border-radius:4px;cursor:pointer;}' +
+      '.ksb-hint{display:inline-block;margin:0;border:0;background:none;padding:3px 0;font-family:inherit;font-size:12.5px;color:#6E6A63;text-decoration:underline;text-underline-offset:3px;border-radius:4px;cursor:pointer;}' +
       '.ksb-hint:focus-visible{outline:2px solid #211b1a;outline-offset:2px;}' +
       '.ksb-hint .tp{display:none;}' +
       '@media (hover:none){.ksb-hint .hv{display:none;}.ksb-hint .tp{display:inline;}}' +
       '.ksb-pop{position:absolute;top:calc(100% + 6px);left:50%;width:300px;max-width:100%;box-sizing:border-box;background:#fff;border:1px solid rgba(33,27,26,.14);border-radius:16px;box-shadow:0 10px 30px rgba(30,26,25,.14);padding:16px 18px 14px;text-align:center;white-space:normal;opacity:0;pointer-events:none;transform:translate(-50%,-6px);transition:opacity .18s ease,transform .18s ease;z-index:600;}' +
       '.ksb-pop.open{opacity:1;pointer-events:auto;transform:translate(-50%,0);}' +
       '.ksb-pop .pop-h{font-family:"Instrument Serif",Georgia,serif;font-size:19px;color:#211b1a;margin:0 0 10px;}' +
-      '.ksb-pop .ksb-tiers{gap:10px;font-size:14px;align-items:center;}' +
+      '.ksb-pop .ksb-tiers{flex-direction:column;flex-wrap:nowrap;gap:10px;font-size:14px;align-items:center;}' +
       '.ksb-pop .ksb-pk{flex-direction:column;gap:2px;}' +
       '.ksb-pop .ksb-pk img{width:18px;}' +
       '.ksb-pop .pop-p{font-size:13px;line-height:1.5;color:#6E6A63;margin:12px 0 0;}' +
-      '.ksb-line{font-size:14.5px;line-height:1.5;color:#4d4843;margin:0 0 14px;}' +
-      '.ksb-ctas{display:flex;flex-wrap:wrap;gap:10px;}' +
+      '.ksb-line{font-size:14.5px;line-height:1.5;color:#4d4843;margin:0;max-width:360px;}' +
+      '.ksb-ctas{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;}' +
       '.ksb-btn{display:inline-block;font-family:inherit;font-size:15px;font-weight:700;border-radius:999px;padding:11px 18px;border:1.5px solid #211b1a;text-decoration:none;cursor:pointer;line-height:1.2;}' +
       '.ksb-btn.pri{background:#211b1a;color:#fff;}.ksb-btn.sec{background:transparent;color:#211b1a;}' +
       '@media (prefers-reduced-motion:reduce){.ksb-pop{transition:none;}}' +
-      '@media (max-width:600px){.ksb-pile{width:130px;}.ksb--empty .ksb-btn{width:100%;text-align:center;}}' +
-      '@media (max-width:360px){.ksb-pile{width:110px;}.ksb{gap:14px;}.ksb--empty{flex-direction:column;align-items:flex-start;gap:12px;}}';
+      '@media (max-width:600px){.ksb{padding:24px 18px;}.ksb-pile{width:290px;}.ksb--empty .ksb-btn{width:100%;text-align:center;}}';
     document.head.appendChild(st);
   }
 
