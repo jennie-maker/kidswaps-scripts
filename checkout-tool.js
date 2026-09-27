@@ -189,7 +189,7 @@
   var LAST_LINES = {};      // sku -> last rendered line (for modal open)
   var LAST_PREVIEW = null;  // last preview payload (success screen reads items/value/bank from it)
   var IDEM_KEY = null;      // stable per unchanged cart; reset on any credit change (fresh order = fresh key)
-  var MS_FIELDS = null;     // Memberstack customFields (shipping-* + name); loaded once at boot, read synchronously by renderSuccess
+  var MS_FIELDS = null;     // Memberstack customFields (shipping-* ONLY since S402; the name comes from the preview); loaded once at boot
 
   function newIdemKey() {
     if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
@@ -259,6 +259,15 @@
         MS_FIELDS = (m && m.data && m.data.customFields) || null;
       }).catch(function () {});
     } catch (e) {}
+  }
+  /* S402, HER RULING: the name on checkout comes from the Supabase member row
+     (what the ship desk card and so the label print), sent by the checkout fn
+     as preview.member_name AS STORED. NEVER Memberstack's first-name/last-name:
+     those held an old surname. No name in the payload = no name on screen. */
+  function memberName(k) {
+    var n = LAST_PREVIEW && LAST_PREVIEW.member_name;
+    var v = n && n[k];
+    return (typeof v === "string") ? v.trim() : "";
   }
   function msField(k) {
     var v = MS_FIELDS && MS_FIELDS[k];
@@ -728,7 +737,7 @@
     var shCity   = msField("shipping-city");
     var shState  = msField("shipping-state");
     var shZip    = msField("shipping-zip");
-    var shName   = [displayName(msField("first-name")), displayName(msField("last-name"))].filter(Boolean).join(" ");
+    var shName   = [displayName(memberName("first_name")), displayName(memberName("last_name"))].filter(Boolean).join(" ");
     var cityStateZip = "";
     if (shCity || shState || shZip) {
       cityStateZip = shCity;
@@ -1017,7 +1026,7 @@
     // ⚠⚠ USE THE displayName() ALREADY IN THIS FILE. Do not add a second casing helper and
     // do not reach for the deleted titleCase() - it lowercases first and breaks McAllister.
     var head = lines.length === 1 ? "Your swap is ready" : "Your swaps are ready";
-    var headName = displayName(msField("first-name"));
+    var headName = displayName(memberName("first_name"));
     if (headName) head += ", " + headName + ".";
     var value = Number(p.value_of_items) || 0;
     var totalCents = (p.fees && Number(p.fees.total_cents)) || 0;
@@ -1367,7 +1376,7 @@
     var bankTy = bankHtml(p.bank, p.cap, lines, { when: "after", center: true, pour: true });
 
     // greet by name when present; count-neutral, drops cleanly to "You're all set." with no fallback word
-    var firstName = displayName(msField("first-name"));
+    var firstName = displayName(memberName("first_name"));
     var headline = firstName ? ("You\u2019re all set, " + esc(firstName) + ".") : "You\u2019re all set.";
 
     // order number = first 8 hex of the idempotency key (per-checkout identity; exact-match lookup on claim_idempotency PK)
