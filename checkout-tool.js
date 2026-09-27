@@ -195,6 +195,9 @@
  *     both notes stop short of the prices.
  *   - Shipping to has no line of its own (the total's line closes Payment); headline
  *     52 / 40px, section headings 28px, spacing a little tighter.
+ *
+ * rev S408d (2026-09-27), hers: the "You have" eyebrow over the bank total (every bank),
+ *   and the bank card's padding tightened to match the dashboard.
  * ========================================================================== */
 (function () {
   "use strict";
@@ -590,7 +593,7 @@
     // with the sky above the pile and the table below trimmed (see bankScene()).
     // S408, hers: layout D, "one centre line". A white card; the bowl, the total, the two
     // kinds side by side, then the tier link, all centred. Every bank looks like this.
-    ID + " .ksc-bank{position:relative; display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center; background:#fff; border:1px solid var(--ks-line); border-radius:16px; padding:30px 32px;}",
+    ID + " .ksc-bank{position:relative; display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center; background:#fff; border:1px solid var(--ks-line); border-radius:16px; padding:24px 32px 22px;}",
     ID + " .ksc-pile{position:relative; flex:none; width:350px; max-width:100%; cursor:pointer;}",
     ID + " .ksc-pile-scene{position:relative; overflow:hidden;}",
     ID + " .ksc-bank--pour .ksc-pile-scene{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 9%); mask-image:linear-gradient(to bottom,transparent 0,#000 9%);}",   // S400: no hard top edge while coins fall in
@@ -601,6 +604,7 @@
     // S401, hers S400: the credit total is Quicksand bold everywhere
     // S408 Round 2, hers: large text is Instrument Serif, small is Quicksand (replaces the
     // S401 "total in Quicksand bold")
+    ID + " .ksc-pile-eyebrow{font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#6E6A63; margin:0 0 -8px;}",   // S408 hers, every bank
     ID + " .ksc-pile-cap{font-family:'Instrument Serif',Georgia,serif; font-weight:400; font-size:40px; line-height:1; color:var(--ks-ink); margin:0;}",
     ID + " .ksc-pile-tiers{display:flex; flex-wrap:wrap; justify-content:center; gap:8px 20px; font-size:15px; line-height:1.45;}",
     ID + " .ksc-pk{display:flex; flex-wrap:wrap; align-items:center; gap:2px 12px;}",
@@ -635,7 +639,7 @@
 
     "@media (max-width:600px){",
     ID + " .ksc-g{margin-bottom:30px;}",
-    ID + " .ksc-bank{padding:24px 18px;}",
+    ID + " .ksc-bank{padding:20px 16px 18px;}",
     ID + " .ksc-pile{width:290px;}",
     ID + " .ksc-worth, " + ID + " .ksc-ty-save{padding:18px;}",
     ID + " .ksc-value{font-size:1.9rem;}",
@@ -907,7 +911,7 @@
           '<div class="ksc-pile-scene"><div class="ksc-pile-world"></div></div>' +
         "</div>" +
         '<div class="ksc-pile-meta" id="ksc-pile-meta">' +
-          '<div class="ksc-pile-cap">' + esc(capText) + "</div>" +
+          '<div class="ksc-pile-eyebrow">You have</div><div class="ksc-pile-cap">' + esc(capText) + "</div>" +
           (empty ? emptyWords : "") +
           (!empty ? '<div class="ksc-pile-tiers">' + kinds + "</div>" +
             '<button class="ksc-pile-hint" id="ksc-pile-btn" type="button" aria-expanded="false" aria-controls="ksc-pile-pop">' +

@@ -1990,3 +1990,29 @@
     .ks-look-l         { font-size: 12px; }
     .ks-look-note      { font-size: 17px; }
   }
+
+
+  /* =====================================================================================
+     S408, HERS: THE TIGHTENING PASS (mockup "The dashboard, tightened" on
+     https://claude.ai/artifact/5mSvveuUkQKr5fDYSN9Pjo). One block, last in the file, so it
+     wins on source order at the same specificity. Every value it replaces is left above.
+     ===================================================================================== */
+  .ks-hero-card .ks-bank-label { margin: 0 0 14px; }
+  .ks-hero-card .ks-cycle-bar-wrap { margin: 16px 0 6px; }
+  .ks-hero-card .ks-bank-earned { margin-top: 12px; padding-top: 12px; }
+  /* one divider around "N credits added since you joined", not two */
+  .ks-hero-card .credit-pack-menu { margin-top: 14px; padding-top: 0; border-top: 0; }
+  /* Look what you've done: no big gap under the numbers */
+  .ks-sec-look .ks-panel { padding-bottom: 0; }
+  .ks-sec-hcw .ks-panel { padding-top: 22px; margin-top: 22px; }
+  .ks-hcw-row { padding: 0 0 14px; }
+  /* Recent activity: shorter rows */
+  .ks-act-row { padding: 12px 0 13px; }
+  /* My closet: the photo fills a square instead of floating in a tall white box */
+  .ks-find-ph { aspect-ratio: 1 / 1; background: #FFFFFF; padding: 8px; box-sizing: border-box; border-bottom: 1px solid #EEEFE3; }
+  .ks-find-ph img { object-fit: contain; }
+  .ks-find-body { padding: 10px 12px 12px; }
+  @media (max-width: 767px) {
+    .ks-hero-card { padding: 18px 16px 18px; }
+    .ks-hero-card .ks-bank-label { margin: 0 0 12px; }
+  }
