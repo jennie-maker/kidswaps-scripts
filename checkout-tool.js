@@ -121,6 +121,30 @@
  *     text, what she paid, what she saved (gold number, no box), LEFT IN YOUR BANK (the
  *     S397 watercolor bowl, coins pour in), YOUR ORDER, address, timeline, buttons
  *     (stacked on phones). The old top coin band is gone from this screen.
+ *
+ * rev S401 (2026-09-26), THE BANK LAYOUT, approved S400 off
+ * https://claude.ai/artifact/7QNvesQqvqdKzXdUFtpoBS (option 1 "Side by side", worth
+ * lines "together"):
+ *   - ONE bank on both screens: bowl on the left, words on the right, no box. The old
+ *     top-right spinning coins are DELETED from this file (markup, CSS, frames, arm and
+ *     tumble), not left inert. bankHtml() builds the bank for both screens.
+ *   - RECEIPT: on a computer the bank sits in the headline's row, on the right; on a
+ *     phone (600px and under) it gets its own row above the headline. It shows the
+ *     CURRENT bank sitting still (the S215 ruling holds), the sky above the bowl
+ *     trimmed, and the tier panel opens downward.
+ *   - Groups with breathing room: the headline; the Worth group on rgba(33,27,26,.045)
+ *     ("Worth about $X new" in Instrument Serif green, then one paragraph: "That's
+ *     about what it would cost new in stores." plus the credits-used line); then the
+ *     Closet Standard line sitting with the item cards.
+ *   - Special's dot is coral #e54f25 (was gold).
+ *   - THANK-YOU: "Left in your bank" (Instrument Serif, centred), the bank centred, the
+ *     savings group on the same subtle background ("$X" Instrument Serif gold), then
+ *     "Your order" (Instrument Serif, centred).
+ *   - The credit total is Quicksand bold everywhere (was Instrument Serif).
+ *   - Page width 560 -> 680 on a computer, so the headline has room beside the bank
+ *     (the approved mockup's desktop frame).
+ *   - RULE, hers S400: every bank (checkout top, thank-you, dashboard) always looks the
+ *     same; change them together.
  * ========================================================================== */
 (function () {
   "use strict";
@@ -349,55 +373,28 @@
     "  --ks-green:#309359; --ks-gold:#eda920; --ks-blue:#1c4a91;",
     "  --ks-muted:#6E6A63; --ks-line:rgba(33,27,26,.14);",
     "  --ks-card:#fff;",
-    "  max-width:560px; margin:0 auto; padding:24px 18px 64px; text-align:left;",
+    "  max-width:680px; margin:0 auto; padding:24px 18px 64px; text-align:left;",
     "  font-family:Quicksand,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;",
     "  color:var(--ks-ink); -webkit-font-smoothing:antialiased; box-sizing:border-box;",
     "}",
     ID + " *{box-sizing:border-box;}",
-    // coins (top-right)
-    // bank (#ksc-bank = the future step-6 animation mount; coins are the static stand-in)
-    ID + " #ksc-bank{display:flex; justify-content:flex-end; margin:0 0 18px;}",
-    // ---- THE REAL COINS, PORTED FROM dashboard-tool.js @7d49e80 / dashboard.css
-    // @91d836e (S217). The old .ksc-coin / .ksc-coins pill rules were DELETED, not left
-    // inert (§0) - nothing wears those classes any more.
-    // ⚠⚠ NOTHING IS SHARED WITH THE DASHBOARD. Its coin styling lives in dashboard.css;
-    // this file injects all its CSS as a string array, so every rule below is a hand
-    // copy. IF ONE SURFACE CHANGES, DIFF THE OTHER - they are two artifacts now.
-    ID + " .ks-coins-row{display:flex; gap:0; align-items:flex-start;}",
-    // ⚠ THE -15px OVERLAP SITS ON THE UNIT, NOT THE COIN, so coin + label + tiers shift
-    // together as a column. The tier label's own 12px padding is what stops the second
-    // coin's label sliding under the first's (dashboard.css S214).
-    ID + " .ks-coin-unit{display:flex; flex-direction:column; align-items:center;}",
-    ID + " .ks-coin-unit + .ks-coin-unit{margin-left:-15px;}",
-    // ⚠⚠ THREE NUMBERS MOVE TOGETHER OR THE COINS BREAK: the 87px box, the 29px numeral
-    // and the -15px overlap. The art is a 130px PNG, so the img rule is not optional.
-    ID + " .ks-coin{width:87px; height:87px; position:relative;}",
-    ID + " .ks-coin .ks-coin-img{width:100%; height:100%; display:block;}",
-    // ⚠⚠ THE ENGRAVED NUMERAL IS THE ONLY SANCTIONED GOLD ON THIS COMPONENT (her S53
-    // ruling, carried across). DO NOT restore an ink fill. It ships at opacity 0 and is
-    // faded in by the tumble; the watchdog forces it visible if the spin never runs.
-    ID + " .ks-coin .ks-coin-num{position:absolute; inset:0; font-family:Quicksand,sans-serif;",
-    "  font-weight:600; font-size:29px; line-height:1; display:flex; align-items:center;",
-    "  justify-content:center; color:#D9AF4A; opacity:0;",
-    "  text-shadow:0 -1px 0 rgba(120,84,16,.55), 0 1px 0 rgba(255,250,222,.95);}",
-    ID + " .ks-coin-label{font-size:.82rem; font-weight:700; color:var(--ks-ink); text-align:center; padding:0 12px; letter-spacing:normal;}",
-    // tier breakdown - ALWAYS SHOWN, her S216 ruling. Empty when the class has no tiers,
-    // and the reserve collapses so a zero coin holds no empty gap open.
-    ID + " .ks-coin-tier{margin-top:6px; font-size:12px; line-height:1.7; color:var(--ks-muted);",
-    "  display:flex; flex-direction:column; align-items:flex-start; width:fit-content;",
-    "  margin-left:auto; margin-right:auto; padding:0 12px;}",
-    ID + " .ks-tier-row{display:flex; align-items:center; gap:7px;}",
     ID + " .ks-dot{width:7px; height:7px; border-radius:50%; flex:none;}",
     // ⚠ ONE TIER LANGUAGE EVERYWHERE (her S213/S214 rulings): essentials green, elevated
     // blue, special brand yellow. These match dashboard.css and browse-tool.js. A change
     // here is a change on all three.
     ID + " .ks-dot--ess{display:none;}",   // S398: Essentials carries no dot (S218)
     ID + " .ks-dot--elev{background:#1c4a91;}",
-    ID + " .ks-dot--spec{background:#eda920;}",
+    ID + " .ks-dot--spec{background:#e54f25;}",   // S401: Special is coral (was gold)
     // header / savings (all-left)
-    ID + " .ksc-head{text-align:left; font-family:'Instrument Serif',Georgia,serif; font-weight:400; font-size:3.2rem; line-height:1.05; letter-spacing:-.01em; margin:0 0 8px; color:var(--ks-ink);}",
-    ID + " .ksc-value{text-align:left; font-size:1.3rem; color:var(--ks-green); margin:0 0 4px; font-weight:700; line-height:1.2;}",
-    ID + " .ksc-sub{text-align:left; font-size:.92rem; color:var(--ks-muted); margin:0 0 20px; font-weight:500;}",
+    ID + " .ksc-head{text-align:left; font-family:'Instrument Serif',Georgia,serif; font-weight:400; font-size:3rem; line-height:1.05; letter-spacing:-.01em; margin:0; color:var(--ks-ink);}",
+    // S401 groups, with breathing room between them (approved S400 layout)
+    ID + " .ksc-g{margin:0 0 36px;}",
+    ID + " .ksc-rhead{display:flex; align-items:center; justify-content:space-between; gap:32px;}",
+    ID + " .ksc-rhead .ksc-head{flex:1; min-width:0;}",
+    ID + " .ksc-rhead .ksc-bank{flex:none;}",
+    ID + " .ksc-worth{display:flex; flex-direction:column; gap:6px; background:rgba(33,27,26,.045); border-radius:16px; padding:22px 24px;}",
+    ID + " .ksc-value{text-align:left; font-family:'Instrument Serif',Georgia,serif; font-weight:400; font-size:2.1rem; line-height:1.05; color:var(--ks-green); margin:0;}",
+    ID + " .ksc-sub{text-align:left; font-size:.95rem; line-height:1.45; color:rgba(33,27,26,.82); margin:0; font-weight:500;}",
     // seal (KidSwaps green)
     ID + " .ksc-seal{display:flex; align-items:center; gap:8px; padding:2px 2px; margin:0 0 14px;}",
     ID + " .ksc-seal svg{flex:0 0 auto;}",
@@ -503,51 +500,70 @@
     ID + " .ksc-ty-thanks .t{font-weight:700; font-size:1.1rem; margin:6px 0 4px;}",
     ID + " .ksc-ty-thanks .b{font-size:.9rem; line-height:1.55; max-width:34ch; margin:0 auto;}",
     ID + " .ksc-ty-paid{border-top:1px solid var(--ks-line); border-bottom:1px solid var(--ks-line); padding:12px 0; margin:0 0 18px; display:flex; flex-direction:column; gap:8px; font-size:.9rem;}",
-    ID + " .ksc-ty-save{text-align:center; margin:0 0 30px;}",
-    ID + " .ksc-ty-save .n{font-size:3rem; font-weight:700; line-height:1; color:var(--ks-gold);}",
-    ID + " .ksc-ty-save .l{font-size:.85rem; margin-top:6px; color:var(--ks-ink);}",
-    ID + " .ksc-ty-h{font-size:1rem; font-weight:700; color:var(--ks-ink); margin:0 0 8px;}",
-    ID + " .ksc-ty-h.c{text-align:center; margin-bottom:2px;}",
+    ID + " .ksc-ty-save{text-align:center; background:rgba(33,27,26,.045); border-radius:16px; padding:22px 24px;}",
+    ID + " .ksc-ty-save .n{font-family:'Instrument Serif',Georgia,serif; font-size:3rem; font-weight:700; line-height:1; color:var(--ks-gold);}",
+    ID + " .ksc-ty-save .l{font-size:.95rem; margin-top:6px; color:var(--ks-ink);}",
+    ID + " .ksc-ty-h{font-family:'Instrument Serif',Georgia,serif; font-weight:400; font-size:2rem; line-height:1.1; color:var(--ks-ink); margin:0 0 16px; text-align:center;}",
     ID + " .ksc-ty-item{display:flex; align-items:center; gap:10px; background:#fff; border:1px solid var(--ks-line); border-radius:10px; padding:6px 10px; margin-bottom:6px;}",
     ID + " .ksc-ty-item .ksc-thumb{width:36px; height:36px; border-radius:6px;}",
     ID + " .ksc-ty-item .nm{font-weight:700; font-size:.9rem; line-height:1.25; color:var(--ks-ink);}",
     ID + " .ksc-ty-btns{display:flex; gap:8px;}",
-    // THE BOWL (her S397 look). World is 460x305 and scales to the box width.
-    ID + " .ksc-pile{position:relative; max-width:190px; margin:0 auto;}",
-    ID + " .ksc-pile-scene{position:relative; overflow:hidden; -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 9%); mask-image:linear-gradient(to bottom,transparent 0,#000 9%);}",   // S400: no hard top edge
+    // THE BANK (S401, the approved S400 layout, option 1 "Side by side"): bowl on the
+    // left, words on the right, no box. World is 460x305, scaled to the scene width,
+    // with the sky above the pile and the table below trimmed (see bankScene()).
+    ID + " .ksc-bank{position:relative; display:flex; align-items:center; gap:22px;}",
+    ID + " .ksc-bank--c{justify-content:center;}",
+    ID + " .ksc-pile{position:relative; flex:none; width:140px; cursor:pointer;}",
+    ID + " .ksc-pile-scene{position:relative; overflow:hidden;}",
+    ID + " .ksc-bank--pour .ksc-pile-scene{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 9%); mask-image:linear-gradient(to bottom,transparent 0,#000 9%);}",   // S400: no hard top edge while coins fall in
     ID + " .ksc-pile-world{position:absolute; left:0; top:0; width:460px; height:305px; transform-origin:0 0;}",
     ID + " .ksc-pile-world img, " + ID + " .ksc-pile-world .sh{position:absolute; left:0; top:0; will-change:transform; max-width:none;}",
     ID + " .ksc-pile-world .sh{border-radius:50%; background:rgba(33,27,26,.55); filter:blur(4px);}",
-    // S400: the approved S397 bank, under the bowl and in the tier panel
-    ID + " .ksc-bankwrap{position:relative; margin:0 0 26px;}",
-    ID + " .ksc-pile-meta{text-align:center; padding:2px 16px 0;}",
-    ID + " .ksc-pile-cap{font-family:'Instrument Serif',Georgia,serif; font-size:22px; color:var(--ks-ink); margin:0 0 6px;}",
-    ID + " .ksc-pile-tiers{display:flex; flex-direction:column; align-items:center; gap:6px; font-size:14px; line-height:1.5;}",
-    ID + " .ksc-pk{display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:2px 14px;}",
-    ID + " .ksc-pk .lab{display:inline-flex; align-items:center; gap:8px;}",
-    ID + " .ksc-pk img{width:18px; height:auto;}",
+    ID + " .ksc-pile-meta{text-align:left; flex:none; white-space:nowrap;}",
+    // S401, hers S400: the credit total is Quicksand bold everywhere
+    ID + " .ksc-pile-cap{font-family:inherit; font-weight:700; font-size:19px; line-height:1.2; color:var(--ks-ink); margin:0 0 8px;}",
+    ID + " .ksc-pile-tiers{display:flex; flex-direction:column; gap:6px; font-size:13.5px; line-height:1.45;}",
+    ID + " .ksc-pk{display:flex; flex-wrap:wrap; align-items:center; gap:2px 12px;}",
+    ID + " .ksc-pk .lab{display:inline-flex; align-items:center; gap:7px;}",
+    ID + " .ksc-pk img{width:16px; height:auto;}",
     ID + " .ksc-pk b{font-weight:600; color:var(--ks-ink);}",
-    ID + " .ksc-pk .tl{display:flex; flex-wrap:wrap; justify-content:center; gap:2px 14px;}",
+    ID + " .ksc-pk .tl{display:flex; flex-wrap:wrap; justify-content:center; gap:2px 12px;}",
     ID + " .ksc-tw-ess{color:#6E6A63;}" + ID + " .ksc-tw-elev{color:#1c4a91; font-weight:600;}" + ID + " .ksc-tw-spec{color:#e54f25; font-weight:600;}",
-    ID + " .ksc-pile-hint{margin:8px auto 0; display:block; border:0; background:none; padding:4px 8px; font-family:inherit; font-size:13px; color:#6E6A63; text-decoration:underline; text-underline-offset:3px; border-radius:6px; cursor:pointer;}",
+    ID + " .ksc-pile-hint{display:inline-block; margin:10px 0 0; border:0; background:none; padding:3px 0; font-family:inherit; font-size:12.5px; color:#6E6A63; text-decoration:underline; text-underline-offset:3px; border-radius:4px; cursor:pointer;}",
     ID + " .ksc-pile-hint:focus-visible{outline:2px solid var(--ks-ink); outline-offset:2px;}",
     ID + " .ksc-pile-hint .tp{display:none;}",
     "@media (hover:none){" + ID + " .ksc-pile-hint .hv{display:none;}" + ID + " .ksc-pile-hint .tp{display:inline;}}",
-    ID + " .ksc-pile{cursor:pointer;}",
-    ID + " .ksc-pile-pop{position:absolute; left:50%; bottom:calc(100% - 34px); transform:translate(-50%,8px); width:min(92%,420px); box-sizing:border-box; background:#fff; border:1px solid var(--ks-line); border-radius:16px; box-shadow:0 10px 30px rgba(30,26,25,.14); padding:16px 18px 14px; text-align:center; opacity:0; pointer-events:none; transition:opacity .18s ease, transform .18s ease; z-index:600;}",
-    ID + " .ksc-pile-pop.open{opacity:1; pointer-events:auto; transform:translate(-50%,0);}",
+    // the tier panel opens DOWNWARD (S400). Left-aligned by default, right-aligned in the
+    // computer headline row, centred on the thank-you screen.
+    ID + " .ksc-pile-pop{position:absolute; top:calc(100% + 6px); left:0; width:300px; max-width:100%; box-sizing:border-box; background:#fff; border:1px solid var(--ks-line); border-radius:16px; box-shadow:0 10px 30px rgba(30,26,25,.14); padding:16px 18px 14px; text-align:center; white-space:normal; opacity:0; pointer-events:none; transform:translateY(-6px); transition:opacity .18s ease, transform .18s ease; z-index:600;}",
+    ID + " .ksc-pile-pop.open{opacity:1; pointer-events:auto; transform:none;}",
+    ID + " .ksc-rhead .ksc-pile-pop{left:auto; right:0;}",
+    ID + " .ksc-bank--c .ksc-pile-pop{left:50%; transform:translate(-50%,-6px);}",
+    ID + " .ksc-bank--c .ksc-pile-pop.open{transform:translate(-50%,0);}",
     ID + " .ksc-pile-pop .pop-h{font-family:'Instrument Serif',Georgia,serif; font-size:19px; color:var(--ks-ink); margin:0 0 10px;}",
-    ID + " .ksc-pile-pop .ksc-pile-tiers{gap:10px;}",
+    ID + " .ksc-pile-pop .ksc-pile-tiers{gap:10px; font-size:14px; align-items:center;}",
     ID + " .ksc-pile-pop .ksc-pk{flex-direction:column; gap:2px;}",
+    ID + " .ksc-pile-pop .ksc-pk img{width:18px;}",
     ID + " .ksc-pile-pop .pop-p{font-size:13px; line-height:1.5; color:#6E6A63; margin:12px 0 0;}",
     "@media (prefers-reduced-motion:reduce){" + ID + " .ksc-pile-pop{transition:none;}}",
     "@media (max-width:480px){",
     ID + " .ksc-ty-btns{flex-direction:column;}",
     "}",
+    "@media (max-width:360px){",
+    ID + " .ksc-rhead .ksc-pile{width:110px;}",
+    ID + " .ksc-bank{gap:14px;}",
+    "}",
     "@media (max-width:600px){",
-    // ⚠ THE MOBILE FLIP TO flex-start IS RETIRED - HER RULING S217. The coins sit TOP
-    // RIGHT at every width, on both screens. Do not restore a left-align breakpoint.
-    ID + " .ksc-head{font-size:2.5rem;}",
+    // S401: on a phone the bank gets its own row ABOVE the headline (column-reverse keeps
+    // the headline first in the markup for screen readers), left-aligned, panel opening
+    // down from the left.
+    ID + " .ksc-g{margin-bottom:30px;}",
+    ID + " .ksc-rhead{flex-direction:column-reverse; align-items:flex-start; gap:30px;}",
+    ID + " .ksc-rhead .ksc-pile-pop{left:0; right:auto;}",
+    ID + " .ksc-rhead .ksc-pile{width:130px;}",
+    ID + " .ksc-worth, " + ID + " .ksc-ty-save{padding:18px;}",
+    ID + " .ksc-value{font-size:1.9rem;}",
+    ID + " .ksc-head{font-size:2.4rem;}",
     ID + " .ksc-screen h2{font-size:1.75rem;}",
     "}",
     "@media (min-width:601px){",
@@ -654,60 +670,12 @@
     return '<div class="ksc-tierline"><i class="ks-dot ' + m[1] + '"></i><span>' + esc(m[0]) + "</span></div>";
   }
 
-  // ==== THE COINS =============================================================
-  // PORTED FROM dashboard-tool.js @7d49e80 (S217). #ksc-bank was always described as the
-  // "stable mount for the step-6 animated bank"; this is that bank arriving.
-  // ⚠⚠ THE DASHBOARD DOES NOT BUILD ITS OWN COIN MARKUP - the .ks-coin-unit elements are
-  // authored in WEBFLOW and its script only paints into them. This file builds everything
-  // as strings, so the markup below is NEW here and has no counterpart to diff against.
-  // The animation, the frames and the timings ARE copies and must be diffed if either
-  // surface changes.
-  var COIN_FRAMES = [
-    "https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a519b690af665b710e72397_1.png",
-    "https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a519b69f8963de4ade9c6f3_2.png",
-    "https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a519b690d55ec781cc518be_3.png",
-    "https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a519b6915f14827ff280f72_4.png",
-    "https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a519b69d6108c2bd6c11b3f_5.png",
-    "https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a519b69f8963de4ade9c6f6_6.png",
-    "https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a519b69de57bb0d285396f3_7.png",
-    "https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a519b691aee406df1bd0bda_8.png",
-    "https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a519b693f83baa40803c070_9.png",
-    "https://cdn.prod.website-files.com/69c8a3bec63e739bf6cbf213/6a519b697caae2e0fb664fee_10.png"
-  ];
-  // spin path: front(1) -> back(10) -> front(1); lands flat on frame 1 where the number sits
-  var COIN_SPIN = [0,1,2,3,4,5,6,7,8,9,8,7,6,5,4,3,2,1,0];
-  var COIN_STAGGER = 120;
+  // ==== THE COINS: DELETED S401 ===============================================
+  // The S217 top-right spinning coins (frames, spin, arm, tumble) are gone. Both screens
+  // now show the S397 bowl in the S400 side-by-side layout, built by bankHtml(). Reduced
+  // motion still lands the pile sitting still.
   var COIN_REDUCE = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-  var _coinPreload = COIN_FRAMES.map(function (u) { var im = new Image(); im.src = u; return im; });
-  // ⚠ ONE SPIN PER PAGE LOAD - CLAUDE'S CALL, REVERSIBLE. The receipt re-renders whenever
-  // she changes a credit, and re-spinning on every re-render is noise rather than a
-  // moment. The numbers show the CURRENT bank, which a credit swap does not change.
-  var _coinsSpun = false;
 
-  // tier rows under a coin. Returns "" when the class holds nothing, which collapses the
-  // reserve - a zero coin must not hold an empty gap open.
-  function coinTierHTML(obj) {
-    var order = [["essentials","Essential","Essentials","ks-dot--ess"],
-                 ["elevated","Elevated","Elevated","ks-dot--elev"],
-                 ["special","Special","Special","ks-dot--spec"]];
-    var rows = [];
-    order.forEach(function (t) {
-      var n = parseFloat(obj && obj[t[0]]);
-      if (!isNaN(n) && n > 0) {
-        rows.push('<span class="ks-tier-row"><i class="ks-dot ' + t[3] + '"></i>' +
-                  esc(String(n) + " " + (n === 1 ? t[1] : t[2])) + "</span>");
-      }
-    });
-    return rows.join("");
-  }
-
-  // ⚠⚠ THE NUMBER IS THE CURRENT BANK, NOT A PROJECTED POST-ORDER BALANCE - HER RULING
-  // S215. "0 left after this" is retired. Her reason: "we should always show what they
-  // currently have. after their order is placed, theyll see their new balance on their
-  // dashboard." Both figures ride the payload; read .now, never .after.
-  // (i) S395: afterLines is passed ONLY by the success screen. Then the number is
-  // by_class.after and the tier rows are now minus what each line used (the fn sends
-  // no per-tier after). The receipt passes nothing and still reads .now (S215 ruling).
   // S400: one copy of the tier-after rule, shared by the top coins and the bowl, so the
   // two can never disagree. Current tiers minus the credit tier each line used.
   function tiersAfter(bank, lines) {
@@ -722,103 +690,6 @@
     });
     return out;
   }
-  function coinsHtml(bank, cap, afterLines) {
-    var bc = (bank && bank.by_class) || {};
-    var bt = (bank && bank.by_class_tier) || {};
-    var useAfter = Array.isArray(afterLines);
-    if (useAfter) bt = tiersAfter(bank, afterLines);
-    function countFor(key) {
-      var v = bc[key];
-      if (!v) return 0;
-      var x = useAfter ? v.after : v.now;
-      return x != null ? x : 0;
-    }
-    var out = [];
-    function coin(key, label) {
-      var n = countFor(key);
-      return '<div class="ks-coin-unit">' +
-          '<div class="ks-coin">' +
-            '<img class="ks-coin-img" src="' + COIN_FRAMES[0] + '" alt="">' +
-            '<div class="ks-coin-num">' + esc(n) + "</div>" +
-          "</div>" +
-          '<div class="ks-coin-label">' + esc(label) + "</div>" +
-          '<div class="ks-coin-tier">' + coinTierHTML(bt[key]) + "</div>" +
-        "</div>";
-    }
-    // (a) S395, ruled S218: show a class when her plan covers it OR she holds credits in
-    // it, matching the dashboard. Gate reads the CURRENT bank so a coin never vanishes
-    // from the success screen just because this order spent it.
-    function showClass(key) {
-      var v = bc[key];
-      return (cap && cap[key] && Number(cap[key].limit) > 0) || (Number(v && v.now) > 0);
-    }
-    if (showClass("clothing")) out.push(coin("clothing", "Clothing"));
-    if (showClass("toy")) out.push(coin("toy", "Toys"));
-    if (!out.length) return "";
-    return '<div id="ksc-bank"><div class="ks-coins-row">' + out.join("") + "</div></div>";
-  }
-
-  // Arm and spin whatever coins are on screen. Called AFTER setHtml, on both the receipt
-  // and the confirmation screen.
-  // ⚠⚠ THE FAILURE DIRECTION IS LOAD-BEARING, same as the dashboard's: the real number is
-  // written into the markup FIRST and the animation only reveals it. Reduced motion, an
-  // old browser or a dropped frame all end with the CORRECT NUMBER SITTING STILL. Failure
-  // lands on "no animation", never on a blank coin.
-  function armCoins() {
-    var units = document.querySelectorAll("#ksc-bank .ks-coin-unit");
-    if (!units.length) return;
-    if (_coinsSpun || COIN_REDUCE) {
-      units.forEach(function (u) {
-        var n = u.querySelector(".ks-coin-num"); if (n) n.style.opacity = "1";
-      });
-      return;
-    }
-    _coinsSpun = true;
-    var list = [];
-    units.forEach(function (u) { u.style.visibility = "hidden"; list.push(u); });
-    requestAnimationFrame(function () {
-      list.forEach(function (u, i) { tumbleCoin(u, i * COIN_STAGGER); });
-    });
-    // WATCHDOG: a coin must never sit blank. Covers a dropped rAF or a backgrounded tab.
-    setTimeout(function () {
-      list.forEach(function (u) {
-        u.style.visibility = "visible";
-        var n = u.querySelector(".ks-coin-num");
-        if (n && n.style.opacity !== "1") n.style.opacity = "1";
-      });
-    }, 1500);
-  }
-
-  function tumbleCoin(unit, delay) {
-    var coin = unit.querySelector(".ks-coin");
-    var img  = unit.querySelector(".ks-coin-img");
-    var num  = unit.querySelector(".ks-coin-num");
-    if (!coin || !img || !num) return;
-    setTimeout(function () {
-      unit.style.visibility = "visible";        // the coin appears WITH its spin, never before
-      if (coin.animate) {                       // vertical drop-in + settle bounce
-        coin.animate([
-          { transform: "translateY(-24px)", opacity: 0.4 },
-          { transform: "translateY(0)",     opacity: 1, offset: 0.55 },
-          { transform: "translateY(-6px)",  offset: 0.72 },
-          { transform: "translateY(0)",     offset: 0.86 },
-          { transform: "translateY(-2px)",  offset: 0.94 },
-          { transform: "translateY(0)" }
-        ], { duration: 650, easing: "ease-out" });
-      }
-      var i = 0;                                // spin the frames 1 -> 10 -> 1
-      var spin = setInterval(function () {
-        img.src = COIN_FRAMES[COIN_SPIN[i]];
-        i++;
-        if (i >= COIN_SPIN.length) { clearInterval(spin); img.src = COIN_FRAMES[0]; }
-      }, 26);
-      setTimeout(function () {                  // number fades in on the flat face
-        num.style.transition = "opacity 200ms ease-out";
-        num.style.opacity = "1";
-      }, 460);
-    }, delay || 0);
-  }
-
   // (e) S395: shared by the receipt and the success screen (same fields, same look).
   function shipToBlock() {
     // shipping-to (Memberstack customFields; render only when a street is on file; apartment line only when present)
@@ -895,12 +766,20 @@
     });
     return parts.join("");
   }
-  function pileHtml(bank, cap, lines) {
+  // S401: ONE bank for both screens (the approved S400 side-by-side layout).
+  //   opts.when  "now"   = the CURRENT bank (the receipt; her S215 ruling holds)
+  //              "after" = by_class.after, tiers worked out by tiersAfter() (thank-you)
+  //   opts.center  centre the bank and its panel (thank-you)
+  //   opts.pour    coins pour in (thank-you); otherwise the pile sits still
+  // "Left in your bank" is NOT part of the bank; the thank-you screen adds it above.
+  function bankHtml(bank, cap, lines, opts) {
+    opts = opts || {};
+    var useAfter = opts.when === "after";
     var bc = (bank && bank.by_class) || {};
-    function after(k) { var v = bc[k]; return v ? pileCount(v.after != null ? v.after : v.now) : 0; }
+    function count(k) { var v = bc[k]; if (!v) return 0; return pileCount(useAfter && v.after != null ? v.after : v.now); }
     function covered(k) { var v = bc[k]; return (cap && cap[k] && Number(cap[k].limit) > 0) || pileCount(v && v.now) > 0; }
-    var c = after("clothing"), t = after("toy"), total = c + t;
-    var bt = tiersAfter(bank, lines);
+    var c = count("clothing"), t = count("toy"), total = c + t;
+    var bt = tiersAfter(bank, useAfter ? lines : []);
     var shown = [];
     if (covered("clothing") || c > 0) shown.push(["clothing", c, "clothing-face"]);
     if (covered("toy") || t > 0) shown.push(["toy", t, "toy-face"]);
@@ -913,8 +792,8 @@
     var capText = total === 0 ? "No credits yet" : (total === 1 ? "1 credit" : String(total) + " credits");
     var kinds = shown.map(function (x) { return kind(x, false); }).join("");
     var popKinds = shown.map(function (x) { return kind(x, true); }).join("");
-    return '<div class="ksc-ty-h c">Left in your bank</div>' +
-      '<div class="ksc-bankwrap" id="ksc-bankwrap">' +
+    var cls = "ksc-bank" + (opts.center ? " ksc-bank--c" : "") + (opts.pour ? " ksc-bank--pour" : "");
+    return '<div class="' + cls + '" id="ksc-bankwrap">' +
         '<div class="ksc-pile" id="ksc-pile" data-c="' + Math.floor(c) + '" data-t="' + Math.floor(t) + '">' +
           '<div class="ksc-pile-scene"><div class="ksc-pile-world"></div></div>' +
         "</div>" +
@@ -941,8 +820,6 @@
     var pile = document.getElementById("ksc-pile");
     if (!wrap || !pop || !btn || !meta) return;
     function openPop(on) { pop.classList.toggle("open", on); btn.setAttribute("aria-expanded", on ? "true" : "false"); }
-    function place() { pop.style.bottom = (meta.offsetHeight - 6) + "px"; }
-    place(); window.addEventListener("resize", place);
     if (window.matchMedia && window.matchMedia("(hover:hover)").matches) {
       var ht;
       [meta, pop].forEach(function (z) {
@@ -967,7 +844,11 @@
     }
   }
 
-  function armPile() {
+  // S401: one resize handler for whichever bowl is on screen (the receipt re-renders on
+  // every credit change, so per-render listeners would pile up on detached bowls).
+  var _bankFit = null;
+  window.addEventListener("resize", function () { if (_bankFit) _bankFit(); });
+  function armPile(pour) {
     var box = document.getElementById("ksc-pile");
     if (!box) return;
     var scene = box.querySelector(".ksc-pile-scene"), world = box.querySelector(".ksc-pile-world");
@@ -985,8 +866,15 @@
     bsh.style.cssText = "position:absolute;left:0;top:0;z-index:0;width:250px;height:26px;border-radius:50%;background:radial-gradient(closest-side,rgba(33,27,26,.32),rgba(33,27,26,0));transform:translate(105px,212px)";
     var bowl = img("bowl", 1, PBOWL.w); bowl.style.transform = "translate(" + PBOWL.x + "px," + PBOWL.y + "px)";
     var rim = img("bowl-rim", 100, PBOWL.w); rim.style.transform = "translate(" + PBOWL.x + "px," + PBOWL.y + "px)";
-    function fit() { var k = scene.clientWidth / PW; world.style.transform = "scale(" + k + ")"; scene.style.height = (PH * k) + "px"; }
-    fit(); window.addEventListener("resize", fit);
+    function finalPos(i) { var s = PSPOTS[i]; return s[4] ? { x: PCX + s[4], b: PTABLE + (s[5] || 0), z: 200 + i * 2 } : { x: PCX + s[0], b: PFLOOR - s[1], z: 10 + i * 2 }; }
+    // S401, approved S400: trim the sky above the pile and the table below it. CROP is
+    // the top of the highest landed coin, less 8; the bottom stops at 248 (under the
+    // bowl's table shadow). Same numbers as the approved mockup.
+    var top = 110;
+    for (var q = 0; q < n; q++) top = Math.min(top, finalPos(q).b - hOf(K(q, PSPOTS[q][2])));
+    var CROP = Math.max(0, top - 8), PBOT = 248;
+    function fit() { var k = scene.clientWidth / PW; world.style.transform = "scale(" + k + ") translateY(" + (-CROP) + "px)"; scene.style.height = ((PBOT - CROP) * k) + "px"; }
+    fit(); _bankFit = fit;
 
     var coins = [];
     function rnd(a, b) { return a + Math.random() * (b - a); }
@@ -1000,7 +888,6 @@
       c.sh.style.opacity = k * 0.6; c.sh.style.transform = "translate(" + (x - w / 2) + "px," + (bot - 10) + "px)";
     }
     function setKey(c, k) { c.key = k; c.e.src = src(k); }
-    function finalPos(i) { var s = PSPOTS[i]; return s[4] ? { x: PCX + s[4], b: PTABLE + (s[5] || 0), z: 200 + i * 2 } : { x: PCX + s[0], b: PFLOOR - s[1], z: 10 + i * 2 }; }
     function settle(c, i) { var s = PSPOTS[i], p = finalPos(i); setKey(c, K(i, s[2])); c.e.style.zIndex = p.z; c.sh.style.zIndex = p.z - 1; place(c, p.x, p.b, s[3]); shadow(c, p.x, p.b, 1); }
     function anim(d, step, done) { var t0 = null; function f(t) { if (t0 === null) t0 = t; var k = Math.min(1, (t - t0) / d); step(k); if (k < 1) requestAnimationFrame(f); else if (done) done(); } requestAnimationFrame(f); }
     function nudge(i, x) {
@@ -1017,11 +904,12 @@
       var land = spill ? { x: PCX + s[4] * 0.3, b: PFLOOR - s[1] - 8 } : finalPos(i);
       var x0 = land.x + rnd(-36, 36), y0 = -60, T = rnd(380, 440), spin = rnd(200, 340) * (Math.random() < 0.5 ? -1 : 1), fl = Math.random() < 0.5 ? 1 : 2, r0 = s[3] - spin;
       // S400, hers: fade in while falling, fully solid by the time its top is inside the bowl scene
-      var fadeTo = Math.max(30, Math.min(90, land.b - 10));
+      // S401: measured from the trimmed top edge (CROP), so the fade still starts at 0
+      var fadeTo = Math.max(CROP + 12, Math.min(CROP + 60, land.b - 4));
       c.e.style.opacity = 0; place(c, x0, y0, r0);
       anim(T, function (k) {           // 1. fall, tumbling
         var g = k * k, x = x0 + (land.x - x0) * (1 - (1 - k) * (1 - k)), b = y0 + (land.b - y0) * g, ph = Math.cos(k * fl * Math.PI * 2);
-        c.e.style.opacity = Math.max(0, Math.min(1, b / fadeTo));
+        c.e.style.opacity = Math.max(0, Math.min(1, (b - CROP) / (fadeTo - CROP)));
         place(c, x, b, r0 + spin * (1 - (1 - k) * (1 - k)), 1, 0.3 + 0.7 * Math.abs(ph)); shadow(c, land.x, land.b, g * 0.8);
       }, function () {                 // 2. land: squash, one small hop, rock flat
         c.e.style.opacity = 1; setKey(c, K(i, s[2])); nudge(i, land.x);
@@ -1043,7 +931,8 @@
         });
       });
     }
-    if (COIN_REDUCE || !window.requestAnimationFrame) {
+    // the receipt's bowl sits still (S400); reduced motion always sits still
+    if (!pour || COIN_REDUCE || !window.requestAnimationFrame) {
       for (var i = 0; i < n; i++) { var c = { key: K(i, PSPOTS[i][2]) }; c.e = img(c.key, 1); c.sh = el("div", "sh"); coins[i] = c; settle(c, i); }
       return;
     }
@@ -1208,14 +1097,20 @@
         "</div>" +
       "</div>";
 
+    // S401, the approved S400 layout: the headline with the bank beside it (above it on a
+    // phone); the Worth group, one paragraph, her line ("they" for several items); then
+    // the Closet Standard line sitting with the item cards.
+    var worthCtx = "That\u2019s about what " + (lines.length === 1 ? "it" : "they") + " would cost new in stores. " + subText + ".";
     setHtml(
-      coinsHtml(p.bank, p.cap) +
-      '<h1 class="ksc-head">' + esc(head) + "</h1>" +
-      '<p class="ksc-value">Worth about ' + moneyRound(value) + " new</p>" +
-      '<p class="ksc-sub">' + esc(subText) + "</p>" +
-      '<div class="ksc-seal">' + shieldCheck() + "<span>Every piece meets The Closet Standard</span></div>" +
-      extrasLineHtml(p, lines) +
-      '<div class="ksc-items">' + itemsHtml + "</div>" +
+      '<div class="ksc-g ksc-rhead"><h1 class="ksc-head">' + esc(head) + "</h1>" +
+        bankHtml(p.bank, p.cap, null, { when: "now" }) + "</div>" +
+      '<div class="ksc-g ksc-worth"><p class="ksc-value">Worth about ' + moneyRound(value) + " new</p>" +
+        '<p class="ksc-sub">' + esc(worthCtx) + "</p></div>" +
+      '<div class="ksc-g">' +
+        '<div class="ksc-seal">' + shieldCheck() + "<span>Every piece meets The Closet Standard</span></div>" +
+        extrasLineHtml(p, lines) +
+        '<div class="ksc-items" style="margin-bottom:0;">' + itemsHtml + "</div>" +
+      "</div>" +
       summary +
       '<div style="margin-bottom:22px;">' + shipToBlock() + "</div>" +
       vlGate +
@@ -1224,7 +1119,8 @@
       modalHtml
     );
 
-    armCoins();
+    armPile(false);
+    armPilePop();
     wireReceipt(vlCount > 0);
   }
 
@@ -1403,7 +1299,7 @@
     // savings = retail total (value_of_items). S398: no box, the number itself is her gold.
     // Hidden when the retail figure is missing or 0, so we never show "$0".
     var savingsBlock = (value > 0)
-      ? '<div class="ksc-ty-save"><div class="n">' + esc(moneyRound(value)) + '</div>' +
+      ? '<div class="ksc-g ksc-ty-save"><div class="n">' + esc(moneyRound(value)) + '</div>' +
           '<div class="l">What you\u2019d pay for ' + (lines.length === 1 ? "it" : "these") + ' new</div></div>'
       : "";
 
@@ -1413,6 +1309,8 @@
     var thanks = '<div class="ksc-ty-thanks">' + leaf +
       '<div class="t">Thank you for swapping</div>' +
       '<div class="b">You chose a new way to shop for your kids, and gave good things a second life.</div></div>';
+
+    var bankTy = bankHtml(p.bank, p.cap, lines, { when: "after", center: true, pour: true });
 
     // greet by name when present; count-neutral, drops cleanly to "You're all set." with no fallback word
     var firstName = displayName(msField("first-name"));
@@ -1427,8 +1325,10 @@
       orderNoHtml +
       thanks +
       '<div class="ksc-ty-paid">' + payLine + shipLine + mailLine + "</div>" +
+      // S401, the approved S400 order: Left in your bank, the bank centred, the savings
+      // group, then Your order.
+      (bankTy ? '<div class="ksc-g"><div class="ksc-ty-h">Left in your bank</div>' + bankTy + "</div>" : "") +
       savingsBlock +
-      pileHtml(p.bank, p.cap, lines) +
       '<div class="ksc-ty-h">Your order</div>' +
       itemsHtml +
       shipToBlock() +
@@ -1439,7 +1339,7 @@
       "</div>"
     );
 
-    armPile();
+    armPile(true);
     armPilePop();
   }
 
