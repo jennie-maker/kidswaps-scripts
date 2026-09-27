@@ -176,6 +176,16 @@
  *     once on the thank-you; the receipt sits still.
  *   - Pile fixes from S407: every picture downloaded before the pour; the scene grows to
  *     fit the lowest coin.
+ *
+ * rev S408b (2026-09-27), hers off https://claude.ai/artifact/5mSvveuUkQKr5fDYSN9Pjo:
+ *   - THE BANK IS LAYOUT D, "one centre line", on every screen: a white card; the bowl,
+ *     the total, the two kinds side by side, then the tier link, all centred. The
+ *     dashboard bank changes to match (hers: "the bank should always be the same
+ *     everywhere").
+ *   - THE RECEIPT: headline first at every width (no more bank beside or above it), then
+ *     four sections with serif headings: Credit Bank, Your order, Payment ("Payment" is
+ *     Claude's word, approved S408), Shipping to. The Closet Standard line sits under the
+ *     items and the Worth group closes Your order.
  * ========================================================================== */
 (function () {
   "use strict";
@@ -429,9 +439,14 @@
     ID + " .ksc-head{text-align:left; font-family:'Instrument Serif',Georgia,serif; font-weight:400; font-size:3rem; line-height:1.05; letter-spacing:-.01em; margin:0; color:var(--ks-ink);}",
     // S401 groups, with breathing room between them (approved S400 layout)
     ID + " .ksc-g{margin:0 0 36px;}",
-    ID + " .ksc-rhead{display:flex; align-items:center; justify-content:space-between; gap:32px;}",
-    ID + " .ksc-rhead .ksc-head{flex:1; min-width:0;}",
-    ID + " .ksc-rhead .ksc-bank{flex:none;}",
+    // S408, hers (mockup https://claude.ai/artifact/5mSvveuUkQKr5fDYSN9Pjo): the receipt is
+    // four labelled sections, each with a serif heading and a thin line above.
+    ID + " .ksc-sec{border-top:1px solid var(--ks-line); padding-top:26px; margin:0 0 30px;}",
+    ID + " .ksc-sec-h{font-family:'Instrument Serif',Georgia,serif; font-weight:400; font-size:26px; line-height:1.1; color:var(--ks-ink); margin:0 0 16px;}",
+    ID + " .ksc-sec .ksc-sum{border-top:0; padding-top:0; margin:0;}",
+    ID + " .ksc-sec .ksc-seal{margin:14px 0 14px;}",
+    ID + " .ksc-sec .ksc-worth{margin:0;}",
+    ID + " .ksc-addr{font-size:.9rem; color:var(--ks-muted); line-height:1.6;}",
     ID + " .ksc-worth{display:flex; flex-direction:column; gap:6px; background:rgba(33,27,26,.045); border-radius:16px; padding:22px 24px;}",
     ID + " .ksc-value{text-align:left; font-family:'Instrument Serif',Georgia,serif; font-weight:400; font-size:2.1rem; line-height:1.05; color:var(--ks-green); margin:0;}",
     ID + " .ksc-sub{text-align:left; font-size:.95rem; line-height:1.45; color:rgba(33,27,26,.82); margin:0; font-weight:500;}",
@@ -561,43 +576,41 @@
     // THE BANK (S401, the approved S400 layout, option 1 "Side by side"): bowl on the
     // left, words on the right, no box. World is 460x305, scaled to the scene width,
     // with the sky above the pile and the table below trimmed (see bankScene()).
-    ID + " .ksc-bank{position:relative; display:flex; align-items:center; gap:22px;}",
-    ID + " .ksc-bank--c{justify-content:center;}",
-    ID + " .ksc-pile{position:relative; flex:none; width:140px; cursor:pointer;}",
+    // S408, hers: layout D, "one centre line". A white card; the bowl, the total, the two
+    // kinds side by side, then the tier link, all centred. Every bank looks like this.
+    ID + " .ksc-bank{position:relative; display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center; background:#fff; border:1px solid var(--ks-line); border-radius:16px; padding:30px 32px;}",
+    ID + " .ksc-pile{position:relative; flex:none; width:350px; max-width:100%; cursor:pointer;}",
     ID + " .ksc-pile-scene{position:relative; overflow:hidden;}",
     ID + " .ksc-bank--pour .ksc-pile-scene{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 9%); mask-image:linear-gradient(to bottom,transparent 0,#000 9%);}",   // S400: no hard top edge while coins fall in
     ID + " .ksc-pile-world{position:absolute; left:0; top:0; width:460px; height:305px; transform-origin:0 0;}",
     ID + " .ksc-pile-world img, " + ID + " .ksc-pile-world .sh{position:absolute; left:0; top:0; will-change:transform; max-width:none;}",
     ID + " .ksc-pile-world .sh{border-radius:50%; background:rgba(33,27,26,.55); filter:blur(4px);}",
-    ID + " .ksc-pile-meta{text-align:left; flex:none; white-space:nowrap;}",
+    ID + " .ksc-pile-meta{display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center;}",
     // S401, hers S400: the credit total is Quicksand bold everywhere
-    ID + " .ksc-pile-cap{font-family:inherit; font-weight:700; font-size:19px; line-height:1.2; color:var(--ks-ink); margin:0 0 8px;}",
-    ID + " .ksc-pile-tiers{display:flex; flex-direction:column; gap:6px; font-size:13.5px; line-height:1.45;}",
+    ID + " .ksc-pile-cap{font-family:inherit; font-weight:700; font-size:26px; line-height:1.1; color:var(--ks-ink); margin:0;}",
+    ID + " .ksc-pile-tiers{display:flex; flex-wrap:wrap; justify-content:center; gap:8px 20px; font-size:15px; line-height:1.45;}",
     ID + " .ksc-pk{display:flex; flex-wrap:wrap; align-items:center; gap:2px 12px;}",
     ID + " .ksc-pk .lab{display:inline-flex; align-items:center; gap:7px;}",
-    ID + " .ksc-pk img{width:16px; height:auto;}",
+    ID + " .ksc-pk img{width:18px; height:auto;}",
     ID + " .ksc-pk b{font-weight:600; color:var(--ks-ink);}",
     ID + " .ksc-pk.zero b{color:#6E6A63; font-weight:500;}",   // S408, hers S406: a kind the plan covers shows at 0, grey
     // S408: the empty bank's words and buttons, the same values as the dashboard bank (hers S403/S406)
-    ID + " .ksc-bank--empty .ksc-pile-meta{flex:1; min-width:0; max-width:340px; white-space:normal;}",
-    ID + " .ksc-pile-line{font-size:14.5px; line-height:1.5; color:#4d4843; margin:0 0 14px;}",
-    ID + " .ksc-pile-ctas{display:flex; flex-wrap:wrap; gap:10px;}",
+    ID + " .ksc-pile-line{font-size:14.5px; line-height:1.5; color:#4d4843; margin:0; max-width:360px;}",
+    ID + " .ksc-pile-ctas{display:flex; flex-wrap:wrap; justify-content:center; gap:10px;}",
     ID + " .ksc-pile-cta{display:inline-block; font-family:inherit; font-size:15px; font-weight:700; border-radius:999px; padding:11px 18px; border:1.5px solid var(--ks-ink); background:var(--ks-ink); color:#fff; text-decoration:none; line-height:1.2;}",
     ID + " .ksc-pk .tl{display:flex; flex-wrap:wrap; justify-content:center; gap:2px 12px;}",
     ID + " .ksc-tw-ess{color:#6E6A63;}" + ID + " .ksc-tw-elev{color:#1c4a91; font-weight:600;}" + ID + " .ksc-tw-spec{color:#e54f25; font-weight:600;}",
-    ID + " .ksc-pile-hint{display:inline-block; margin:10px 0 0; border:0; background:none; padding:3px 0; font-family:inherit; font-size:12.5px; color:#6E6A63; text-decoration:underline; text-underline-offset:3px; border-radius:4px; cursor:pointer;}",
+    ID + " .ksc-pile-hint{display:inline-block; margin:0; border:0; background:none; padding:3px 0; font-family:inherit; font-size:12.5px; color:#6E6A63; text-decoration:underline; text-underline-offset:3px; border-radius:4px; cursor:pointer;}",
     ID + " .ksc-pile-hint:focus-visible{outline:2px solid var(--ks-ink); outline-offset:2px;}",
     ID + " .ksc-pile-hint .tp{display:none;}",
     "@media (hover:none){" + ID + " .ksc-pile-hint .hv{display:none;}" + ID + " .ksc-pile-hint .tp{display:inline;}}",
     // the tier panel opens DOWNWARD (S400). Left-aligned by default, right-aligned in the
     // computer headline row, centred on the thank-you screen.
-    ID + " .ksc-pile-pop{position:absolute; top:calc(100% + 6px); left:0; width:300px; max-width:100%; box-sizing:border-box; background:#fff; border:1px solid var(--ks-line); border-radius:16px; box-shadow:0 10px 30px rgba(30,26,25,.14); padding:16px 18px 14px; text-align:center; white-space:normal; opacity:0; pointer-events:none; transform:translateY(-6px); transition:opacity .18s ease, transform .18s ease; z-index:600;}",
-    ID + " .ksc-pile-pop.open{opacity:1; pointer-events:auto; transform:none;}",
-    ID + " .ksc-rhead .ksc-pile-pop{left:auto; right:0;}",
-    ID + " .ksc-bank--c .ksc-pile-pop{left:50%; transform:translate(-50%,-6px);}",
-    ID + " .ksc-bank--c .ksc-pile-pop.open{transform:translate(-50%,0);}",
+    // the tier panel opens downward, centred under the card (S408)
+    ID + " .ksc-pile-pop{position:absolute; top:calc(100% + 6px); left:50%; width:300px; max-width:100%; box-sizing:border-box; background:#fff; border:1px solid var(--ks-line); border-radius:16px; box-shadow:0 10px 30px rgba(30,26,25,.14); padding:16px 18px 14px; text-align:center; white-space:normal; opacity:0; pointer-events:none; transform:translate(-50%,-6px); transition:opacity .18s ease, transform .18s ease; z-index:600;}",
+    ID + " .ksc-pile-pop.open{opacity:1; pointer-events:auto; transform:translate(-50%,0);}",
     ID + " .ksc-pile-pop .pop-h{font-family:'Instrument Serif',Georgia,serif; font-size:19px; color:var(--ks-ink); margin:0 0 10px;}",
-    ID + " .ksc-pile-pop .ksc-pile-tiers{gap:10px; font-size:14px; align-items:center;}",
+    ID + " .ksc-pile-pop .ksc-pile-tiers{flex-direction:column; flex-wrap:nowrap; gap:10px; font-size:14px; align-items:center;}",
     ID + " .ksc-pile-pop .ksc-pk{flex-direction:column; gap:2px;}",
     ID + " .ksc-pile-pop .ksc-pk img{width:18px;}",
     ID + " .ksc-pile-pop .pop-p{font-size:13px; line-height:1.5; color:#6E6A63; margin:12px 0 0;}",
@@ -605,19 +618,11 @@
     "@media (max-width:480px){",
     ID + " .ksc-ty-btns{flex-direction:column;}",
     "}",
-    "@media (max-width:360px){",
-    ID + " .ksc-rhead .ksc-pile{width:110px;}",
-    ID + " .ksc-bank{gap:14px;}",
-    ID + " .ksc-bank--empty{flex-direction:column; align-items:flex-start; gap:12px;}",
-    "}",
+
     "@media (max-width:600px){",
-    // S401: on a phone the bank gets its own row ABOVE the headline (column-reverse keeps
-    // the headline first in the markup for screen readers), left-aligned, panel opening
-    // down from the left.
     ID + " .ksc-g{margin-bottom:30px;}",
-    ID + " .ksc-rhead{flex-direction:column-reverse; align-items:flex-start; gap:30px;}",
-    ID + " .ksc-rhead .ksc-pile-pop{left:0; right:auto;}",
-    ID + " .ksc-rhead .ksc-pile{width:130px;}",
+    ID + " .ksc-bank{padding:24px 18px;}",
+    ID + " .ksc-pile{width:290px;}",
     ID + " .ksc-worth, " + ID + " .ksc-ty-save{padding:18px;}",
     ID + " .ksc-value{font-size:1.9rem;}",
     ID + " .ksc-head{font-size:2.4rem;}",
@@ -748,7 +753,7 @@
     return out;
   }
   // (e) S395: shared by the receipt and the success screen (same fields, same look).
-  function shipToBlock() {
+  function shipToBlock(asSection) {
     // shipping-to (Memberstack customFields; render only when a street is on file; apartment line only when present)
     var shStreet = msField("shipping-street");
     var shApt    = msField("shipping-apartment-or-unit");
@@ -761,6 +766,14 @@
       cityStateZip = shCity;
       if (shState) cityStateZip += (cityStateZip ? ", " : "") + shState.toUpperCase();
       if (shZip)   cityStateZip += (cityStateZip ? " " : "") + shZip;
+    }
+    if (asSection) {   // S408: the receipt's "Shipping to" section
+      return shStreet
+        ? '<section class="ksc-sec"><h2 class="ksc-sec-h">Shipping to</h2><div class="ksc-addr">' +
+            (shName ? esc(shName) + "<br>" : "") + esc(shStreet) + "<br>" +
+            (shApt ? esc(shApt) + "<br>" : "") + (cityStateZip ? esc(cityStateZip) : "") +
+          "</div></section>"
+        : "";
     }
     return shStreet
       ? '<div style="border-top:1px solid var(--ks-line); margin-top:14px; padding-top:12px;">' +
@@ -1214,22 +1227,23 @@
         "</div>" +
       "</div>";
 
-    // S401, the approved S400 layout: the headline with the bank beside it (above it on a
-    // phone); the Worth group, one paragraph, her line ("they" for several items); then
-    // the Closet Standard line sitting with the item cards.
+    // S408, hers: the headline first at every width, then four sections: Credit Bank (the
+    // CURRENT bank, sitting still; S215 holds), Your order (extras line, items, the Closet
+    // Standard line under them, the Worth group closing it), Payment, Shipping to.
     var worthCtx = "That\u2019s about what " + (lines.length === 1 ? "it" : "they") + " would cost new in stores. " + subText + ".";
     setHtml(
-      '<div class="ksc-g ksc-rhead"><h1 class="ksc-head">' + esc(head) + "</h1>" +
-        bankHtml(p.bank, p.cap, null, { when: "now" }) + "</div>" +
-      '<div class="ksc-g ksc-worth"><p class="ksc-value">Worth about ' + moneyRound(value) + " new</p>" +
-        '<p class="ksc-sub">' + esc(worthCtx) + "</p></div>" +
-      '<div class="ksc-g">' +
-        '<div class="ksc-seal">' + shieldCheck() + "<span>Every piece meets The Closet Standard</span></div>" +
+      '<h1 class="ksc-head ksc-g">' + esc(head) + "</h1>" +
+      '<section class="ksc-sec"><h2 class="ksc-sec-h">Credit Bank</h2>' +
+        bankHtml(p.bank, p.cap, null, { when: "now" }) + "</section>" +
+      '<section class="ksc-sec"><h2 class="ksc-sec-h">Your order</h2>' +
         extrasLineHtml(p, lines) +
         '<div class="ksc-items" style="margin-bottom:0;">' + itemsHtml + "</div>" +
-      "</div>" +
-      summary +
-      '<div style="margin-bottom:22px;">' + shipToBlock() + "</div>" +
+        '<div class="ksc-seal">' + shieldCheck() + "<span>Every piece meets The Closet Standard</span></div>" +
+        '<div class="ksc-worth"><p class="ksc-value">Worth about ' + moneyRound(value) + " new</p>" +
+          '<p class="ksc-sub">' + esc(worthCtx) + "</p></div>" +
+      "</section>" +
+      '<section class="ksc-sec"><h2 class="ksc-sec-h">Payment</h2>' + summary + "</section>" +
+      shipToBlock(true) +
       vlGate +
       '<button class="ksc-btn" id="ksc-confirm" type="button">' + esc(btnLabel) + "</button>" +
       '<div class="ksc-secure">' + lockIcon() + "<span>Secured by Stripe</span></div>" +
