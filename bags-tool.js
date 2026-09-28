@@ -90,9 +90,17 @@
     });
   }
 
+  /* ⚠ S409, HERS (S395): names are STORED as typed ("walker three") and Shippo keeps
+     whatever is copied off this card, so the card shows capitals. Only the first
+     letter of each word is raised; the rest is left alone so "McDonald" survives.
+     Display only: nothing here writes the name back. The email fallback is never
+     touched. */
+  function capWords(t) {
+    return String(t).replace(/(^|[\s\-'])([a-z])/g, function (m, a, b) { return a + b.toUpperCase(); });
+  }
   function fullName(r) {
     var n = ((r.first_name || "") + " " + (r.last_name || "")).trim();
-    return n || r.email || "Unknown member";
+    return n ? capWords(n) : (r.email || "Unknown member");
   }
 
   function daysSince(iso) {
@@ -127,6 +135,17 @@
     if (h < AGE_RED_HOURS) return h + " hours old";
     var d = Math.floor(h / 24);
     return d + " days old";
+  }
+
+  /* ⚠ S409, HER ASK S193: the ship card shows WHEN the bag was made, labelled
+     "Created", never "Requested". Reads opened_at, the same field the age ladder
+     uses, so no server change. e.g. "Sep 24, 9:26 PM". */
+  function fmtCreated(iso) {
+    if (!iso) return "";
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + ", " +
+      d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
   }
 
   /* Short local-date, e.g. "Jul 12, 2026". Local time is correct here — these are
@@ -223,6 +242,7 @@
           '<h3 class="ksb-name">' + esc(fullName(r)) + "</h3>" +
           '<span class="ksb-age">' + esc(ageText(h)) + "</span>" +
         "</div>" +
+        (fmtCreated(r.opened_at) ? '<div class="ksb-created"><strong>Created</strong> ' + esc(fmtCreated(r.opened_at)) + "</div>" : "") +
 
         '<div class="ksb-chips">' +
           '<span class="ksb-chip">' + esc(r.plan || "No plan") + "</span>" +
@@ -233,11 +253,9 @@
 
         addressBlock(r) +
 
-        '<p class="ksb-instr"><span class="ksb-arrow">›</span>' +
-          (isOrder
-            ? "Pack her items <strong>plus an empty bag</strong> with the return label on it."
-            : "Empty bag with the return label on it, folded into an envelope. <strong>No items.</strong>") +
-        "</p>" +
+        /* ⚠ S409: the "what goes in the box" line moved to the COLUMN heading (.ksb-how),
+           said once per column. Every card in a column is the same kind, so it was the
+           same sentence on every card. */
 
         /* THE JOB — the heart of the card. Two labels, born in one sitting. */
         '<div class="ksb-job">' +
@@ -350,7 +368,6 @@
           '<span class="ksb-chip ksb-chip--free">Free · never counted</span>' +
         "</div>" +
         addressBlock(m) +
-        '<p class="ksb-instr"><span class="ksb-arrow">›</span>Her first empty bag. Free, never counted, never billed.</p>' +
         '<div class="ksb-actions">' +
           '<button class="ksb-btn ksb-btn--go ksb-btn--wide" data-act="create-signup">Create her first bag</button>' +
         "</div>" +
@@ -540,6 +557,26 @@
       "</article>";
   }
 
+  /* ---------- the day at a glance (S409) --------------------------------- */
+
+  /* "7 to send · 1 overdue · oldest waiting 3 days". Overdue and oldest count only
+     the two bag queues, the ones on the age ladder; first bags have no ladder. */
+  function summaryLine(needs, envelopes, orders) {
+    var bags = envelopes.concat(orders);
+    var total = needs.length + bags.length;
+    if (!total) return '<p class="ksb-sum">Nothing to send right now.</p>';
+    var overdue = bags.filter(function (b) { return hoursSince(b.opened_at) >= AGE_RED_HOURS; }).length;
+    var oldest = bags.reduce(function (m, b) { return Math.max(m, hoursSince(b.opened_at)); }, 0);
+    var oldestText = !bags.length ? "" :
+      oldest < 1 ? "under an hour" :
+      oldest < AGE_RED_HOURS ? oldest + (oldest === 1 ? " hour" : " hours") :
+      Math.floor(oldest / 24) + " days";
+    return '<p class="ksb-sum">' + total + " to send" +
+      (overdue ? ' · <span class="ksb-sum-red">' + overdue + " overdue</span>" : "") +
+      (oldestText ? " · oldest waiting " + oldestText : "") +
+      "</p>";
+  }
+
   /* ---------- render ----------------------------------------------------- */
 
   function render() {
@@ -563,18 +600,27 @@
         '<header class="ksb-head">' +
           "<h1>The ship desk</h1>" +
           '<p class="ksb-sub">Two labels, one job. Check the address before you print.</p>' +
+          summaryLine(needs, envelopes, orders) +
           '<button class="ksb-btn ksb-btn--ghost ksb-btn--sm" id="ksb-refresh">Refresh</button>' +
         "</header>" +
 
-        (needs.length
-          ? '<section class="ksb-sec">' +
-              '<div class="ksb-sech"><h2>Waiting on a first bag</h2><span class="ksb-count">' + needs.length + "</span></div>" +
-              needs.map(needsCard).join("") +
-            "</section>"
-          : "") +
+        /* ⚠ S409, HERS: THE THREE SEND QUEUES ARE COLOURED COLUMNS (side by side on a
+           computer, stacked on a phone). Pink, navy and ink ONLY: green, amber and red
+           already mean AGE on the card edges, and gold or green behind them would drown
+           the warning. The first-bag column now ALWAYS shows (empty line when nobody
+           is waiting), so the three columns never jump around. */
+        '<div class="ksb-desk">' +
+        '<section class="ksb-sec ksb-sec--pink">' +
+          '<div class="ksb-sech"><h2>Waiting on a first bag</h2><span class="ksb-count">' + needs.length + "</span></div>" +
+          '<p class="ksb-how">Her first empty bag. Free, never counted, never billed.</p>' +
+          (needs.length
+            ? needs.map(needsCard).join("")
+            : '<p class="ksb-empty">Nobody waiting on a first bag.</p>') +
+        "</section>" +
 
-        '<section class="ksb-sec">' +
+        '<section class="ksb-sec ksb-sec--navy">' +
           '<div class="ksb-sech"><h2>Bags to send</h2><span class="ksb-count">' + envelopes.length + "</span></div>" +
+          '<p class="ksb-how">Empty bag with the return label on it, folded into an envelope. <strong>No items.</strong></p>' +
           (envelopes.length
             ? envelopes.map(bagCard).join("")
             : '<p class="ksb-empty">Nothing to send. Bag-only jobs show up here.</p>') +
@@ -582,12 +628,16 @@
           sendForm() +
         "</section>" +
 
-        '<section class="ksb-sec">' +
+        '<section class="ksb-sec ksb-sec--ink">' +
           '<div class="ksb-sech"><h2>Orders to send</h2><span class="ksb-count">' + orders.length + "</span></div>" +
+          '<p class="ksb-how">Pack her items <strong>plus an empty bag</strong> with the return label on it.</p>' +
           (orders.length
             ? orders.map(bagCard).join("")
             : '<p class="ksb-empty">No orders waiting. Checkout puts them here.</p>') +
         "</section>" +
+        "</div>" +
+
+        '<div class="ksb-watch">' +
 
         '<section class="ksb-sec">' +
           '<div class="ksb-sech"><h2>In transit</h2><span class="ksb-count">' + inTransit.length + "</span></div>" +
@@ -609,6 +659,7 @@
             ? requests.map(requestsCard).join("")
             : '<p class="ksb-empty">No requests. Members asking for another bag this cycle land here.</p>') +
         "</section>" +
+        "</div>" +
       "</div>";
 
     /* ⚠ ONE-SHOT, and it must fire AFTER innerHTML: the toast lives on document.body,
@@ -970,6 +1021,23 @@
       R + " .ksb-count{font-weight:600;font-size:13px;min-width:26px;height:26px;padding:0 8px;border-radius:13px;display:inline-flex;align-items:center;justify-content:center;background:#EEEFE3;color:#75736E}",
       R + " .ksb-empty{color:#75736E;font-size:14px;margin:8px 0 0}",
 
+      /* S409: the day at a glance, the Created line, and the coloured send columns */
+      R + " .ksb-sum{font-size:16px;font-weight:600;color:#1E1A19;margin:8px 0 0}",
+      R + " .ksb-sum-red{color:" + RED + "}",
+      R + " .ksb-created{font-size:14px;color:#1E1A19;margin-top:6px}",
+      R + " .ksb-created strong{font-weight:700}",
+      R + " .ksb-how{font-size:14px;line-height:1.4;margin:0 0 14px}",
+      R + " .ksb-sec--pink,#" + MOUNT_ID + " .ksb-sec--navy,#" + MOUNT_ID + " .ksb-sec--ink{border-radius:22px;padding:4px 14px 14px}",
+      R + " .ksb-sec--pink,#" + MOUNT_ID + " .ksb-sec--pink .ksb-sech{background:#f491a9}",
+      R + " .ksb-sec--navy,#" + MOUNT_ID + " .ksb-sec--navy .ksb-sech{background:#1c4a91}",
+      R + " .ksb-sec--ink,#" + MOUNT_ID + " .ksb-sec--ink .ksb-sech{background:#211b1a}",
+      R + " .ksb-sec--pink h2,#" + MOUNT_ID + " .ksb-sec--pink .ksb-how,#" + MOUNT_ID + " .ksb-sec--pink .ksb-empty{color:#211b1a!important}",
+      R + " .ksb-sec--navy h2,#" + MOUNT_ID + " .ksb-sec--navy .ksb-how,#" + MOUNT_ID + " .ksb-sec--navy .ksb-empty,#" + MOUNT_ID + " .ksb-sec--ink h2,#" + MOUNT_ID + " .ksb-sec--ink .ksb-how,#" + MOUNT_ID + " .ksb-sec--ink .ksb-empty{color:#edece0!important}",
+      R + " .ksb-desk .ksb-count{background:#FFF;color:#211b1a}",
+      R + " .ksb-desk .ksb-card{box-shadow:none}",
+      R + " .ksb-desk .ksb-empty{margin:0 0 6px}",
+      R + " .ksb-sec--navy .ksb-add{background:transparent;border-color:#edece0;color:#edece0}",
+
       /* cards — phone first */
       R + " .ksb-card{background:#FFF;border-radius:18px;box-shadow:0 10px 30px -12px #C9C7BC;padding:16px;margin:0 0 16px;border-left:6px solid #75736E}",
       /* ⚠ .ksb-fresh WAS EMITTED BY ageClass() WITH NO RULE BEHIND IT — an inert class,
@@ -1074,7 +1142,17 @@
         R + " .ksb-job-t{grid-area:t;margin-bottom:0}" +
         R + " .ksb-field:first-of-type{grid-area:a}" +
         R + " .ksb-field:last-of-type{grid-area:b;margin-top:0}" +
-        R + " .ksb-btn--go{flex:0 0 auto;padding:0 28px}}"
+        R + " .ksb-btn--go{flex:0 0 auto;padding:0 28px}}",
+      /* ⚠ S409: A COMPUTER GETS THE THREE SEND COLUMNS SIDE BY SIDE, the watch lists in
+         a plain row under them. Below 1100px everything stacks as before. A column is
+         ~390px, too narrow for the side-by-side tracking fields, so the job goes back
+         to one field per row inside a column. */
+      "@media(min-width:1100px){" + R + " .ksb{max-width:1320px}" +
+        R + " .ksb-desk,#" + MOUNT_ID + " .ksb-watch{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;align-items:start}" +
+        R + " .ksb-desk .ksb-sec,#" + MOUNT_ID + " .ksb-watch .ksb-sec{margin-top:20px}" +
+        R + " .ksb-desk .ksb-job{display:block}" +
+        R + " .ksb-desk .ksb-field:last-of-type{margin-top:10px}" +
+        R + " .ksb-desk .ksb-btn--go{flex:1;padding:0 16px}}"
     ].join("\n");
     document.head.appendChild(s);
   }
