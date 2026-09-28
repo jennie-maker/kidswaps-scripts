@@ -551,7 +551,8 @@ function cycleLineString(s) {
     if (c > 0) parts.push('<b>' + c + ' clothing credit' + (c === 1 ? '' : 's') + '</b>');
     if (t > 0) parts.push('<b>' + t + ' toy credit' + (t === 1 ? '' : 's') + '</b>');
     if (!parts.length) return '';
-    return 'You have ' + parts.join(' and ') + '. They roll over.';
+    // S408 hers: the whole line goes (the bank card says the same thing right under it).
+    return '';
     // ⚠⚠ "this cycle" IMPLIED THE CREDITS EXPIRE AT CYCLE END — S214, her catch. They don't;
     //   credits persist across cycles (the never-expire rule / "safe for next month" promise).
     //   "in your bank" is accurate and drops the false expiry implication.
@@ -729,7 +730,7 @@ label.textContent = 'Credit Bank';   // hers S406
     st.textContent =
       // S408, hers: layout D, "one centre line", the same bank as checkout-tool.js @9cfb4d4.
       // A white card; the bowl, the total, the two kinds side by side, the tier link, centred.
-      '.ksb{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px;margin:4px 0 0;text-align:center;background:#fff;border:1px solid rgba(33,27,26,.14);border-radius:16px;padding:30px 32px;}' +
+      '.ksb{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px;margin:4px 0 0;text-align:center;background:#fff;border:1px solid rgba(33,27,26,.14);border-radius:16px;padding:24px 32px 22px;}' +
       '.ksb-pile{position:relative;flex:none;width:350px;max-width:100%;cursor:pointer;}' +
       '.ksb-scene{position:relative;overflow:hidden;}' +
       '.ksb--pour .ksb-scene{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 9%);mask-image:linear-gradient(to bottom,transparent 0,#000 9%);}' +
@@ -738,6 +739,8 @@ label.textContent = 'Credit Bank';   // hers S406
       '.ksb-world .sh{border-radius:50%;background:rgba(33,27,26,.55);filter:blur(4px);}' +
       '.ksb-meta{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;}' +
       // S408 hers: large text is Instrument Serif, small is Quicksand (same as checkout @S408c)
+      // S408 hers: the "You have" eyebrow over the total, on every bank
+      '.ksb-eyebrow{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#6E6A63;margin:0 0 -8px;}' +
       '.ksb-cap{font-family:"Instrument Serif",Georgia,serif;font-weight:400;font-size:40px;line-height:1;color:#211b1a;margin:0;}' +
       '.ksb-tiers{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 20px;font-size:15px;line-height:1.45;}' +
       '.ksb-pk{display:flex;flex-wrap:wrap;align-items:center;gap:2px 12px;}' +
@@ -763,7 +766,7 @@ label.textContent = 'Credit Bank';   // hers S406
       '.ksb-btn{display:inline-block;font-family:inherit;font-size:15px;font-weight:700;border-radius:999px;padding:11px 18px;border:1.5px solid #211b1a;text-decoration:none;cursor:pointer;line-height:1.2;}' +
       '.ksb-btn.pri{background:#211b1a;color:#fff;}.ksb-btn.sec{background:transparent;color:#211b1a;}' +
       '@media (prefers-reduced-motion:reduce){.ksb-pop{transition:none;}}' +
-      '@media (max-width:600px){.ksb{padding:24px 18px;}.ksb-pile{width:290px;}.ksb--empty .ksb-btn{width:100%;text-align:center;}}';
+      '@media (max-width:600px){.ksb{padding:20px 16px 18px;}.ksb-pile{width:290px;}.ksb--empty .ksb-btn{width:100%;text-align:center;}}';
     document.head.appendChild(st);
   }
 
@@ -835,13 +838,13 @@ label.textContent = 'Credit Bank';   // hers S406
       var e = bankEmpty(s);
       // case 6: half a credit. Same buttons as her bag case, with one line in front (S406).
       var line = e.line && total > 0 ? 'Another half makes it whole. ' + e.line : e.line;
-      meta = '<div class="ksb-cap">' + esc(cap) + '</div>' +
+      meta = '<div class="ksb-eyebrow">You have</div><div class="ksb-cap">' + esc(cap) + '</div>' +
         (line ? '<p class="ksb-line">' + esc(line) + '</p>' : '') +
         (e.btns.length ? '<div class="ksb-ctas">' + e.btns.map(function (x, i) {
           return '<a class="ksb-btn ' + (i ? 'sec' : 'pri') + '" href="' + x[1] + '"' + (x[2] ? ' data-ksb-pack="1"' : '') + '>' + esc(x[0]) + '</a>';
         }).join('') + '</div>' : '');
     } else {
-      meta = '<div class="ksb-cap">' + esc(cap) + '</div>' +
+      meta = '<div class="ksb-eyebrow">You have</div><div class="ksb-cap">' + esc(cap) + '</div>' +
         '<div class="ksb-tiers">' + shown.map(function (x) { return kind(x, false); }).join('') + '</div>' +
         '<button class="ksb-hint" type="button" aria-expanded="false"><span class="hv">Hover to see your tiers</span><span class="tp">Tap to see your tiers</span></button>';
       pop = '<div class="ksb-pop" role="region" aria-label="Your credits by tier"><div class="pop-h">Your credits by tier</div>' +
