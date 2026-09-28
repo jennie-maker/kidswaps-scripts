@@ -323,18 +323,18 @@
 
     /* First bags go FIRST in their tab: she is the member who has had nothing yet. */
     return [
-      { key: "bags", label: "Empty bags to send", rows: needs.map(needsRow).concat(envelopes.map(shipRow)),
+      { key: "bags", label: "Empty bags to send", short: "Empty bags", rows: needs.map(needsRow).concat(envelopes.map(shipRow)),
         empty: "No empty bags to send.",
         how: "Just an empty bag with the return label on it, folded into an envelope. No items." },
-      { key: "orders", label: "Orders to send", rows: orders.map(shipRow),
+      { key: "orders", label: "Orders to send", short: "Orders", rows: orders.map(shipRow),
         empty: "No orders waiting. Checkout puts them here.",
         how: "Pack her items plus an empty bag with the return label on it." },
       /* ⚠ RPC orders in_transit, cases and requests oldest-first. No reverse. */
-      { key: "transit", label: "In transit", rows: (_panel.in_transit || []).map(transitRow),
+      { key: "transit", label: "In transit", short: "In transit", rows: (_panel.in_transit || []).map(transitRow),
         empty: "Nothing out. Shipped bags waiting to come back show up here." },
-      { key: "cases", label: "Open cases", rows: (_panel.cases || []).map(caseRow),
+      { key: "cases", label: "Open cases", short: "Cases", rows: (_panel.cases || []).map(caseRow),
         empty: "No open cases. Lost, damaged and all-declined bags land here." },
-      { key: "requests", label: "Bag requests", rows: (_panel.requests || []).map(requestRow),
+      { key: "requests", label: "Bag requests", short: "Requests", rows: (_panel.requests || []).map(requestRow),
         empty: "No requests. Members asking for another bag this cycle land here." }
     ];
   }
@@ -448,7 +448,6 @@
       '<article class="ksb-open" data-bag="' + esc(r.id) + '" data-rt="' + esc(r.return_tracking || "") + '">' +
         cardHead(row, "<strong>Shipped</strong> " + esc(fmtDate(r.shipped_at)), row.age ? "Out " + row.age : "") +
         chips([
-          r.source === "signup" ? newTag() : "",
           '<span class="ksb-chip">' + esc(r.plan || "No plan") + "</span>",
           '<span class="ksb-chip">' + esc(SOURCE_LABEL[r.source] || r.source) + "</span>",
           '<span class="ksb-chip ksb-chip--id">' + esc(shortId(r.id)) + "</span>"
@@ -647,7 +646,8 @@
 
     var tabs = Q.map(function (t) {
       return '<button class="ksb-tab' + (t.key === cur.key ? " is-on" : "") + '" data-act="tab" data-tab="' + t.key + '">' +
-        esc(t.label) + '<span class="ksb-tab-n">' + t.rows.length + "</span></button>";
+        '<span class="ksb-tab-l">' + esc(t.label) + '</span><span class="ksb-tab-s">' + esc(t.short) + "</span>" +
+        '<span class="ksb-tab-n">' + t.rows.length + "</span></button>";
     }).join("");
 
     var list = cur.rows.map(function (row, i) {
@@ -1085,7 +1085,7 @@
       R + " button{font-family:Quicksand,sans-serif}",
 
       R + " .ksb-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;padding:18px 0 14px}",
-      R + " .ksb h1{font-family:'Instrument Serif',serif!important;font-weight:400!important;font-size:44px!important;line-height:1!important;margin:0!important;color:" + INK + "!important;text-transform:none!important}",
+      R + " .ksb h1{font-family:'Instrument Serif',serif!important;font-weight:400!important;font-size:44px!important;line-height:1!important;margin:0!important;color:" + INK + "!important;text-transform:none!important;text-align:left!important}",
       R + " .ksb-sum{font-size:16px;font-weight:600;margin:8px 0 0}",
       R + " .ksb-sum-red{color:" + RED + "}",
 
@@ -1095,6 +1095,7 @@
       R + " .ksb-tab.is-on{background:" + NAVY + ";border-color:" + NAVY + ";color:#FFF}",
       R + " .ksb-tab-n{font-size:13px;min-width:24px;height:24px;padding:0 7px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;background:" + CREAM + ";color:" + GREY + "}",
       R + " .ksb-tab.is-on .ksb-tab-n{background:#FFF;color:" + NAVY + "}",
+      R + " .ksb-tab-s{display:none}",
 
       R + " .ksb-panes{display:flex;gap:20px;align-items:flex-start}",
       R + " .ksb-list{width:400px;flex-shrink:0;background:#FFF;border-radius:18px;overflow:hidden}",
@@ -1209,8 +1210,14 @@
         R + " .ksb{padding:4px 12px 40px}" +
         R + " .ksb h1{font-size:36px!important}" +
         R + " .ksb-head{align-items:flex-start}" +
-        R + " .ksb-tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -12px 14px;padding:0 12px 4px;scrollbar-width:none}" +
-        R + " .ksb-tabs::-webkit-scrollbar{display:none}" +
+        /* ⚠ S410, HERS: ALL FIVE TABS VISIBLE AT ONCE ON A PHONE, an overview at a glance.
+           One row of five tiles: the count big on top, a short name under it. */
+        R + " .ksb-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-bottom:14px}" +
+        R + " .ksb-tab{flex-direction:column;justify-content:center;gap:2px;height:auto;min-height:68px;padding:8px 2px;border-radius:12px;white-space:normal;text-align:center}" +
+        R + " .ksb-tab-l{display:none}" +
+        R + " .ksb-tab-s{display:block;font-size:11.5px;line-height:1.15;font-weight:600}" +
+        R + " .ksb-tab-n{order:-1;background:none!important;min-width:0;height:auto;padding:0;font-size:22px;font-weight:700;color:" + INK + "}" +
+        R + " .ksb-tab.is-on .ksb-tab-n{color:#FFF}" +
         R + " .ksb-panes{display:block}" +
         R + " .ksb-list{width:100%}" +
         R + " .ksb-card-pane{display:none}" +
