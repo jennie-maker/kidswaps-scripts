@@ -2346,7 +2346,12 @@ function outOfCreditsBlock(zeroClasses) {
       /* S416, HERS, her wording: past the limit. Only a Basics member has a bigger clothing
          plan to move to (S351 proved the upgrade raises her cap the same day), so only she
          is offered it. Everyone else gets the reset date alone. */
-      var basics = ctx.__plan === 'The Basics';
+      /* S416, HERS: offer the upgrade only when it would actually get her more today. An
+         upgrade adds SWAPS, never credits (Walker upgraded with 1 credit and could still
+         take only 1 item). So: The Basics AND at least one credit the bag isn't already using. */
+      var have = creditCountByClass(ctx), spare = false;
+      per.forEach(function (r) { if ((have[r.k] || 0) > r.inBag) spare = true; });
+      var basics = ctx.__plan === 'The Basics' && spare;
       noteHtml = 'Oops, you\u2019ve already spent your ' + EXTRA_CAP + ' extra swaps this month. ' +
         (basics
           ? '<a class="ks-bag-count-link" href="/pricing">Upgrade your plan</a> to get more today, or wait until your swaps reset' +
