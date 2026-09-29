@@ -1088,6 +1088,10 @@
       'retail.</p>' +
     '</div>';
 
+  // S416: the same four paragraphs in the bag, under an upgrade row. Built FROM
+  // TIERS_BODY so her copy lives in one place. No id: one can sit under each row.
+  var BAG_TIERS_BODY = TIERS_BODY.replace('class="ks-tiers-body" id="ks-tiers-body"', 'class="ks-bag-tiers"');
+
   function detailHtml(item) {
     var photos = photoList(item);
     var hasVideo = !!item.video_url;
@@ -1645,7 +1649,8 @@
       tier:  item.tier || '',
       klass: item.item_type || '',     // 'clothing' | 'toy' — the credit class
       size:  item.size || '',
-      thumb: thumb
+      thumb: thumb,
+      retail: item.retail_value == null ? '' : item.retail_value   // S416: the upgrade row's value line
     });
     bagWrite(bag);
     updateBagCount();
@@ -1769,6 +1774,12 @@
       var rm = e.target.closest('[data-bag-remove]');
       if (rm) { removeFromBag(rm.getAttribute('data-bag-remove')); return; }
       if (e.target.closest('[data-bag-checkout]'))  { goCheckout(); return; }
+      var tl = e.target.closest('[data-bag-tiers]');
+      if (tl) {
+        var tp = tl.closest('.ks-bag-up') && tl.closest('.ks-bag-up').querySelector('.ks-bag-tiers');
+        if (tp) tl.setAttribute('aria-expanded', tp.classList.toggle('is-open') ? 'true' : 'false');
+        return;
+      }
     });
     return root;
   }
@@ -1795,29 +1806,34 @@
           ? '<img src="' + escapeHtml(it.thumb) + '" alt="" onerror="this.style.display=&quot;none&quot;">'
           : '';
         rows +=
-          '<div class="ks-bag-row' + (gone ? ' is-gone' : '') + '">' +
+          '<div class="ks-bag-row' + (gone ? ' is-gone' : '') + '" data-bag-sku="' + escapeHtml(it.sku) + '">' +
             '<div class="ks-bag-thumb">' + thumb + '</div>' +
             '<div class="ks-bag-info">' +
               '<div class="ks-bag-name">' + escapeHtml(it.name) + '</div>' +
               '<div class="ks-bag-meta"><span class="ks-bag-dot ' + dot + '"></span>' +
                 escapeHtml(meta.join(' \u00b7 ')) + '</div>' +
             (gone ? '<div class="ks-bag-gone">No longer available</div>' : '') +
+              '<div class="ks-bag-up" hidden></div>' +
             '</div>' +
             '<button type="button" class="ks-bag-x" data-bag-remove="' + escapeHtml(it.sku) +
               '" aria-label="Remove from bag">' + X_SVG + '</button>' +
           '</div>';
       }
     }
+    /* S416, HERS (mockup boards 3 and 4): "Credits and any fees are shown at checkout."
+       is GONE, and the "This month" box sits directly UNDER Check out, above her locked
+       S365 line. On an empty bag the box still shows (past extras), with no button. */
+    var counter = '<div class="ks-bag-counter" hidden></div>';
     var footer = bag.length
       ? '<div class="ks-bag-foot">' +
-          '<div class="ks-bag-note-line">Credits and any fees are shown at checkout.</div>' +
           '<button type="button" class="ks-bag-checkout" data-bag-checkout>Check out</button>' +
+          counter +
           // S365 LOCKED, HERS, VERBATIM. The drawer's ONE standing line: it carries both
           // facts (the bag dies with the tab, nothing is held). DO NOT REDRAFT.
           '<div class="ks-bag-save"><span class="ks-bag-save-i" aria-hidden="true">i</span>' +
             '<span>Closing this tab clears your bag. Nothing\u2019s reserved until you check out.</span></div>' +
         '</div>'
-      : '';
+      : '<div class="ks-bag-foot ks-bag-foot--empty">' + counter + '</div>';
     root.innerHTML =
       '<div class="ks-bag-backdrop" data-bag-close></div>' +
       '<div class="ks-bag-sheet" role="dialog" aria-modal="true" aria-label="My bag">' +
@@ -1828,10 +1844,8 @@
             (bag.length ? bag.length + (bag.length === 1 ? ' item' : ' items') : '') +
           '</span>' +
         '</div>' +
-        // S366 #CART-NUDGE: the counter replaces the top subnote. It ships HIDDEN and
-        // liveBagCheck fills it once the claim context lands, so a logged-out,
-        // non-active or failed read simply shows no counter. Ugly never, a lie never.
-        '<div class="ks-bag-counter" hidden></div>' +
+        // S366 #CART-NUDGE counter: MOVED S416 into the footer, under Check out (hers).
+        // It still ships HIDDEN and liveBagCheck fills it once the claim context lands.
         (pendingBagNote ? '<div class="ks-bag-removed">' + escapeHtml(pendingBagNote) + '</div>' : '') +
         '<div class="ks-bag-list">' + rows + '</div>' +
         footer +
@@ -1865,6 +1879,10 @@
    *  /tmp/picker.test.js (29/29) before wiring.                              *
    * ====================================================================== */
   var TIER_RANK = { essentials: 1, elevated: 2, special: 3 };
+  // S416: the extra-swap cap in ONE place. Every message reads this number, never a
+  // typed 5 (hers S395: she may raise it to 6). ⚠ The checkout fn enforces its own cap
+  // server-side; change both together.
+  var EXTRA_CAP = 5;
 
   function expMs(c) { var t = Date.parse(c.effective_expiration_date); return isNaN(t) ? Infinity : t; }
   function pickSoonest(arr) { return arr.reduce(function (b, c) { return expMs(c) < expMs(b) ? c : b; }); }
@@ -1953,7 +1971,7 @@
       newExtra += Math.max(0, (perClass[k] || 0) - Math.max(0, cap - u));
     });
     var totalExtra = alreadyExtra + newExtra;
-    if (totalExtra > 5) {
+    if (totalExtra > EXTRA_CAP) {
       return { ok: false, blocked: { type: 'extra_swap_cap', totalExtra: totalExtra, newExtra: newExtra },
                assignments: assigned.map(asgn) };
     }
@@ -2010,6 +2028,20 @@ var GATE_COPY = {
     .then(function (r) { if (!r.ok) throw new Error('status ' + r.status); return r.json(); })
     .then(function (d) { cb(null, d); })
     .catch(function (e) { cb(e, null); });
+  }
+
+  // S416: the reset date, from member-state (the dashboard's own read-only call).
+  // Never errors: a failed or slow read answers '' and the lines drop the date.
+  var MEMBER_STATE_URL = SUPABASE_URL + '/functions/v1/member-state';
+  function fetchCycleReset(tok, cb) {
+    var done = false;
+    function finish(v) { if (done) return; done = true; cb(v || ''); }
+    setTimeout(function () { finish(''); }, 4000);
+    fetch(MEMBER_STATE_URL, { method: 'POST',
+      headers: { 'x-ms-token': tok, 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (s) { finish(s && s.cycle && s.cycle.cycle_reset); })
+      .catch(function () { finish(''); });
   }
 
   // S401: her own holds, from the checkout fn. cb(set). Never errors: logged out, a
@@ -2251,37 +2283,116 @@ function outOfCreditsBlock(zeroClasses) {
   function capSeenRead()  { try { return JSON.parse(sessionStorage.getItem(CAP_SEEN_KEY)) || {}; } catch (e) { return {}; } }
   function capSeenWrite(o){ try { sessionStorage.setItem(CAP_SEEN_KEY, JSON.stringify(o)); } catch (e) {} }
 
-  // Returns { painted: bool, atCap: {clothing:bool, toy:bool} }.
+  // S416: "October 25" from member-state's cycle.cycle_reset (the dashboard's source).
+  // '' when unknown, and every line below has a version without the date.
+  function resetWords(ctx) {
+    var iso = ctx && ctx.__cycle_reset;
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    var months = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
+    return months[d.getMonth()] + ' ' + d.getDate();
+  }
+  function plural(n, one, many) { return n === 1 ? one : many; }
+
+  // Returns { painted: bool, atCap: {clothing:bool, toy:bool}, over: int }.
   function paintCounter(ctx, bag) {
     var box = document.querySelector('.ks-bag-counter');
     var atCap = {};
-    if (!box) return { painted: false, atCap: atCap };
+    if (!box) return { painted: false, atCap: atCap, over: 0 };
     var caps = ctx.caps || {}, used = ctx.used_this_cycle || {};
-    var rows = '';
+    var per = [], totalExtra = 0, pastExtra = 0;
     ['clothing', 'toy'].forEach(function (k) {
       var cap = capNum(caps[k]);
       if (cap <= 0) return;                       // not on her plan -> say nothing at all
+      var u = Number(used[k]) || 0;
       var inBag = bag.filter(function (it) { return it.klass === k; }).length;
-      var total = (Number(used[k]) || 0) + inBag;
+      var total = u + inBag;
       var within = Math.min(total, cap), extra = Math.max(0, total - cap);
+      atCap[k] = inBag > 0 && total >= cap;
+      totalExtra += extra; pastExtra += Math.max(0, u - cap);
+      per.push({ k: k, cap: cap, within: within, extra: extra, inBag: inBag });
+    });
+    if (!per.length) { box.setAttribute('hidden', ''); box.innerHTML = ''; return { painted: false, atCap: atCap, over: 0 }; }
+    var bagExtra = totalExtra - pastExtra;
+    var rows = '';
+    per.forEach(function (r) {
+      // S416, HERS (board 4): an empty bag's extras are PAST ORDERS, so say so (the
+      // S411 "plus 5 extra" on an empty bag). All used reads "plus all 5 extras".
+      var ex = '';
+      if (r.extra) {
+        if (totalExtra === EXTRA_CAP && r.extra === EXTRA_CAP) ex = 'plus all ' + EXTRA_CAP + ' extras';
+        else if (r.inBag === 0) ex = 'plus ' + r.extra + plural(r.extra, ' extra', ' extras') + ' on past orders';
+        else ex = 'plus ' + r.extra + ' extra at $5 each';
+      }
       // S366, HERS: THE BAR STAYS ALL GREEN OVER THE ALLOWANCE -- amber read as a
       // warning. It fills to the cap and stops; the extras ride the line instead.
-      var fillPct = cap ? (within / cap * 100) : 0;
-      atCap[k] = inBag > 0 && total >= cap;
+      var fillPct = r.cap ? (r.within / r.cap * 100) : 0;
       rows +=
         '<div class="ks-bag-count-row">' +
-          '<div class="ks-bag-count-line"><b>' + within + ' of ' + cap + '</b> ' + k + ' swaps used' +
-            (extra ? ', <span class="ks-bag-count-extra">plus ' + extra + ' extra at $5 each</span>' : '') +
+          '<div class="ks-bag-count-line"><b>' + r.within + ' of ' + r.cap + '</b> ' + r.k + ' swaps used' +
+            (ex ? ', <span class="ks-bag-count-extra">' + escapeHtml(ex) + '</span>' : '') +
           '</div>' +
           '<div class="ks-bag-count-bar" aria-hidden="true">' +
             '<span class="ks-bag-count-fill" style="width:' + fillPct.toFixed(2) + '%"></span>' +
           '</div>' +
         '</div>';
     });
-    if (!rows) { box.setAttribute('hidden', ''); box.innerHTML = ''; return { painted: false, atCap: atCap }; }
-    box.innerHTML = '<div class="ks-bag-count-h">This month</div>' + rows;
+    // S416, HERS: the extras limit said UP FRONT, with the number and date read from
+    // her account. Past the limit it is a warm brown, never red, and never tells her to
+    // remove anything (S215). The last line is Claude's wording, hers to change.
+    var d = resetWords(ctx), note = '', over = Math.max(0, totalExtra - EXTRA_CAP);
+    if (totalExtra > 0 && totalExtra < EXTRA_CAP) {
+      var left = EXTRA_CAP - totalExtra;
+      var until = d ? ' until your swaps reset ' + d + '.' : ' this month.';
+      note = bagExtra === 0
+        ? 'Extra swaps are $5 each. You can add ' + left + ' more' + until
+        : 'You can add ' + left + ' more ' + plural(left, 'extra', 'extras') + until;
+    } else if (totalExtra === EXTRA_CAP) {
+      note = 'That\u2019s everything for this month.' + (d ? ' Your swaps reset ' + d + '.' : '');
+    } else if (over) {
+      note = (over === 1 ? 'One item is' : over + ' items are') + ' past this month\u2019s ' + EXTRA_CAP +
+        ' extras. Your extras start fresh when your swaps reset' + (d ? ' ' + d : '') + '.';
+    }
+    box.innerHTML = '<div class="ks-bag-count-h">This month</div>' + rows +
+      (note ? '<div class="ks-bag-count-note' + (over ? ' is-over' : '') + '">' + escapeHtml(note) + '</div>' : '');
     box.removeAttribute('hidden');
-    return { painted: true, atCap: atCap };
+    return { painted: true, atCap: atCap, over: over };
+  }
+
+  /* S416, HERS (board 3): upgrades are ENCOURAGED, never warned about. Essentials-covered
+     rows say nothing (quiet means covered, her S267 tile rule). An upgrade row gets
+     "Upgrade: your <credit tier> credit + just the difference", then the item page's own
+     value words and How tiers work. Runs when the bag opens, off the same picker checkout
+     uses, so the row names the credit checkout will actually spend. */
+  function paintUpgrades(ctx, bag) {
+    var slots = document.querySelectorAll('.ks-bag-up');
+    for (var i = 0; i < slots.length; i++) { slots[i].setAttribute('hidden', ''); slots[i].innerHTML = ''; }
+    if (!bag.length) return;
+    var res;
+    try { res = resolveBag(bag, ctx); } catch (e) { return; }
+    var list = (res && res.assignments) || [];
+    list.forEach(function (a) {
+      if (a.kind !== 'upgrade') return;
+      var row = document.querySelector('.ks-bag-row[data-bag-sku="' + (window.CSS && CSS.escape ? CSS.escape(a.sku) : a.sku) + '"]');
+      var slot = row && row.querySelector('.ks-bag-up');
+      if (!slot) return;
+      var it = null, b = bagRead();
+      for (var j = 0; j < b.length; j++) { if (b[j].sku === a.sku) { it = b[j]; break; } }
+      var rv = it && it.retail !== undefined && it.retail !== '' ? it.retail : '';
+      if (rv === '') {                               // bags made before S416: look it up
+        for (var m = 0; m < ALL.length; m++) { if (ALL[m] && ALL[m].sku === a.sku) { rv = ALL[m].retail_value; break; } }
+      }
+      var val = money(rv);
+      var valWords = val ? (a.klass === 'toy' ? 'Worth about ' + val : 'Retail value new ' + val) : '';
+      slot.innerHTML =
+        '<div class="ks-bag-up-line">Upgrade: your ' + escapeHtml(tierLabel(a.credit_tier)) + ' credit + just the difference</div>' +
+        '<div class="ks-bag-up-val">' + (valWords ? escapeHtml(valWords) + ' \u00b7 ' : '') +
+          '<button type="button" class="ks-bag-tiers-link" data-bag-tiers aria-expanded="false">How tiers work</button></div>' +
+        BAG_TIERS_BODY;
+      slot.removeAttribute('hidden');
+    });
   }
 
   // Fires ONCE on the move INTO a kind's allowance. Re-arms only after the bag
@@ -2356,6 +2467,7 @@ function outOfCreditsBlock(zeroClasses) {
       var bag = liveBagItems(bagRead());
       var c = paintCounter(liveCtx, bag);
       if (c.painted) maybeAllowance(c.atCap);
+      paintUpgrades(liveCtx, bag);
       paintLiveBlock(liveCtx, bag);
     }
 
@@ -2365,12 +2477,16 @@ function outOfCreditsBlock(zeroClasses) {
     liveCtxState = 'loading';
     getToken(function (tok) {
       if (!tok) { liveCtxState = 'idle'; liveWaiters = []; return; }
+      var resetP = new Promise(function (res) { fetchCycleReset(tok, res); });
       fetchClaimContext(tok, function (err, ctx) {
         if (err || !ctx) { liveCtxState = 'idle'; liveWaiters = []; return; }
+        resetP.then(function (iso) {
+        ctx.__cycle_reset = iso || '';
         liveCtx = ctx; liveCtxState = 'ready';
         console.log(LOG, 'cart nudge ctx', { status: ctx.member_status, caps: ctx.caps, used: ctx.used_this_cycle });
         var w = liveWaiters; liveWaiters = [];
         for (var i = 0; i < w.length; i++) w[i]();
+        });
       });
     });
   }
@@ -2389,7 +2505,11 @@ function outOfCreditsBlock(zeroClasses) {
         var sb = shortageBlock(byClass, have, shortClasses, zeroClasses);
         showBagBlock(sb.title, sb.msg, sb.ctas);
       } else if (res.blocked.type === 'extra_swap_cap') {
-        showBagBlock('Past this cycle\u2019s limit', 'You can swap up to 5 extra items per cycle. Edit your bag to check out.');
+        // S416, HERS: the red "Past this cycle's limit" is replaced by the warm line in
+        // the This month box, shown BEFORE the tap. A tap now just nudges that line.
+        var on = document.querySelector('.ks-bag-count-note.is-over');
+        if (on) { on.classList.remove('is-nudge'); void on.offsetWidth; on.classList.add('is-nudge'); }
+        else showBagBlock('This month\u2019s extras', 'You\u2019ve used this month\u2019s ' + EXTRA_CAP + ' extras. Your extras start fresh when your swaps reset.');
       } else if (res.blocked.type === 'off_plan') {
         var ob = offPlanBlock(res.blocked.classes, res.blocked.count, res.blocked.shortage);
         showBagBlock(ob.title, ob.msg, ob.ctas, { note: ob.note, html: ob.html });
@@ -2525,7 +2645,27 @@ function outOfCreditsBlock(zeroClasses) {
       /* S366, HERS: COUNTER TEXT IS HER GREEN #309359 (the heading went ink S367). ~3.9:1 on white,
          under the 4.5 bar for small text; she was told and ruled it. "This month" is
          Instrument Serif ITALIC, a real loaded face on /browse (measured S267). */
-      '.ks-bag-counter{margin:0 18px 12px;padding:11px 14px 12px;border:1px solid #efece2;border-radius:12px;color:#309359;}' +
+      /* S416: the box now lives in .ks-bag-foot under Check out, so it takes the foot's padding. */
+      '.ks-bag-counter{margin:12px 0 0;padding:11px 14px 12px;border:1px solid #efece2;border-radius:12px;color:#309359;}' +
+      '.ks-bag-foot--empty{border-top:0;padding-top:0;}' +
+      '.ks-bag-foot--empty .ks-bag-counter{margin-top:0;}' +
+      /* S416, HERS (board 4): the extras note. Dark green; past the limit a warm brown, never red. */
+      '.ks-bag-count-note{margin-top:8px;font-size:13px;line-height:1.4;color:#1F5C38;}' +
+      '.ks-bag-count-note.is-over{color:#8A4B0F;font-weight:600;}' +
+      '.ks-bag-count-note.is-nudge{animation:ksNudge .45s ease;}' +
+      '@keyframes ksNudge{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}' +
+      '@media (prefers-reduced-motion: reduce){.ks-bag-count-note.is-nudge{animation:none;}}' +
+      /* S416, HERS (board 3): the upgrade row, in the Elevated blue, never a warning colour. */
+      '.ks-bag-up{margin-top:4px;}' +
+      '.ks-bag-up[hidden]{display:none;}' +
+      '.ks-bag-up-line{font-size:13px;font-weight:600;color:#1c4a91;line-height:1.35;}' +
+      '.ks-bag-up-val{font-size:13px;color:#211B1A;margin-top:2px;}' +
+      '.ks-bag-tiers-link{background:none;border:0;padding:0;font:inherit;color:#1c4a91;text-decoration:underline;cursor:pointer;}' +
+      '.ks-bag-tiers{display:none;margin-top:8px;padding:10px 12px;background:#EDECE0;border-radius:10px;font-size:12.5px;line-height:1.45;color:#1E1A19;}' +
+      '.ks-bag-tiers.is-open{display:block;}' +
+      '.ks-bag-tiers p{margin:0;}' +
+      '.ks-bag-tiers p + p{margin-top:8px;}' +
+      '.ks-bag-tiers .ks-tiers-lede{font-family:"Instrument Serif",Georgia,serif;font-style:italic;font-size:17px;}' +
       '.ks-bag-count-h{font-family:"Instrument Serif",Quicksand,serif;font-style:italic;font-weight:400;font-size:21px;line-height:1.1;color:#1E1A19;margin-bottom:6px;}' +
       '.ks-bag-count-row + .ks-bag-count-row{margin-top:9px;}' +
       '.ks-bag-count-line{font-size:13px;color:#309359;}' +
@@ -2568,7 +2708,6 @@ function outOfCreditsBlock(zeroClasses) {
         'display:flex;flex-direction:column;gap:6px;}' +
       '.ks-bag-empty span{font-size:12.5px;color:#a89f8e;}' +
       '.ks-bag-foot{padding:14px 18px 18px;border-top:1px solid #efece2;}' +
-      '.ks-bag-note-line{font-size:12px;color:#6f6a60;margin-bottom:11px;}' +
       '.ks-bag-checkout{display:block;width:100%;background:#d24f28;color:#fdf6ec;border:0;' +
         'border-radius:50px;padding:15px;font-size:15px;font-weight:600;' +
         'font-family:Quicksand,sans-serif;cursor:pointer;}' +
