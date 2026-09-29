@@ -1088,10 +1088,6 @@
       'retail.</p>' +
     '</div>';
 
-  // S416: the same four paragraphs in the bag, under an upgrade row. Built FROM
-  // TIERS_BODY so her copy lives in one place. No id: one can sit under each row.
-  var BAG_TIERS_BODY = TIERS_BODY.replace('class="ks-tiers-body" id="ks-tiers-body"', 'class="ks-bag-tiers"');
-
   function detailHtml(item) {
     var photos = photoList(item);
     var hasVideo = !!item.video_url;
@@ -1774,12 +1770,6 @@
       var rm = e.target.closest('[data-bag-remove]');
       if (rm) { removeFromBag(rm.getAttribute('data-bag-remove')); return; }
       if (e.target.closest('[data-bag-checkout]'))  { goCheckout(); return; }
-      var tl = e.target.closest('[data-bag-tiers]');
-      if (tl) {
-        var tp = tl.closest('.ks-bag-up') && tl.closest('.ks-bag-up').querySelector('.ks-bag-tiers');
-        if (tp) tl.setAttribute('aria-expanded', tp.classList.toggle('is-open') ? 'true' : 'false');
-        return;
-      }
     });
     return root;
   }
@@ -1813,7 +1803,6 @@
               '<div class="ks-bag-meta"><span class="ks-bag-dot ' + dot + '"></span>' +
                 escapeHtml(meta.join(' \u00b7 ')) + '</div>' +
             (gone ? '<div class="ks-bag-gone">No longer available</div>' : '') +
-              '<div class="ks-bag-up" hidden></div>' +
             '</div>' +
             '<button type="button" class="ks-bag-x" data-bag-remove="' + escapeHtml(it.sku) +
               '" aria-label="Remove from bag">' + X_SVG + '</button>' +
@@ -2040,7 +2029,7 @@ var GATE_COPY = {
     fetch(MEMBER_STATE_URL, { method: 'POST',
       headers: { 'x-ms-token': tok, 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY } })
       .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (s) { finish(s && s.cycle && s.cycle.cycle_reset); })
+      .then(function (s) { finish(s ? { reset: s.cycle && s.cycle.cycle_reset, plan: s.plan } : ''); })
       .catch(function () { finish(''); });
   }
 
@@ -2351,49 +2340,44 @@ function outOfCreditsBlock(zeroClasses) {
         : 'You can add ' + left + ' more ' + plural(left, 'extra', 'extras') + until;
     } else if (totalExtra === EXTRA_CAP) {
       note = 'That\u2019s everything for this month.' + (d ? ' Your swaps reset ' + d + '.' : '');
-    } else if (over) {
-      note = (over === 1 ? 'One item is' : over + ' items are') + ' past this month\u2019s ' + EXTRA_CAP +
-        ' extras. Your extras start fresh when your swaps reset' + (d ? ' ' + d : '') + '.';
+    }
+    var noteHtml = note ? escapeHtml(note) : '';
+    if (over) {
+      /* S416, HERS, her wording: past the limit. Only a Basics member has a bigger clothing
+         plan to move to (S351 proved the upgrade raises her cap the same day), so only she
+         is offered it. Everyone else gets the reset date alone. */
+      var basics = ctx.__plan === 'The Basics';
+      noteHtml = 'Oops, you\u2019ve already spent your ' + EXTRA_CAP + ' extra swaps this month. ' +
+        (basics
+          ? '<a class="ks-bag-count-link" href="/pricing">Upgrade your plan</a> to get more today, or wait until your swaps reset' +
+            (d ? ' on ' + escapeHtml(d) : '') + '.'
+          : (d ? 'Your swaps reset on ' + escapeHtml(d) + '.' : ''));
     }
     box.innerHTML = '<div class="ks-bag-count-h">This month</div>' + rows +
-      (note ? '<div class="ks-bag-count-note' + (over ? ' is-over' : '') + '">' + escapeHtml(note) + '</div>' : '');
+      (noteHtml ? '<div class="ks-bag-count-note' + (over ? ' is-over' : '') + '">' + noteHtml + '</div>' : '');
     box.removeAttribute('hidden');
     return { painted: true, atCap: atCap, over: over };
   }
 
-  /* S416, HERS (board 3): upgrades are ENCOURAGED, never warned about. Essentials-covered
-     rows say nothing (quiet means covered, her S267 tile rule). An upgrade row gets
-     "Upgrade: your <credit tier> credit + just the difference", then the item page's own
-     value words and How tiers work. Runs when the bag opens, off the same picker checkout
-     uses, so the row names the credit checkout will actually spend. */
+  /* S416, HERS, SUPERSEDING BOARD 3 THE SAME DAY: "id rather be very clear once than kind
+     of clear all over the place." An upgrade row gets ONE small tag, "Upgrade", at the end
+     of its tier line: cream #EDECE0 (the Closing this tab box), bold blue #1c4a91. No
+     sentence, no value line, no tiers panel; checkout carries every detail. Covered rows
+     say nothing. Runs off the same picker checkout uses, so it marks what checkout will. */
   function paintUpgrades(ctx, bag) {
-    var slots = document.querySelectorAll('.ks-bag-up');
-    for (var i = 0; i < slots.length; i++) { slots[i].setAttribute('hidden', ''); slots[i].innerHTML = ''; }
+    var old = document.querySelectorAll('.ks-bag-up-tag');
+    for (var i = 0; i < old.length; i++) old[i].parentNode.removeChild(old[i]);
     if (!bag.length) return;
     var res;
     try { res = resolveBag(bag, ctx); } catch (e) { return; }
-    var list = (res && res.assignments) || [];
-    list.forEach(function (a) {
+    ((res && res.assignments) || []).forEach(function (a) {
       if (a.kind !== 'upgrade') return;
       var row = document.querySelector('.ks-bag-row[data-bag-sku="' + (window.CSS && CSS.escape ? CSS.escape(a.sku) : a.sku) + '"]');
-      var slot = row && row.querySelector('.ks-bag-up');
-      if (!slot) return;
-      var it = null, b = bagRead();
-      for (var j = 0; j < b.length; j++) { if (b[j].sku === a.sku) { it = b[j]; break; } }
-      var rv = it && it.retail !== undefined && it.retail !== '' ? it.retail : '';
-      if (rv === '') {                               // bags made before S416: look it up
-        for (var m = 0; m < ALL.length; m++) { if (ALL[m] && ALL[m].sku === a.sku) { rv = ALL[m].retail_value; break; } }
-      }
-      var val = money(rv);
-      var valWords = val ? (a.klass === 'toy' ? 'Worth about ' + val : 'Retail value new ' + val) : '';
-      slot.innerHTML =
-        '<div class="ks-bag-up-line">Upgrade: your ' + escapeHtml(tierLabel(a.credit_tier)) + ' credit + just the difference</div>' +
-        '<div class="ks-bag-up-val">' + (valWords ? escapeHtml(valWords) + ' \u00b7 ' : '') +
-          '<button type="button" class="ks-bag-tiers-link" data-bag-tiers aria-expanded="false">How tiers work</button></div>' +
-        BAG_TIERS_BODY;
-      slot.removeAttribute('hidden');
+      var meta = row && row.querySelector('.ks-bag-meta');
+      if (meta) meta.insertAdjacentHTML('beforeend', '<span class="ks-bag-up-tag">Upgrade</span>');
     });
   }
+
 
   // Fires ONCE on the move INTO a kind's allowance. Re-arms only after the bag
   // drops back under it, so opening the drawer again, or adding past the
@@ -2481,7 +2465,8 @@ function outOfCreditsBlock(zeroClasses) {
       fetchClaimContext(tok, function (err, ctx) {
         if (err || !ctx) { liveCtxState = 'idle'; liveWaiters = []; return; }
         resetP.then(function (iso) {
-        ctx.__cycle_reset = iso || '';
+        ctx.__cycle_reset = (iso && iso.reset) || '';
+        ctx.__plan = (iso && iso.plan) ? String(iso.plan).trim() : '';
         liveCtx = ctx; liveCtxState = 'ready';
         console.log(LOG, 'cart nudge ctx', { status: ctx.member_status, caps: ctx.caps, used: ctx.used_this_cycle });
         var w = liveWaiters; liveWaiters = [];
@@ -2509,7 +2494,7 @@ function outOfCreditsBlock(zeroClasses) {
         // the This month box, shown BEFORE the tap. A tap now just nudges that line.
         var on = document.querySelector('.ks-bag-count-note.is-over');
         if (on) { on.classList.remove('is-nudge'); void on.offsetWidth; on.classList.add('is-nudge'); }
-        else showBagBlock('This month\u2019s extras', 'You\u2019ve used this month\u2019s ' + EXTRA_CAP + ' extras. Your extras start fresh when your swaps reset.');
+        else showBagBlock('This month\u2019s extras', 'Oops, you\u2019ve already spent your ' + EXTRA_CAP + ' extra swaps this month.');
       } else if (res.blocked.type === 'off_plan') {
         var ob = offPlanBlock(res.blocked.classes, res.blocked.count, res.blocked.shortage);
         showBagBlock(ob.title, ob.msg, ob.ctas, { note: ob.note, html: ob.html });
@@ -2649,23 +2634,16 @@ function outOfCreditsBlock(zeroClasses) {
       '.ks-bag-counter{margin:12px 0 0;padding:11px 14px 12px;border:1px solid #efece2;border-radius:12px;color:#309359;}' +
       '.ks-bag-foot--empty{border-top:0;padding-top:0;}' +
       '.ks-bag-foot--empty .ks-bag-counter{margin-top:0;}' +
-      /* S416, HERS (board 4): the extras note. Dark green; past the limit a warm brown, never red. */
+      /* S416, HERS: the extras note. Dark green; past the limit her ink #211B1A, bold, never red. */
       '.ks-bag-count-note{margin-top:8px;font-size:13px;line-height:1.4;color:#1F5C38;}' +
-      '.ks-bag-count-note.is-over{color:#8A4B0F;font-weight:600;}' +
+      '.ks-bag-count-note.is-over{color:#211B1A;font-weight:600;}' +
+      '.ks-bag-count-link{color:#211B1A;text-decoration:underline;font-weight:700;}' +
       '.ks-bag-count-note.is-nudge{animation:ksNudge .45s ease;}' +
       '@keyframes ksNudge{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}' +
       '@media (prefers-reduced-motion: reduce){.ks-bag-count-note.is-nudge{animation:none;}}' +
-      /* S416, HERS (board 3): the upgrade row, in the Elevated blue, never a warning colour. */
-      '.ks-bag-up{margin-top:4px;}' +
-      '.ks-bag-up[hidden]{display:none;}' +
-      '.ks-bag-up-line{font-size:13px;font-weight:600;color:#1c4a91;line-height:1.35;}' +
-      '.ks-bag-up-val{font-size:13px;color:#211B1A;margin-top:2px;}' +
-      '.ks-bag-tiers-link{background:none;border:0;padding:0;font:inherit;color:#1c4a91;text-decoration:underline;cursor:pointer;}' +
-      '.ks-bag-tiers{display:none;margin-top:8px;padding:10px 12px;background:#EDECE0;border-radius:10px;font-size:12.5px;line-height:1.45;color:#1E1A19;}' +
-      '.ks-bag-tiers.is-open{display:block;}' +
-      '.ks-bag-tiers p{margin:0;}' +
-      '.ks-bag-tiers p + p{margin-top:8px;}' +
-      '.ks-bag-tiers .ks-tiers-lede{font-family:"Instrument Serif",Georgia,serif;font-style:italic;font-size:17px;}' +
+      /* S416, HERS: the one Upgrade tag. Cream like the Closing this tab box, bold blue text. */
+      '.ks-bag-up-tag{flex:none;background:#EDECE0;color:#1c4a91;font-size:11.5px;font-weight:700;' +
+        'padding:2px 9px;border-radius:20px;margin-left:2px;line-height:1.4;}' +
       '.ks-bag-count-h{font-family:"Instrument Serif",Quicksand,serif;font-style:italic;font-weight:400;font-size:21px;line-height:1.1;color:#1E1A19;margin-bottom:6px;}' +
       '.ks-bag-count-row + .ks-bag-count-row{margin-top:9px;}' +
       '.ks-bag-count-line{font-size:13px;color:#309359;}' +
