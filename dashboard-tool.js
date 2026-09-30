@@ -8,13 +8,13 @@
     if (!__ksScript) {
       var __ksScripts = document.getElementsByTagName('script');
       for (var __ksJ = 0; __ksJ < __ksScripts.length; __ksJ++) {
-        if (__ksScripts[__ksJ].src && __ksScripts[__ksJ].src.indexOf('dashboard-tool.js') !== -1) {
+        if (__ksScripts[__ksJ].src && __ksScripts[__ksJ].src.indexOf('dashboard-tool') !== -1) {
           __ksScript = __ksScripts[__ksJ]; break;
         }
       }
     }
     var __ksSrc = __ksScript && __ksScript.src ? __ksScript.src : '';
-    var __ksPin = (__ksSrc.match(/@([^/]+)\/dashboard-tool\.js/) || [])[1] || 'unknown';
+    var __ksPin = (__ksSrc.match(/@([^/]+)\/dashboard-tool(?:\.min)?\.js/) || [])[1] || 'unknown';   // S420: .min too
     console.log('%c[ks-dash] build ' + __ksPin, 'color:#d24f28;font-weight:600', __ksSrc || '(no src)');
   } catch (__ksErr) {}
   var FN_URL  = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1/member-state";
@@ -138,6 +138,26 @@ function paintHeadline(member) {
     paintReviewPrompt();       // whichever promise lands second is the one that paints
   }
   
+  // S420 FIX (Walk 4 fix 2, seen S416/S417): the server's is_capped came back true when
+  // only ONE kind was used up (The Everything Bag: 10 clothing used, 0 of 3 toy), and on
+  // The Toy Chest beside "5 of 5 swaps left" (a kind with 0 swaps counts as used up).
+  // Capped now means EVERY kind her plan covers is used up, read from the same numbers
+  // the swaps row uses. No caps or used numbers in the payload = trust the server, as before.
+  // ?fake=capped keeps working (it fakes the signal, not the numbers).
+  function allCoveredUsed(s) {
+    if (_FAKE === 'capped') return true;
+    var caps = (s && s.caps) || {}, used = s && s.used_this_cycle;
+    if (!used) return true;
+    var any = false, all = true;
+    ['clothing', 'toy'].forEach(function (k) {
+      var cap = parseFloat(caps[k]); if (isNaN(cap) || cap <= 0) return;
+      any = true;
+      var u = parseFloat(used[k]); if (isNaN(u)) u = 0;
+      if (u < cap) all = false;
+    });
+    return any ? all : true;
+  }
+
   function pickState(s) {
     var override = new URLSearchParams(window.location.search).get('state');
     var valid = ['cancelled','paused','capped','expiring','active','zero'];
@@ -146,7 +166,7 @@ function paintHeadline(member) {
     if (ms === 'cancelled') return 'cancelled';
     if (ms === 'paused')    return 'paused';
     var sig = s.signals || {};
-    if (sig.is_capped)     return 'capped';
+    if (sig.is_capped && allCoveredUsed(s)) return 'capped';
     if (sig.expiring_soon) return 'expiring';
     if (sig.has_credits)   return 'active';
     return 'zero';
@@ -1170,6 +1190,7 @@ function paintCoins(s) {
   // flip), PACK_PRICES must change with it or the wait silently never arms.
   var PACK_PRICES = { 'prc_clothing-credit-pack-8n6m0ucp': 'clothing', 'prc_toy-credit-pack-kr6v0rrk': 'toy' };
   var PACK_KEY = 'ks_pack_before';
+  var _lastBank = null;   // S420: by_class of the last painted payload, for the pack snapshot
   var PACK_POLL_MS = 2000, PACK_GIVEUP_MS = 30000;
   var PACK_WAIT_TEXT = 'Adding your credits';
   var PACK_LATE_TEXT = 'On the way. Refresh in a minute if you don\u2019t see them.';
@@ -1184,8 +1205,11 @@ function paintCoins(s) {
       if (!b) return;
       var k = PACK_PRICES[b.getAttribute('data-ms-price:add')];
       if (!k) return;
-      var el = document.querySelector('[data-coin="' + k + '"]');
-      var n = el ? parseFloat(el.textContent) : NaN;
+      // S420 FIX (found S417 on walk3): the baseline used to be read from the old hidden coin
+      // row, which can read blank, so the wait never armed. It now comes from the last bank
+      // the page painted. The coin row stays as the fallback.
+      var n = (_lastBank && k in _lastBank) ? bankNum(_lastBank[k]) : NaN;
+      if (isNaN(n)) { var el = document.querySelector('[data-coin="' + k + '"]'); n = el ? parseFloat(el.textContent) : NaN; }
       try { sessionStorage.setItem(PACK_KEY, JSON.stringify({ key: k, n: isNaN(n) ? null : n, t: Date.now() })); } catch (x) {}
     }, true);   // capture phase: Memberstack's own handler cannot beat it
   }
@@ -1381,6 +1405,7 @@ function paintCoins(s) {
 
   // ---------- CARDS ----------
   function paint(s) {
+    _lastBank = (s.bank && s.bank.by_class) || null;
     var bt = (s.bank && s.bank.by_tier) || {};
     var line = document.querySelector('.credit-line');
     if (line) {
@@ -1400,7 +1425,8 @@ function paintCoins(s) {
     if (note) {
       // S407 hers: hidden when the whole bank is under one credit - the bank says "Half a credit"
       var bankTot = bankNum((s.bank && s.bank.total));
-      note.style.display = (!isNaN(essNum) && essNum % 1 !== 0 && bankTot >= 1) ? 'block' : 'none';
+      // S420 HERS: "dont say anything about half credits". The Webflow note is hidden always.
+      note.style.display = 'none';
     }
     var expiry = s.expiry || {};
     var numEl  = document.querySelector('.expiry-num');
@@ -2018,6 +2044,11 @@ function paintCloset(s) {
         detail = cTxt + ', ' + it + ' item' + (it === 1 ? '' : 's') + ' accepted';
       } else if (src === 'starter_pack') {
         title = 'Starter pack added';
+        detail = cTxt;
+      } else if (src && src !== 'starter_pack' && /pack/.test(String(src))) {
+        // S396 HERS: a credit pack reads like the starter pack row.
+        // ⚠ S417 walk3 showed NO row for a pack at all: the server may not send one yet.
+        title = 'Credit pack added';
         detail = cTxt;
       } else if (src === 'gift') {
         title = 'Credits gifted to you';
@@ -3199,6 +3230,121 @@ function paintCloset(s) {
     console.log('[ks-dash] FAKE STATE:', _FAKE, s);
     return s;
   }
+  // ---------- PLAN-CHANGE NOTE (S420, mockup approved S420) ----------
+  // https://claude.ai/artifact/DXhgEqcrCFyogK3SgmAr7F
+  // After a plan change she lands here with no confirmation (S417). The dashboard remembers
+  // the last plan it saw FOR THIS MEMBER ON THIS DEVICE (localStorage ksPlanSeen:<id>); when
+  // it differs, one note sits at the top of the page. It shows ONCE: the new plan is
+  // remembered the moment the note is shown.
+  // SHOWS ONLY WHEN: the last plan seen was active with a plan, and she is active with a
+  // different plan now. NEVER on a first visit or a new device (nothing remembered), never
+  // after paused, cancelled or no plan (a returner's welcome back covers that), never when
+  // she is paused or cancelled now. Two changes before a visit name only where she ended up.
+  // Upgrades and downgrades read the same (The Basics to The Toy Chest costs more and drops
+  // clothing). The "moving on <date>" version waits on Teresa (1D item 10): nothing tells
+  // the page a change is scheduled yet.
+  // WORDING (Claude's, approved on the mockup S420): heading "You're now on <plan>.";
+  // swaps left from the same numbers as the swaps row (no line when none are left);
+  // a saved-credits line only for WHOLE credits her new plan can't use (hers S420: nothing
+  // about half credits); button "Back to your bag" when her bag in this tab holds items and
+  // is hers (browse's ksBag / ksBagOwner), else "See what's new" to her closet.
+  // Preview: ?fake=planchange (never writes).
+  var PLAN_SEEN = 'ksPlanSeen:';
+  function planNoteCss() {
+    if (document.getElementById('ks-plannote-css')) return;
+    var st = document.createElement('style');
+    st.id = 'ks-plannote-css';
+    st.textContent =
+      '.ks-plannote{position:relative;box-sizing:border-box;max-width:680px;margin:0 auto 24px;background:#EDECE0;' +
+        'border-top:2px solid #EDA920;border-bottom:2px solid #EDA920;padding:24px 52px 22px;text-align:center;' +
+        'display:flex;flex-direction:column;align-items:center;gap:10px;color:#211B1A}' +
+      '.ks-plannote h2{margin:0;font-family:"Instrument Serif",Georgia,serif;font-weight:400;font-size:30px;line-height:1.15;color:#211B1A}' +
+      '.ks-plannote p{margin:0;font-family:Quicksand,system-ui,sans-serif;font-size:15px;line-height:1.5;max-width:460px}' +
+      '.ks-plannote-btn{margin-top:6px;display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 26px;' +
+        'background:#e54f25;color:#fff !important;border-radius:999px;font-family:Quicksand,system-ui,sans-serif;font-weight:700;font-size:15px;text-decoration:none}' +
+      '.ks-plannote-x{position:absolute;top:6px;right:6px;width:44px;height:44px;border:0;background:transparent;color:#6E6A63;font-size:24px;line-height:1;cursor:pointer}' +
+      '.ks-plannote-x:focus-visible,.ks-plannote-btn:focus-visible{outline:2px solid #1c4a91;outline-offset:2px}' +
+      '@media (max-width:767px){.ks-plannote{margin:0 0 20px;padding:24px 22px 22px}.ks-plannote h2{padding:0 26px}}';
+    document.head.appendChild(st);
+  }
+  function planSeenRead(id) { try { return JSON.parse(localStorage.getItem(PLAN_SEEN + id) || 'null'); } catch (e) { return null; } }
+  function planSeenWrite(id, v) { try { localStorage.setItem(PLAN_SEEN + id, JSON.stringify(v)); } catch (e) {} }
+  function bagIsHers(id) {
+    try {
+      var bag = JSON.parse(sessionStorage.getItem('ksBag') || '[]');
+      if (!bag || !bag.length) return false;
+      var owner = sessionStorage.getItem('ksBagOwner');
+      return !owner || owner === id;       // a bag built logged out becomes hers (browse S419)
+    } catch (e) { return false; }
+  }
+  function planNoteText(s) {
+    var caps = s.caps || {}, used = s.used_this_cycle || {}, bc = (s.bank && s.bank.by_class) || {};
+    var rows = [];
+    ['clothing', 'toy'].forEach(function (k) {
+      var cap = parseFloat(caps[k]); if (isNaN(cap) || cap <= 0) return;
+      var u = parseFloat(used[k]); if (isNaN(u)) u = 0;
+      rows.push({ k: k, left: Math.max(cap - u, 0) });
+    });
+    var lines = [];
+    var leftTotal = rows.reduce(function (a, r) { return a + r.left; }, 0);
+    if (s.used_this_cycle && rows.length && leftTotal > 0) {
+      if (rows.length === 1) lines.push('You\u2019ve got ' + rows[0].left + ' swap' + (rows[0].left === 1 ? '' : 's') + ' left this month.');
+      else lines.push('You\u2019ve got ' + rows.map(function (r) { return r.left + ' ' + r.k + ' swap' + (r.left === 1 ? '' : 's'); }).join(' and ') + ' left this month.');
+    }
+    ['clothing', 'toy'].forEach(function (k) {
+      var cap = parseFloat(caps[k]); if (!isNaN(cap) && cap > 0) return;
+      var n = Math.floor(bankNum(bc[k])); if (n < 1) return;
+      lines.push('Your ' + n + ' ' + k + ' credit' + (n === 1 ? ' is' : 's are') + ' saved in your bank. ' +
+        'You can spend ' + (n === 1 ? 'it' : 'them') + ' again if you switch back to a plan with ' + (k === 'toy' ? 'toys' : 'clothing') + '.');
+    });
+    return lines;
+  }
+  function planNoteShow(s, id) {
+    if (document.querySelector('.ks-plannote')) return;
+    planNoteCss();
+    var hasBag = bagIsHers(id);
+    var note = document.createElement('section');
+    note.className = 'ks-plannote';
+    note.setAttribute('aria-label', 'Plan change');
+    note.innerHTML =
+      '<button type="button" class="ks-plannote-x" aria-label="Close">\u00d7</button>' +
+      '<h2>You\u2019re now on ' + esc(String(s.plan).trim()) + '.</h2>' +
+      planNoteText(s).map(function (t) { return '<p>' + esc(t) + '</p>'; }).join('') +
+      '<a class="ks-plannote-btn" href="' + (hasBag ? '/browse?bag=1' : esc(closetHref(s))) + '">' +
+        (hasBag ? 'Back to your bag' : 'See what\u2019s new') + '</a>';
+    note.querySelector('.ks-plannote-x').addEventListener('click', function () { note.remove(); });
+    // Above the greeting: climb from the headline to the page column that holds the grid.
+    var grid = document.querySelector('.ks-grid'), hero = document.querySelector('.ks-hero-card');
+    var col = grid ? grid.parentNode : (hero ? hero.parentNode : null);
+    var at = document.querySelector('.ks-greet-headline');
+    while (at && col && at.parentNode !== col) at = at.parentNode;
+    if (col && at) col.insertBefore(note, at);
+    else if (col) col.insertBefore(note, col.firstChild);
+    else return;
+    console.log('[ks-dash] plan-change note shown:', s.plan);
+  }
+  function planNoteMaybe(s) {
+    try {
+      var ms = window.$memberstackDom;
+      if (!ms || typeof ms.getCurrentMember !== 'function') return;
+      ms.getCurrentMember().then(function (r) {
+        var id = r && r.data && r.data.id;
+        if (!id) return;
+        var status = String(s.member_status || '').toLowerCase();
+        var now = { plan: s.plan ? String(s.plan).trim() : null, status: status };
+        if (_FAKE === 'planchange') {             // preview only, never writes
+          if (now.plan) planNoteShow(s, id);
+          return;
+        }
+        var prev = planSeenRead(id);
+        planSeenWrite(id, now);                  // remembered now, so the note shows once
+        if (!prev || prev.status !== 'active' || !prev.plan) return;
+        if (status !== 'active' || !now.plan || prev.plan === now.plan) return;
+        planNoteShow(s, id);
+      }).catch(function () {});
+    } catch (e) {}
+  }
+
   // ---------- RUN ----------
   setTimeout(reveal, 4000);
 
@@ -3219,7 +3365,7 @@ function paintCloset(s) {
   })
     .then(function (res) { return res.json(); })
     .then(function (state) {
-if (state && !state.error) { applyFake(state); paint(state); paintGreeting(state); paintBagButton(state); addrBuild(); packWaitStart(); jjWaitMaybe(state); }
+if (state && !state.error) { applyFake(state); paint(state); paintGreeting(state); paintBagButton(state); addrBuild(); packWaitStart(); jjWaitMaybe(state); planNoteMaybe(state); }
 else { console.error('member-state error', state); neutralGreeting(); jjWaitMaybe(null); }
     })
     .catch(function (e) { console.error('member-state paint error', e); neutralGreeting(); });
