@@ -213,6 +213,24 @@
  *   - Thank-you, computer: order number and the paid / shipping / tracking lines sit under
  *     the headline; "Left in your bank" is hidden (the card's "You have" says it); the
  *     green thank-you follows, centred, across the page. Phone order is unchanged.
+ *
+ * rev S419 (2026-09-30), hers off the same canvas, rows 3 to 5 (THE PAPER RECEIPT):
+ *   - Receipt and thank-you are one white sheet with a zigzag bottom edge (.ksc-paper,
+ *     then .ksc-zig). Bands inside it in shades of her cream #edece0: Your order and
+ *     Shipping to 45%, the phone Worth box and the thank-you savings 100%, the
+ *     thank-you timeline 80%. Dashed lines between bands, the same padding in every band.
+ *   - TOTAL TODAY, hers S419 (option B): a light gold wash with a 2px #eda920 line above
+ *     and below, its own band after Payment. It was the one part of the page with no
+ *     highlight. Payment rows gain dotted leaders.
+ *   - Top strip: "Order preview" plus the date (thank-you: the order number plus the
+ *     date, replacing the order pill).
+ *   - "Edit bag" beside Your order, to /browse?bag=1 (opens the bag, read S418).
+ *   - Hold line under Secured by Stripe, hers S419: "We're holding these for you for
+ *     30 minutes." (true: /checkout reserves the items for 30 minutes, S401).
+ *   - The credit checkbox restyled to match: cream, no gold border, ink tick. A disabled
+ *     Confirm button is faded coral, not grey.
+ *   - Thank-you: "Left in your bank" is gone at every width (the card's "You have" says
+ *     it), Your order gets the serif section heading, the timeline loses its white card.
  * ========================================================================== */
 (function () {
   "use strict";
@@ -699,6 +717,53 @@
     ID + " .ksc-pile-pop .ksc-pk img{width:18px;}",
     ID + " .ksc-pile-pop .pop-p{font-size:13px; line-height:1.5; color:#6E6A63; margin:12px 0 0;}",
     "@media (prefers-reduced-motion:reduce){" + ID + " .ksc-pile-pop{transition:none;}}",
+    // ---- S419: THE PAPER RECEIPT (hers, canvas rows 3 to 5) -------------------
+    // ⚠ No overflow:hidden on the sheet: the tier panel opens out of the top band.
+    ID + " .ksc-paper{background:#fff; border-radius:6px 6px 0 0; box-shadow:0 1px 2px rgba(33,27,26,.06),0 14px 34px rgba(33,27,26,.08);}",
+    ID + " .ksc-zig{height:9px; background:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='9'%3E%3Cpath d='M0 0h12L6 9z' fill='%23ffffff'/%3E%3C/svg%3E\") repeat-x 0 0/12px 9px;}",
+    ID + " .ksc-strip{display:flex; justify-content:space-between; gap:12px; padding:14px 20px; font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--ks-muted); border-bottom:1px dashed rgba(33,27,26,.2);}",
+    ID + " .ksc-band{padding:24px 20px;}",
+    // a band that follows another band or section gets the dashed line (the first band sits under the strip's own line)
+    ID + " .ksc-paper > .ksc-band ~ .ksc-band, " + ID + " .ksc-paper > .ksc-sec ~ .ksc-band{border-top:1px dashed rgba(33,27,26,.2);}",
+    ID + " .ksc-paper .ksc-sec, " + ID + " .ksc-paper .ksc-sec.ksc-sec--open{margin:0; padding:24px 20px; border-top:1px dashed rgba(33,27,26,.2);}",
+    ID + " .ksc-band--tint{background:rgba(237,236,224,.45);}",
+    ID + " .ksc-band--full{background:var(--ks-cream);}",
+    ID + " .ksc-band--80{background:rgba(237,236,224,.8);}",
+    ID + " .ksc-paper .ksc-top{margin:0;}",
+    ID + " .ksc-paper .ksc-top-b.ksc-g{margin:0;}",
+    ID + " .ksc-paper .ksc-ty-h{display:none;}",
+    ID + " .ksc-sec-hrow{display:flex; justify-content:space-between; align-items:baseline; gap:12px; margin:0 0 16px;}",
+    ID + " .ksc-sec-hrow .ksc-sec-h{margin:0;}",
+    ID + " .ksc-editbag{font-size:14px; font-weight:600; color:var(--ks-ink); text-decoration:underline; text-underline-offset:3px; white-space:nowrap;}",
+    ID + " .ksc-paper .ksc-worth{background:var(--ks-cream);}",
+    ID + " .ksc-paper .ksc-row{align-items:baseline; gap:10px;}",
+    ID + " .ksc-row .ld{flex:1 1 auto; min-width:12px; border-bottom:2px dotted rgba(33,27,26,.22); transform:translateY(-4px);}",
+    // the total, hers S419 option B
+    ID + " .ksc-total{display:flex; justify-content:space-between; align-items:baseline; gap:12px; background:rgba(237,169,32,.22); border-top:2px solid var(--ks-gold); border-bottom:2px solid var(--ks-gold); padding:20px; font-family:'Instrument Serif',Georgia,serif; font-weight:400; font-size:34px; line-height:1; color:var(--ks-ink);}",
+    ID + " .ksc-hold{display:flex; align-items:center; justify-content:center; gap:7px; margin-top:6px; font-size:.8rem; color:var(--ks-muted);}",
+    // the credit checkbox, restyled to match
+    ID + " .ksc-paper .ksc-vlconfirm{background:var(--ks-cream); border:0; border-radius:12px; padding:14px 16px; margin:0 0 16px;}",
+    ID + " .ksc-paper .ksc-vlconfirm input{accent-color:var(--ks-ink); width:18px; height:18px; margin-top:2px;}",
+    ID + " .ksc-paper .ksc-vlconfirm span{font-size:.9rem; line-height:1.45; font-weight:500;}",
+    ID + " .ksc-paper .ksc-btn:disabled{background:var(--ks-orange); opacity:.45;}",
+    // thank-you inside the sheet
+    ID + " .ksc-paper .ksc-ty-save{border-radius:0; margin:0; padding:24px 20px;}",
+    ID + " .ksc-paper .ksc-ty-save .n{font-weight:400;}",
+    ID + " .ksc-paper .ksc-ty-paid{border:0; padding:0; margin:0;}",
+    ID + " .ksc-paper .ksc-top--ty .ksc-head{text-align:center;}",
+    ID + " .ksc-paper .ksc-top--ty{gap:18px;}",
+    ID + " .ksc-paper .ksc-top--ty .ksc-ty-thanks{margin:0;}",
+    ID + " .ksc-tl{display:flex; justify-content:space-between; position:relative;}",
+    "@media (min-width:768px){",
+    ID + " .ksc-strip{padding:14px 32px;}",
+    ID + " .ksc-band, " + ID + " .ksc-paper .ksc-sec, " + ID + " .ksc-paper .ksc-sec.ksc-sec--open{padding:28px 32px;}",
+    ID + " .ksc-total{padding:22px 32px;}",
+    ID + " .ksc-paper .ksc-top--ty{gap:0 20px;}",
+    ID + " .ksc-paper .ksc-ty-save{padding:28px 32px;}",
+    ID + " .ksc-paper .ksc-top--ty .ksc-head{text-align:left;}",
+    // the thanks runs the full width of the sheet under a dashed line
+    ID + " .ksc-paper .ksc-top--ty .ksc-ty-thanks{margin:28px -32px -28px; padding:28px 32px; border-top:1px dashed rgba(33,27,26,.2);}",
+    "}",
     "@media (max-width:480px){",
     ID + " .ksc-ty-btns{flex-direction:column;}",
     "}",
@@ -735,6 +800,15 @@
     return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none">' +
       '<rect x="5" y="11" width="14" height="9" rx="2" stroke="#6E6A63" stroke-width="1.6"/>' +
       '<path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="#6E6A63" stroke-width="1.6"/></svg>';
+  }
+  // S419: the hold line's clock, drawn like the lock
+  function clockIcon() {
+    return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+  }
+  // S419: the date on the paper's top strip, "Sep 30, 2026"
+  function todayStr() {
+    try { return new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); }
+    catch (e) { return ""; }
   }
   function phSvg() {
     return '<svg class="phsvg" viewBox="0 0 24 24" fill="none">' +
@@ -1280,13 +1354,14 @@
     var exEach = extraCount ? moneyShort(lines.filter(function (l) { return (Number(l.extra_swap_fee) || 0) > 0; })[0].extra_swap_fee) : "";
     var summary =
       '<div class="ksc-sum">' +
-        (upgradeCents > 0 ? '<div class="ksc-row"><span class="k">Upgrade fees</span><span>' + esc(moneyc(upgradeCents)) + "</span></div>" : "") +
-        (extraCents > 0 ? '<div class="ksc-row"><span class="k">Extra swaps (' + extraCount + " \u00d7 " + esc(exEach) + ')</span><span>' + esc(moneyc(extraCents)) + "</span></div>" +
+        (upgradeCents > 0 ? '<div class="ksc-row"><span class="k">Upgrade fees</span><span class="ld"></span><span>' + esc(moneyc(upgradeCents)) + "</span></div>" : "") +
+        (extraCents > 0 ? '<div class="ksc-row"><span class="k">Extra swaps (' + extraCount + " \u00d7 " + esc(exEach) + ')</span><span class="ld"></span><span>' + esc(moneyc(extraCents)) + "</span></div>" +
           extrasLineHtml(p, lines) : "") +   // S408 Round 2: its reason sits under it
-        '<div class="ksc-row"><span class="k">Shipping</span><span>' + esc(shipVal) + "</span></div>" +
+        '<div class="ksc-row"><span class="k">Shipping</span><span class="ld"></span><span>' + esc(shipVal) + "</span></div>" +
         shipNote +
-        '<div class="ksc-row total"><span class="k">Total today</span><span>' + moneyc(totalCents) + "</span></div>" +
       "</div>";
+    // S419, hers (option B): Total today is its own gold band after Payment.
+    var totalBand = '<div class="ksc-total"><span>Total today</span><span>' + esc(moneyc(totalCents)) + "</span></div>";
 
     // value-loss confirm gate: acknowledge before Confirm enables
     var vlGate = vlCount > 0
@@ -1317,26 +1392,37 @@
     // Standard line under them, the Worth group closing it), Payment, Shipping to.
     var worthCtx = "That\u2019s about what " + (lines.length === 1 ? "it" : "they") + " would cost new in stores. " + subText + ".";
     setHtml(
+      // S419: one sheet of paper, then its zigzag edge. The modal sits outside the sheet.
+      '<div class="ksc-paper">' +
+      '<div class="ksc-strip"><span>Order preview</span><span>' + esc(todayStr()) + "</span></div>" +
       // S418: the headline row. Computer: headline + the Worth lines left 70%, the bank
       // right 30%. Phone: headline centred, then the bank; the Worth lines stay low.
-      '<div class="ksc-top ksc-top--rcpt">' +
+      '<div class="ksc-band"><div class="ksc-top ksc-top--rcpt">' +
         '<div class="ksc-top-l"><h1 class="ksc-head">' + esc(head) + "</h1>" +
           '<div class="ksc-worth-top"><p class="ksc-value">Worth about ' + moneyRound(value) + " new</p>" +
             '<p class="ksc-sub">' + esc(worthCtx) + "</p></div>" +
         "</div>" +
         '<div class="ksc-top-b">' + bankHtml(p.bank, p.cap, null, { when: "now" }) + "</div>" +
-      "</div>" +
-      '<section class="ksc-sec"><h2 class="ksc-sec-h">Your order</h2>' +
+      "</div></div>" +
+      '<section class="ksc-sec ksc-band--tint"><div class="ksc-sec-hrow"><h2 class="ksc-sec-h">Your order</h2>' +
+        '<a class="ksc-editbag" href="/browse?bag=1">Edit bag</a></div>' +
         '<div class="ksc-items" style="margin-bottom:0;">' + itemsHtml + "</div>" +
         '<div class="ksc-seal">' + shieldCheck() + "<span>Every piece meets The Closet Standard</span></div>" +
         '<div class="ksc-worth ksc-worth--low"><p class="ksc-value">Worth about ' + moneyRound(value) + " new</p>" +
           '<p class="ksc-sub">' + esc(worthCtx) + "</p></div>" +
       "</section>" +
       '<section class="ksc-sec"><h2 class="ksc-sec-h">Payment</h2>' + summary + "</section>" +
-      shipToBlock(true) +
-      vlGate +
-      '<button class="ksc-btn" id="ksc-confirm" type="button">' + esc(btnLabel) + "</button>" +
-      '<div class="ksc-secure">' + lockIcon() + "<span>Secured by Stripe</span></div>" +
+      totalBand +
+      shipToBlock(true).replace('class="ksc-sec ksc-sec--open"', 'class="ksc-sec ksc-sec--open ksc-band--tint"') +
+      '<div class="ksc-band">' +
+        vlGate +
+        '<button class="ksc-btn" id="ksc-confirm" type="button">' + esc(btnLabel) + "</button>" +
+        '<div class="ksc-secure">' + lockIcon() + "<span>Secured by Stripe</span></div>" +
+        // S419, hers: the hold line
+        '<div class="ksc-hold">' + clockIcon() + "<span>We\u2019re holding these for you for 30 minutes.</span></div>" +
+      "</div>" +
+      "</div>" +
+      '<div class="ksc-zig" aria-hidden="true"></div>' +
       modalHtml
     );
 
@@ -1530,9 +1616,10 @@
       return '<div style="position:relative; text-align:center; flex:1;">' + dot +
         '<span style="font-size:.7rem; ' + tx + '">' + esc(label) + "</span></div>";
     }
+    // S419: the timeline is an 80% cream band on the sheet, no white card
     var timeline =
-      '<div style="background:#fff; border:1px solid var(--ks-line); border-radius:12px; padding:15px 14px; margin:16px 0;">' +
-        '<div style="display:flex; justify-content:space-between; position:relative;">' +
+      '<div class="ksc-band ksc-band--80">' +
+        '<div class="ksc-tl">' +
           '<div style="position:absolute; top:7px; left:16%; right:16%; height:2px; background:var(--ks-line);"></div>' +
           step("Confirmed", true) + step("Shipped", false) + step("Delivered", false) +
         "</div>" +
@@ -1541,7 +1628,7 @@
     // savings = retail total (value_of_items). S398: no box, the number itself is her gold.
     // Hidden when the retail figure is missing or 0, so we never show "$0".
     var savingsBlock = (value > 0)
-      ? '<div class="ksc-g ksc-ty-save"><div class="n">' + esc(moneyRound(value)) + '</div>' +
+      ? '<div class="ksc-band ksc-band--full ksc-ty-save"><div class="n">' + esc(moneyRound(value)) + '</div>' +
           '<div class="l">What you\u2019d pay for ' + (lines.length === 1 ? "it" : "these") + ' new</div></div>'
       : "";
 
@@ -1560,29 +1647,33 @@
 
     // order number = first 8 hex of the idempotency key (per-checkout identity; exact-match lookup on claim_idempotency PK)
     var orderNo = IDEM_KEY ? ("#" + String(IDEM_KEY).replace(/-/g, "").slice(0, 8).toUpperCase()) : "";
-    var orderNoHtml = orderNo ? '<span class="ksc-ty-order">Order ' + esc(orderNo) + "</span>" : "";
+    // S419: the order number moved from the pill to the paper's top strip
+    var stripL = orderNo ? "Order " + orderNo : "Order confirmed";
 
     setHtml(
-      // S418: the headline row. Computer: headline, order number and the paid lines left
-      // 70%, the bank right 30%, the thanks across the page under them. Phone: the S401
-      // order, unchanged (h1, order number, thanks, paid, Left in your bank).
-      '<div class="ksc-top ksc-top--ty">' +
+      // S419: one sheet of paper. Strip (order number, date), the headline band, the
+      // savings (cream), Your order (45%), Shipping to, the timeline (80%), the buttons.
+      '<div class="ksc-paper">' +
+      '<div class="ksc-strip"><span>' + esc(stripL) + "</span><span>" + esc(todayStr()) + "</span></div>" +
+      // S418: the headline row. Computer: headline and the paid lines left 70%, the bank
+      // right 30%, the thanks across the sheet under them. Phone: h1, thanks, paid, bank.
+      '<div class="ksc-band"><div class="ksc-top ksc-top--ty">' +
         '<div class="ksc-top-l"><h1 class="ksc-head">' + headline + "</h1>" +
-          orderNoHtml +
           '<div class="ksc-ty-paid">' + payLine + shipLine + mailLine + "</div>" +
         "</div>" +
         thanks +
         (bankTy ? '<div class="ksc-top-b ksc-g"><div class="ksc-ty-h">Left in your bank</div>' + bankTy + "</div>" : "") +
-      "</div>" +
+      "</div></div>" +
       savingsBlock +
-      '<div class="ksc-ty-h">Your order</div>' +
-      itemsHtml +
-      shipToBlock() +
+      '<section class="ksc-sec ksc-band--tint"><h2 class="ksc-sec-h">Your order</h2>' + itemsHtml + "</section>" +
+      shipToBlock(true) +
       timeline +
-      '<div class="ksc-ty-btns">' +
+      '<div class="ksc-band"><div class="ksc-ty-btns">' +
         '<a class="ksc-btn" href="/dashboard" style="flex:1; width:auto; font-size:.9rem; padding:14px 10px; text-decoration:none; text-align:center; box-sizing:border-box;">Go to my dashboard</a>' +
         '<a href="/browse" style="flex:1; box-sizing:border-box; text-align:center; background:transparent; color:var(--ks-orange); border:1px solid var(--ks-line); border-radius:50px; padding:14px 10px; font-weight:700; font-size:.9rem; text-decoration:none;">Keep browsing</a>' +
-      "</div>"
+      "</div></div>" +
+      "</div>" +
+      '<div class="ksc-zig" aria-hidden="true"></div>'
     );
 
     armPile(true);
