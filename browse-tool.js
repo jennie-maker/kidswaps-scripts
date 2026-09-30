@@ -1607,6 +1607,29 @@
     cb(false);
   }
 
+  // S419 FIX (c), found S417: the bag lives in the tab, so the next person to log in on
+  // that tab inherited it (walk3's rattle showed up in her own bag). The bag now
+  // remembers whose it is. A different member logging in empties it; a bag built while
+  // logged out is kept and becomes hers when she logs in.
+  var BAG_OWNER_KEY = 'ksBagOwner';
+  function bagOwnerCheck() {
+    try {
+      var ms = window.$memberstackDom;
+      if (!ms || typeof ms.getCurrentMember !== 'function') return;
+      ms.getCurrentMember().then(function (r) {
+        var id = r && r.data && r.data.id;
+        if (!id) return;                                   // logged out: leave the bag alone
+        var owner = sessionStorage.getItem(BAG_OWNER_KEY);
+        if (owner && owner !== id) {
+          sessionStorage.removeItem(BAG_KEY);
+          sessionStorage.removeItem('ksBagCapSeen');
+          updateBagCount();
+        }
+        sessionStorage.setItem(BAG_OWNER_KEY, id);
+      }).catch(function () {});
+    } catch (e) {}
+  }
+
   function bagRead()  { try { return JSON.parse(sessionStorage.getItem(BAG_KEY)) || []; } catch (e) { return []; } }
   function bagWrite(a){ try { sessionStorage.setItem(BAG_KEY, JSON.stringify(a)); } catch (e) {} }
   function bagCount() { return bagRead().length; }
@@ -1903,8 +1926,12 @@
       var sub = covered.length ? resolveBag(covered, ctx) : null;
       var shortage = (sub && !sub.ok && sub.blocked && sub.blocked.type === 'credit_shortage')
         ? sub.blocked.byClass : null;
+      // S419 fix (b): which off-plan kinds she already holds a credit of (then she only
+      // needs to switch plan, not also buy a pack).
+      var holds = {};
+      (ctx.claimable_credits || []).forEach(function (c) { if (c && c.credit_class) holds[c.credit_class] = true; });
       return { ok: false, blocked: { type: 'off_plan', classes: Object.keys(offClasses),
-                                     count: offPlan.length, shortage: shortage } };
+                                     count: offPlan.length, shortage: shortage, holds: holds } };
     }
 
     var pool = (ctx.claimable_credits || []).slice();
@@ -1960,7 +1987,10 @@
       newExtra += Math.max(0, (perClass[k] || 0) - Math.max(0, cap - u));
     });
     var totalExtra = alreadyExtra + newExtra;
-    if (totalExtra > EXTRA_CAP) {
+    // S419 FIX (a), found S417 on walk3: block ONLY when this bag adds an extra. Swaps
+    // left on a kind her new plan doesn't cover count toward alreadyExtra, and used to
+    // block a bag that adds none. The checkout fn already works this way.
+    if (newExtra > 0 && totalExtra > EXTRA_CAP) {
       return { ok: false, blocked: { type: 'extra_swap_cap', totalExtra: totalExtra, newExtra: newExtra },
                assignments: assigned.map(asgn) };
     }
@@ -2213,18 +2243,23 @@ function outOfCreditsBlock(zeroClasses) {
     toy:      'In order to get toys today, you\u2019ll need to switch your plan ' + OFF_PLAN_AND +
               ' buy a toy credit pack.'
   };
+  // S419, hers: when she already holds that kind of credit, her sentence without the pack.
+  var OFF_PLAN_MSG_HELD = {
+    clothing: 'In order to get clothing today, you\u2019ll need to switch your plan.',
+    toy:      'In order to get toys today, you\u2019ll need to switch your plan.'
+  };
   var SHORT_SENTENCE = 'You\u2019ve picked more than your credits cover right now.';
-  function offPlanBlock(classes, count, shortage) {
+  function offPlanBlock(classes, count, shortage, holds) {
     var k = (classes && classes[0] === 'toy') ? 'toy' : 'clothing';
+    var held = !!(holds && holds[k]);   // S419 fix (b)
+    var ctas = [{ label: 'See plans', href: '/pricing' }];
+    if (!held) ctas.push({ label: k === 'toy' ? 'Get toy credits' : 'Get clothing credits', href: '/pricing?show=credits' });
     return {
       title: 'Not on your plan',
-      msg: OFF_PLAN_MSG[k],
+      msg: held ? OFF_PLAN_MSG_HELD[k] : OFF_PLAN_MSG[k],
       html: true,
       note: shortage ? SHORT_SENTENCE : '',
-      ctas: [
-        { label: 'See plans', href: '/pricing' },
-        { label: k === 'toy' ? 'Get toy credits' : 'Get clothing credits', href: '/pricing?show=credits' }
-      ]
+      ctas: ctas
     };
   }
 
@@ -2415,7 +2450,7 @@ function outOfCreditsBlock(zeroClasses) {
     var blk = null, sig = null;
     if (!res.ok && res.blocked) {
       if (res.blocked.type === 'off_plan') {
-        blk = offPlanBlock(res.blocked.classes, res.blocked.count, res.blocked.shortage);
+        blk = offPlanBlock(res.blocked.classes, res.blocked.count, res.blocked.shortage, res.blocked.holds);
         sig = 'off:' + res.blocked.classes.slice().sort().join(',') + (res.blocked.shortage ? ':short' : '');
       } else if (res.blocked.type === 'credit_shortage') {
         var byClass = res.blocked.byClass;
@@ -2501,7 +2536,7 @@ function outOfCreditsBlock(zeroClasses) {
         if (on) { on.classList.remove('is-nudge'); void on.offsetWidth; on.classList.add('is-nudge'); }
         else showBagBlock('This month\u2019s extras', 'Oops, you\u2019ve already spent your ' + EXTRA_CAP + ' extra swaps this month.');
       } else if (res.blocked.type === 'off_plan') {
-        var ob = offPlanBlock(res.blocked.classes, res.blocked.count, res.blocked.shortage);
+        var ob = offPlanBlock(res.blocked.classes, res.blocked.count, res.blocked.shortage, res.blocked.holds);
         showBagBlock(ob.title, ob.msg, ob.ctas, { note: ob.note, html: ob.html });
       } else {
         showBagBlock('Something\u2019s off', 'Please edit your bag and try again.');
@@ -3495,6 +3530,7 @@ function outOfCreditsBlock(zeroClasses) {
     // member-aware defaults like kids' sizes)
     readUrl();
     wireHeaderCart();
+    bagOwnerCheck();   // S419 fix (c)
 
     // initial load; once data lands, build the rail from in-stock values and
     // wire the mobile sheet toggle. if the URL has ?sku=, open that overlay.
