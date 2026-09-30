@@ -198,6 +198,21 @@
  *
  * rev S408d (2026-09-27), hers: the "You have" eyebrow over the bank total (every bank),
  *   and the bank card's padding tightened to match the dashboard.
+ *
+ * rev S418 (2026-09-30), hers off https://claude.ai/artifact/JWzVjsnxpoqM4ks52kuKC7:
+ *   - COMPUTER (768px and up), receipt AND thank-you: the bank is the same card, smaller,
+ *     in the right 30% of the headline's row; the headline and the lines under it take
+ *     the other 70%, centred top to bottom against the card. The two kind lines drop the
+ *     word "credits" there ("13 clothing"); the tier panel keeps it and opens aligned
+ *     to the card's right edge.
+ *   - Receipt, computer: "Worth about $X new" and its sentence move up under the
+ *     headline; the grey Worth box that closed Your order is hidden there. The "Credit
+ *     Bank" section heading is gone at every width.
+ *   - Receipt, phone: headline centred, then the card a little smaller (bowl 200px); the
+ *     Worth box stays where it was.
+ *   - Thank-you, computer: order number and the paid / shipping / tracking lines sit under
+ *     the headline; "Left in your bank" is hidden (the card's "You have" says it); the
+ *     green thank-you follows, centred, across the page. Phone order is unchanged.
  * ========================================================================== */
 (function () {
   "use strict";
@@ -574,6 +589,57 @@
     ID + " .ksc-opt .fee{font-weight:700; color:var(--ks-ink); font-size:.96rem; white-space:nowrap;}",
     ID + " .ksc-opt .curtag{display:block; margin-top:2px; font-size:.7rem; font-weight:700; color:var(--ks-green); text-align:right;}",
     ID + " .ksc-modal-ft{font-size:.76rem; color:var(--ks-muted); margin-top:14px; text-align:center; font-weight:500;}",
+    // ---- S418: the headline row (receipt + thank-you) ------------------------
+    ID + " .ksc-top{margin:0 0 36px;}",
+    ID + " .ksc-top--rcpt .ksc-head{margin:0 0 18px; text-align:center;}",
+    ID + " .ksc-worth-top{display:none;}",
+    ID + " .ksc-top--rcpt .ksc-bank{gap:8px; padding:14px 12px 12px; border-radius:14px;}",
+    ID + " .ksc-top--rcpt .ksc-pile{width:200px;}",
+    ID + " .ksc-top--rcpt .ksc-pile-eyebrow{font-size:11px; margin-bottom:-4px;}",
+    ID + " .ksc-top--rcpt .ksc-pile-cap{font-size:30px;}",
+    ID + " .ksc-top--rcpt .ksc-bank > .ksc-pile-meta .ksc-pile-tiers{font-size:13.5px; gap:2px 14px;}",
+    ID + " .ksc-top--rcpt .ksc-bank > .ksc-pile-meta .ksc-pk img{width:16px;}",
+    ID + " .ksc-top--rcpt .ksc-pile-hint{font-size:12px;}",
+    // thank-you, phone: the same order as before S418 (h1, order number, thanks, paid, bank)
+    ID + " .ksc-top--ty{display:flex; flex-direction:column; align-items:stretch; margin:0;}",
+    ID + " .ksc-top--ty .ksc-top-l{display:contents;}",
+    ID + " .ksc-top--ty .ksc-head{order:1; font-size:2.4rem; margin:0 0 6px;}",
+    ID + " .ksc-top--ty .ksc-ty-order{order:2; align-self:flex-start;}",
+    ID + " .ksc-top--ty .ksc-ty-thanks{order:3;}",
+    ID + " .ksc-top--ty .ksc-ty-paid{order:4;}",
+    ID + " .ksc-top--ty .ksc-top-b{order:5;}",
+    "@media (min-width:768px){",
+    ID + " .ksc-top{display:grid; grid-template-columns:minmax(0,1fr) 30%; column-gap:20px; align-items:center;}",
+    ID + " .ksc-top-l{grid-column:1; grid-row:1; display:flex; flex-direction:column; align-items:flex-start; gap:18px;}",
+    ID + " .ksc-top-b{grid-column:2; grid-row:1; margin:0;}",
+    ID + " .ksc-top--rcpt .ksc-head{margin:0; text-align:left;}",
+    ID + " .ksc-worth-top{display:flex; flex-direction:column; gap:6px;}",
+    ID + " .ksc-worth-top .ksc-value{font-size:32px;}",
+    ID + " .ksc-worth--low{display:none;}",
+    // the small card, same card as every bank (hers S400/S418)
+    ID + " .ksc-top .ksc-bank{gap:8px; padding:14px 12px 12px; border-radius:14px;}",
+    ID + " .ksc-top .ksc-pile{width:150px;}",
+    ID + " .ksc-top .ksc-pile-eyebrow{font-size:10px; margin-bottom:-4px;}",
+    ID + " .ksc-top .ksc-pile-cap{font-size:28px;}",
+    ID + " .ksc-top .ksc-bank > .ksc-pile-meta .ksc-pile-tiers{font-size:12.5px; gap:2px 12px;}",
+    ID + " .ksc-top .ksc-bank > .ksc-pile-meta .ksc-pk .lab{gap:5px;}",
+    ID + " .ksc-top .ksc-bank > .ksc-pile-meta .ksc-pk img{width:14px;}",
+    ID + " .ksc-top .ksc-bank > .ksc-pile-meta .ksc-pk .cr{display:none;}",
+    ID + " .ksc-top .ksc-pile-hint{font-size:11.5px;}",
+    ID + " .ksc-top .ksc-pile-line{font-size:12.5px;}",
+    ID + " .ksc-top .ksc-pile-cta{font-size:13px; padding:9px 12px;}",
+    // the tier panel lines up with the card's right edge so it never runs off the page
+    ID + " .ksc-top .ksc-pile-pop{left:auto; right:0; max-width:none; transform:translate(0,-6px);}",
+    ID + " .ksc-top .ksc-pile-pop.open{transform:translate(0,0);}",
+    // thank-you, computer
+    ID + " .ksc-top--ty{display:grid; margin:0 0 28px;}",
+    ID + " .ksc-top--ty .ksc-top-l{display:flex; gap:14px;}",
+    ID + " .ksc-top--ty .ksc-head{font-size:44px; margin:0;}",
+    ID + " .ksc-top--ty .ksc-ty-order{margin:0;}",
+    ID + " .ksc-top--ty .ksc-ty-paid{border:0; padding:0; margin:0; font-size:.92rem;}",
+    ID + " .ksc-top--ty .ksc-top-b .ksc-ty-h{display:none;}",
+    ID + " .ksc-top--ty .ksc-ty-thanks{grid-column:1 / -1; grid-row:2; margin:28px 0 0; padding-top:22px; border-top:1px solid var(--ks-line);}",
+    "}",
     // ---- S398 thank-you screen -----------------------------------------------
     ID + " .ksc-ty-order{display:inline-block; background:#fff; color:var(--ks-ink); border:1px solid var(--ks-line); font-size:.75rem; font-weight:700; letter-spacing:.02em; padding:4px 11px; border-radius:20px; margin:0 0 18px;}",
     ID + " .ksc-ty-thanks{text-align:center; color:var(--ks-green); margin:0 0 18px;}",
@@ -888,7 +954,7 @@
     if (covered("toy") || t > 0) shown.push(["toy", t, "toy-face"]);
     var empty = total < 1;   // S408: 0 or half a credit is the empty bank (dashboard rule)
     function kind(x, withTiers) {
-      return '<div class="ksc-pk' + (x[1] ? "" : " zero") + '"><span class="lab"><img alt="" src="' + PILE_ART + x[2] + '.webp"><b>' + esc(pileLabel(x[1], x[0])) + "</b></span>" +
+      return '<div class="ksc-pk' + (x[1] ? "" : " zero") + '"><span class="lab"><img alt="" src="' + PILE_ART + x[2] + '.webp"><b>' + esc(String(x[1]) + " " + x[0]) + '<span class="cr">' + (x[1] === 1 ? " credit" : " credits") + "</span></b></span>" +
         (withTiers ? '<span class="tl">' + pileTierWords(bt[x[0]]) + "</span>" : "") + "</div>";
     }
     // S408: "No credits yet" retired; the dashboard's words (hers S406/S407)
@@ -1251,13 +1317,19 @@
     // Standard line under them, the Worth group closing it), Payment, Shipping to.
     var worthCtx = "That\u2019s about what " + (lines.length === 1 ? "it" : "they") + " would cost new in stores. " + subText + ".";
     setHtml(
-      '<h1 class="ksc-head ksc-g">' + esc(head) + "</h1>" +
-      '<section class="ksc-sec"><h2 class="ksc-sec-h">Credit Bank</h2>' +
-        bankHtml(p.bank, p.cap, null, { when: "now" }) + "</section>" +
+      // S418: the headline row. Computer: headline + the Worth lines left 70%, the bank
+      // right 30%. Phone: headline centred, then the bank; the Worth lines stay low.
+      '<div class="ksc-top ksc-top--rcpt">' +
+        '<div class="ksc-top-l"><h1 class="ksc-head">' + esc(head) + "</h1>" +
+          '<div class="ksc-worth-top"><p class="ksc-value">Worth about ' + moneyRound(value) + " new</p>" +
+            '<p class="ksc-sub">' + esc(worthCtx) + "</p></div>" +
+        "</div>" +
+        '<div class="ksc-top-b">' + bankHtml(p.bank, p.cap, null, { when: "now" }) + "</div>" +
+      "</div>" +
       '<section class="ksc-sec"><h2 class="ksc-sec-h">Your order</h2>' +
         '<div class="ksc-items" style="margin-bottom:0;">' + itemsHtml + "</div>" +
         '<div class="ksc-seal">' + shieldCheck() + "<span>Every piece meets The Closet Standard</span></div>" +
-        '<div class="ksc-worth"><p class="ksc-value">Worth about ' + moneyRound(value) + " new</p>" +
+        '<div class="ksc-worth ksc-worth--low"><p class="ksc-value">Worth about ' + moneyRound(value) + " new</p>" +
           '<p class="ksc-sub">' + esc(worthCtx) + "</p></div>" +
       "</section>" +
       '<section class="ksc-sec"><h2 class="ksc-sec-h">Payment</h2>' + summary + "</section>" +
@@ -1491,13 +1563,17 @@
     var orderNoHtml = orderNo ? '<span class="ksc-ty-order">Order ' + esc(orderNo) + "</span>" : "";
 
     setHtml(
-      '<h1 class="ksc-head" style="font-size:2.4rem; margin:0 0 6px;">' + headline + "</h1>" +
-      orderNoHtml +
-      thanks +
-      '<div class="ksc-ty-paid">' + payLine + shipLine + mailLine + "</div>" +
-      // S401, the approved S400 order: Left in your bank, the bank centred, the savings
-      // group, then Your order.
-      (bankTy ? '<div class="ksc-g"><div class="ksc-ty-h">Left in your bank</div>' + bankTy + "</div>" : "") +
+      // S418: the headline row. Computer: headline, order number and the paid lines left
+      // 70%, the bank right 30%, the thanks across the page under them. Phone: the S401
+      // order, unchanged (h1, order number, thanks, paid, Left in your bank).
+      '<div class="ksc-top ksc-top--ty">' +
+        '<div class="ksc-top-l"><h1 class="ksc-head">' + headline + "</h1>" +
+          orderNoHtml +
+          '<div class="ksc-ty-paid">' + payLine + shipLine + mailLine + "</div>" +
+        "</div>" +
+        thanks +
+        (bankTy ? '<div class="ksc-top-b ksc-g"><div class="ksc-ty-h">Left in your bank</div>' + bankTy + "</div>" : "") +
+      "</div>" +
       savingsBlock +
       '<div class="ksc-ty-h">Your order</div>' +
       itemsHtml +
