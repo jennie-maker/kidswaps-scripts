@@ -1500,9 +1500,17 @@
     body.appendChild(el('p', 'ks-wz-headline', COPY.s5.headline(p)));
 
     var sum = el('div', 'ks-wz-summary');
-    sum.appendChild(sumRow(p.pack ? p.titleTop + ' ' + p.titleSub : p.name,
-                           '$' + p.monthly + ' per month'));
-    if (p.pack) sum.appendChild(sumRow(p.pack.name, '$' + p.pack.amount + ' once'));
+    /* S421 HERS, option B (mockup https://claude.ai/artifact/9xX873A1WwmY3cbDrU4HBW):
+       the plan row is the plan name ONLY. It used to read "The Basics with a Clothing
+       Starter Pack" beside $30, so the $75 row below read like a repeat. The pack row
+       now carries what it buys (p.pack.credits, e.g. "6 clothing credits") as a small
+       grey line under its name. The headline and the consent sentence are unchanged. */
+    sum.appendChild(sumRow(p.name, '$' + p.monthly + ' per month'));
+    if (p.pack) {
+      var packRow = sumRow(p.pack.name, '$' + p.pack.amount + ' once');
+      packRow.firstChild.appendChild(el('span', 'ks-wz-sum-sub', p.pack.credits));
+      sum.appendChild(packRow);
+    }
     /* ⚠ RULED S74: one value per row. See .ks-wz-sum-a. */
     /* S394 HERS: SUPERSEDES S74's one-value-per-row. Label left, detail right, so the
        right side is never empty. The value side wraps (a long email or address breaks
@@ -2532,6 +2540,7 @@
          now one value per row, which is the shape the address row already
          used. overflow-wrap lets a long email break rather than overflow. */
       '.ks-wz-sum-a{min-width:0;overflow-wrap:anywhere;}',
+      '.ks-wz-sum-sub{display:block;font-size:13px;color:#75736E;margin-top:2px;}',   /* S421 */
       /* ⚠ RULED S74: step 6 gets intentional styling. The code field is
          MEMBERSTACK'S OWN INPUT inside the moved form, reached through the
          same seam the script uses (SEL.codeWrap). This is the ONE change in
@@ -2601,6 +2610,7 @@
         '[data-ground] .ks-wz-assent-link,',
         '[data-ground] .ks-wz-btn-quiet{color:#EEEFE3;}',
       '[data-ground] .ks-wz-sum-b{color:rgba(255,255,255,.72);}',
+      '[data-ground] .ks-wz-sum-sub{color:rgba(255,255,255,.72);}',   /* S421 */
       '[data-ground] .ks-wz-sum-k{color:rgba(255,255,255,.72);}',
       '[data-ground] .ks-wz-sum-v{color:#FFFFFF;}',
       /* ⚠⚠⚠ THE STATE RULES MUST BE RESTATED HERE OR THE TINT EATS THEM.
