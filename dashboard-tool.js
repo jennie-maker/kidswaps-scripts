@@ -126,15 +126,14 @@ function paintHeadline(member) {
     var fname = '';
     try { fname = (member && member.data && member.data.customFields && member.data.customFields['first-name']) || ''; } catch (e) {}
     fname = (typeof fname === 'string') ? fname.trim() : '';
+    if (_sbName) fname = _sbName;   // S420: the Supabase row wins whenever it has arrived
     var h = document.querySelector('.ks-greet-headline');
     if (!h) return;
     if (fname) _fnameDisp = displayName(fname);
     // S393: while she is new the welcome is the headline, whichever promise lands first.
     if (_jjOn) { h.textContent = welcomeHeadline(); if (fname) paintReviewPrompt(); return; }
     if (!fname) { h.textContent = 'Welcome back.'; return; }
-    var hr = new Date().getHours();
-    var t = hr < 12 ? 'Good morning' : (hr < 18 ? 'Good afternoon' : 'Good evening');
-    h.textContent = t + ', ' + displayName(fname) + '.';
+    h.textContent = timeGreeting(fname);
     paintReviewPrompt();       // whichever promise lands second is the one that paints
   }
   
@@ -320,6 +319,26 @@ function paintHeadline(member) {
     ]
   };
   var _jjOn = false, _fnameDisp = null;
+  /* ---- THE NAME, S420 (Walk 4 fix 2) ------------------------------------
+     Hers S402: the Supabase member row is the one source of the name (checkout
+     already reads it there). member-state sends it as first_name since S420.
+     Memberstack's first-name is only the FALLBACK now: it paints first if it
+     lands first, and the Supabase name replaces it when member-state lands.
+     A missing or blank first_name leaves everything exactly as before. */
+  var _sbName = '';
+  function timeGreeting(fname) {
+    var hr = new Date().getHours();
+    var t = hr < 12 ? 'Good morning' : (hr < 18 ? 'Good afternoon' : 'Good evening');
+    return t + ', ' + displayName(fname) + '.';
+  }
+  function nameFromState(s) {
+    var n = (s && typeof s.first_name === 'string') ? s.first_name.trim() : '';
+    if (!n) return;
+    _sbName = n;
+    _fnameDisp = displayName(n);
+    var h = document.querySelector('.ks-greet-headline');
+    if (h && !_jjOn) h.textContent = timeGreeting(n);   // the welcome headline repaints in paintGreeting
+  }
   function welcomeHeadline() {
     return _fnameDisp ? ('Welcome to KidSwaps, ' + _fnameDisp + '.') : 'Welcome to KidSwaps!';
   }
@@ -3365,7 +3384,7 @@ function paintCloset(s) {
   })
     .then(function (res) { return res.json(); })
     .then(function (state) {
-if (state && !state.error) { applyFake(state); paint(state); paintGreeting(state); paintBagButton(state); addrBuild(); packWaitStart(); jjWaitMaybe(state); planNoteMaybe(state); }
+if (state && !state.error) { applyFake(state); nameFromState(state); paint(state); paintGreeting(state); paintBagButton(state); addrBuild(); packWaitStart(); jjWaitMaybe(state); planNoteMaybe(state); }
 else { console.error('member-state error', state); neutralGreeting(); jjWaitMaybe(null); }
     })
     .catch(function (e) { console.error('member-state paint error', e); neutralGreeting(); });
