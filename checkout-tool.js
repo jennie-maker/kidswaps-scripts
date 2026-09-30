@@ -241,6 +241,8 @@
  *     into that space, under the paid line in the left column, left aligned, with no
  *     line above it. Phone: unchanged apart from the two lines going (hers: it only moves
  *     where there's empty space to fill).
+ *   - Second pass, hers: computer keeps the headline, paid line and thanks together as one
+ *     block centred beside the card (no big gap); phone centres the paid line.
  * ========================================================================== */
 (function () {
   "use strict";
@@ -763,6 +765,8 @@
     ID + " .ksc-paper .ksc-top--ty .ksc-head{text-align:center;}",
     ID + " .ksc-paper .ksc-top--ty{gap:18px;}",
     ID + " .ksc-paper .ksc-top--ty .ksc-ty-thanks{margin:0;}",
+    // S423, hers: on a phone the paid line is centred like everything around it
+    ID + " .ksc-paper .ksc-top--ty .ksc-ty-paid{align-items:center;}",
     ID + " .ksc-tl{display:flex; justify-content:space-between; position:relative;}",
     "@media (min-width:768px){",
     ID + " .ksc-strip{padding:14px 32px;}",
@@ -779,6 +783,11 @@
     ID + " .ksc-paper .ksc-top--ty .ksc-ty-thanks .t{display:inline; vertical-align:middle; font-size:17.5px; margin:0;}",
     ID + " .ksc-paper .ksc-top--ty .ksc-ty-thanks .b{margin:4px 0 0; max-width:38ch; color:var(--ks-ink); font-size:14.5px;}",
     ID + " .ksc-paper .ksc-top--ty .ksc-top-b{grid-row:1 / span 2;}",
+    // S423 second pass, hers: the left side stays together as one block, centred beside the
+    // card (the headline row sits at the bottom of its row, the thanks at the top of its own)
+    ID + " .ksc-paper .ksc-top--ty .ksc-top-l{align-self:end;}",
+    ID + " .ksc-paper .ksc-top--ty .ksc-ty-thanks{align-self:start;}",
+    ID + " .ksc-paper .ksc-top--ty .ksc-ty-paid{align-items:flex-start;}",
     "}",
     "@media (max-width:480px){",
     ID + " .ksc-ty-btns{flex-direction:column;}",
