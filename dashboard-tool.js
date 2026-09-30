@@ -1210,13 +1210,17 @@ function paintCoins(s) {
   var PACK_PRICES = { 'prc_clothing-credit-pack-8n6m0ucp': 'clothing', 'prc_toy-credit-pack-kr6v0rrk': 'toy' };
   var PACK_KEY = 'ks_pack_before';
   var _lastBank = null;   // S420: by_class of the last painted payload, for the pack snapshot
-  var PACK_POLL_MS = 2000, PACK_GIVEUP_MS = 30000;
+  var PACK_POLL_MS = 1000, PACK_GIVEUP_MS = 30000;   // S423: every second, like the landing wait
   var PACK_WAIT_TEXT = 'Adding your credits';
   var PACK_LATE_TEXT = 'On the way. Refresh in a minute if you don\u2019t see them.';
   var PACK_LOOP = COIN_SPIN.slice(0, -1);   // continuous waiting spin, half the landing speed
   var _pack = null;
   var _packQS = new URLSearchParams(window.location.search);
   var _packFor = (_packQS.get('fromCheckout') === 'true') ? (PACK_PRICES[_packQS.get('msPriceId')] || null) : null;
+  // S423: back from checkout but the price ID didn't map: trust this tab's own snapshot.
+  if (!_packFor && _packQS.get('fromCheckout') === 'true') {
+    try { var _ps = JSON.parse(sessionStorage.getItem('ks_pack_before') || 'null'); if (_ps && (_ps.key === 'clothing' || _ps.key === 'toy')) _packFor = _ps.key; } catch (x) {}
+  }
 
   function wirePackSnapshot() {
     document.addEventListener('click', function (e) {
@@ -1227,8 +1231,12 @@ function paintCoins(s) {
       // S420 FIX (found S417 on walk3): the baseline used to be read from the old hidden coin
       // row, which can read blank, so the wait never armed. It now comes from the last bank
       // the page painted. The coin row stays as the fallback.
-      var n = (_lastBank && k in _lastBank) ? bankNum(_lastBank[k]) : NaN;
+      // S423 FIX (Maria, S423): an EMPTY bank has no entry for the kind, so the baseline read
+      // blank and the wait never armed - the one case a pack is most likely bought. Once the
+      // page has painted a bank, a missing kind means 0.
+      var n = _lastBank ? bankNum(_lastBank[k]) : NaN;
       if (isNaN(n)) { var el = document.querySelector('[data-coin="' + k + '"]'); n = el ? parseFloat(el.textContent) : NaN; }
+      if (isNaN(n)) n = 0;
       try { sessionStorage.setItem(PACK_KEY, JSON.stringify({ key: k, n: isNaN(n) ? null : n, t: Date.now() })); } catch (x) {}
     }, true);   // capture phase: Memberstack's own handler cannot beat it
   }
@@ -1256,6 +1264,10 @@ function paintCoins(s) {
     console.log('[ks-dash] credit pack wait:', _packFor, '| baseline', snap.n, '| painted', n);
     if (n > snap.n) { _pack.done = true; packCleanup(); return false; }   // already arrived: paint normally, new coins fall
     paintBank(s, { cap: PACK_WAIT_TEXT, still: true });
+    // S423, hers: the same full-page cover as the shop-first landing wait (white, the gold
+    // coin spinning, "Adding your credits"). It stays up until the credits land, then the
+    // page reloads once and the new coins pour in.
+    _pack.cover = jjCover();
     setTimeout(function () { if (_pack && !_pack.done) packGiveUp(); }, PACK_GIVEUP_MS + 5000);
     return true;
   }
@@ -1288,6 +1300,9 @@ function paintCoins(s) {
     var p = _pack; p.done = true;
     packCleanup();
     console.log('[ks-dash] credit pack landed:', p.key, p.base, '->', n);
+    // S423: with the cover up, reload once (the cleanup above strips the address and the
+    // snapshot, so the reload can't re-arm). The cover stays until the new page replaces it.
+    if (p.cover) { window.location.reload(); return; }
     paintBank(st);                                 // only the new coins fall
   }
 
@@ -1296,6 +1311,7 @@ function paintCoins(s) {
     p.done = true;
     paintBank(p.s, { cap: PACK_LATE_TEXT, still: true });   // hers S356: the old number never shows
     packCleanup();
+    if (p.cover) p.cover.remove();                          // S423: the cover lifts on the late line
     console.log('[ks-dash] credit pack wait gave up after', PACK_GIVEUP_MS, 'ms');
   }
 
