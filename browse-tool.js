@@ -1322,6 +1322,11 @@
       '</div>';
     root.removeAttribute('hidden');
     overlayOpen = true;
+    // S425 FIX: a page that opens straight onto this message never ran wireOverlay,
+    // so the X and the backdrop did nothing. Wire it here (null item: no photos, no bag).
+    wireOverlay(root, null);
+    var x = root.querySelector('.ks-detail-x');
+    if (x) x.focus();
   }
 
   function wireOverlay(root, item) {
