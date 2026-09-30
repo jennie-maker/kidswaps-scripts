@@ -60,13 +60,14 @@
       }
     }
     var __ksSrc = __ksScript && __ksScript.src ? __ksScript.src : '';
-    var __ksPin = (__ksSrc.match(/@([^/]+)\/browse-tool\.js/) || [])[1] || 'unknown';
+    var __ksPin = (__ksSrc.match(/@([^/]+)\/browse-tool(?:\.min)?\.js/) || [])[1] || 'unknown';
     console.log('%c[ks-browse] build ' + __ksPin, 'color:#d24f28;font-weight:600', __ksSrc || '(no src)');
   } catch (__ksErr) {}
 
   /* ---- CONFIG -------------------------------------------------------------- */
   var SUPABASE_URL = 'https://ajsobivqxexcniwifxzz.supabase.co';
   var RPC          = '/rest/v1/rpc/get_available_inventory';
+  var ITEM_RPC     = '/rest/v1/rpc/get_item_by_sku';   // S425: one item by SKU, even after it's ordered
   var MOUNT_ID     = 'ks-browse-app';
   var LOG          = '[ks-browse]';
 
@@ -345,6 +346,7 @@
          over head-box layout rules not visible here -- verify centering + gaps live. */
       '#ks-detail-root .ks-detail-desc{margin-top:14px;}' +
       '#ks-detail-root .ks-detail-cta{margin-top:20px;}' +
+      '#ks-detail-root .ks-detail-taken{margin:20px 0 0;font-family:Quicksand,sans-serif;font-size:15px;font-weight:600;color:#211B1A;}' +
       '@media (min-width:721px){#ks-detail-root .ks-detail-info{align-self:center;}#ks-detail-root .ks-detail-name{font-size:33px;line-height:1.1;}}' +
 
       /* FILTER RAIL -- a heading and an option were both Quicksand 13px with no
@@ -1244,9 +1246,12 @@
             // NO ICON ON THIS BUTTON -- HER RULING S266. BAG_SVG was live here and is
             // removed; the icon she actually wanted is the header cart's, which is a
             // different conversation and a different surface. The label carries it.
-            '<button type="button" class="ks-detail-cta" data-bag="1">' +
-              '<span>Add to bag</span></button>' +
-            '<span class="ks-detail-cta-cs" aria-live="polite"></span>' +
+            // S425, HERS, VERBATIM: an ordered item keeps its page; the button becomes her line.
+            (item.status && item.status !== 'available'
+              ? '<p class="ks-detail-taken">This one\u2019s been claimed.</p>'
+              : '<button type="button" class="ks-detail-cta" data-bag="1">' +
+                  '<span>Add to bag</span></button>' +
+                '<span class="ks-detail-cta-cs" aria-live="polite"></span>') +
           '</div>' +
         '</div>' +
       '</div>';
@@ -2832,7 +2837,7 @@ function outOfCreditsBlock(zeroClasses) {
       history.pushState({ ksSku: sku }, '', want);
     }
 
-    if (!item) { showUnavailable(root); document.documentElement.classList.add('ks-detail-lock'); return; }
+    if (!item) { openTakenOrMissing(sku, root); return; }
 
     root.innerHTML = detailHtml(item);
     root.removeAttribute('hidden');
@@ -2894,7 +2899,7 @@ function outOfCreditsBlock(zeroClasses) {
   function openDetailFromUrl(sku) {
     var item = findBySku(sku);
     var root = ensureOverlayRoot();
-    if (!item) { showUnavailable(root); document.documentElement.classList.add('ks-detail-lock'); return; }
+    if (!item) { openTakenOrMissing(sku, root); return; }
     root.innerHTML = detailHtml(item);
     root.removeAttribute('hidden');
     overlayOpen = true;
@@ -2902,6 +2907,50 @@ function outOfCreditsBlock(zeroClasses) {
     wireOverlay(root, item);
     var x = root.querySelector('.ks-detail-x');
     if (x) x.focus();
+  }
+
+  /* S425: a ?sku= that isn't in the for-sale list. Ask get_item_by_sku for that one
+     item: an ordered (claimed) or held (reserved) item opens its normal page with
+     her "claimed" line in place of Add to bag. Retired, unknown, or a failed read
+     falls back to the old "no longer available" panel, exactly as before.
+     Stale guard: if she has moved on (closed it or opened another) before the
+     answer lands, the answer is dropped. */
+  function openTakenOrMissing(sku, root) {
+    fetchOneBySku(sku).then(function (it) { return it; }, function () { return null; })
+      .then(function (it) {
+        var now = '';
+        try { now = new URLSearchParams(location.search).get('sku') || ''; } catch (e) {}
+        if (now !== sku) return;
+        if (!it || !it.sku) {
+          showUnavailable(root);
+          document.documentElement.classList.add('ks-detail-lock');
+          return;
+        }
+        root.innerHTML = detailHtml(it);
+        root.removeAttribute('hidden');
+        overlayOpen = true;
+        document.documentElement.classList.add('ks-detail-lock');
+        wireOverlay(root, it);
+        var x = root.querySelector('.ks-detail-x');
+        if (x) x.focus();
+      });
+  }
+
+  function fetchOneBySku(sku) {
+    return fetch(SUPABASE_URL + ITEM_RPC, {
+      method: 'POST',
+      headers: {
+        'apikey': ANON_KEY,
+        'Authorization': 'Bearer ' + ANON_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ p_sku: sku })
+    }).then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    }).then(function (data) {
+      return (data && typeof data === 'object' && !Array.isArray(data)) ? data : null;
+    });
   }
 
   /* ---- fetch -------------------------------------------------------------- */
