@@ -231,6 +231,16 @@
  *     Confirm button is faded coral, not grey.
  *   - Thank-you: "Left in your bank" is gone at every width (the card's "You have" says
  *     it), Your order gets the serif section heading, the timeline loses its white card.
+ *
+ * rev S423 (2026-09-30), hers off the S422 boards:
+ *   - The receipt headline is "Checkout", no name. It replaces her S215/S216 lines
+ *     ("Your swap is ready, Olivia.") at her own ruling S422/S423.
+ *   - The receipt's top strip drops "Order preview" and keeps only the date, on the right.
+ *   - Thank-you: "Shipping included" (or "Shipping $X") and "We'll email tracking when
+ *     it ships" are gone with their icons. Computer: "Thank you for swapping" moves up
+ *     into that space, under the paid line in the left column, left aligned, with no
+ *     line above it. Phone: unchanged apart from the two lines going (hers: it only moves
+ *     where there's empty space to fill).
  * ========================================================================== */
 (function () {
   "use strict";
@@ -762,7 +772,13 @@
     ID + " .ksc-paper .ksc-ty-save{padding:28px 32px;}",
     ID + " .ksc-paper .ksc-top--ty .ksc-head{text-align:left;}",
     // the thanks runs the full width of the sheet under a dashed line
-    ID + " .ksc-paper .ksc-top--ty .ksc-ty-thanks{margin:28px -32px -28px; padding:28px 32px; border-top:1px dashed rgba(33,27,26,.2);}",
+    // S423, hers: the thanks sits in the left column under the paid line, left aligned,
+    // in the space the shipping and tracking lines left. Phone is untouched.
+    ID + " .ksc-paper .ksc-top--ty .ksc-ty-thanks{grid-column:1; grid-row:2; margin:18px 0 0; padding:0; border:0; text-align:left;}",
+    ID + " .ksc-paper .ksc-top--ty .ksc-ty-thanks svg{width:22px; height:22px; vertical-align:middle; margin-right:8px;}",
+    ID + " .ksc-paper .ksc-top--ty .ksc-ty-thanks .t{display:inline; vertical-align:middle; font-size:17.5px; margin:0;}",
+    ID + " .ksc-paper .ksc-top--ty .ksc-ty-thanks .b{margin:4px 0 0; max-width:38ch; color:var(--ks-ink); font-size:14.5px;}",
+    ID + " .ksc-paper .ksc-top--ty .ksc-top-b{grid-row:1 / span 2;}",
     "}",
     "@media (max-width:480px){",
     ID + " .ksc-ty-btns{flex-direction:column;}",
@@ -1271,9 +1287,8 @@
     // a time. Falls back to the bare line with no trailing period when no name is on file.
     // ⚠⚠ USE THE displayName() ALREADY IN THIS FILE. Do not add a second casing helper and
     // do not reach for the deleted titleCase() - it lowercases first and breaks McAllister.
-    var head = lines.length === 1 ? "Your swap is ready" : "Your swaps are ready";
-    var headName = displayName(memberName("first_name"));
-    if (headName) head += ", " + headName + ".";
+    // S423, hers: the receipt headline is "Checkout", no name.
+    var head = "Checkout";
     var value = Number(p.value_of_items) || 0;
     var totalCents = (p.fees && Number(p.fees.total_cents)) || 0;
 
@@ -1394,7 +1409,7 @@
     setHtml(
       // S419: one sheet of paper, then its zigzag edge. The modal sits outside the sheet.
       '<div class="ksc-paper">' +
-      '<div class="ksc-strip"><span>Order preview</span><span>' + esc(todayStr()) + "</span></div>" +
+      '<div class="ksc-strip"><span></span><span>' + esc(todayStr()) + "</span></div>" +
       // S418: the headline row. Computer: headline + the Worth lines left 70%, the bank
       // right 30%. Phone: headline centred, then the bank; the Worth lines stay low.
       '<div class="ksc-band"><div class="ksc-top ksc-top--rcpt">' +
@@ -1588,11 +1603,8 @@
     var lines = Array.isArray(p.lines) ? p.lines : [];
     var value = Number(p.value_of_items) || 0;
     var charged = Number(commit && commit.charged_cents) || 0;
-    var shipCents = Number(commit && commit.shipping_cents) || 0;
 
     var icCheck = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
-    var icTruck = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17h4V5H2v12h3"/><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5v8h1"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="17.5" cy="17.5" r="1.5"/></svg>';
-    var icMail = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>';
 
     // S398: her new order (off the approved mockup). Compact white item rows.
     var itemsHtml = lines.map(function (ln) {
@@ -1603,10 +1615,7 @@
     var payLine = charged === 0
       ? '<div style="display:flex; align-items:center; gap:9px; color:var(--ks-green); font-weight:700;">' + icCheck + "<span>No charge, covered by your credits</span></div>"
       : '<div style="display:flex; align-items:center; gap:9px; color:var(--ks-ink); font-weight:700;">' + icCheck + "<span>" + esc(moneyc(charged)) + " charged to your card</span></div>";
-    var shipLine = '<div style="display:flex; align-items:center; gap:9px; color:var(--ks-muted);">' + icTruck +
-      "<span>" + (shipCents > 0 ? "Shipping " + esc(moneyc(shipCents)) : "Shipping included") + "</span></div>";
-    var mailLine = '<div style="display:flex; align-items:center; gap:9px; color:var(--ks-muted);">' + icMail +
-      "<span>We\u2019ll email tracking when it ships</span></div>";
+    // S423, hers: the shipping and tracking lines are gone.
 
     function step(label, active) {
       var dot = active
@@ -1659,7 +1668,7 @@
       // right 30%, the thanks across the sheet under them. Phone: h1, thanks, paid, bank.
       '<div class="ksc-band"><div class="ksc-top ksc-top--ty">' +
         '<div class="ksc-top-l"><h1 class="ksc-head">' + headline + "</h1>" +
-          '<div class="ksc-ty-paid">' + payLine + shipLine + mailLine + "</div>" +
+          '<div class="ksc-ty-paid">' + payLine + "</div>" +
         "</div>" +
         thanks +
         (bankTy ? '<div class="ksc-top-b ksc-g"><div class="ksc-ty-h">Left in your bank</div>' + bankTy + "</div>" : "") +
