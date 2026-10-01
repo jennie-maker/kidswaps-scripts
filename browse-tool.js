@@ -2354,12 +2354,8 @@ function outOfCreditsBlock(zeroClasses) {
     per.forEach(function (r) {
       // S416, HERS (board 4): an empty bag's extras are PAST ORDERS, so say so (the
       // S411 "plus 5 extra" on an empty bag). All used reads "plus all 5 extras".
-      var ex = '';
-      if (r.extra) {
-        if (totalExtra === EXTRA_CAP && r.extra === EXTRA_CAP) ex = 'plus all ' + EXTRA_CAP + ' extras';
-        else if (r.inBag === 0) ex = 'plus ' + r.extra + plural(r.extra, ' extra', ' extras') + ' on past orders';
-        else ex = 'plus ' + r.extra + ' extra at $5 each';
-      }
+      // S425, HERS: acknowledge only. No "on past orders", no price, no "all".
+      var ex = r.extra ? 'plus ' + r.extra + plural(r.extra, ' extra', ' extras') : '';
       // S366, HERS: THE BAR STAYS ALL GREEN OVER THE ALLOWANCE -- amber read as a
       // warning. It fills to the cap and stops; the extras ride the line instead.
       var fillPct = r.cap ? (r.within / r.cap * 100) : 0;
@@ -2377,14 +2373,12 @@ function outOfCreditsBlock(zeroClasses) {
     // her account. Past the limit it is a warm brown, never red, and never tells her to
     // remove anything (S215). The last line is Claude's wording, hers to change.
     var d = resetWords(ctx), note = '', over = Math.max(0, totalExtra - EXTRA_CAP);
-    if (totalExtra > 0 && totalExtra < EXTRA_CAP) {
-      var left = EXTRA_CAP - totalExtra;
-      var until = d ? ' until your swaps reset ' + d + '.' : ' this month.';
-      note = bagExtra === 0
-        ? 'Extra swaps are $5 each. You can add ' + left + ' more' + until
-        : 'You can add ' + left + ' more ' + plural(left, 'extra', 'extras') + until;
-    } else if (totalExtra === EXTRA_CAP) {
-      note = 'That\u2019s everything for this month.' + (d ? ' Your swaps reset ' + d + '.' : '');
+    // S425, HERS: "we dont need to remind her about extras or maxes, just acknowledge
+    // them when she has them in her cart and when she reaches the max." So no
+    // "you can add N more" and no price; one line only at the max (Claude's wording,
+    // approved off the S425 mockup).
+    if (totalExtra === EXTRA_CAP) {
+      note = 'That\u2019s all ' + EXTRA_CAP + ' extras for this month.' + (d ? ' Your swaps reset ' + d + '.' : '');
     }
     var noteHtml = note ? escapeHtml(note) : '';
     if (over) {
