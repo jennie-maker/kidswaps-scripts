@@ -682,6 +682,7 @@
     ID + " .ksc-ty-h{font-family:'Instrument Serif',Georgia,serif; font-weight:400; font-size:2rem; line-height:1.1; color:var(--ks-ink); margin:0 0 16px; text-align:center;}",
     ID + " .ksc-ty-item{display:flex; align-items:center; gap:10px; background:#fff; border:1px solid var(--ks-line); border-radius:10px; padding:6px 10px; margin-bottom:6px;}",
     ID + " .ksc-ty-item .ksc-thumb{width:36px; height:36px; border-radius:6px;}",
+    ID + " .ksc-ty-item .ksc-itemlink{gap:10px;}",   // S425: keep the row's own spacing
     ID + " .ksc-ty-item .nm{font-weight:700; font-size:.9rem; line-height:1.25; color:var(--ks-ink);}",
     ID + " .ksc-ty-btns{display:flex; gap:8px;}",
     // THE BANK (S401, the approved S400 layout, option 1 "Side by side"): bowl on the
@@ -1617,8 +1618,12 @@
 
     // S398: her new order (off the approved mockup). Compact white item rows.
     var itemsHtml = lines.map(function (ln) {
-      return '<div class="ksc-ty-item">' + thumbHtml(ln) +
-        '<div class="ksc-main"><div class="nm">' + esc(ln.item_name || ln.sku) + "</div></div></div>";
+      // S425: each row links to its item page (browse shows an ordered item since @47dab29),
+      // the same link and new tab as the receipt rows.
+      var href = "/browse?sku=" + encodeURIComponent(ln.sku);
+      return '<div class="ksc-ty-item">' +
+        '<a class="ksc-itemlink" href="' + esc(href) + '" target="_blank" rel="noopener">' + thumbHtml(ln) +
+        '<div class="ksc-main"><div class="nm">' + esc(ln.item_name || ln.sku) + "</div></div></a></div>";
     }).join("");
 
     var payLine = charged === 0
