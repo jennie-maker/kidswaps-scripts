@@ -46,7 +46,7 @@ var ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI
     if (c > 0 && t > 0)  allowance = c + ' clothing and ' + t + ' toy swaps';
     else if (c > 0)      allowance = c + (c === 1 ? ' swap' : ' swaps');
     else if (t > 0)      allowance = t + (t === 1 ? ' swap' : ' swaps');
-    else return "You've used this cycle's swaps \u2014 your credits are safe for next cycle.";
+    else return "You've used this month's swaps. Don't worry, your credits are safe for next month.";   // S427 hers: no em dash, "month" like the main line
     return 'Your plan includes ' + allowance + " per cycle, and you've used them all. " +
            "Don't worry, your credits are safe for next month.";
   }
@@ -67,7 +67,6 @@ var ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI
     cancelled: { sub: "Your membership won't renew. Reactivate anytime to pick up where you left off.", cta: "Reactivate",        mode: "closet", href: "/pricing", accent: false },
 	paused:    { sub: "Your membership is paused. Your credits are safe and waiting.",                  cta: "Resume membership", mode: "manage",                  accent: false },
     capped:    { sub: cappedSub,                                                                        cta: "See what's new",    mode: "closet", href: "/browse", accent: false },
-    expiring:  { sub: "Some credits are expiring soon. Don't let them slip away.",                       cta: "Browse the closet", mode: "closet", href: "/browse", accent: false },
     // ⚠⚠ "ready to spend" IS A DELIBERATE, NARROW EXCEPTION TO THE "ADDED TO YOUR BANK,
     // NEVER READY TO SPEND" LOCK, AND IT IS SAFE FOR A STRUCTURAL REASON. DO NOT "CORRECT" IT.
     // pickState routes on signals.has_credits = bool_or(credit_amount >= 1.0), so A LONE 0.5
@@ -159,14 +158,13 @@ function paintHeadline(member) {
 
   function pickState(s) {
     var override = new URLSearchParams(window.location.search).get('state');
-    var valid = ['cancelled','paused','capped','expiring','active','zero'];
+    var valid = ['cancelled','paused','capped','active','zero'];   // S427: 'expiring' removed, credits never expire
     if (override && valid.indexOf(override) !== -1) return override;
     var ms = (s.member_status || '').toLowerCase();
     if (ms === 'cancelled') return 'cancelled';
     if (ms === 'paused')    return 'paused';
     var sig = s.signals || {};
     if (sig.is_capped && allCoveredUsed(s)) return 'capped';
-    if (sig.expiring_soon) return 'expiring';
     if (sig.has_credits)   return 'active';
     return 'zero';
   }
@@ -237,7 +235,13 @@ function paintHeadline(member) {
     // ⚠ CHECKED BEFORE bag_out, ON PURPOSE (hers): a true day-one member waiting on her
     // SIGNUP bag gets NO bag sentence at all. Do not add one.
     if (b.has_bag_history === false) return '';
-    if (!b.bag_out) return '';
+    // S427 HERS ("i want it to always be honest"): "out" means a bag has LEFT us and has
+    // not come back. bag_out also counts a bag still on the ship desk ('open'), which is
+    // why Maria read "bag out" with only order bags on the desk. bag_out stays broad in
+    // the database on purpose (the send-a-bag stop line needs it); only this sentence narrows.
+    // A bag the carrier has delivered back to us is no longer out either. When in doubt
+    // (one bag out, another already back) it says nothing, never something untrue.
+    if (!b.bag_shipped || b.return_delivered) return '';
     return BAG_IN_MOTION;
   }
 
