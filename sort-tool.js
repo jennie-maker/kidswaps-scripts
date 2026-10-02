@@ -6,7 +6,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "sort-tool S429 v2";
+  var BUILD = "sort-tool S429 v4";
   var ROOT_ID = "ks-sort-app";
   var BASE = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1";
   var DOOR = BASE + "/grading-db";
@@ -29,6 +29,7 @@
       "Item type not eligible for plan", "Transit damage", "Other"]
   };
   // The same three slots as listing (listing-tool.js PHOTO_SLOTS), same words. Saved in this order.
+  var VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];   // the same three listing takes
   var SLOTS = [
     { key: "front", label: "Front", hint: "primary photo" },
     { key: "back", label: "Back", hint: "tap to add" },
@@ -48,7 +49,8 @@
     start: { trackQ: "", memberQ: "", members: [], member: null, clothing: "", toy: "" },
     close: { note: "" },
     addBrand: null,      // { name, tier } while the new-brand panel is open
-    freedSku: "",        // the SKU just freed by "Remove it and sort it again", offered back for the re-sort
+    freedSku: "",
+    editing: null,       // the saved record being edited, or null        // the SKU just freed by "Remove it and sort it again", offered back for the re-sort
     errors: [],
     busy: false,
     toast: ""
@@ -146,7 +148,13 @@
   function loadRecords() {
     if (!S.batch) { S.records = []; return Promise.resolve(); }
     var sel = "id,status,tier,label_number,reject_reason,reject_reason_other_text,item_type,brand,category,size,credit_amount_at_grading,graded_item_name";
-    return door("GET", "/intake_records?select=" + sel + "&batch_id=eq." + S.batch.id + "&order=created_at.asc")
+    var more = ",would_be_tier,is_complete,set_piece_count,credit_amount_reason,operator_item_notes,photo_urls";
+    var withVideo = more + ",video_url";
+    var tail = "&batch_id=eq." + S.batch.id + "&order=created_at.asc";
+    // The longer list lets an item be edited; if it's ever refused, the short list still loads the bag.
+    return door("GET", "/intake_records?select=" + sel + withVideo + tail)
+      .catch(function () { return door("GET", "/intake_records?select=" + sel + more + tail); })
+      .catch(function () { return door("GET", "/intake_records?select=" + sel + tail); })
       .then(function (rows) { S.records = rows || []; });
   }
   function loadOpenBatch() {
@@ -169,7 +177,7 @@
       ages: [], complete: true,
       tier: "", half: false, halfReason: "",
       sku: S.freedSku || S.nextSku,
-      photos: { front: null, back: null, detail: null },
+      photos: { front: null, back: null, detail: null }, video: null, skuOpen: false,
       declining: false, reasons: [], otherText: "", note: "", toyName: ""
     };
     S.addBrand = null; S.errors = []; S.viewRec = null;
@@ -237,11 +245,11 @@
       img.src = url;
     });
   }
-  function upload(file) {
+  function upload(file, kind) {
     return token().then(function (t) {
       return fetch(FN_UPLOAD, {
         method: "POST",
-        headers: { "x-ms-token": t, "content-type": file.type, "x-file-name": file.name, "x-file-kind": "photo",
+        headers: { "x-ms-token": t, "content-type": file.type, "x-file-name": file.name, "x-file-kind": kind || "photo",
           apikey: ANON, authorization: "Bearer " + ANON },
         body: file
       });
@@ -253,12 +261,36 @@
     var it = S.item;
     return SLOTS.map(function (s) { return it.photos[s.key]; }).filter(Boolean);
   }
+  function addPhotos(key, files) {
+    var it = S.item;
+    files = Array.prototype.slice.call(files || []);
+    var vids = files.filter(function (f) { return /^video\//.test(f.type); });
+    files = files.filter(function (f) { return !/^video\//.test(f.type); });
+    if (vids.length) addVideo(vids[0]);
+    if (!files.length) { render(); return; }
+    if (!it.photos.hasOwnProperty(key)) return;
+    // The tapped slot first, then the empty slots in order: Front, Back, Detail.
+    var targets = [key].concat(SLOTS.map(function (s) { return s.key; }).filter(function (k) { return k !== key && !it.photos[k]; }));
+    files.slice(0, targets.length).forEach(function (f, i) { addPhoto(targets[i], f); });
+    if (files.length > targets.length) { var left = files.length - targets.length; S.toast = "Only 3 photos fit, so " + left + (left === 1 ? " was" : " were") + " left out."; }
+    render();
+  }
+  function addVideo(file) {
+    var it = S.item;
+    if (!file) return;
+    if (VIDEO_TYPES.indexOf(file.type) < 0) { S.toast = "That video type can't be used (" + (file.type || "unknown") + ")."; render(); return; }
+    var v = { status: "uploading", url: null, preview: URL.createObjectURL(file) };
+    it.video = v;
+    upload(file, "video").then(function (u) { v.url = u; v.status = "done"; render(); })
+      .catch(function (e) { v.status = "error"; console.error("[sort-tool video]", e); render(); });
+    render();
+  }
   function addPhoto(key, file) {
     var it = S.item;
     if (!file || !it.photos.hasOwnProperty(key)) return;
     var p = { status: "uploading", url: null, preview: URL.createObjectURL(file) };
     it.photos[key] = p;   // a new photo in a filled slot replaces it
-    shrink(file).then(upload).then(function (u) { p.url = u; p.status = "done"; render(); })
+    shrink(file).then(function (f) { return upload(f, "photo"); }).then(function (u) { p.url = u; p.status = "done"; render(); })
       .catch(function (e) { p.status = "error"; console.error("[sort-tool upload]", e); render(); });
     render();
   }
@@ -271,7 +303,7 @@
       if (!it.category) e.push("Pick a category.");
       if (!sizeValue()) e.push("Pick a size.");
     }
-    if (photoList().some(function (p) { return p.status === "uploading"; })) e.push("Wait for the photos to finish uploading.");
+    if (photoList().concat(it.video ? [it.video] : []).some(function (p) { return p.status === "uploading"; })) e.push("Wait for the photos to finish uploading.");
     if (decline) {
       if (!it.reasons.length) e.push("Pick at least one reason.");
       if (it.reasons.indexOf("Other") > -1 && !it.otherText.trim()) e.push("Say what the other reason is.");
@@ -279,7 +311,7 @@
     } else {
       if (it.type === "toy" && !it.ages.length) e.push("Pick an age range.");
       if (!it.half && !it.tier) e.push("Pick a tier.");
-      if (!normSku(it.sku)) e.push("Add the SKU.");
+      if (!normSku(it.sku)) { e.push("Add the SKU."); it.skuOpen = true; }
       if (it.type === "clothing" && it.category === "Sets" && !(num(it.pieces) >= 2)) e.push("Say how many pieces are in the set.");
     }
     return e;
@@ -302,23 +334,63 @@
       graded_item_description: null
     };
     if (urls.length) body.photo_urls = urls; // only sent when there are rough photos
+    if (it.video && it.video.status === "done" && it.video.url) body.video_url = it.video.url;
     return body;
   }
   function post(body) {
     return door("POST", "/intake_records", body).catch(function (err) {
       // If the doorman refuses the photos column, save the item without its photos rather than lose it.
-      if (body.photo_urls) {
-        var b2 = {}; Object.keys(body).forEach(function (k) { if (k !== "photo_urls") b2[k] = body[k]; });
+      if (body.photo_urls || body.video_url) {
+        var b2 = {}; Object.keys(body).forEach(function (k) { if (k !== "photo_urls" && k !== "video_url") b2[k] = body[k]; });
         return door("POST", "/intake_records", b2).then(function (d) {
-          S.toast = "Saved, but the rough photos didn't attach (" + err.message + ").";
+          S.toast = "Saved, but the photos and video didn't attach (" + err.message + ").";
           return d;
         });
       }
       throw err;
     });
   }
-  function afterSave() {
+  function saveEdit(body) {
+    // An edit changes the saved row in place, so it keeps its spot in the bag.
+    if (!body.photo_urls) body.photo_urls = null;   // all photos removed
+    if (!body.video_url && S.editing.hasOwnProperty("video_url")) body.video_url = null;   // video removed
+    delete body.batch_id;
+    return door("PATCH", "/intake_records?id=eq." + encodeURIComponent(S.editing.id), body);
+  }
+  function startEdit(rec) {
+    var type = rec.item_type === "toy" ? "toy" : "clothing";
     S.freedSku = "";
+    newItem(type);
+    var it = S.item, list = S.brands[type] || [], name = String(rec.brand || "").toLowerCase();
+    var b = list.filter(function (x) { return x.brand_name.toLowerCase() === name; })[0];
+    if (!b && rec.brand) b = { id: "saved", brand_name: rec.brand, item_type: type, default_tier: rec.would_be_tier || rec.tier || "essentials", condition_restriction: null };
+    if (b) { it.brand = b; it.brandQ = b.brand_name; }
+    if (type === "clothing") {
+      it.category = rec.category || ""; it.catQ = it.category;
+      var sz = rec.size || "";
+      if (sz && sizeOptions().indexOf(sz) < 0) { it.sizeOther = true; it.sizeOtherText = sz; } else it.size = sz;
+      it.pieces = rec.set_piece_count != null ? String(rec.set_piece_count) : "";
+    } else {
+      it.ages = String(rec.size || "").split(",").map(function (a) { return a.trim(); }).filter(Boolean);
+      it.complete = rec.is_complete !== false;
+    }
+    it.half = Number(rec.credit_amount_at_grading) === 0.5;
+    it.halfReason = rec.credit_amount_reason || "";
+    it.tier = rec.tier || (b ? b.default_tier : "") || "";
+    it.sku = rec.label_number || S.nextSku;
+    (rec.photo_urls || []).forEach(function (u, i) { if (u && SLOTS[i]) it.photos[SLOTS[i].key] = { status: "done", url: u, preview: u }; });
+    if (rec.video_url) it.video = { status: "done", url: rec.video_url, preview: rec.video_url };
+    if (rec.status === "rejected_at_grading") {
+      it.declining = true;
+      it.reasons = (rec.reject_reason || []).slice();
+      it.otherText = rec.reject_reason_other_text || "";
+      it.note = rec.operator_item_notes || "";
+      it.toyName = rec.graded_item_name || "";
+    }
+    S.editing = rec; S.viewRec = null; S.errors = [];
+  }
+  function afterSave() {
+    S.freedSku = ""; S.editing = null;
     return Promise.all([loadRecords(), loadNextSku()]).then(function () {
       var type = S.item.type;
       newItem(type);
@@ -341,9 +413,9 @@
     S.busy = true; render();
     door("GET", "/grading_next_label_source?label_number=eq." + encodeURIComponent(sku) + "&select=label_number&limit=1")
       .then(function (rows) {
-        if (rows && rows.length && sku !== S.freedSku) {
+        if (rows && rows.length && sku !== S.freedSku && !(S.editing && sku === S.editing.label_number)) {
           S.busy = false;
-          S.errors = [sku + " is already used. Check the sticker, or use " + S.nextSku + "."];
+          S.errors = [sku + " is already used. Check the sticker, or use " + S.nextSku + "."]; it.skuOpen = true;
           render(); throw null;
         }
         var b = baseBody(), def = it.brand.default_tier || "essentials";
@@ -361,6 +433,7 @@
         b.stage_2_research_note = null;
         b.credit_amount_at_grading = it.half ? 0.5 : 1;
         b.credit_amount_reason = it.half ? (it.halfReason.trim() || null) : null;
+        if (S.editing) { b.reject_reason = null; b.reject_reason_other_text = null; return saveEdit(b); }
         return post(b);
       })
       .then(afterSave)
@@ -380,7 +453,8 @@
     b.graded_item_name = it.type === "toy" ? it.toyName.trim() : null;
     b.reject_reason = it.reasons.slice();
     b.reject_reason_other_text = it.reasons.indexOf("Other") > -1 ? it.otherText.trim() : null;
-    post(b).then(afterSave).catch(fail);
+    if (S.editing) { b.tier = null; b.retail_value = null; b.is_matching_set = false; b.set_piece_count = null; }
+    (S.editing ? saveEdit(b) : post(b)).then(afterSave).catch(fail);
   }
   function removeRecord(rec) {
     if (!window.confirm("Remove this item from the bag? You can sort it again right after.")) return;
@@ -603,18 +677,25 @@
   function viewSort() {
     if (S.viewRec) return viewSavedRecord();
     var it = S.item, toy = it.type === "toy";
-    var h = header("Sorting");
+    var ed = S.editing, edNum = ed ? S.records.indexOf(ed) + 1 : 0;
+    var h = header(ed ? "Editing item " + edNum : "Sorting");
     h += '<div class="ss-toggle"><button type="button" class="' + (toy ? "" : "on") + '" data-act="type" data-val="clothing">Clothing</button><button type="button" class="' + (toy ? "on" : "") + '" data-act="type" data-val="toy">Toy</button></div>' +
       '<p class="ss-hint ss-under">Switching between Clothing and Toy clears the answers and starts the item fresh. Photos stay.</p>';
 
+    var brandPicked = it.brand && !S.addBrand;
     var top = '<div class="ss-card"><div><label class="ss-lab" for="ss-brand">Brand <span class="ss-req">*</span></label>' +
-      '<input id="ss-brand" class="ss-inp" type="text" data-k="brandQ" autocomplete="off" autocorrect="off" autocapitalize="words" value="' + esc(it.brandQ) + '">' +
-      '<div data-part="brands">' + viewBrandBlock() + "</div>" +
+      (brandPicked
+        ? '<button type="button" class="ss-row sel ss-picked" data-act="brand-change">' + esc(it.brand.brand_name) +
+          " <small>" + esc(TIER_LABEL[it.brand.default_tier] || "") + (it.brand.condition_restriction === "new_or_like_new_only" ? " · new or like new only" : "") + "<br><u>Change</u></small></button>"
+        : '<input id="ss-brand" class="ss-inp" type="text" data-k="brandQ" autocomplete="off" autocorrect="off" autocapitalize="words" value="' + esc(it.brandQ) + '">' +
+          '<div data-part="brands">' + viewBrandBlock() + "</div>") +
       (it.brand && it.brand.condition_restriction === "new_or_like_new_only" ? '<p class="ss-hint warn">This brand is only accepted new or like new.</p>' : "") + "</div>";
     if (!toy) {
       top += '<div><label class="ss-lab" for="ss-cat">Category <span class="ss-req">*</span></label>' +
-        '<input id="ss-cat" class="ss-inp" type="text" data-k="catQ" autocomplete="off" autocorrect="off" value="' + esc(it.catQ) + '">' +
-        '<div data-part="cats">' + viewCatBlock() + "</div></div>";
+        (it.category
+          ? '<button type="button" class="ss-row sel ss-picked" data-act="cat-change">' + esc(it.category) + " <small><u>Change</u></small></button>"
+          : '<input id="ss-cat" class="ss-inp" type="text" data-k="catQ" autocomplete="off" autocorrect="off" value="' + esc(it.catQ) + '">' +
+            '<div data-part="cats">' + viewCatBlock() + "</div>") + "</div>";
       if (it.category === "Sets") {
         top += '<div><label class="ss-lab" for="ss-pieces">Pieces in the set <span class="ss-req">*</span></label><input id="ss-pieces" class="ss-inp" type="text" inputmode="numeric" data-k="pieces" value="' + esc(it.pieces) + '"></div>';
       }
@@ -634,14 +715,15 @@
     var photos = '<div class="ss-card"><p class="ss-lab">Photos <span class="ss-opt">optional</span></p><div class="ss-slots">' +
       SLOTS.map(function (sl) {
         var p = it.photos[sl.key];
-        var input = '<input type="file" accept="image/*" capture="environment" data-act="photo-add" data-val="' + sl.key + '" hidden>';
+        // No capture attribute, so the phone offers Take Photo or the photo library. An empty slot takes several at once.
+        var input = '<input type="file" accept="' + (p ? "image/*" : "image/*,video/*") + '"' + (p ? "" : " multiple") + ' data-act="photo-add" data-val="' + sl.key + '" hidden>';
         if (!p) return '<label class="ss-slot">' + sl.label + "<small>" + esc(sl.hint) + "</small>" + input + "</label>";
         var state = p.status === "uploading" ? "Uploading…" : p.status === "error" ? "Didn't upload, tap to retry" : "tap to retake";
         return '<div class="ss-slot full' + (p.status === "error" ? " bad" : "") + '" style="background-image:url(\'' + esc(p.preview) + '\')">' +
           '<label class="ss-slot-tap"><span>' + sl.label + "<small>" + state + "</small></span>" + input + "</label>" +
           '<button type="button" class="ss-x" data-act="photo-remove" data-val="' + sl.key + '" aria-label="Remove the ' + sl.label + ' photo">×</button></div>';
-      }).join("") +
-      '</div><p class="ss-hint">The same three slots as listing. Each photo carries into its slot there, where you can keep it or swap in a better one.</p></div>';
+      }).join("") + videoTile() +
+      '</div><p class="ss-hint">Tap a slot to take a photo or pick from your library. Pick several and they fill the empty slots in order, and a video goes in the Video slot. Each one carries into the same slot on listing.</p></div>';
 
     if (it.declining) {
       var reasons = REASONS[it.type];
@@ -651,23 +733,38 @@
         (toy ? '<div><label class="ss-lab" for="ss-tn">Short name <span class="ss-req">*</span></label><input id="ss-tn" class="ss-inp" type="text" data-k="toyName" autocapitalize="sentences" placeholder="Like wooden train set" value="' + esc(it.toyName) + '"><p class="ss-hint">The email uses this to say what came back.</p></div>' : "") +
         '<div><label class="ss-lab" for="ss-note">Note for you <span class="ss-opt">optional, members never see it</span></label><input id="ss-note" class="ss-inp" type="text" data-k="note" value="' + esc(it.note) + '"></div></div>';
       return h + top + dec + photos + errorBox() +
-        '<button type="button" class="ss-btn" data-act="decline-save"' + (S.busy ? " disabled" : "") + ">" + (S.busy ? "Saving…" : "Decline it, next item") + "</button>" +
+        '<button type="button" class="ss-btn" data-act="decline-save"' + (S.busy ? " disabled" : "") + ">" + (S.busy ? "Saving…" : (ed ? "Save changes" : "Decline it, next item")) + "</button>" +
         '<button type="button" class="ss-btn ghost" data-act="decline-off">Back to keeping it</button>' + footerLinks();
     }
 
     var tierCard = '<div class="ss-card"><div><p class="ss-lab">Tier <span class="ss-req">*</span></p>' +
-      pills([{ value: "essentials", label: "Essentials" }, { value: "elevated", label: "Elevated" }, { value: "special", label: "Special" }, { value: "half", label: "Half credit" }],
-        function (v) { return v === "half" ? it.half : (!it.half && it.tier === v); }, "tier", "two") +
+      pills([{ value: "essentials", label: "Essentials" }, { value: "elevated", label: "Elevated" }, { value: "special", label: "Special" }],
+        function (v) { return !it.half && it.tier === v; }, "tier", "three") +
       '<p class="ss-hint">' + (it.brand ? "Picked for you from the brand (" + esc(TIER_LABEL[it.brand.default_tier] || "Essentials") + "). Change it if this piece is better or worse than usual." : "Picked for you once you choose the brand.") + "</p>" +
+      '<button type="button" class="ss-mini' + (it.half ? " sel" : "") + '" data-act="tier" data-val="half">' + (it.half ? "✓ " : "") + "Half credit</button>" +
       (it.half ? '<input class="ss-inp ss-gap" type="text" data-k="halfReason" placeholder="Why half? (optional, just for you)" value="' + esc(it.halfReason) + '">' : "") + "</div>" +
-      '<div><label class="ss-lab" for="ss-sku">SKU <span class="ss-req">*</span></label><input id="ss-sku" class="ss-inp" type="text" inputmode="numeric" data-k="sku" autocomplete="off" autocorrect="off" autocapitalize="characters" value="' + esc(it.sku) + '">' +
-      '<p class="ss-hint">The next unused SKU. Stick the sticker on and check it matches.</p></div></div>';
+      (it.skuOpen
+        ? '<div><label class="ss-lab" for="ss-sku">SKU <span class="ss-req">*</span></label><input id="ss-sku" class="ss-inp" type="text" inputmode="numeric" data-k="sku" autocomplete="off" autocorrect="off" autocapitalize="characters" value="' + esc(it.sku) + '">' +
+          '<p class="ss-hint">Type the number on the sticker if it\'s different.</p></div>'
+        : '<div class="ss-skuline"><span>SKU <b>' + esc(normSku(it.sku) || it.sku) + '</b></span><button type="button" class="ss-link" data-act="sku-open">Change</button></div>') +
+      "</div>";
 
     return h + top + tierCard + photos + errorBox() +
-      '<button type="button" class="ss-btn" data-act="keep"' + (S.busy ? " disabled" : "") + ">" + (S.busy ? "Saving…" : "Keep it, next item") + "</button>" +
+      '<button type="button" class="ss-btn" data-act="keep"' + (S.busy ? " disabled" : "") + ">" + (S.busy ? "Saving…" : (ed ? "Save changes" : "Keep it, next item")) + "</button>" +
       '<button type="button" class="ss-btn ghost" data-act="decline-on">Decline it</button>' + footerLinks();
   }
+  function videoTile() {
+    var v = S.item.video;
+    var input = '<input type="file" accept="video/*" data-act="video-add" hidden>';
+    if (!v) return '<label class="ss-slot">Video<small>about 15s</small>' + input + "</label>";
+    var state = v.status === "uploading" ? "Uploading…" : v.status === "error" ? "Didn't upload, tap to retry" : "tap to replace";
+    return '<div class="ss-slot full' + (v.status === "error" ? " bad" : "") + '">' +
+      '<video class="ss-vid" src="' + esc(v.preview) + '#t=0.1" muted playsinline preload="metadata"></video>' +
+      '<label class="ss-slot-tap"><span>Video<small>' + state + "</small></span>" + input + "</label>" +
+      '<button type="button" class="ss-x" data-act="video-remove" aria-label="Remove the video">×</button></div>';
+  }
   function footerLinks() {
+    if (S.editing) return '<div class="ss-links"><button type="button" class="ss-link" data-act="edit-cancel">Cancel editing</button></div>';
     return '<div class="ss-links"><button type="button" class="ss-link" data-act="to-close">Close the bag</button></div>';
   }
   function viewSavedRecord() {
@@ -678,9 +775,10 @@
       '<div class="ss-card"><p class="ss-lab">Item ' + (i + 1) + ": " + (kept ? "kept" : "declined") + "</p><p class=\"ss-sub\">" + esc(bits || r.graded_item_name || "") + "</p>" +
       (kept ? '<p class="ss-sub">' + esc(TIER_LABEL[r.tier] || r.tier) + (Number(r.credit_amount_at_grading) === 0.5 ? ", half credit" : "") + " · " + esc(r.label_number || "") + "</p>" :
         '<p class="ss-sub">' + esc((r.reject_reason || []).join(", ")) + "</p>") +
-      '<p class="ss-hint">To change it, remove it and sort it again. Its SKU sticker can be reused.</p></div>' + errorBox() +
-      '<button type="button" class="ss-btn ghost" data-act="rec-remove"' + (S.busy ? " disabled" : "") + ">Remove it and sort it again</button>" +
-      '<button type="button" class="ss-btn" data-act="rec-back">Back to the next item</button>';
+      "</div>" + errorBox() +
+      '<button type="button" class="ss-btn" data-act="rec-edit"' + (S.busy ? " disabled" : "") + ">Edit it</button>" +
+      '<button type="button" class="ss-btn ghost" data-act="rec-back">Back to the next item</button>' +
+      '<div class="ss-links"><button type="button" class="ss-link" data-act="rec-remove"' + (S.busy ? " disabled" : "") + ">Remove it from the bag</button></div>";
   }
   function viewClose() {
     var c = creditSummary();
@@ -721,6 +819,7 @@
       if (el) { el.focus(); try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) {} }
     }
   }
+  function focusOn(id) { var el = document.getElementById(id); if (el) { try { el.focus(); } catch (e) {} } }
   function renderPart(name) {
     var box = root && root.querySelector('[data-part="' + name + '"]');
     if (!box) return render();
@@ -755,7 +854,9 @@
   }
   function onChange(e) {
     if (e.target.getAttribute("data-act") === "photo-add") {
-      addPhoto(e.target.getAttribute("data-val"), e.target.files && e.target.files[0]); e.target.value = "";
+      addPhotos(e.target.getAttribute("data-val"), e.target.files); e.target.value = "";
+    } else if (e.target.getAttribute("data-act") === "video-add") {
+      addVideo(e.target.files && e.target.files[0]); e.target.value = "";
     }
   }
   function onClick(e) {
@@ -807,9 +908,16 @@
       case "decline-save": saveDecline(); return;
       case "dot":
         var rec = S.records[Number(val)];
+        if (rec && S.editing) { S.editing = null; newItem(it ? it.type : "clothing"); }
         S.viewRec = rec || null;
         break;
       case "rec-back": S.viewRec = null; break;
+      case "brand-change": it.brand = null; it.brandQ = ""; render(); focusOn("ss-brand"); return;
+      case "cat-change": it.category = ""; it.catQ = ""; render(); focusOn("ss-cat"); return;
+      case "sku-open": it.skuOpen = true; render(); focusOn("ss-sku"); return;
+      case "video-remove": it.video = null; break;
+      case "rec-edit": startEdit(S.viewRec); window.scrollTo(0, 0); break;
+      case "edit-cancel": S.editing = null; newItem(it ? it.type : "clothing"); break;
       case "rec-remove": removeRecord(S.viewRec); return;
       case "to-close": S.screen = "close"; S.errors = []; break;
       case "back-to-items": S.screen = "sort"; S.errors = []; if (!S.item) newItem("clothing"); break;
@@ -861,12 +969,22 @@
       ".ss-row small{font-size:12px;color:#bdb5ab;font-weight:600;text-align:right}",
       ".ss-pills{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}",
       ".ss-pills.two{grid-template-columns:repeat(2,minmax(0,1fr))}",
+      ".ss-pills.three{grid-template-columns:repeat(3,minmax(0,1fr))}",
+      ".ss-picked{border:0;border-radius:12px;margin-top:0}",
+      ".ss-picked small{line-height:1.5}",
+      ".ss-picked u{color:#f6b49a;text-decoration:underline}",
+      ".ss-mini{margin-top:10px;min-height:32px;padding:4px 12px;border-radius:99px;border:1px solid #4a4542;background:transparent;color:#bdb5ab;font:600 13px 'Quicksand',sans-serif;cursor:pointer}",
+      ".ss-mini.sel{background:#f4efe9;color:#161514;border-color:#f4efe9}",
+      ".ss-skuline{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px;color:#bdb5ab}",
+      ".ss-skuline b{color:#f4efe9;font-weight:700;letter-spacing:.02em}",
+      ".ss-skuline .ss-link{padding:4px 0;font-size:14px}",
+      ".ss-vid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:12px}",
       ".ss-pill{min-height:48px;padding:6px 8px;border-radius:12px;border:1px solid #4a4542;background:#1c1a19;color:#f4efe9;font:600 15px 'Quicksand',sans-serif;cursor:pointer;line-height:1.2}",
       ".ss-pill.sel{background:#f4efe9;color:#161514;border-color:#f4efe9}",
       ".ss-pill.wide{width:calc(50% - 4px);margin-top:8px}",
-      ".ss-slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}",
-      ".ss-slot{position:relative;height:104px;border-radius:12px;border:1.5px dashed #5a534f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:14px;font-weight:700;color:#f4efe9;text-align:center;padding:0 6px;cursor:pointer;background:#1c1a19 center/cover no-repeat}",
-      ".ss-slot small{display:block;font-size:11px;color:#bdb5ab;font-weight:600;line-height:1.2}",
+      ".ss-slots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}",
+      ".ss-slot{position:relative;height:96px;border-radius:12px;border:1.5px dashed #5a534f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:14px;font-weight:700;color:#f4efe9;text-align:center;padding:0 6px;cursor:pointer;background:#1c1a19 center/cover no-repeat}",
+      ".ss-slot small{display:block;font-size:10.5px;color:#bdb5ab;font-weight:600;line-height:1.2}",
       ".ss-slot.full{border:0;padding:0}",
       ".ss-slot.bad{outline:2px solid #c8461f}",
       ".ss-slot-tap{position:absolute;inset:0;display:flex;align-items:flex-end;padding:8px;cursor:pointer;background:linear-gradient(transparent 45%,rgba(0,0,0,.55));border-radius:12px;text-align:left}",
