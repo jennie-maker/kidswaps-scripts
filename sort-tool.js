@@ -6,7 +6,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "sort-tool S428 v1";
+  var BUILD = "sort-tool S429 v2";
   var ROOT_ID = "ks-sort-app";
   var BASE = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1";
   var DOOR = BASE + "/grading-db";
@@ -28,7 +28,12 @@
       "Sharp or unsafe components", "Electronic (not accepted)", "Licensed character", "Pet hair",
       "Item type not eligible for plan", "Transit damage", "Other"]
   };
-  var MAX_PHOTOS = 3;
+  // The same three slots as listing (listing-tool.js PHOTO_SLOTS), same words. Saved in this order.
+  var SLOTS = [
+    { key: "front", label: "Front", hint: "primary photo" },
+    { key: "back", label: "Back", hint: "tap to add" },
+    { key: "detail", label: "Detail", hint: "tag, flaw, or close-up" }
+  ];
 
   var root = null;
   var S = {
@@ -43,6 +48,7 @@
     start: { trackQ: "", memberQ: "", members: [], member: null, clothing: "", toy: "" },
     close: { note: "" },
     addBrand: null,      // { name, tier } while the new-brand panel is open
+    freedSku: "",        // the SKU just freed by "Remove it and sort it again", offered back for the re-sort
     errors: [],
     busy: false,
     toast: ""
@@ -118,11 +124,20 @@
   }
   function loadBrands() {
     // The whole list once, filtered on the phone (the old page asked the server on every letter).
-    return door("GET", "/brands?select=id,brand_name,item_type,default_tier,condition_restriction&order=brand_name.asc")
-      .then(function (rows) {
-        S.brands = { clothing: [], toy: [] };
-        (rows || []).forEach(function (b) { if (S.brands[b.item_type]) S.brands[b.item_type].push(b); });
-      });
+    // Loaded in pages of 1,000, because Supabase stops a single request at 1,000 rows.
+    var all = [];
+    function page(from) {
+      return door("GET", "/brands?select=id,brand_name,item_type,default_tier,condition_restriction&order=brand_name.asc,id.asc&limit=1000&offset=" + from)
+        .then(function (rows) {
+          rows = rows || [];
+          all = all.concat(rows);
+          return rows.length === 1000 ? page(from + 1000) : null;
+        });
+    }
+    return page(0).then(function () {
+      S.brands = { clothing: [], toy: [] };
+      all.forEach(function (b) { if (S.brands[b.item_type]) S.brands[b.item_type].push(b); });
+    });
   }
   function loadNextSku() {
     return door("GET", "/grading_next_label_source?label_number=gt.KS-&select=label_number&order=label_sort_num.desc&limit=1")
@@ -153,8 +168,8 @@
       size: "", sizeOther: false, sizeOtherText: "", pieces: "",
       ages: [], complete: true,
       tier: "", half: false, halfReason: "",
-      sku: S.nextSku,
-      photos: [],
+      sku: S.freedSku || S.nextSku,
+      photos: { front: null, back: null, detail: null },
       declining: false, reasons: [], otherText: "", note: "", toyName: ""
     };
     S.addBrand = null; S.errors = []; S.viewRec = null;
@@ -234,14 +249,17 @@
       return r.json().then(function (j) { if (!r.ok || !j.ok) throw new Error(j.error || ("status " + r.status)); return j.url; });
     });
   }
-  function addPhotos(files) {
+  function photoList() {
     var it = S.item;
-    Array.prototype.slice.call(files || []).slice(0, MAX_PHOTOS - it.photos.length).forEach(function (f) {
-      var p = { status: "uploading", url: null, preview: URL.createObjectURL(f) };
-      it.photos.push(p);
-      shrink(f).then(upload).then(function (u) { p.url = u; p.status = "done"; render(); })
-        .catch(function (e) { p.status = "error"; console.error("[sort-tool upload]", e); render(); });
-    });
+    return SLOTS.map(function (s) { return it.photos[s.key]; }).filter(Boolean);
+  }
+  function addPhoto(key, file) {
+    var it = S.item;
+    if (!file || !it.photos.hasOwnProperty(key)) return;
+    var p = { status: "uploading", url: null, preview: URL.createObjectURL(file) };
+    it.photos[key] = p;   // a new photo in a filled slot replaces it
+    shrink(file).then(upload).then(function (u) { p.url = u; p.status = "done"; render(); })
+      .catch(function (e) { p.status = "error"; console.error("[sort-tool upload]", e); render(); });
     render();
   }
 
@@ -253,7 +271,7 @@
       if (!it.category) e.push("Pick a category.");
       if (!sizeValue()) e.push("Pick a size.");
     }
-    if (it.photos.some(function (p) { return p.status === "uploading"; })) e.push("Wait for the photos to finish uploading.");
+    if (photoList().some(function (p) { return p.status === "uploading"; })) e.push("Wait for the photos to finish uploading.");
     if (decline) {
       if (!it.reasons.length) e.push("Pick at least one reason.");
       if (it.reasons.indexOf("Other") > -1 && !it.otherText.trim()) e.push("Say what the other reason is.");
@@ -268,7 +286,10 @@
   }
   function baseBody() {
     var it = S.item, b = it.brand;
-    var urls = it.photos.filter(function (p) { return p.status === "done" && p.url; }).map(function (p) { return p.url; });
+    // Front, Back, Detail in that order, so listing can put each one in its own slot. An empty
+    // slot is null; empty slots at the end are dropped.
+    var urls = SLOTS.map(function (s) { var p = it.photos[s.key]; return p && p.status === "done" && p.url ? p.url : null; });
+    while (urls.length && urls[urls.length - 1] === null) urls.pop();
     var body = {
       batch_id: S.batch.id,
       item_type: it.type,
@@ -297,6 +318,7 @@
     });
   }
   function afterSave() {
+    S.freedSku = "";
     return Promise.all([loadRecords(), loadNextSku()]).then(function () {
       var type = S.item.type;
       newItem(type);
@@ -319,7 +341,7 @@
     S.busy = true; render();
     door("GET", "/grading_next_label_source?label_number=eq." + encodeURIComponent(sku) + "&select=label_number&limit=1")
       .then(function (rows) {
-        if (rows && rows.length) {
+        if (rows && rows.length && sku !== S.freedSku) {
           S.busy = false;
           S.errors = [sku + " is already used. Check the sticker, or use " + S.nextSku + "."];
           render(); throw null;
@@ -364,7 +386,7 @@
     if (!window.confirm("Remove this item from the bag? You can sort it again right after.")) return;
     S.busy = true; render();
     door("DELETE", "/intake_records?id=eq." + rec.id)
-      .then(function () { return Promise.all([loadRecords(), loadNextSku()]); })
+      .then(function () { S.freedSku = rec.label_number || ""; return Promise.all([loadRecords(), loadNextSku()]); })
       .then(function () { S.busy = false; S.viewRec = null; S.screen = "sort"; newItem(S.item ? S.item.type : "clothing"); render(); })
       .catch(fail);
   }
@@ -406,8 +428,18 @@
     if (q.length < 2) { S.start.members = []; renderPart("members"); return; }
     memberTimer = setTimeout(function () {
       // Paused members' bags get sorted too (Bag Processed has a Paused version), so both statuses are searched.
-      door("GET", "/members?status=in.(active,paused)&email=ilike." + encodeURIComponent("*" + q + "*") +
-        "&select=id,first_name,last_name,email,plan,status&order=last_name.asc&limit=8")
+      var tail = "&select=id,first_name,last_name,email,plan,status&order=last_name.asc&limit=8";
+      var safe = q.replace(/[,()*%]/g, " ").trim(), parts = safe.split(/\s+/).filter(Boolean), qs;
+      if (parts.length > 1) {   // "maria rem" = first and last name
+        qs = "&first_name=ilike." + encodeURIComponent(parts[0] + "*") + "&last_name=ilike." + encodeURIComponent(parts.slice(1).join(" ") + "*");
+      } else {
+        var w = encodeURIComponent("*" + safe + "*");
+        qs = "&or=" + encodeURIComponent("(") + "email.ilike." + w + ",first_name.ilike." + w + ",last_name.ilike." + w + encodeURIComponent(")");
+      }
+      door("GET", "/members?status=in.(active,paused)" + qs + tail)
+        .catch(function () {   // if the doorman won't take a name search, fall back to email only
+          return door("GET", "/members?status=in.(active,paused)&email=ilike." + encodeURIComponent("*" + q + "*") + tail);
+        })
         .then(function (rows) { if (S.start.memberQ.trim() === q) { S.start.members = rows || []; renderPart("members"); } })
         .catch(function (e) { console.error("[sort-tool members]", e); });
     }, 250);
@@ -525,7 +557,7 @@
     return '<div class="ss-head"><h1 class="ss-h1">Sort a bag</h1><p class="ss-sub">Find the member, then count what\'s in the bag.</p></div>' +
       '<div class="ss-card">' +
       '<div><label class="ss-lab" for="ss-track">Return label</label><input id="ss-track" class="ss-inp" type="text" data-k="trackQ" autocomplete="off" autocorrect="off" autocapitalize="characters" placeholder="Scan or type the tracking number" value="' + esc(st.trackQ) + '"></div>' +
-      '<div><label class="ss-lab" for="ss-member">Member email <span class="ss-req">*</span></label><input id="ss-member" class="ss-inp" type="email" data-k="memberQ" autocomplete="off" autocapitalize="none" autocorrect="off" placeholder="Type part of her email" value="' + esc(st.memberQ) + '">' +
+      '<div><label class="ss-lab" for="ss-member">Member name or email <span class="ss-req">*</span></label><input id="ss-member" class="ss-inp" type="text" data-k="memberQ" autocomplete="off" autocapitalize="none" autocorrect="off" placeholder="Her name, or part of her email" value="' + esc(st.memberQ) + '">' +
       '<div data-part="members">' + viewMembers() + "</div></div>" +
       '<div class="ss-grid2"><div><label class="ss-lab" for="ss-cc">Clothing items</label><input id="ss-cc" class="ss-inp" type="text" inputmode="numeric" data-k="clothing" value="' + esc(st.clothing) + '"></div>' +
       '<div><label class="ss-lab" for="ss-tc">Toys</label><input id="ss-tc" class="ss-inp" type="text" inputmode="numeric" data-k="toy" value="' + esc(st.toy) + '"></div></div>' +
@@ -572,7 +604,8 @@
     if (S.viewRec) return viewSavedRecord();
     var it = S.item, toy = it.type === "toy";
     var h = header("Sorting");
-    h += '<div class="ss-toggle"><button type="button" class="' + (toy ? "" : "on") + '" data-act="type" data-val="clothing">Clothing</button><button type="button" class="' + (toy ? "on" : "") + '" data-act="type" data-val="toy">Toy</button></div>';
+    h += '<div class="ss-toggle"><button type="button" class="' + (toy ? "" : "on") + '" data-act="type" data-val="clothing">Clothing</button><button type="button" class="' + (toy ? "on" : "") + '" data-act="type" data-val="toy">Toy</button></div>' +
+      '<p class="ss-hint ss-under">Switching between Clothing and Toy clears the answers and starts the item fresh. Photos stay.</p>';
 
     var top = '<div class="ss-card"><div><label class="ss-lab" for="ss-brand">Brand <span class="ss-req">*</span></label>' +
       '<input id="ss-brand" class="ss-inp" type="text" data-k="brandQ" autocomplete="off" autocorrect="off" autocapitalize="words" value="' + esc(it.brandQ) + '">' +
@@ -598,13 +631,17 @@
     }
     top += "</div>";
 
-    var photos = '<div class="ss-card"><p class="ss-lab">Rough photos <span class="ss-opt">optional</span></p><div class="ss-thumbs">' +
-      it.photos.map(function (p, i) {
-        return '<div class="ss-thumb" style="background-image:url(\'' + esc(p.preview) + '\')"><span>' + (p.status === "uploading" ? "Uploading…" : p.status === "error" ? "Didn't upload" : "Rough " + (i + 1)) +
-          '</span><button type="button" class="ss-x" data-act="photo-remove" data-val="' + i + '" aria-label="Remove photo">×</button></div>';
+    var photos = '<div class="ss-card"><p class="ss-lab">Photos <span class="ss-opt">optional</span></p><div class="ss-slots">' +
+      SLOTS.map(function (sl) {
+        var p = it.photos[sl.key];
+        var input = '<input type="file" accept="image/*" capture="environment" data-act="photo-add" data-val="' + sl.key + '" hidden>';
+        if (!p) return '<label class="ss-slot">' + sl.label + "<small>" + esc(sl.hint) + "</small>" + input + "</label>";
+        var state = p.status === "uploading" ? "Uploading…" : p.status === "error" ? "Didn't upload, tap to retry" : "tap to retake";
+        return '<div class="ss-slot full' + (p.status === "error" ? " bad" : "") + '" style="background-image:url(\'' + esc(p.preview) + '\')">' +
+          '<label class="ss-slot-tap"><span>' + sl.label + "<small>" + state + "</small></span>" + input + "</label>" +
+          '<button type="button" class="ss-x" data-act="photo-remove" data-val="' + sl.key + '" aria-label="Remove the ' + sl.label + ' photo">×</button></div>';
       }).join("") +
-      (it.photos.length < MAX_PHOTOS ? '<label class="ss-thumb add">+ Photo<input type="file" accept="image/*" capture="environment" multiple data-act="photo-add" hidden></label>' : "") +
-      '</div><p class="ss-hint">Quick snaps for research later. When you list it, your good photos replace these.</p></div>';
+      '</div><p class="ss-hint">The same three slots as listing. Each photo carries into its slot there, where you can keep it or swap in a better one.</p></div>';
 
     if (it.declining) {
       var reasons = REASONS[it.type];
@@ -717,7 +754,9 @@
     }
   }
   function onChange(e) {
-    if (e.target.getAttribute("data-act") === "photo-add") { addPhotos(e.target.files); e.target.value = ""; }
+    if (e.target.getAttribute("data-act") === "photo-add") {
+      addPhoto(e.target.getAttribute("data-val"), e.target.files && e.target.files[0]); e.target.value = "";
+    }
   }
   function onClick(e) {
     var b = e.target.closest ? e.target.closest("[data-act]") : null;
@@ -757,7 +796,7 @@
         if (val === "half") { it.half = !it.half; }
         else { it.half = false; it.tier = val; }
         break;
-      case "photo-remove": it.photos.splice(Number(val), 1); break;
+      case "photo-remove": if (it.photos.hasOwnProperty(val)) it.photos[val] = null; break;
       case "keep": saveKeep(); return;
       case "decline-on":
         it.declining = true; S.errors = [];
@@ -825,9 +864,14 @@
       ".ss-pill{min-height:48px;padding:6px 8px;border-radius:12px;border:1px solid #4a4542;background:#1c1a19;color:#f4efe9;font:600 15px 'Quicksand',sans-serif;cursor:pointer;line-height:1.2}",
       ".ss-pill.sel{background:#f4efe9;color:#161514;border-color:#f4efe9}",
       ".ss-pill.wide{width:calc(50% - 4px);margin-top:8px}",
-      ".ss-thumbs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}",
-      ".ss-thumb{position:relative;height:96px;border-radius:12px;background:#4b3f38 center/cover no-repeat;display:flex;align-items:flex-end;padding:6px 8px;font-size:11px;font-weight:700;color:#fff;text-shadow:0 1px 2px #000}",
-      ".ss-thumb.add{background:transparent;border:1.5px dashed #5a534f;align-items:center;justify-content:center;font-size:14px;text-shadow:none;cursor:pointer}",
+      ".ss-slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}",
+      ".ss-slot{position:relative;height:104px;border-radius:12px;border:1.5px dashed #5a534f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:14px;font-weight:700;color:#f4efe9;text-align:center;padding:0 6px;cursor:pointer;background:#1c1a19 center/cover no-repeat}",
+      ".ss-slot small{display:block;font-size:11px;color:#bdb5ab;font-weight:600;line-height:1.2}",
+      ".ss-slot.full{border:0;padding:0}",
+      ".ss-slot.bad{outline:2px solid #c8461f}",
+      ".ss-slot-tap{position:absolute;inset:0;display:flex;align-items:flex-end;padding:8px;cursor:pointer;background:linear-gradient(transparent 45%,rgba(0,0,0,.55));border-radius:12px;text-align:left}",
+      ".ss-slot-tap small{color:#f4efe9}",
+      ".ss-under{margin-top:-6px}",
       ".ss-x{position:absolute;top:4px;right:4px;width:28px;height:28px;border-radius:99px;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:18px;line-height:28px;padding:0;cursor:pointer}",
       ".ss-addbrand{margin-top:8px;padding:14px;border:1px solid #f08a63;border-radius:12px;display:flex;flex-direction:column;gap:10px}",
       ".ss-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}",
