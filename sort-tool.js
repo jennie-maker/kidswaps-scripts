@@ -4,11 +4,15 @@
    Wized page sent, and closing a bag fires the same Make webhook (S27), so credits
    and emails don't change. The old /admin/grading page stays untouched as the rollback.
    v5 (S430), the S429 D boards: one page per item in this order: Clothing or Toy, what it is,
-   Keep or Decline, then only the part that applies. Each pick moves down to the next question. */
+   Keep or Decline, then only the part that applies. Each pick moves down to the next question.
+   v6 (S430, hers): Keep or Decline comes first; one form for clothing and toys (a kept item's brand
+   decides which questions follow; a decline asks Clothing or Toy); picked things turn green with a check;
+   the dots become a short summary of sorted items; "Close" is now "Finish and send her credits", and
+   cancelling a bag deletes the items sorted on it. */
 (function () {
   "use strict";
 
-  var BUILD = "sort-tool S430 v5";
+  var BUILD = "sort-tool S430 v6";
   var ROOT_ID = "ks-sort-app";
   var BASE = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1";
   var DOOR = BASE + "/grading-db";
@@ -180,7 +184,7 @@
       tier: "", half: false, halfReason: "",
       sku: S.freedSku || S.nextSku,
       photos: { front: null, back: null, detail: null }, video: null, skuOpen: false,
-      choice: "", reasons: [], otherText: "", note: "", toyName: ""
+      choice: "", typeSet: false, more: false, reasons: [], otherText: "", note: "", toyName: ""
     };
     S.addBrand = null; S.errors = []; S.viewRec = null;
   }
@@ -188,8 +192,24 @@
     if (!S.batch) return 0;
     return (Number(S.batch.clothing_items_counted_at_batch_open) || 0) + (Number(S.batch.toy_items_counted_at_batch_open) || 0);
   }
+  function brandPool() {
+    var it = S.item;
+    // A decline already knows Clothing or Toy; a kept item's brand decides it, so search both lists.
+    if (it.choice === "decline" && it.typeSet) return S.brands[it.type] || [];
+    return (S.brands.clothing || []).concat(S.brands.toy || []);
+  }
+  function brandById(id) {
+    var all = (S.brands.clothing || []).concat(S.brands.toy || []);
+    for (var i = 0; i < all.length; i++) if (String(all[i].id) === String(id)) return all[i];
+    return null;
+  }
+  function brandTwin(b) {   // the same brand name in the other list (a brand that makes clothing and toys)
+    if (!b) return null;
+    var other = b.item_type === "toy" ? "clothing" : "toy", n = b.brand_name.toLowerCase();
+    return (S.brands[other] || []).filter(function (x) { return x.brand_name.toLowerCase() === n; })[0] || null;
+  }
   function brandList() {
-    var it = S.item, all = S.brands[it.type] || [];
+    var it = S.item, all = brandPool();
     var q = it.brandQ.trim().toLowerCase();
     if (it.brand && it.brand.brand_name.toLowerCase() === q) return { rows: [it.brand], exact: true };
     if (q.length < 1) return { rows: [], exact: false };
@@ -200,6 +220,15 @@
       if (n.indexOf(q) === 0) starts.push(b); else if (n.indexOf(q) > -1) has.push(b);
     });
     return { rows: starts.concat(has).slice(0, 8), exact: exact };
+  }
+  function setType(type) {
+    // Changing between clothing and toy clears the answers that belong to the other one. Photos stay.
+    var it = S.item;
+    if (it.type !== type) {
+      it.catQ = ""; it.category = ""; it.size = ""; it.sizeOther = false; it.sizeOtherText = ""; it.pieces = "";
+      it.ages = []; it.complete = true; it.toyName = ""; it.reasons = []; it.otherText = "";
+    }
+    it.type = type; it.typeSet = true;
   }
   function catList() {
     var it = S.item, all = (S.options.category || []).map(function (r) { return r.value; });
@@ -302,6 +331,8 @@
     // A kept item needs everything. A declined clothing item needs a category and a reason;
     // a declined toy needs its short name and a reason. Brand, size and age are optional on a decline.
     var it = S.item, e = [];
+    if (decline && !it.typeSet) { e.push("Pick clothing or toy."); return e; }
+    if (!decline && !it.brand) { e.push("Pick a brand."); return e; }
     if (it.type === "clothing" && !it.category) e.push("Pick a category.");
     if (decline) {
       if (it.type === "toy" && !it.toyName.trim()) e.push("Give the toy a short name, so the email can say what it was.");
@@ -385,6 +416,9 @@
     (rec.photo_urls || []).forEach(function (u, i) { if (u && SLOTS[i]) it.photos[SLOTS[i].key] = { status: "done", url: u, preview: u }; });
     if (rec.video_url) it.video = { status: "done", url: rec.video_url, preview: rec.video_url };
     it.choice = rec.status === "rejected_at_grading" ? "decline" : "keep";
+    it.typeSet = true;
+    it.more = !!(rec.brand && rec.brand !== "Unknown") || !!(rec.size);
+    if (rec.brand === "Unknown") { it.brand = null; it.brandQ = ""; }
     if (rec.status === "rejected_at_grading") {
       it.reasons = (rec.reject_reason || []).slice();
       it.otherText = rec.reject_reason_other_text || "";
@@ -478,21 +512,21 @@
   }
   function saveBrand() {
     var a = S.addBrand, it = S.item;
-    if (!a.name.trim() || !a.tier) { S.errors = ["Type the brand name and pick its tier."]; render(); return; }
+    if (!a.name.trim() || !a.tier || !a.type) { S.errors = ["Type the brand name, and pick clothing or toy and its tier."]; render(); return; }
     S.busy = true; render();
     door("POST", "/brands", {
       brand_name: a.name.trim(),
-      item_type: it.type,
+      item_type: a.type,
       default_tier: a.tier === "condition_gated" ? "essentials" : a.tier,
       condition_restriction: a.tier === "condition_gated" ? "new_or_like_new_only" : null,
       last_verified: new Date().toISOString().split("T")[0]
     }, { Accept: "application/vnd.pgrst.object+json" }).then(function (d) {
       var row = firstRow(d);
       if (!row || !row.id) return loadBrands().then(function () {
-        row = (S.brands[it.type] || []).filter(function (b) { return b.brand_name.toLowerCase() === a.name.trim().toLowerCase(); })[0];
+        row = (S.brands[a.type] || []).filter(function (b) { return b.brand_name.toLowerCase() === a.name.trim().toLowerCase(); })[0];
         return row;
       });
-      S.brands[it.type].push(row);
+      S.brands[a.type].push(row);
       return row;
     }).then(function (row) {
       S.busy = false; S.addBrand = null; S.errors = [];
@@ -502,6 +536,7 @@
   }
   function pickBrand(b) {
     var it = S.item;
+    if (b.item_type && b.item_type !== it.type) setType(b.item_type); else it.typeSet = true;
     it.brand = b; it.brandQ = b.brand_name;
     if (!it.half) it.tier = b.default_tier || "essentials";
   }
@@ -555,9 +590,15 @@
       }).catch(fail);
   }
   function cancelBag() {
-    if (!window.confirm("Cancel " + nameOf(S.member) + "'s bag? No credits or email go out. Items already sorted stay saved on the cancelled bag.")) return;
+    var n = S.records.length;
+    if (!window.confirm("Cancel " + nameOf(S.member) + "'s bag for good? " + (n ? "The " + n + " item" + (n === 1 ? "" : "s") + " sorted on it are deleted. " : "") + "No credits or email go out.")) return;
     S.busy = true; render();
-    door("PATCH", "/intake_batches?id=eq." + S.batch.id, { status: "cancelled" })
+    var id = S.batch.id;
+    // Delete the bag's items first, all at once; if the doorman won't take that, one at a time.
+    var del = n ? door("DELETE", "/intake_records?batch_id=eq." + id).catch(function () {
+      return S.records.reduce(function (p, r) { return p.then(function () { return door("DELETE", "/intake_records?id=eq." + r.id); }); }, Promise.resolve());
+    }) : Promise.resolve();
+    del.then(function () { return door("PATCH", "/intake_batches?id=eq." + id, { status: "cancelled" }); })
       .then(function () { return loadOpenBatch(); })
       .then(function () { S.busy = false; S.screen = "start"; render(); })
       .catch(fail);
@@ -574,8 +615,8 @@
   }
   function closeBag() {
     var sorted = S.records.length, total = totalCount();
-    if (!sorted) { S.errors = ["Sort at least one item before closing the bag."]; render(); return; }
-    if (sorted < total && !window.confirm("You've sorted " + sorted + " of " + total + ". Close the bag anyway?")) return;
+    if (!sorted) { S.errors = ["Sort at least one item before finishing the bag."]; render(); return; }
+    if (sorted < total && !window.confirm("You've sorted " + sorted + " of " + total + ". Finish the bag anyway? Her credits and email go out.")) return;
     S.busy = true; S.errors = []; render();
     var cl = S.records.filter(function (r) { return r.item_type === "clothing"; }).length;
     var ty = S.records.filter(function (r) { return r.item_type === "toy"; }).length;
@@ -600,7 +641,7 @@
         })
       });
     }).then(function (r) {
-      if (!r.ok) throw new Error("Make answered " + r.status + ". The bag isn't closed and nothing was sent");
+      if (!r.ok) throw new Error("Make answered " + r.status + ". The bag isn't finished and nothing was sent");
       S.closedSummary = { name: firstOf(S.member), credits: creditSummary() };
       S.busy = false; S.screen = "closed"; render(); window.scrollTo(0, 0);
     }).catch(fail);
@@ -617,19 +658,28 @@
     if (!S.errors.length) return "";
     return '<div class="ss-err" role="alert">' + S.errors.map(function (e) { return "<p>" + esc(e) + "</p>"; }).join("") + "</div>";
   }
+  function recLine(r) {
+    var kept = r.status === "accepted_at_grading", reasons = r.reject_reason || [];
+    var why = reasons.length ? reasons[0] + (reasons.length > 1 ? " +" + (reasons.length - 1) : "") : "";
+    var bits;
+    if (kept) bits = [r.brand, r.item_type === "toy" ? r.size : r.category, r.item_type === "toy" ? "" : r.size,
+      (TIER_LABEL[r.tier] || r.tier || "") + (Number(r.credit_amount_at_grading) === 0.5 ? " ½" : "")];
+    else if (r.item_type === "toy") bits = [r.graded_item_name || "Toy", why];
+    else bits = [r.category, r.brand && r.brand !== "Unknown" ? r.brand : "", r.size, why];
+    return bits.filter(Boolean).join(" · ");
+  }
   function header(eyebrow) {
     var total = totalCount(), n = S.records.length;
     var kept = S.records.filter(function (r) { return r.status === "accepted_at_grading"; }).length;
     var pct = total ? Math.min(100, Math.round(n / total * 100)) : 0;
-    var dots = "";
-    for (var i = 0; i < Math.max(total, n + 1); i++) {
-      var r = S.records[i];
-      var cls = r ? (r.status === "accepted_at_grading" ? " kept" : " dec") : (i === n ? " now" : "");
-      dots += '<button type="button" class="ss-dot' + cls + '" data-act="dot" data-val="' + i + '" aria-label="Item ' + (i + 1) + '">' + (i + 1) + "</button>";
-    }
+    var rows = S.records.map(function (r, i) {
+      var k = r.status === "accepted_at_grading", ed = S.editing && S.editing.id === r.id;
+      return '<button type="button" class="ss-sumrow' + (k ? " kept" : " dec") + (ed ? " ed" : "") + '" data-act="dot" data-val="' + i + '">' +
+        '<span class="ss-sumn">' + (i + 1) + '</span><span class="ss-summ">' + (k ? "✓" : "✗") + '</span><span class="ss-sumt">' + esc(recLine(r)) + "</span></button>";
+    }).join("");
     return '<div class="ss-head"><p class="ss-eyebrow">' + esc(eyebrow) + '</p><h1 class="ss-h1">' + esc(nameOf(S.member)) + "'s bag</h1>" +
       '<p class="ss-sub">' + (n < total ? "Item " + (n + 1) + " of " + total : n + " of " + total + " sorted") + " · " + kept + " kept · " + (n - kept) + " declined</p>" +
-      '<div class="ss-bar"><span style="width:' + pct + '%"></span></div><div class="ss-strip">' + dots + "</div></div>";
+      '<div class="ss-bar"><span style="width:' + pct + '%"></span></div>' + (rows ? '<div class="ss-sumlist">' + rows + "</div>" : "") + "</div>";
   }
   function viewStart() {
     if (S.batch) {
@@ -637,7 +687,7 @@
       return '<div class="ss-head"><h1 class="ss-h1">Sort a bag</h1></div>' +
         '<div class="ss-card"><p class="ss-lab">A bag is already open</p><p class="ss-sub">' + esc(nameOf(S.member)) + "'s bag, " + n + " of " + totalCount() + " sorted.</p></div>" + errorBox() +
         '<button type="button" class="ss-btn" data-act="resume"' + (S.busy ? " disabled" : "") + ">Keep sorting this bag</button>" +
-        '<button type="button" class="ss-btn ghost" data-act="cancel-bag"' + (S.busy ? " disabled" : "") + ">Cancel this bag</button>";
+        '<button type="button" class="ss-btn ghost" data-act="cancel-bag"' + (S.busy ? " disabled" : "") + ">Cancel this bag for good</button>";
     }
     var st = S.start;
     return '<div class="ss-head"><h1 class="ss-h1">Sort a bag</h1><p class="ss-sub">Find the member, then count what\'s in the bag.</p></div>' +
@@ -653,7 +703,7 @@
   function viewMembers() {
     var st = S.start;
     if (st.member) {
-      return '<div class="ss-list"><button type="button" class="ss-row sel" data-act="member-clear">' + esc(nameOf(st.member)) +
+      return '<div class="ss-list"><button type="button" class="ss-row sel" data-act="member-clear">✓ ' + esc(nameOf(st.member)) +
         " <small>" + esc(plainPlan(st.member.plan)) + (st.member.status === "paused" ? " · paused" : "") + "</small></button></div>";
     }
     if (!st.members.length) return st.memberQ.trim().length >= 2 ? '<p class="ss-hint">No active or paused member matches that.</p>' : "";
@@ -664,15 +714,19 @@
   function viewBrandBlock() {
     var it = S.item, a = S.addBrand;
     if (a) {
-      return '<div class="ss-addbrand"><p class="ss-lab">New brand: ' + esc(a.name) + '</p><p class="ss-hint">Its usual tier. This is saved for every future ' + (it.type === "toy" ? "toy" : "item") + " from this brand.</p>" +
+      var fixed = it.choice === "decline" && it.typeSet;
+      return '<div class="ss-addbrand"><p class="ss-lab">New brand: ' + esc(a.name) + "</p>" +
+        (fixed ? "" : '<p class="ss-hint">Clothing or toys?</p>' + pills([{ value: "clothing", label: "Clothing" }, { value: "toy", label: "Toys" }], function (v) { return a.type === v; }, "newbrand-type", "two")) +
+        '<p class="ss-hint">Its usual tier. This is saved for every future item from this brand.</p>' +
         pills([{ value: "essentials", label: "Essentials" }, { value: "elevated", label: "Elevated" }, { value: "special", label: "Special" }, { value: "condition_gated", label: "Only new or like new" }],
           function (v) { return a.tier === v; }, "newbrand-tier", "two") +
         '<div class="ss-grid2"><button type="button" class="ss-btn small" data-act="newbrand-save"' + (S.busy ? " disabled" : "") + '>Save brand</button><button type="button" class="ss-btn small ghost" data-act="newbrand-cancel">Cancel</button></div></div>';
     }
     var bl = brandList(), q = it.brandQ.trim();
     var rows = bl.rows.map(function (b) {
+      var both = !(it.choice === "decline" && it.typeSet);
       return '<button type="button" class="ss-row' + (it.brand && it.brand.id === b.id ? " sel" : "") + '" data-act="brand" data-val="' + esc(b.id) + '">' + esc(b.brand_name) +
-        " <small>" + esc(TIER_LABEL[b.default_tier] || "") + (b.condition_restriction === "new_or_like_new_only" ? " · new or like new only" : "") + "</small></button>";
+        " <small>" + (both ? (b.item_type === "toy" ? "Toy · " : "Clothing · ") : "") + esc(TIER_LABEL[b.default_tier] || "") + (b.condition_restriction === "new_or_like_new_only" ? " · new or like new only" : "") + "</small></button>";
     }).join("");
     if (q.length >= 2 && !bl.exact && !(it.brand && it.brand.brand_name.toLowerCase() === q.toLowerCase())) {
       rows += '<button type="button" class="ss-row add" data-act="newbrand">+ Add "' + esc(q) + '" as a new brand</button>';
@@ -686,72 +740,93 @@
       return '<button type="button" class="ss-row' + (it.category === v ? " sel" : "") + '" data-act="cat" data-val="' + esc(v) + '">' + esc(v) + "</button>";
     }).join("") + "</div>";
   }
-  function reqMark(optionalOnDecline) {
-    if (optionalOnDecline && S.item.choice === "decline") return ' <span class="ss-opt">optional when declining</span>';
-    return ' <span class="ss-req">*</span>';
+  function pickedRow(act, label, small) {
+    return '<button type="button" class="ss-row sel ss-picked" data-act="' + act + '"><span>✓ ' + esc(label) + "</span> <small>" + small + (small ? "<br>" : "") + "<u>Change</u></small></button>";
+  }
+  function brandField(optional) {
+    var it = S.item, brandPicked = it.brand && !S.addBrand;
+    var h = '<div data-q="brand"><label class="ss-lab" for="ss-brand">Brand ' + (optional ? '<span class="ss-opt">optional</span>' : '<span class="ss-req">*</span>') + "</label>" +
+      (brandPicked
+        ? pickedRow("brand-change", it.brand.brand_name, esc(TIER_LABEL[it.brand.default_tier] || "") + (it.brand.condition_restriction === "new_or_like_new_only" ? " · new or like new only" : ""))
+        : '<input id="ss-brand" class="ss-inp" type="text" data-k="brandQ" autocomplete="off" autocorrect="off" autocapitalize="words" value="' + esc(it.brandQ) + '">' +
+          '<div data-part="brands">' + viewBrandBlock() + "</div>");
+    if (brandPicked && it.choice === "keep" && brandTwin(it.brand)) {
+      h += '<p class="ss-hint">This brand makes clothing and toys. Which is this?</p>' +
+        pills([{ value: "clothing", label: "Clothing" }, { value: "toy", label: "Toy" }], function (v) { return it.type === v; }, "brand-type", "two");
+    }
+    if (it.brand && it.brand.condition_restriction === "new_or_like_new_only") h += '<p class="ss-hint warn">This brand is only accepted new or like new.</p>';
+    return h + "</div>";
+  }
+  function catField() {
+    var it = S.item;
+    return '<div data-q="cat"><label class="ss-lab" for="ss-cat">Category <span class="ss-req">*</span></label>' +
+      (it.category ? pickedRow("cat-change", it.category, "")
+        : '<input id="ss-cat" class="ss-inp" type="text" data-k="catQ" autocomplete="off" autocorrect="off" value="' + esc(it.catQ) + '">' +
+          '<div data-part="cats">' + viewCatBlock() + "</div>") + "</div>";
+  }
+  function sizeField(optional) {
+    var it = S.item;
+    return '<div data-q="size"><p class="ss-lab">Size ' + (optional ? '<span class="ss-opt">optional</span>' : '<span class="ss-req">*</span>') + "</p>" +
+      pills(sizeOptions(), function (v) { return !it.sizeOther && it.size === v; }, "size") +
+      '<button type="button" class="ss-pill wide' + (it.sizeOther ? " sel" : "") + '" data-act="size-other">Other size</button>' +
+      (it.sizeOther ? '<input class="ss-inp ss-gap" type="text" data-k="sizeOtherText" autocorrect="off" placeholder="Size on the tag, like 8 or 10/12" value="' + esc(it.sizeOtherText) + '">' : "") + "</div>";
+  }
+  function ageField(optional) {
+    var it = S.item;
+    return '<div data-q="age"><p class="ss-lab">Age range ' + (optional ? '<span class="ss-opt">optional</span>' : '<span class="ss-req">*</span>') + ' <span class="ss-opt">pick all that fit</span></p>' +
+      pills(ageOptions(), function (v) { return it.ages.indexOf(v) > -1; }, "age", "two") + "</div>";
   }
   function viewSort() {
     if (S.viewRec) return viewSavedRecord();
     var it = S.item, toy = it.type === "toy", dec = it.choice === "decline", keep = it.choice === "keep";
     var ed = S.editing, edNum = ed ? S.records.indexOf(ed) + 1 : 0;
-    var h = header(ed ? "Editing item " + edNum : "Sorting");
+    var out = header(ed ? "Editing item " + edNum : "Sorting");
 
-    // 1. Clothing or Toy
-    h += '<div class="ss-toggle" data-q="type"><button type="button" class="' + (toy ? "" : "on") + '" data-act="type" data-val="clothing">Clothing</button><button type="button" class="' + (toy ? "on" : "") + '" data-act="type" data-val="toy">Toy</button></div>';
-
-    // 2. What it is
-    var brandPicked = it.brand && !S.addBrand;
-    var top = '<div class="ss-card"><div data-q="brand"><label class="ss-lab" for="ss-brand">Brand' + reqMark(true) + "</label>" +
-      (brandPicked
-        ? '<button type="button" class="ss-row sel ss-picked" data-act="brand-change">' + esc(it.brand.brand_name) +
-          " <small>" + esc(TIER_LABEL[it.brand.default_tier] || "") + (it.brand.condition_restriction === "new_or_like_new_only" ? " · new or like new only" : "") + "<br><u>Change</u></small></button>"
-        : '<input id="ss-brand" class="ss-inp" type="text" data-k="brandQ" autocomplete="off" autocorrect="off" autocapitalize="words" value="' + esc(it.brandQ) + '">' +
-          '<div data-part="brands">' + viewBrandBlock() + "</div>") +
-      (it.brand && it.brand.condition_restriction === "new_or_like_new_only" ? '<p class="ss-hint warn">This brand is only accepted new or like new.</p>' : "") + "</div>";
-    if (!toy) {
-      top += '<div data-q="cat"><label class="ss-lab" for="ss-cat">Category <span class="ss-req">*</span></label>' +
-        (it.category
-          ? '<button type="button" class="ss-row sel ss-picked" data-act="cat-change">' + esc(it.category) + " <small><u>Change</u></small></button>"
-          : '<input id="ss-cat" class="ss-inp" type="text" data-k="catQ" autocomplete="off" autocorrect="off" value="' + esc(it.catQ) + '">' +
-            '<div data-part="cats">' + viewCatBlock() + "</div>") + "</div>";
-      if (it.category === "Sets" && !dec) {
-        top += '<div data-q="pieces"><label class="ss-lab" for="ss-pieces">Pieces in the set <span class="ss-req">*</span></label><input id="ss-pieces" class="ss-inp" type="text" inputmode="numeric" data-k="pieces" value="' + esc(it.pieces) + '"></div>';
-      }
-      top += '<div data-q="size"><p class="ss-lab">Size' + reqMark(true) + "</p>" +
-        pills(sizeOptions(), function (v) { return !it.sizeOther && it.size === v; }, "size") +
-        '<button type="button" class="ss-pill wide' + (it.sizeOther ? " sel" : "") + '" data-act="size-other">Other size</button>' +
-        (it.sizeOther ? '<input class="ss-inp ss-gap" type="text" data-k="sizeOtherText" autocorrect="off" placeholder="Size on the tag, like 8 or 10/12" value="' + esc(it.sizeOtherText) + '">' : "") + "</div>";
-    } else {
-      top += '<div data-q="age"><p class="ss-lab">Age range' + reqMark(true) + ' <span class="ss-opt">pick all that fit</span></p>' +
-        pills(ageOptions(), function (v) { return it.ages.indexOf(v) > -1; }, "age", "two") + "</div>";
-    }
-    top += "</div>";
-
-    // 3. Keep or Decline
-    var choice = '<div class="ss-card" data-q="choice"><p class="ss-lab">Keep it or decline it? <span class="ss-req">*</span></p>' +
+    // 1. Keep or Decline, first
+    out += '<div class="ss-card" data-q="choice"><p class="ss-lab">Keep it or decline it? <span class="ss-req">*</span></p>' +
       pills([{ value: "keep", label: "Keep" }, { value: "decline", label: "Decline" }], function (v) { return it.choice === v; }, "choice", "two ss-choice") + "</div>";
+    if (!dec && !keep) return out + errorBox() + footerLinks();
 
-    var out = h + top + choice;
-
-    // 4. Only the part that applies
     if (dec) {
+      // 2. Clothing or toy, then only what identifies it in the bag, the reason, and next.
+      //    Brand and size (or age) stay folded away as optional extras.
+      out += '<div class="ss-card" data-q="dtype"><p class="ss-lab">Clothing or toy? <span class="ss-req">*</span></p>' +
+        pills([{ value: "clothing", label: "Clothing" }, { value: "toy", label: "Toy" }], function (v) { return it.typeSet && it.type === v; }, "dtype", "two") + "</div>";
+      if (!it.typeSet) return out + errorBox() + footerLinks();
       var reasons = REASONS[it.type];
-      var dc = '<div class="ss-card" data-q="dec"><p class="ss-eyebrow">Because it\'s declined</p>' +
-        (toy ? '<div><label class="ss-lab" for="ss-tn">Short name <span class="ss-req">*</span></label><input id="ss-tn" class="ss-inp" type="text" data-k="toyName" autocapitalize="sentences" placeholder="Like wooden train set" value="' + esc(it.toyName) + '"><p class="ss-hint">The email uses this to say what came back.</p></div>' : "") +
-        '<div><p class="ss-lab">Why it\'s declined <span class="ss-req">*</span> <span class="ss-opt">pick all that fit</span></p>' +
+      var dc = '<div class="ss-card"><p class="ss-eyebrow">Because it\'s declined</p>' +
+        (toy ? '<div data-q="tn"><label class="ss-lab" for="ss-tn">Short name <span class="ss-req">*</span></label><input id="ss-tn" class="ss-inp" type="text" data-k="toyName" autocapitalize="sentences" placeholder="Like wooden train set" value="' + esc(it.toyName) + '"><p class="ss-hint">The email uses this to say what came back.</p></div>'
+          : catField()) +
+        '<div data-q="reasons"><p class="ss-lab">Why it\'s declined <span class="ss-req">*</span> <span class="ss-opt">pick all that fit</span></p>' +
         pills(reasons, function (v) { return it.reasons.indexOf(v) > -1; }, "reason", "two") +
         (it.reasons.indexOf("Other") > -1 ? '<input class="ss-inp ss-gap" type="text" data-k="otherText" placeholder="What\'s the other reason?" value="' + esc(it.otherText) + '">' : "") + "</div>" +
+        (it.more ? brandField(true) + (toy ? ageField(true) : sizeField(true))
+          : '<button type="button" class="ss-link ss-more" data-act="more">+ Add the brand or ' + (toy ? "age" : "size") + " (optional)</button>") +
         (toy ? "" : '<div><label class="ss-lab" for="ss-note">Note for you <span class="ss-opt">optional, members never see it</span></label><input id="ss-note" class="ss-inp" type="text" data-k="note" value="' + esc(it.note) + '"></div>') +
         "</div>";
       return out + dc + errorBox() +
         '<button type="button" class="ss-btn" data-act="decline-save" data-q="go"' + (S.busy ? " disabled" : "") + ">" + (S.busy ? "Saving…" : (ed ? "Save changes" : "Decline it, next item")) + "</button>" + footerLinks();
     }
-    if (!keep) return out + errorBox() + footerLinks();
+
+    // Kept: the brand decides clothing or toy, and the rest follows.
+    var what = '<div class="ss-card">' + brandField(false);
+    if (!it.brand || S.addBrand) {
+      what += '<p class="ss-hint">Pick the brand and the rest of the questions follow.</p></div>';
+      return out + what + errorBox() + footerLinks();
+    }
+    if (!toy) {
+      what += catField();
+      if (it.category === "Sets") what += '<div data-q="pieces"><label class="ss-lab" for="ss-pieces">Pieces in the set <span class="ss-req">*</span></label><input id="ss-pieces" class="ss-inp" type="text" inputmode="numeric" data-k="pieces" value="' + esc(it.pieces) + '"></div>';
+      what += sizeField(false);
+    } else {
+      what += ageField(false);
+    }
+    what += "</div>";
 
     var tierCard = '<div class="ss-card" data-q="tier"><p class="ss-eyebrow">Because it\'s kept</p><div><p class="ss-lab">Tier <span class="ss-req">*</span></p>' +
       pills([{ value: "essentials", label: "Essentials" }, { value: "elevated", label: "Elevated" }, { value: "special", label: "Special" }],
         function (v) { return !it.half && it.tier === v; }, "tier", "three") +
-      '<p class="ss-hint">' + (it.brand ? "Picked for you from the brand (" + esc(TIER_LABEL[it.brand.default_tier] || "Essentials") + "). Change it if this piece is better or worse than usual." : "Picked for you once you choose the brand.") + "</p>" +
+      '<p class="ss-hint">Picked for you from the brand (' + esc(TIER_LABEL[it.brand.default_tier] || "Essentials") + "). Change it if this piece is better or worse than usual.</p>" +
       '<button type="button" class="ss-mini' + (it.half ? " sel" : "") + '" data-act="tier" data-val="half">' + (it.half ? "✓ " : "") + "Half credit</button>" +
       (it.half ? '<input class="ss-inp ss-gap" type="text" data-k="halfReason" placeholder="Why half? (optional, just for you)" value="' + esc(it.halfReason) + '">' : "") + "</div>" +
       (it.skuOpen
@@ -763,7 +838,6 @@
     var photos = '<div class="ss-card" data-q="photos"><p class="ss-lab">Photos <span class="ss-opt">optional</span></p><div class="ss-slots">' +
       SLOTS.map(function (sl) {
         var p = it.photos[sl.key];
-        // No capture attribute, so the phone offers Take Photo or the photo library. An empty slot takes several at once.
         var input = '<input type="file" accept="' + (p ? "image/*" : "image/*,video/*") + '"' + (p ? "" : " multiple") + ' data-act="photo-add" data-val="' + sl.key + '" hidden>';
         if (!p) return '<label class="ss-slot">' + sl.label + "<small>" + esc(sl.hint) + "</small>" + input + "</label>";
         var state = p.status === "uploading" ? "Uploading…" : p.status === "error" ? "Didn't upload, tap to retry" : "tap to retake";
@@ -776,7 +850,7 @@
     var pieces = toy ? '<div class="ss-card" data-q="complete"><p class="ss-lab">All the pieces?</p>' +
       pills([{ value: "yes", label: "Complete" }, { value: "no", label: "Missing pieces" }], function (v) { return (v === "yes") === it.complete; }, "complete", "two") + "</div>" : "";
 
-    return out + tierCard + photos + pieces + errorBox() +
+    return out + what + tierCard + photos + pieces + errorBox() +
       '<button type="button" class="ss-btn" data-act="keep" data-q="go"' + (S.busy ? " disabled" : "") + ">" + (S.busy ? "Saving…" : (ed ? "Save changes" : "Keep it, next item")) + "</button>" + footerLinks();
   }
   function videoTile() {
@@ -791,7 +865,7 @@
   }
   function footerLinks() {
     if (S.editing) return '<div class="ss-links"><button type="button" class="ss-link" data-act="edit-cancel">Cancel editing</button></div>';
-    return '<div class="ss-links"><button type="button" class="ss-link" data-act="to-close">Close the bag</button></div>';
+    return '<div class="ss-links"><button type="button" class="ss-link" data-act="to-close">Finish the bag</button></div>';
   }
   function viewSavedRecord() {
     var r = S.viewRec, i = S.records.indexOf(r);
@@ -842,7 +916,7 @@
       (paused ? "" : '<p class="em-pre">Here\'s what you earned and where to find new favorites.</p>') + "</div>" +
       '<div class="em-body"><p class="em-brand">KidSwaps</p>' + (dateLine ? '<p class="em-date">' + esc(dateLine) + "</p>" : "") +
       '<p class="em-hi">Hi ' + esc(name || "there") + ",</p>" +
-      '<div class="em-gap">Her bag summary and decline lines go here, written by S27 when you close.</div>' +
+      '<div class="em-gap">Her bag summary and decline lines go here, written by S27 when you finish.</div>' +
       '<div class="em-gold"><p class="em-gold-h">What you earned from this batch</p><p class="em-gold-n">' + esc(creditsPhrase()) + "</p>" +
       (paused ? "" : '<p class="em-gold-s">Your credits are in your bank now.</p>') + "</div>" +
       '<div data-part="note">' + viewNote() + "</div>" +
@@ -852,21 +926,21 @@
   }
   function viewClose() {
     var c = creditSummary();
-    return '<div class="ss-head"><p class="ss-eyebrow">' + S.records.length + " of " + totalCount() + " items sorted</p><h1 class=\"ss-h1\">Close " + esc(firstOf(S.member)) + "'s bag</h1>" +
-      '<p class="ss-sub">Credits land and the email goes out as soon as you close it.</p></div>' +
+    return '<div class="ss-head"><p class="ss-eyebrow">' + S.records.length + " of " + totalCount() + " items sorted</p><h1 class=\"ss-h1\">Finish " + esc(firstOf(S.member)) + "'s bag</h1>" +
+      '<p class="ss-sub">Her credits land and her email goes out as soon as you finish. To stop for now, just leave the page; the bag stays open.</p></div>' +
       '<div class="ss-card"><div class="ss-sum"><span>Kept</span><b>' + c.kept + '</b></div><div class="ss-sum"><span>Declined</span><b>' + c.dec + "</b></div>" +
       '<div class="ss-sum"><span>Credits</span><b>' + esc(c.text) + '</b></div><div class="ss-sum"><span>Plan</span><b>' + esc(plainPlan(S.member && S.member.plan)) + "</b></div></div>" +
       '<div class="ss-card"><label class="ss-lab" for="ss-pn">A personal note in her email <span class="ss-opt">optional</span></label>' +
       '<textarea id="ss-pn" class="ss-inp big" data-k="closeNote" autocapitalize="sentences">' + esc(S.close.note) + "</textarea>" +
-      '<p class="ss-hint">The Bag Processed email goes to ' + esc(S.member ? S.member.email : "her") + ". Check S27 is on in Make before you close.</p></div>" +
+      '<p class="ss-hint">The Bag Processed email goes to ' + esc(S.member ? S.member.email : "her") + ". Check S27 is on in Make before you finish.</p></div>" +
       viewEmail() + errorBox() +
-      '<button type="button" class="ss-btn" data-act="close"' + (S.busy ? " disabled" : "") + ">" + (S.busy ? "Closing…" : "Close the bag") + "</button>" +
+      '<button type="button" class="ss-btn" data-act="close"' + (S.busy ? " disabled" : "") + ">" + (S.busy ? "Sending…" : "Finish and send her credits") + "</button>" +
       '<button type="button" class="ss-btn ghost" data-act="back-to-items">Back to the items</button>';
   }
   function viewClosed() {
     var s = S.closedSummary || { name: "Her", credits: { total: 0 } };
     var n = s.credits.total;
-    return '<div class="ss-done"><span class="ss-badge">✓</span><div><p class="ss-lab">' + esc(s.name) + "'s bag is closed</p>" +
+    return '<div class="ss-done"><span class="ss-badge">✓</span><div><p class="ss-lab">' + esc(s.name) + "'s bag is finished</p>" +
       '<p class="ss-hint">' + (n > 0 ? "Her " + fmtCredit(n) + " credit" + (n === 1 ? "" : "s") + " and her email are on their way." : "Her email is on its way.") + "</p></div></div>" +
       '<button type="button" class="ss-btn" data-act="another">Sort another bag</button>' +
       '<a class="ss-btn ghost" href="' + LISTING_URL + '">List items</a>';
@@ -951,12 +1025,19 @@
         advance = "type";
         break;
       case "brand":
-        var list = S.brands[it.type] || [];
-        for (var i = 0; i < list.length; i++) if (String(list[i].id) === val) { pickBrand(list[i]); break; }
+        var picked = brandById(val);
+        if (picked) pickBrand(picked);
         advance = "brand";
         break;
-      case "newbrand": S.addBrand = { name: it.brandQ.trim(), tier: "" }; break;
+      case "brand-type":
+        var twin = brandTwin(it.brand);
+        if (twin && twin.item_type === val) pickBrand(twin);
+        break;
+      case "dtype": setType(val); advance = "dtype"; break;
+      case "more": it.more = true; break;
+      case "newbrand": S.addBrand = { name: it.brandQ.trim(), tier: "", type: (it.choice === "decline" && it.typeSet) ? it.type : "" }; break;
       case "newbrand-tier": S.addBrand.tier = val; break;
+      case "newbrand-type": S.addBrand.type = val; break;
       case "newbrand-save": saveBrand(); return;
       case "newbrand-cancel": S.addBrand = null; break;
       case "cat": it.category = val; it.catQ = val; it.size = ""; advance = "cat"; break;
@@ -973,6 +1054,7 @@
       case "photo-remove": if (it.photos.hasOwnProperty(val)) it.photos[val] = null; break;
       case "keep": saveKeep(); return;
       case "choice":
+        if (it.choice !== val && val === "decline" && !it.brand) it.typeSet = false;
         it.choice = val; S.errors = [];
         if (val === "decline" && it.sizeOther && it.reasons.indexOf("Size out of range") < 0 && it.type === "clothing") it.reasons.push("Size out of range");
         if (val === "keep" && it.brand && !it.tier && !it.half) it.tier = it.brand.default_tier || "essentials";
@@ -1052,7 +1134,7 @@
       ".ss-list{display:flex;flex-direction:column;border:1px solid #3a3634;border-radius:12px;overflow:hidden;margin-top:8px}",
       ".ss-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:56px;padding:0 14px;border:0;border-top:1px solid #3a3634;background:#1c1a19;color:#f4efe9;font:600 16px 'Quicksand',sans-serif;text-align:left;cursor:pointer;width:100%}",
       ".ss-row:first-child{border-top:0}",
-      ".ss-row.sel{background:#4a2417;color:#fff;box-shadow:inset 0 0 0 3px #f08a63}",
+      ".ss-row.sel{background:#1f3a28;color:#fff;box-shadow:inset 0 0 0 2px #4caf73}",
       ".ss-row.add{color:#f6b49a}",
       ".ss-row small{font-size:12px;color:#bdb5ab;font-weight:600;text-align:right}",
       ".ss-pills{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}",
@@ -1060,7 +1142,17 @@
       ".ss-pills.three{grid-template-columns:repeat(3,minmax(0,1fr))}",
       ".ss-picked{border:0;border-radius:12px;margin-top:0}",
       ".ss-picked small{line-height:1.5}",
-      ".ss-picked u{color:#f6b49a;text-decoration:underline}",
+      ".ss-picked u{color:#9fe0b6;text-decoration:underline}",
+      ".ss-sumlist{display:flex;flex-direction:column;border:1px solid #3a3634;border-radius:12px;overflow:hidden;margin-top:6px}",
+      ".ss-sumrow{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 12px;border:0;border-top:1px solid #3a3634;background:#1c1a19;color:#e9e3dc;font:600 13.5px 'Quicksand',sans-serif;text-align:left;cursor:pointer;width:100%}",
+      ".ss-sumrow:first-child{border-top:0}",
+      ".ss-sumrow.ed{box-shadow:inset 0 0 0 2px #f4efe9}",
+      ".ss-sumn{flex:none;width:18px;color:#bdb5ab}",
+      ".ss-summ{flex:none;width:16px;font-weight:700}",
+      ".ss-sumrow.kept .ss-summ{color:#4caf73}",
+      ".ss-sumrow.dec .ss-summ{color:#bdb5ab}",
+      ".ss-sumt{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      ".ss-more{align-self:flex-start;padding:2px 0;font-size:14px}",
       ".ss-mini{margin-top:10px;min-height:32px;padding:4px 12px;border-radius:99px;border:1px solid #4a4542;background:transparent;color:#bdb5ab;font:600 13px 'Quicksand',sans-serif;cursor:pointer}",
       ".ss-mini.sel{background:#f4efe9;color:#161514;border-color:#f4efe9}",
       ".ss-skuline{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px;color:#bdb5ab}",
