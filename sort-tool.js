@@ -8,11 +8,14 @@
    v6 (S430, hers): Keep or Decline comes first; one form for clothing and toys (a kept item's brand
    decides which questions follow; a decline asks Clothing or Toy); picked things turn green with a check;
    the dots become a short summary of sorted items; "Close" is now "Finish and send her credits", and
-   cancelling a bag deletes the items sorted on it. */
+   cancelling a bag deletes the items sorted on it.
+   v7 (S430, hers): the order is brand (which tells clothing or toy; No brand asks it), then the
+   category or a toy's short name, then Keep or Decline, then the reason or the rest. Every toy
+   carries its short name now, kept ones too (saved as graded_item_name for listing). */
 (function () {
   "use strict";
 
-  var BUILD = "sort-tool S430 v6";
+  var BUILD = "sort-tool S430 v7";
   var ROOT_ID = "ks-sort-app";
   var BASE = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1";
   var DOOR = BASE + "/grading-db";
@@ -184,7 +187,7 @@
       tier: "", half: false, halfReason: "",
       sku: S.freedSku || S.nextSku,
       photos: { front: null, back: null, detail: null }, video: null, skuOpen: false,
-      choice: "", typeSet: false, more: false, reasons: [], otherText: "", note: "", toyName: ""
+      choice: "", typeSet: false, noBrand: false, more: false, reasons: [], otherText: "", note: "", toyName: ""
     };
     S.addBrand = null; S.errors = []; S.viewRec = null;
   }
@@ -195,7 +198,6 @@
   function brandPool() {
     var it = S.item;
     // A decline already knows Clothing or Toy; a kept item's brand decides it, so search both lists.
-    if (it.choice === "decline" && it.typeSet) return S.brands[it.type] || [];
     return (S.brands.clothing || []).concat(S.brands.toy || []);
   }
   function brandById(id) {
@@ -331,11 +333,11 @@
     // A kept item needs everything. A declined clothing item needs a category and a reason;
     // a declined toy needs its short name and a reason. Brand, size and age are optional on a decline.
     var it = S.item, e = [];
-    if (decline && !it.typeSet) { e.push("Pick clothing or toy."); return e; }
-    if (!decline && !it.brand) { e.push("Pick a brand."); return e; }
+    if (!it.typeSet) { e.push("Pick the brand, or tap No brand and pick clothing or toy."); return e; }
+    if (!decline && !it.brand) { e.push("A kept item needs its brand."); return e; }
     if (it.type === "clothing" && !it.category) e.push("Pick a category.");
+    if (it.type === "toy" && !it.toyName.trim()) e.push("Give the toy a short name.");
     if (decline) {
-      if (it.type === "toy" && !it.toyName.trim()) e.push("Give the toy a short name, so the email can say what it was.");
       if (!it.reasons.length) e.push("Pick at least one reason.");
       if (it.reasons.indexOf("Other") > -1 && !it.otherText.trim()) e.push("Say what the other reason is.");
       if (it.type === "clothing" && it.sizeOther && !it.sizeOtherText.trim()) e.push("Type the size, or untap Other size.");
@@ -364,7 +366,7 @@
       category: it.type === "clothing" ? it.category : null,
       condition_restriction_at_grading: !!(b && b.condition_restriction === "new_or_like_new_only"),
       is_complete: it.type === "toy" ? it.complete : true,
-      graded_item_name: null,
+      graded_item_name: it.type === "toy" ? (it.toyName.trim() || null) : null,
       graded_item_description: null
     };
     if (decline) return body;   // a declined item never carries photos (D2: tier, photos and SKU never show)
@@ -417,8 +419,9 @@
     if (rec.video_url) it.video = { status: "done", url: rec.video_url, preview: rec.video_url };
     it.choice = rec.status === "rejected_at_grading" ? "decline" : "keep";
     it.typeSet = true;
-    it.more = !!(rec.brand && rec.brand !== "Unknown") || !!(rec.size);
-    if (rec.brand === "Unknown") { it.brand = null; it.brandQ = ""; }
+    it.more = !!rec.size;
+    it.toyName = rec.graded_item_name || "";
+    if (!rec.brand || rec.brand === "Unknown") { it.brand = null; it.brandQ = ""; it.noBrand = true; }
     if (rec.status === "rejected_at_grading") {
       it.reasons = (rec.reject_reason || []).slice();
       it.otherText = rec.reject_reason_other_text || "";
@@ -537,7 +540,7 @@
   function pickBrand(b) {
     var it = S.item;
     if (b.item_type && b.item_type !== it.type) setType(b.item_type); else it.typeSet = true;
-    it.brand = b; it.brandQ = b.brand_name;
+    it.brand = b; it.brandQ = b.brand_name; it.noBrand = false;
     if (!it.half) it.tier = b.default_tier || "essentials";
   }
 
@@ -743,18 +746,23 @@
   function pickedRow(act, label, small) {
     return '<button type="button" class="ss-row sel ss-picked" data-act="' + act + '"><span>✓ ' + esc(label) + "</span> <small>" + small + (small ? "<br>" : "") + "<u>Change</u></small></button>";
   }
-  function brandField(optional) {
+  function brandField() {
     var it = S.item, brandPicked = it.brand && !S.addBrand;
-    var h = '<div data-q="brand"><label class="ss-lab" for="ss-brand">Brand ' + (optional ? '<span class="ss-opt">optional</span>' : '<span class="ss-req">*</span>') + "</label>" +
-      (brandPicked
-        ? pickedRow("brand-change", it.brand.brand_name, esc(TIER_LABEL[it.brand.default_tier] || "") + (it.brand.condition_restriction === "new_or_like_new_only" ? " · new or like new only" : ""))
-        : '<input id="ss-brand" class="ss-inp" type="text" data-k="brandQ" autocomplete="off" autocorrect="off" autocapitalize="words" value="' + esc(it.brandQ) + '">' +
-          '<div data-part="brands">' + viewBrandBlock() + "</div>");
-    if (brandPicked && it.choice === "keep" && brandTwin(it.brand)) {
-      h += '<p class="ss-hint">This brand makes clothing and toys. Which is this?</p>' +
-        pills([{ value: "clothing", label: "Clothing" }, { value: "toy", label: "Toy" }], function (v) { return it.type === v; }, "brand-type", "two");
+    var h = '<div data-q="brand"><label class="ss-lab" for="ss-brand">Brand</label>';
+    if (brandPicked) {
+      h += pickedRow("brand-change", it.brand.brand_name, (it.brand.item_type === "toy" ? "Toy · " : "Clothing · ") + esc(TIER_LABEL[it.brand.default_tier] || "") + (it.brand.condition_restriction === "new_or_like_new_only" ? " · new or like new only" : ""));
+      if (brandTwin(it.brand)) {
+        h += '<p class="ss-hint">This brand makes clothing and toys. Which is this?</p>' +
+          pills([{ value: "clothing", label: "Clothing" }, { value: "toy", label: "Toy" }], function (v) { return it.type === v; }, "brand-type", "two");
+      }
+      if (it.brand.condition_restriction === "new_or_like_new_only") h += '<p class="ss-hint warn">This brand is only accepted new or like new.</p>';
+    } else if (it.noBrand) {
+      h += pickedRow("brand-change", "No brand", "Only for a decline. A kept item needs its brand.");
+    } else {
+      h += '<input id="ss-brand" class="ss-inp" type="text" data-k="brandQ" autocomplete="off" autocorrect="off" autocapitalize="words" value="' + esc(it.brandQ) + '">' +
+        '<div data-part="brands">' + viewBrandBlock() + "</div>" +
+        (S.addBrand ? "" : '<button type="button" class="ss-link ss-more" data-act="nobrand">No brand, or can\'t tell</button>');
     }
-    if (it.brand && it.brand.condition_restriction === "new_or_like_new_only") h += '<p class="ss-hint warn">This brand is only accepted new or like new.</p>';
     return h + "</div>";
   }
   function catField() {
@@ -763,6 +771,10 @@
       (it.category ? pickedRow("cat-change", it.category, "")
         : '<input id="ss-cat" class="ss-inp" type="text" data-k="catQ" autocomplete="off" autocorrect="off" value="' + esc(it.catQ) + '">' +
           '<div data-part="cats">' + viewCatBlock() + "</div>") + "</div>";
+  }
+  function nameField() {
+    var it = S.item;
+    return '<div data-q="tn"><label class="ss-lab" for="ss-tn">Short name <span class="ss-req">*</span></label><input id="ss-tn" class="ss-inp" type="text" data-k="toyName" autocapitalize="sentences" placeholder="Like wooden train set" value="' + esc(it.toyName) + '"><p class="ss-hint">If it\'s declined, the email uses this to say what came back.</p></div>';
   }
   function sizeField(optional) {
     var it = S.item;
@@ -782,40 +794,43 @@
     var ed = S.editing, edNum = ed ? S.records.indexOf(ed) + 1 : 0;
     var out = header(ed ? "Editing item " + edNum : "Sorting");
 
-    // 1. Keep or Decline, first
+    // 1. Brand, which tells the form clothing or toy (No brand asks it instead)
+    var first = '<div class="ss-card">' + brandField();
+    if (it.noBrand && !it.brand) {
+      first += '<div data-q="dtype"><p class="ss-lab">Clothing or toy? <span class="ss-req">*</span></p>' +
+        pills([{ value: "clothing", label: "Clothing" }, { value: "toy", label: "Toy" }], function (v) { return it.typeSet && it.type === v; }, "dtype", "two") + "</div>";
+    }
+    if (!it.typeSet || S.addBrand) return out + first + "</div>" + errorBox() + footerLinks();
+
+    // 2. What it is: a clothing category, or a toy's short name
+    first += (toy ? nameField() : catField()) + "</div>";
+    out += first;
+
+    // 3. Keep or decline
     out += '<div class="ss-card" data-q="choice"><p class="ss-lab">Keep it or decline it? <span class="ss-req">*</span></p>' +
       pills([{ value: "keep", label: "Keep" }, { value: "decline", label: "Decline" }], function (v) { return it.choice === v; }, "choice", "two ss-choice") + "</div>";
     if (!dec && !keep) return out + errorBox() + footerLinks();
 
     if (dec) {
-      // 2. Clothing or toy, then only what identifies it in the bag, the reason, and next.
-      //    Brand and size (or age) stay folded away as optional extras.
-      out += '<div class="ss-card" data-q="dtype"><p class="ss-lab">Clothing or toy? <span class="ss-req">*</span></p>' +
-        pills([{ value: "clothing", label: "Clothing" }, { value: "toy", label: "Toy" }], function (v) { return it.typeSet && it.type === v; }, "dtype", "two") + "</div>";
-      if (!it.typeSet) return out + errorBox() + footerLinks();
-      var reasons = REASONS[it.type];
+      // 4a. The reason, then next. Size (or age) stays folded away.
       var dc = '<div class="ss-card"><p class="ss-eyebrow">Because it\'s declined</p>' +
-        (toy ? '<div data-q="tn"><label class="ss-lab" for="ss-tn">Short name <span class="ss-req">*</span></label><input id="ss-tn" class="ss-inp" type="text" data-k="toyName" autocapitalize="sentences" placeholder="Like wooden train set" value="' + esc(it.toyName) + '"><p class="ss-hint">The email uses this to say what came back.</p></div>'
-          : catField()) +
         '<div data-q="reasons"><p class="ss-lab">Why it\'s declined <span class="ss-req">*</span> <span class="ss-opt">pick all that fit</span></p>' +
-        pills(reasons, function (v) { return it.reasons.indexOf(v) > -1; }, "reason", "two") +
+        pills(REASONS[it.type], function (v) { return it.reasons.indexOf(v) > -1; }, "reason", "two") +
         (it.reasons.indexOf("Other") > -1 ? '<input class="ss-inp ss-gap" type="text" data-k="otherText" placeholder="What\'s the other reason?" value="' + esc(it.otherText) + '">' : "") + "</div>" +
-        (it.more ? brandField(true) + (toy ? ageField(true) : sizeField(true))
-          : '<button type="button" class="ss-link ss-more" data-act="more">+ Add the brand or ' + (toy ? "age" : "size") + " (optional)</button>") +
+        (it.more ? (toy ? ageField(true) : sizeField(true))
+          : '<button type="button" class="ss-link ss-more" data-act="more">+ Add the ' + (toy ? "age" : "size") + " (optional)</button>") +
         (toy ? "" : '<div><label class="ss-lab" for="ss-note">Note for you <span class="ss-opt">optional, members never see it</span></label><input id="ss-note" class="ss-inp" type="text" data-k="note" value="' + esc(it.note) + '"></div>') +
         "</div>";
       return out + dc + errorBox() +
         '<button type="button" class="ss-btn" data-act="decline-save" data-q="go"' + (S.busy ? " disabled" : "") + ">" + (S.busy ? "Saving…" : (ed ? "Save changes" : "Decline it, next item")) + "</button>" + footerLinks();
     }
 
-    // Kept: the brand decides clothing or toy, and the rest follows.
-    var what = '<div class="ss-card">' + brandField(false);
-    if (!it.brand || S.addBrand) {
-      what += '<p class="ss-hint">Pick the brand and the rest of the questions follow.</p></div>';
-      return out + what + errorBox() + footerLinks();
+    // 4b. Kept: the rest of the questions
+    if (!it.brand) {
+      return out + '<div class="ss-card"><p class="ss-hint warn">A kept item needs its brand. Tap Change on No brand above and pick it.</p></div>' + errorBox() + footerLinks();
     }
+    var what = '<div class="ss-card">';
     if (!toy) {
-      what += catField();
       if (it.category === "Sets") what += '<div data-q="pieces"><label class="ss-lab" for="ss-pieces">Pieces in the set <span class="ss-req">*</span></label><input id="ss-pieces" class="ss-inp" type="text" inputmode="numeric" data-k="pieces" value="' + esc(it.pieces) + '"></div>';
       what += sizeField(false);
     } else {
@@ -1035,6 +1050,7 @@
         break;
       case "dtype": setType(val); advance = "dtype"; break;
       case "more": it.more = true; break;
+      case "nobrand": it.noBrand = true; it.brand = null; it.brandQ = ""; it.typeSet = false; advance = "brand"; break;
       case "newbrand": S.addBrand = { name: it.brandQ.trim(), tier: "", type: (it.choice === "decline" && it.typeSet) ? it.type : "" }; break;
       case "newbrand-tier": S.addBrand.tier = val; break;
       case "newbrand-type": S.addBrand.type = val; break;
@@ -1054,7 +1070,6 @@
       case "photo-remove": if (it.photos.hasOwnProperty(val)) it.photos[val] = null; break;
       case "keep": saveKeep(); return;
       case "choice":
-        if (it.choice !== val && val === "decline" && !it.brand) it.typeSet = false;
         it.choice = val; S.errors = [];
         if (val === "decline" && it.sizeOther && it.reasons.indexOf("Size out of range") < 0 && it.type === "clothing") it.reasons.push("Size out of range");
         if (val === "keep" && it.brand && !it.tier && !it.half) it.tier = it.brand.default_tier || "essentials";
@@ -1068,7 +1083,7 @@
         S.viewRec = rec || null;
         break;
       case "rec-back": S.viewRec = null; break;
-      case "brand-change": it.brand = null; it.brandQ = ""; render(); focusOn("ss-brand"); return;
+      case "brand-change": it.brand = null; it.brandQ = ""; it.noBrand = false; render(); focusOn("ss-brand"); return;
       case "cat-change": it.category = ""; it.catQ = ""; render(); focusOn("ss-cat"); return;
       case "sku-open": it.skuOpen = true; render(); focusOn("ss-sku"); return;
       case "video-remove": it.video = null; break;
