@@ -11,11 +11,14 @@
    cancelling a bag deletes the items sorted on it.
    v7 (S430, hers): the order is brand (which tells clothing or toy; No brand asks it), then the
    category or a toy's short name, then Keep or Decline, then the reason or the rest. Every toy
-   carries its short name now, kept ones too (saved as graded_item_name for listing). */
+   carries its short name now, kept ones too (saved as graded_item_name for listing).
+   v8 (S430, hers): one "Miscellaneous" brand in the list (clothing or toy and the tier decide which
+   Miscellaneous row it saves as); a big item number; Keep or Decline waits until the category or short
+   name is in; list rows to tap look different from the typing box; warnings clear as soon as they're fixed. */
 (function () {
   "use strict";
 
-  var BUILD = "sort-tool S430 v7";
+  var BUILD = "sort-tool S430 v8";
   var ROOT_ID = "ks-sort-app";
   var BASE = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1";
   var DOOR = BASE + "/grading-db";
@@ -179,6 +182,7 @@
   /* ---------- the item being sorted ---------- */
   function newItem(type) {
     S.item = {
+      fresh: true,
       type: type || (S.item ? S.item.type : "clothing"),
       brandQ: "", brand: null,
       catQ: "", category: "",
@@ -195,18 +199,32 @@
     if (!S.batch) return 0;
     return (Number(S.batch.clothing_items_counted_at_batch_open) || 0) + (Number(S.batch.toy_items_counted_at_batch_open) || 0);
   }
+  var MISC = { id: "misc", brand_name: "Miscellaneous", item_type: "", default_tier: "essentials", condition_restriction: null, misc: true };
+  function isMiscName(n) { return /^miscellaneous/i.test(String(n || "")); }
+  function miscRowName() {
+    // The Miscellaneous rows are one per kind and tier ("Miscellaneous Elevated", toy or clothing).
+    // Save the one that matches what was picked; if that tier has no row, fall back to Essentials.
+    var it = S.item, list = S.brands[it.type] || [];
+    var tier = it.choice === "keep" && !it.half ? (it.tier || "essentials") : "essentials";
+    function find(t) { return list.filter(function (b) { return isMiscName(b.brand_name) && b.default_tier === t; })[0]; }
+    var row = find(tier) || find("essentials") || list.filter(function (b) { return isMiscName(b.brand_name); })[0];
+    return row ? row.brand_name : "Miscellaneous";
+  }
   function brandPool() {
     var it = S.item;
     // A decline already knows Clothing or Toy; a kept item's brand decides it, so search both lists.
-    return (S.brands.clothing || []).concat(S.brands.toy || []);
+    var all = (S.brands.clothing || []).concat(S.brands.toy || []);
+    var plain = all.filter(function (b) { return !isMiscName(b.brand_name); });
+    return plain.length < all.length ? plain.concat([MISC]) : plain;
   }
   function brandById(id) {
+    if (id === "misc") return MISC;
     var all = (S.brands.clothing || []).concat(S.brands.toy || []);
     for (var i = 0; i < all.length; i++) if (String(all[i].id) === String(id)) return all[i];
     return null;
   }
   function brandTwin(b) {   // the same brand name in the other list (a brand that makes clothing and toys)
-    if (!b) return null;
+    if (!b || b.misc) return null;
     var other = b.item_type === "toy" ? "clothing" : "toy", n = b.brand_name.toLowerCase();
     return (S.brands[other] || []).filter(function (x) { return x.brand_name.toLowerCase() === n; })[0] || null;
   }
@@ -361,7 +379,7 @@
     var body = {
       batch_id: S.batch.id,
       item_type: it.type,
-      brand: b ? b.brand_name : null,
+      brand: b ? (b.misc ? miscRowName() : b.brand_name) : null,
       size: sizeValue() || null,
       category: it.type === "clothing" ? it.category : null,
       condition_restriction_at_grading: !!(b && b.condition_restriction === "new_or_like_new_only"),
@@ -401,6 +419,7 @@
     var it = S.item, list = S.brands[type] || [], name = String(rec.brand || "").toLowerCase();
     var b = list.filter(function (x) { return x.brand_name.toLowerCase() === name; })[0];
     if (!b && rec.brand) b = { id: "saved", brand_name: rec.brand, item_type: type, default_tier: rec.would_be_tier || rec.tier || "essentials", condition_restriction: null };
+    if (b && isMiscName(b.brand_name)) b = MISC;
     if (b) { it.brand = b; it.brandQ = b.brand_name; }
     if (type === "clothing") {
       it.category = rec.category || ""; it.catQ = it.category;
@@ -428,10 +447,10 @@
       it.note = rec.operator_item_notes || "";
       it.toyName = rec.graded_item_name || "";
     }
-    S.editing = rec; S.viewRec = null; S.errors = [];
+    S.editing = rec; S.viewRec = null; S.errors = []; S.errMode = "";
   }
   function afterSave() {
-    S.freedSku = ""; S.editing = null;
+    S.freedSku = ""; S.editing = null; S.errMode = ""; S.errors = [];
     return Promise.all([loadRecords(), loadNextSku()]).then(function () {
       var type = S.item.type;
       newItem(type);
@@ -449,7 +468,7 @@
   function saveKeep() {
     var it = S.item;
     S.errors = validate(false);
-    if (S.errors.length) { render(); return; }
+    if (S.errors.length) { S.errMode = "keep"; render(); return; }
     var sku = normSku(it.sku);
     S.busy = true; render();
     door("GET", "/grading_next_label_source?label_number=eq." + encodeURIComponent(sku) + "&select=label_number&limit=1")
@@ -459,7 +478,7 @@
           S.errors = [sku + " is already used. Check the sticker, or use " + S.nextSku + "."]; it.skuOpen = true;
           render(); throw null;
         }
-        var b = baseBody(false), def = it.brand.default_tier || "essentials";
+        var b = baseBody(false), def = it.brand.misc ? (it.half ? "essentials" : it.tier) : (it.brand.default_tier || "essentials");
         var tier = it.half ? "essentials" : it.tier;
         var r = tierRank(tier), d = tierRank(def);
         b.tier = tier;
@@ -483,7 +502,7 @@
   function saveDecline() {
     var it = S.item;
     S.errors = validate(true);
-    if (S.errors.length) { render(); return; }
+    if (S.errors.length) { S.errMode = "decline"; render(); return; }
     S.busy = true; render();
     var b = baseBody(true);
     b.tier_override_reason = null;
@@ -539,7 +558,8 @@
   }
   function pickBrand(b) {
     var it = S.item;
-    if (b.item_type && b.item_type !== it.type) setType(b.item_type); else it.typeSet = true;
+    if (b.misc) it.typeSet = false;   // Miscellaneous asks clothing or toy
+    else if (b.item_type && b.item_type !== it.type) setType(b.item_type); else it.typeSet = true;
     it.brand = b; it.brandQ = b.brand_name; it.noBrand = false;
     if (!it.half) it.tier = b.default_tier || "essentials";
   }
@@ -658,8 +678,8 @@
     }).join("") + "</div>";
   }
   function errorBox() {
-    if (!S.errors.length) return "";
-    return '<div class="ss-err" role="alert">' + S.errors.map(function (e) { return "<p>" + esc(e) + "</p>"; }).join("") + "</div>";
+    if (!S.errors.length) return '<div data-part="err"></div>';
+    return '<div data-part="err"><div class="ss-err" role="alert">' + S.errors.map(function (e) { return "<p>" + esc(e) + "</p>"; }).join("") + "</div></div>";
   }
   function recLine(r) {
     var kept = r.status === "accepted_at_grading", reasons = r.reject_reason || [];
@@ -729,7 +749,7 @@
     var rows = bl.rows.map(function (b) {
       var both = !(it.choice === "decline" && it.typeSet);
       return '<button type="button" class="ss-row' + (it.brand && it.brand.id === b.id ? " sel" : "") + '" data-act="brand" data-val="' + esc(b.id) + '">' + esc(b.brand_name) +
-        " <small>" + (both ? (b.item_type === "toy" ? "Toy · " : "Clothing · ") : "") + esc(TIER_LABEL[b.default_tier] || "") + (b.condition_restriction === "new_or_like_new_only" ? " · new or like new only" : "") + "</small></button>";
+        " <small>" + (b.misc ? "Clothing or toy, any tier" : (both ? (b.item_type === "toy" ? "Toy · " : "Clothing · ") : "") + esc(TIER_LABEL[b.default_tier] || "")) + (b.condition_restriction === "new_or_like_new_only" ? " · new or like new only" : "") + "</small></button>";
     }).join("");
     if (q.length >= 2 && !bl.exact && !(it.brand && it.brand.brand_name.toLowerCase() === q.toLowerCase())) {
       rows += '<button type="button" class="ss-row add" data-act="newbrand">+ Add "' + esc(q) + '" as a new brand</button>';
@@ -750,7 +770,7 @@
     var it = S.item, brandPicked = it.brand && !S.addBrand;
     var h = '<div data-q="brand"><label class="ss-lab" for="ss-brand">Brand</label>';
     if (brandPicked) {
-      h += pickedRow("brand-change", it.brand.brand_name, (it.brand.item_type === "toy" ? "Toy · " : "Clothing · ") + esc(TIER_LABEL[it.brand.default_tier] || "") + (it.brand.condition_restriction === "new_or_like_new_only" ? " · new or like new only" : ""));
+      h += pickedRow("brand-change", it.brand.brand_name, it.brand.misc ? "" : (it.brand.item_type === "toy" ? "Toy · " : "Clothing · ") + esc(TIER_LABEL[it.brand.default_tier] || "") + (it.brand.condition_restriction === "new_or_like_new_only" ? " · new or like new only" : ""));
       if (brandTwin(it.brand)) {
         h += '<p class="ss-hint">This brand makes clothing and toys. Which is this?</p>' +
           pills([{ value: "clothing", label: "Clothing" }, { value: "toy", label: "Toy" }], function (v) { return it.type === v; }, "brand-type", "two");
@@ -769,12 +789,12 @@
     var it = S.item;
     return '<div data-q="cat"><label class="ss-lab" for="ss-cat">Category <span class="ss-req">*</span></label>' +
       (it.category ? pickedRow("cat-change", it.category, "")
-        : '<input id="ss-cat" class="ss-inp" type="text" data-k="catQ" autocomplete="off" autocorrect="off" value="' + esc(it.catQ) + '">' +
+        : '<input id="ss-cat" class="ss-inp ss-need" type="text" data-k="catQ" autocomplete="off" autocorrect="off" value="' + esc(it.catQ) + '">' +
           '<div data-part="cats">' + viewCatBlock() + "</div>") + "</div>";
   }
   function nameField() {
     var it = S.item;
-    return '<div data-q="tn"><label class="ss-lab" for="ss-tn">Short name <span class="ss-req">*</span></label><input id="ss-tn" class="ss-inp" type="text" data-k="toyName" autocapitalize="sentences" placeholder="Like wooden train set" value="' + esc(it.toyName) + '"><p class="ss-hint">If it\'s declined, the email uses this to say what came back.</p></div>';
+    return '<div data-q="tn"><label class="ss-lab" for="ss-tn">Short name <span class="ss-req">*</span></label><input id="ss-tn" class="ss-inp' + (it.toyName.trim() ? "" : " ss-need") + '" type="text" data-k="toyName" autocapitalize="sentences" placeholder="Like wooden train set" value="' + esc(it.toyName) + '"><p class="ss-hint">If it\'s declined, the email uses this to say what came back.</p></div>';
   }
   function sizeField(optional) {
     var it = S.item;
@@ -794,9 +814,11 @@
     var ed = S.editing, edNum = ed ? S.records.indexOf(ed) + 1 : 0;
     var out = header(ed ? "Editing item " + edNum : "Sorting");
 
+    var total = totalCount();
+    out += '<div class="ss-itemhead">' + (ed ? "Editing item " + edNum : "Item " + (S.records.length + 1) + ' <small>of ' + total + "</small>") + "</div>";
     // 1. Brand, which tells the form clothing or toy (No brand asks it instead)
-    var first = '<div class="ss-card">' + brandField();
-    if (it.noBrand && !it.brand) {
+    var first = '<div class="ss-card' + (it.fresh && !ed ? " ss-itemcard" : "") + '">' + brandField();
+    if ((it.noBrand && !it.brand) || (it.brand && it.brand.misc)) {
       first += '<div data-q="dtype"><p class="ss-lab">Clothing or toy? <span class="ss-req">*</span></p>' +
         pills([{ value: "clothing", label: "Clothing" }, { value: "toy", label: "Toy" }], function (v) { return it.typeSet && it.type === v; }, "dtype", "two") + "</div>";
     }
@@ -805,6 +827,7 @@
     // 2. What it is: a clothing category, or a toy's short name
     first += (toy ? nameField() : catField()) + "</div>";
     out += first;
+    if (toy ? !it.toyName.trim() : !it.category) return out + errorBox() + footerLinks();
 
     // 3. Keep or decline
     out += '<div class="ss-card" data-q="choice"><p class="ss-lab">Keep it or decline it? <span class="ss-req">*</span></p>' +
@@ -841,7 +864,7 @@
     var tierCard = '<div class="ss-card" data-q="tier"><p class="ss-eyebrow">Because it\'s kept</p><div><p class="ss-lab">Tier <span class="ss-req">*</span></p>' +
       pills([{ value: "essentials", label: "Essentials" }, { value: "elevated", label: "Elevated" }, { value: "special", label: "Special" }],
         function (v) { return !it.half && it.tier === v; }, "tier", "three") +
-      '<p class="ss-hint">Picked for you from the brand (' + esc(TIER_LABEL[it.brand.default_tier] || "Essentials") + "). Change it if this piece is better or worse than usual.</p>" +
+      '<p class="ss-hint">' + (it.brand.misc ? "Miscellaneous has no usual tier, so pick the one that fits this piece." : "Picked for you from the brand (" + esc(TIER_LABEL[it.brand.default_tier] || "Essentials") + "). Change it if this piece is better or worse than usual.") + "</p>" +
       '<button type="button" class="ss-mini' + (it.half ? " sel" : "") + '" data-act="tier" data-val="half">' + (it.half ? "✓ " : "") + "Half credit</button>" +
       (it.half ? '<input class="ss-inp ss-gap" type="text" data-k="halfReason" placeholder="Why half? (optional, just for you)" value="' + esc(it.halfReason) + '">' : "") + "</div>" +
       (it.skuOpen
@@ -969,11 +992,21 @@
     if (S.screen === "closed") return viewClosed();
     return "";
   }
+  function recheck() {
+    // A warning stays only while it's still true: re-check after every tap or keystroke.
+    if (!S.errMode || S.screen !== "sort" || !S.item) return;
+    var keepOpen = S.item.skuOpen;
+    S.errors = validate(S.errMode === "decline");
+    S.item.skuOpen = keepOpen || S.item.skuOpen;
+    if (!S.errors.length) S.errMode = "";
+  }
   function render() {
     if (!root) return;
+    recheck();
     var a = document.activeElement, key = a && a.getAttribute ? a.getAttribute("data-k") : null, pos = null;
     try { pos = key ? a.selectionStart : null; } catch (e) { pos = null; }
     root.innerHTML = '<div class="ss-wrap" data-build="' + BUILD + '">' + view() + (S.toast ? '<div class="ss-toast" role="status">' + esc(S.toast) + "</div>" : "") + "</div>";
+    if (S.item && S.item.fresh && S.screen === "sort") S.item.fresh = false;   // the new-item flash plays once
     if (key) {
       var el = root.querySelector('[data-k="' + key + '"]');
       if (el) { el.focus(); try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) {} }
@@ -998,7 +1031,10 @@
     }
     if (k === "closeNote") { S.close.note = v; var np = root.querySelector('[data-part="note"]'); if (np) np.innerHTML = viewNote(); return; }
     var it = S.item; if (!it) return;
+    var hadName = !!(it.toyName || "").trim();
     it[k] = v;
+    if (k === "toyName" && hadName !== !!v.trim()) { render(); return; }   // shows or hides Keep or Decline
+    if (S.errMode) { recheck(); var eb = root.querySelector('[data-part="err"]'); if (eb) eb.outerHTML = errorBox(); }
     if (k === "brandQ") { if (it.brand && it.brand.brand_name !== v) it.brand = null; renderPart("brands"); }
     if (k === "catQ") {
       var was = it.category;
@@ -1151,6 +1187,15 @@
       ".ss-row:first-child{border-top:0}",
       ".ss-row.sel{background:#1f3a28;color:#fff;box-shadow:inset 0 0 0 2px #4caf73}",
       ".ss-row.add{color:#f6b49a}",
+      ".ss-list .ss-row:not(.sel){background:#2e2a28}",
+      ".ss-list .ss-row:not(.sel):not(.add)::after{content:'Tap to pick';flex:none;font-size:11.5px;font-weight:700;color:#161514;background:#f4efe9;border-radius:99px;padding:4px 9px;margin-left:4px}",
+      ".ss-list .ss-row:not(.sel) small{margin-left:auto}",
+      ".ss-inp.ss-need{border-color:#e8835f;box-shadow:0 0 0 3px rgba(232,131,95,.25)}",
+      ".ss-itemhead{margin:6px 0 -4px;font-family:'Instrument Serif',Georgia,serif;font-size:40px;line-height:1.05;color:#f4efe9}",
+      ".ss-itemhead small{font-size:22px;color:#bdb5ab}",
+      ".ss-itemcard{animation:ssItemIn .5s ease-out}",
+      "@keyframes ssItemIn{from{box-shadow:0 0 0 3px #e8835f;transform:translateY(8px)}to{box-shadow:0 0 0 0 rgba(232,131,95,0);transform:none}}",
+      "@media (prefers-reduced-motion:reduce){.ss-itemcard{animation:none}}",
       ".ss-row small{font-size:12px;color:#bdb5ab;font-weight:600;text-align:right}",
       ".ss-pills{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}",
       ".ss-pills.two{grid-template-columns:repeat(2,minmax(0,1fr))}",
