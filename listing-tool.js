@@ -427,20 +427,39 @@
 
   root.innerHTML =
     '<h1 class="ksl-title">List an item</h1>' +
-    '<p class="ksl-sub">Add a graded item to the live inventory.</p>' +
+    '<p class="ksl-sub">Type a SKU to start.</p>' +
 
+    /* S432 ONE SKU BOX (her S431 mockup). The form's own SKU field is MOVED into
+       #ksl-find-slot at build (below), so there is one SKU input on the page and
+       every existing reader of skuEl keeps working. The old Load box is gone. */
     '<div class="ksl-manage" id="ksl-manage">' +
-      '<input type="text" id="ksl-mng-sku" placeholder="KS-00000" ' +
-        'autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">' +
-      '<button type="button" class="ksl-manage-btn" id="ksl-mng-load">Load</button>' +
-      '<button type="button" class="ksl-manage-ghost" id="ksl-mng-returns">Returns / relist</button>' +
-      '<a href="#" class="ksl-manage-new ksl-hidden" id="ksl-mng-new">\u2190 New listing</a>' +
-      '<div class="ksl-manage-hint" id="ksl-manage-hint">Edit an existing item\u2019s photos, condition, status, bin, or featured flag.</div>' +
+      '<div class="ksl-find-slot" id="ksl-find-slot"></div>' +
+      '<div class="ksl-find-note" id="ksl-find-note"></div>' +
+      '<div class="ksl-find-actions">' +
+        '<button type="button" class="ksl-manage-ghost" id="ksl-new-item">Start a new item</button>' +
+        '<button type="button" class="ksl-find-clear" id="ksl-clear-form">Clear form</button>' +
+        '<button type="button" class="ksl-manage-ghost ksl-find-returns" id="ksl-mng-returns">Returns / relist</button>' +
+      '</div>' +
+      '<div class="ksl-find-count" id="ksl-find-count"></div>' +
     '</div>' +
     '<div class="ksl-restore ksl-hidden" id="ksl-restore">' +
       '<span>You have an unsaved draft from before.</span>' +
       '<span><button id="ksl-restore-no">Discard</button> ' +
       '<button class="ksl-restore-yes" id="ksl-restore-yes">Restore</button></span>' +
+    '</div>' +
+
+    '<div class="ksl-card ksl-choose ksl-hidden" id="ksl-choose"><h3>Clothing or toy?</h3>' +
+      '<div class="ksl-choose-row">' +
+        '<button type="button" class="ksl-choose-btn" data-choose="clothing">Clothing</button>' +
+        '<button type="button" class="ksl-choose-btn" data-choose="toy">Toy</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="ksl-card ksl-sorted ksl-hidden" id="ksl-sorted">' +
+      '<div class="ksl-sorted-top">' +
+        '<span class="ksl-sorted-ok"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5"/></svg> <span id="ksl-sorted-when">From sorting</span></span>' +
+        '<button type="button" class="ksl-sorted-edit" id="ksl-sorted-edit">Edit</button>' +
+      '</div>' +
+      '<div class="ksl-sorted-body" id="ksl-sorted-body"></div>' +
     '</div>' +
 
     '<div class="ksl-toggle">' +
@@ -473,7 +492,9 @@
       '</div>' +
     '</div>' +
 
-    '<div class="ksl-card ksl-details"><h3>Details</h3>' + detailsHtml +
+    '<div class="ksl-card ksl-details"><h3 id="ksl-details-title">Details</h3>' +
+      '<p class="ksl-type-wait">The details open once you pick clothing or toy.</p>' + detailsHtml +
+      '<p class="ksl-complete-line" id="ksl-complete-line" data-group="toy"></p>' +
     '</div>' +
 
     '<div class="ksl-card ksl-edit-panel ksl-hidden" id="ksl-edit-panel">' +
@@ -810,6 +831,7 @@
     root.querySelectorAll(".ksl-combo-input").forEach(function (ci) { ci.value = ""; });
     closeAllCombos();
     defaultCondition();        // next item starts on the "great" default
+    resetSorted();             // S432: unfold the "from sorting" fields, empty the summary
   }
 
   /* ---- FIX #6 2026-07-08: pull-down-from-top -> fresh blank listing ----- */
@@ -855,8 +877,8 @@
           !window.confirm("Start a new blank listing? This clears the item you're working on.")) return;
       clearItem();
       try { sessionStorage.removeItem(DRAFT_KEY); } catch (e) {}   // don't re-offer a restore
-      if (typeof prefillNextSku === "function") prefillNextSku();  // fresh form gets its next SKU
-      if (typeof armPhotoFirst === "function") armPhotoFirst();
+      // S432: back to the empty page (nothing loads by itself)
+      FORM_STATE = "empty"; paintForm(); setFindNote(""); refreshWaitingCount();
       window.scrollTo(0, 0);
     }
 
@@ -1708,7 +1730,7 @@
 
   submitBtn.addEventListener("click", function () {
     var bad = validate();
-    if (bad.length) { showToast("Check the highlighted fields", true); return; }
+    if (bad.length) { unfoldSorted(); showToast("Check the highlighted fields", true); return; }
     // S268 SKU FORMAT GUARD. The field SEEDS as "KS-" and several paths
     // deliberately leave it that way for manual entry (prefill auth error,
     // deploy window, no label at all). Nothing stopped that bare prefix being
@@ -2721,6 +2743,7 @@
         ? "Graded as: " + rec.size + " — pick the closest match"
         : "");
     }
+    buildSortedSummary(rec);   // S432: fold what came from sorting into one summary
   }
 
   function runLookup() {
@@ -2768,7 +2791,8 @@
     });
   }
 
-  if (skuEl) skuEl.addEventListener("blur", runLookup);
+  // S432: no lookup on blur any more. The one SKU box looks up on Find (button
+  // or Enter), which checks listed items first, then sorted ones (runFind).
 
   /* ---- ITEM-NAME AUTO-GENERATE ----------------------------------------- */
   /* Builds "Color Brand Category" from those fields, but STOPS once the
@@ -2895,6 +2919,12 @@ function titleCase(s) {
     if (nw)  nw.classList.toggle("ksl-hidden", !on);
     if (hint) hint.classList.toggle("ksl-hidden", on);
     if (on && rest) rest.classList.add("ksl-hidden");
+    // S432: edit mode shows the photos (the empty page hides them) and never the
+    // new-item chooser or the sorting summary
+    var ph = root.querySelector("[data-photos-card]");
+    if (on && ph) ph.classList.remove("ksl-hidden");
+    if (on) { var ch = $("ksl-choose"), so = $("ksl-sorted");
+      if (ch) ch.classList.add("ksl-hidden"); if (so) so.classList.add("ksl-hidden"); }
   }
 
   /* hosted photo_urls -> the three fixed slots (front/back/detail) + video.
@@ -2982,8 +3012,8 @@ function titleCase(s) {
     EDIT_MODE = false; editLocked = false; loadedRecord = null;
     hideLockBanner();
     clearItem();                       // wipes photos + fields; renders slots without make-primary
-    var mng = $("ksl-mng-sku"); if (mng) mng.value = "";
     setEditChrome(false);
+    FORM_STATE = "empty"; paintForm();   // S432: back to the empty page
   }
 
   /* (1c) edit-mode condition + resale. Recompute reuses RESALE_CONFIG (the same
@@ -3099,7 +3129,7 @@ function titleCase(s) {
   }
 
   function runManageLoad() {
-    var inp = $("ksl-mng-sku");
+    var inp = skuEl;   // S432: the one SKU box (the old #ksl-mng-sku is gone)
     var norm = normalizeLabel(inp ? inp.value : "");
     if (!norm) { showToast("Enter a KS label, e.g. KS-00001", true); return; }
     if (inp) inp.value = norm;
@@ -3327,6 +3357,8 @@ function titleCase(s) {
     if (mng) mng.classList.toggle("ksl-hidden", on);
     if (pnl) pnl.classList.toggle("ksl-hidden", !on);
     if (on && rest) rest.classList.add("ksl-hidden");
+    if (on) { var ch = $("ksl-choose"), so = $("ksl-sorted");   // S432
+      if (ch) ch.classList.add("ksl-hidden"); if (so) so.classList.add("ksl-hidden"); }
   }
 
   function enterLookupMode() {
@@ -3343,6 +3375,7 @@ function titleCase(s) {
     LOOKUP_MODE = false;
     lookupMember = null;
     setLookupChrome(false);
+    paintForm();   // S432: restore whatever state the page was in
   }
 
   function lookupEmpty(msg) {
@@ -3592,6 +3625,349 @@ function titleCase(s) {
     if (tierSelW) tierSelW.addEventListener("input", onEditTierChange);
   })();
 
+  /* ---- S432 THE ONE SKU BOX (her S431 mockup, approved) ------------------ */
+  /* https://claude.ai/artifact/9GQ5JnuGvJ1bc7FKJxcDos
+     Hers S431: nothing ever loads by itself (the old auto-fill of the oldest
+     sorted item caused many hiccups). One SKU box finds an item already listed
+     (opens the edit panel) or a sorted item waiting (fills the form). "Start a
+     new item" gets the next fresh number and asks clothing or toy first. What
+     came from sorting folds into one green summary with Edit. Bin location
+     sits last; completeness is one quiet line under it. Hers S432: the empty
+     page shows only the waiting count, not a list.
+     ⚠ FOLDED FIELDS USE .ksl-folded, NEVER .ksl-hidden: collectFields() drops
+     any field inside .ksl-hidden, so a folded field must stay "visible" to it. */
+  var FORM_STATE = "empty";      // "empty" | "new" | "sorted" | "draft"
+  var newTypePicked = false;     // new item: has she answered clothing or toy?
+  var SORTED_FOLDED = false;     // sorted item: summary showing, fields folded
+  var FIND_BUSY = false;
+  var FOLD_KEYS = ["brand", "category", "clothing_size", "toy_age_range", "tier", "retail_value", "item_name"];
+
+  function setFindNote(html) {
+    var el = $("ksl-find-note");
+    if (!el) return;
+    el.innerHTML = html || "";
+    el.style.display = html ? "" : "none";
+  }
+
+  function postFn(url, body) {
+    return getToken().then(function (t) {
+      return fetch(url, {
+        method: "POST",
+        headers: {
+          "x-ms-token": t, "content-type": "application/json",
+          "apikey": ANON, "authorization": "Bearer " + ANON
+        },
+        body: JSON.stringify(body)
+      });
+    }).then(function (r) {
+      return r.json().then(function (j) { return { ok: r.ok, status: r.status, j: j }; },
+                           function () { return { ok: false, status: r.status, j: null }; });
+    });
+  }
+
+  function paintForm() {
+    if (EDIT_MODE || LOOKUP_MODE) return;
+    var open = FORM_STATE !== "empty";
+    var waiting = FORM_STATE === "new" && !newTypePicked;
+    var ph = root.querySelector("[data-photos-card]");
+    var det = root.querySelector(".ksl-details");
+    if (ph) ph.classList.toggle("ksl-hidden", !open);
+    if (det) { det.classList.toggle("ksl-hidden", !open); det.classList.toggle("is-waiting", waiting); }
+    if (submitBtn) submitBtn.classList.toggle("ksl-hidden", !open || waiting);
+    var ch = $("ksl-choose");
+    if (ch) ch.classList.toggle("ksl-hidden", FORM_STATE !== "new");
+    root.querySelectorAll("[data-choose]").forEach(function (b) {
+      b.classList.toggle("is-active", newTypePicked && b.getAttribute("data-choose") === itemType);
+    });
+    var so = $("ksl-sorted");
+    if (so) so.classList.toggle("ksl-hidden", !(FORM_STATE === "sorted" && SORTED_FOLDED));
+    var ttl = $("ksl-details-title");
+    if (ttl) ttl.textContent = (FORM_STATE === "sorted") ? "Still needed" : "Details";
+    paintCompleteLine();
+  }
+
+  function fieldEl(key) { return root.querySelector('.ksl-field[data-field="' + key + '"]'); }
+
+  // completeness: one quiet line; the pills open only on Change
+  function paintCompleteLine() {
+    var line = $("ksl-complete-line");
+    var fld = fieldEl("is_complete");
+    if (!line || !fld) return;
+    var inp = root.querySelector('[data-key="is_complete"]');
+    var v = inp ? inp.value : "";
+    var txt = (v === "complete") ? "All the pieces: yes"
+            : (v === "missing") ? "All the pieces: no, some are missing"
+            : "All the pieces: not answered";
+    txt += fld.classList.contains("ksl-cued") ? ", from sorting." : ".";
+    var folded = fld.classList.contains("ksl-folded");
+    line.innerHTML = esc(txt) + (folded ? ' <button type="button" class="ksl-find-inline" data-complete-change>Change</button>' : "");
+  }
+
+  function resetSorted() {
+    FOLD_KEYS.forEach(function (k) { var f = fieldEl(k); if (f) f.classList.remove("ksl-folded"); });
+    var c = fieldEl("is_complete"); if (c) c.classList.add("ksl-folded");
+    SORTED_FOLDED = false;
+    var body = $("ksl-sorted-body"); if (body) body.innerHTML = "";
+    var ttl = $("ksl-details-title"); if (ttl) ttl.textContent = "Details";
+  }
+
+  function unfoldSorted() {
+    FOLD_KEYS.forEach(function (k) { var f = fieldEl(k); if (f) f.classList.remove("ksl-folded"); });
+    SORTED_FOLDED = false;
+    paintForm();
+  }
+
+  function sortedWhen(rec) {
+    var raw = rec.graded_at || rec.sorted_at || rec.created_at || rec.updated_at || null;
+    if (!raw) return "From sorting";
+    var d = new Date(raw);
+    if (isNaN(d.getTime())) return "From sorting";
+    return "From sorting, " + d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
+
+  function buildSortedSummary(rec) {
+    resetSorted();
+    var toy = itemType === "toy";
+    var folded = [];
+    FOLD_KEYS.forEach(function (k) {
+      if (k === "item_name" && !toy) return;          // clothing keeps its composed name in Still needed
+      var f = fieldEl(k);
+      if (!f || !f.classList.contains("ksl-cued") || !fieldHasValue(k)) return;
+      f.classList.add("ksl-folded");
+      folded.push(k);
+    });
+    if (!folded.length) { paintForm(); return; }
+    var val = function (k) {
+      if (folded.indexOf(k) === -1) return "";
+      var e = root.querySelector('[data-key="' + k + '"]');
+      return e ? String(e.value).trim() : "";
+    };
+    var top = [toy ? "Toy" : "Clothing"];
+    if (val("brand")) top.push(esc(val("brand")));
+    var main = toy ? val("item_name") : val("category");
+    if (main) top.push("<b>" + esc(main) + "</b>");
+    var low = [];
+    if (val(toy ? "toy_age_range" : "clothing_size")) low.push(esc(val(toy ? "toy_age_range" : "clothing_size")));
+    var tr = val("tier");
+    if (tr) low.push(esc(tr.charAt(0).toUpperCase() + tr.slice(1)));
+    var rv = val("retail_value");
+    if (rv) low.push("$" + esc(rv) + (toy ? " average price" : " retail"));
+    var body = $("ksl-sorted-body");
+    if (body) body.innerHTML = top.join(" \u00b7 ") + (low.length ? "<br>" + low.join(" \u00b7 ") : "");
+    var when = $("ksl-sorted-when"); if (when) when.textContent = sortedWhen(rec);
+    SORTED_FOLDED = true;
+    paintForm();
+  }
+
+  function dropDraft() { try { sessionStorage.removeItem(DRAFT_KEY); } catch (e) {} }
+  function restoreBannerOff() { var rb = $("ksl-restore"); if (rb) rb.classList.add("ksl-hidden"); }
+
+  function runFind() {
+    if (LOOKUP_MODE || FIND_BUSY || !skuEl) return;
+    var norm = normalizeLabel(skuEl.value);
+    if (!norm) { setFindNote("Type a SKU, like KS-01207."); return; }
+    if (EDIT_MODE) {
+      exitEditMode();
+    } else if (hasContent() &&
+               !window.confirm("Open " + norm + "? This clears the item you're working on.")) {
+      return;
+    }
+    clearItem(); dropDraft(); restoreBannerOff();
+    skuEl.value = norm;
+    FORM_STATE = "empty"; newTypePicked = false; paintForm();
+    FIND_BUSY = true;
+    var btn = $("ksl-find-btn");
+    if (btn) { btn.disabled = true; btn.textContent = "Finding\u2026"; }
+    setFindNote("");
+    // 1. already listed? -> the edit panel
+    postFn(FN_EDIT, { action: "load", sku: norm }).then(function (res) {
+      if (res.ok && res.j && res.j.ok && res.j.found && res.j.record) {
+        enterEditMode(res.j.record);
+        skuEl.value = norm;
+        setFindNote("Already listed. Make your changes below.");
+        return null;
+      }
+      if (!(res.ok && res.j && res.j.ok && res.j.found === false)) throw res;
+      // 2. sorted and waiting? -> fill the form
+      return postFn(FN_LOOKUP, { label: norm });
+    }).then(function (res) {
+      if (!res) return;
+      if (res.ok && res.j && res.j.ok && res.j.found && res.j.record) {
+        FORM_STATE = "sorted"; newTypePicked = true;
+        applyRecord(res.j.record);       // builds the summary at its end
+        lastLookup = norm;
+        paintForm();
+        armPhotoFirst();
+        return;
+      }
+      if (res.ok && res.j && res.j.ok && res.j.found === false) {
+        setFindNote("Nothing sorted or listed under " + esc(norm) + ". " +
+          '<button type="button" class="ksl-find-inline" data-new-with="' + esc(norm) + '">List it as a new item</button>');
+        return;
+      }
+      throw res;
+    }).catch(function (e) {
+      setFindNote("Couldn't look that up. Try again.");
+      console.error("[find]", e);
+    }).then(function () {
+      FIND_BUSY = false;
+      if (btn) { btn.disabled = false; btn.textContent = "Find"; }
+    });
+  }
+
+  function startNew(fixedSku) {
+    if (LOOKUP_MODE) return;
+    if (EDIT_MODE) {
+      exitEditMode();
+    } else if (hasContent() &&
+               !window.confirm("Start a new item? This clears the item you're working on.")) {
+      return;
+    }
+    clearItem(); dropDraft(); restoreBannerOff();
+    FORM_STATE = "new"; newTypePicked = false;
+    if (fixedSku) {
+      skuEl.value = fixedSku;
+      lastLookup = fixedSku;
+      setFindNote("This number wasn't sorted, so you fill in everything.");
+    } else {
+      setFindNote("New number. This item wasn't sorted, so you fill in everything.");
+      prefillNextSku(true);              // FRESH only: never pulls a sorted item
+    }
+    paintForm();
+    var ch = $("ksl-choose");
+    if (ch) { try { ch.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {} }
+  }
+
+  function pickType(t) {
+    if (t !== "toy" && t !== "clothing") return;
+    if (newTypePicked && t === itemType) return;
+    if (newTypePicked && hasContent() &&
+        !window.confirm("Switching to " + (t === "toy" ? "Toy" : "Clothing") + " will clear this item. Continue?")) return;
+    var keep = skuEl ? skuEl.value : "";
+    if (newTypePicked) { clearItem(); if (skuEl) skuEl.value = keep; lastLookup = keep; }
+    itemType = t; newTypePicked = true;
+    applyType(); paintForm(); saveDraft();
+    armPhotoFirst();
+  }
+
+  function clearForm() {
+    if (LOOKUP_MODE) return;
+    if (EDIT_MODE) {
+      exitEditMode();
+    } else {
+      if (hasContent() && !window.confirm("Clear this item?")) return;
+      clearItem(); dropDraft(); restoreBannerOff();
+      FORM_STATE = "empty"; newTypePicked = false; paintForm();
+    }
+    if (skuEl) skuEl.value = "KS-";
+    setFindNote("");
+    refreshWaitingCount();
+    window.scrollTo(0, 0);
+  }
+
+  // the waiting count (hers S432: count only, no list). next_label is the same
+  // read the page made on every open before; only its count is used now.
+  function refreshWaitingCount() {
+    var el = $("ksl-find-count");
+    if (!el) return;
+    postFn(FN_LOOKUP, { action: "next_label" }).then(function (res) {
+      if (!(res.ok && res.j && res.j.ok)) { el.textContent = ""; return; }
+      var n = (res.j.mode === "graded" && typeof res.j.remaining === "number") ? res.j.remaining : 0;
+      el.textContent = n ? (n + (n === 1 ? " item waiting to list" : " items waiting to list"))
+                         : "Nothing waiting to list";
+    }).catch(function (e) { el.textContent = ""; console.error("[waiting count]", e); });
+  }
+
+  /* build-time moves: the SKU field into the find card, bin location last,
+     then the completeness line and the completeness pills under it */
+  (function placeFields() {
+    var slot = $("ksl-find-slot");
+    var skuFld = fieldEl("sku");
+    if (slot && skuFld && skuEl) {
+      slot.appendChild(skuFld);
+      var row = document.createElement("div");
+      row.className = "ksl-find-row";
+      skuEl.parentNode.insertBefore(row, skuEl);
+      row.appendChild(skuEl);
+      var fb = document.createElement("button");
+      fb.type = "button"; fb.id = "ksl-find-btn"; fb.className = "ksl-manage-btn"; fb.textContent = "Find";
+      row.appendChild(fb);
+    }
+    var det = root.querySelector(".ksl-details");
+    var bin = fieldEl("bin_location"), line = $("ksl-complete-line"), comp = fieldEl("is_complete");
+    if (det && bin) det.appendChild(bin);
+    if (det && line) det.appendChild(line);
+    if (det && comp) { det.appendChild(comp); comp.classList.add("ksl-folded"); }
+  })();
+
+  (function injectFindCss() {
+    if (document.getElementById("ksl-find-css")) return;
+    var st = document.createElement("style");
+    st.id = "ksl-find-css";
+    st.textContent =
+      "#ks-list-app .ksl-toggle{display:none!important}" +
+      "#ks-list-app .ksl-field.ksl-folded{display:none!important}" +
+      "#ks-list-app .ksl-sku-note{display:none!important}" +
+      "#ks-list-app .ksl-manage{display:flex;flex-direction:column;align-items:stretch;gap:10px}" +
+      "#ks-list-app .ksl-find-slot .ksl-field{margin:0;max-width:none}" +
+      "#ks-list-app .ksl-find-row{display:flex;gap:10px;align-items:stretch}" +
+      "#ks-list-app .ksl-find-row input{flex:1 1 auto;min-width:0;font-size:17px;padding:12px 14px;text-transform:uppercase}" +
+      "#ks-list-app .ksl-find-row .ksl-manage-btn{flex:0 0 auto;min-height:48px;padding:0 20px;font-size:1rem}" +
+      "#ks-list-app .ksl-find-note{font-size:.86rem;opacity:.85;line-height:1.4}" +
+      "#ks-list-app .ksl-find-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}" +
+      "#ks-list-app .ksl-find-actions .ksl-manage-ghost{min-height:46px}" +
+      "#ks-list-app .ksl-find-returns{margin-left:auto}" +
+      "#ks-list-app .ksl-find-clear,#ks-list-app .ksl-find-inline{background:none;border:0;padding:8px 0;color:var(--ksl-btn);font:inherit;font-weight:600;text-decoration:underline;cursor:pointer}" +
+      "#ks-list-app .ksl-find-inline{padding:0}" +
+      "#ks-list-app .ksl-find-count{font-size:.86rem;opacity:.7}" +
+      "#ks-list-app .ksl-find-count:empty,#ks-list-app .ksl-find-note:empty{display:none}" +
+      "#ks-list-app .ksl-choose-row{display:flex;gap:10px}" +
+      "#ks-list-app .ksl-choose-btn{flex:1;min-height:60px;padding:16px 10px;border:1px solid rgba(255,255,255,.22);border-radius:14px;background:rgba(255,255,255,.04);color:inherit;font:inherit;font-size:1.15rem;font-weight:600;cursor:pointer}" +
+      "#ks-list-app .ksl-choose-btn.is-active{border-color:#5DA868;background:#2F4A33;color:#D9F2DC}" +
+      "#ks-list-app .ksl-sorted{border-color:#3E6B45!important}" +
+      "#ks-list-app .ksl-sorted-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 8px}" +
+      "#ks-list-app .ksl-sorted-ok{display:flex;align-items:center;gap:6px;color:#8FD19A;font-size:.9rem;font-weight:600}" +
+      "#ks-list-app .ksl-sorted-edit{min-height:40px;padding:8px 14px;border:1px solid rgba(255,255,255,.22);border-radius:10px;background:transparent;color:inherit;font:inherit;font-weight:600;cursor:pointer}" +
+      "#ks-list-app .ksl-sorted-body{font-size:1rem;line-height:1.5}" +
+      "#ks-list-app .ksl-type-wait{display:none;margin:0;font-size:.86rem;opacity:.7}" +
+      "#ks-list-app .ksl-details.is-waiting .ksl-type-wait{display:block}" +
+      "#ks-list-app .ksl-details.is-waiting>.ksl-field,#ks-list-app .ksl-details.is-waiting>.ksl-complete-line{display:none!important}" +
+      "#ks-list-app .ksl-complete-line{grid-column:1/-1;flex-basis:100%;width:100%;margin:4px 0 0;font-size:.84rem;opacity:.75}" +
+      "#ks-list-app .ksl-details>.ksl-field[data-field=\"is_complete\"]{grid-column:1/-1;flex-basis:100%;max-width:100%}";
+    document.head.appendChild(st);
+  })();
+
+  (function wireFind() {
+    var fb = $("ksl-find-btn");
+    if (fb) fb.addEventListener("click", runFind);
+    if (skuEl) skuEl.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); runFind(); }
+    });
+    var nb = $("ksl-new-item"); if (nb) nb.addEventListener("click", function () { startNew(null); });
+    var cb = $("ksl-clear-form"); if (cb) cb.addEventListener("click", clearForm);
+    root.querySelectorAll("[data-choose]").forEach(function (b) {
+      b.addEventListener("click", function () { pickType(b.getAttribute("data-choose")); });
+    });
+    var ed = $("ksl-sorted-edit"); if (ed) ed.addEventListener("click", unfoldSorted);
+    var note = $("ksl-find-note");
+    if (note) note.addEventListener("click", function (e) {
+      var b = e.target.closest ? e.target.closest("[data-new-with]") : null;
+      if (b) startNew(b.getAttribute("data-new-with"));
+    });
+    root.addEventListener("click", function (e) {
+      if (!e.target.closest) return;
+      if (e.target.closest("[data-complete-change]")) {
+        var c = fieldEl("is_complete"); if (c) c.classList.remove("ksl-folded");
+        paintCompleteLine();
+        return;
+      }
+      if (e.target.closest('[data-pill="is_complete"]')) setTimeout(paintCompleteLine, 0);
+    });
+  })();
+
+  paintForm();
+  setFindNote("");
+
   /* ---- INIT ------------------------------------------------------------ */
   applyType();
   if (hasDraft()) {
@@ -3602,12 +3978,13 @@ function titleCase(s) {
       restoreDraft();
       nameTouched = true;
       rb.classList.add("ksl-hidden");
+      FORM_STATE = "draft"; newTypePicked = true; paintForm();   // S432
     });
     $("ksl-restore-no").addEventListener("click", function () {
       try { sessionStorage.removeItem(DRAFT_KEY); } catch (e) {}
       rb.classList.add("ksl-hidden");
-      prefillNextSku();   // discarding a draft must seed the next SKU (was: stuck on "KS-" until refresh)
-      armPhotoFirst();    // ...and re-arm the photos-first nudge, mirroring the no-draft init path
+      // S432: discarding a draft leaves the page empty (nothing loads by itself)
+      FORM_STATE = "empty"; paintForm();
     });
   }
   // fetch controlled vocab, then fill the remote selects (Path B, live read).
@@ -3626,15 +4003,16 @@ function titleCase(s) {
       var editParam = null;
       try { editParam = new URLSearchParams(window.location.search).get("edit"); } catch (e) {}
       if (editParam) {
-        var mng = $("ksl-mng-sku");
-        if (mng) mng.value = editParam;
+        if (skuEl) skuEl.value = editParam;   // S432: one SKU box
         runManageLoad();
         return;
       }
       // Auto-advance the SKU only when there's no draft waiting to restore
       // (a draft owns the SKU; the restore banner handles it). Runs after
       // option_lists settles so the graded-data pull writes into ready selects.
-      if (!hasDraft()) { prefillNextSku(); armPhotoFirst(); }
+      // S432 HERS: nothing ever loads by itself. The page opens empty and shows
+      // only the waiting count; she types a SKU or taps Start a new item.
+      refreshWaitingCount();
     });
   // warm the token early so first upload is instant
   getToken().catch(function () {});
