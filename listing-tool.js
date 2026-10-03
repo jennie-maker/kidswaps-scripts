@@ -4065,7 +4065,9 @@ function titleCase(s) {
     toy_washability: { cols: 2,     src: function () { return [{ value: "wipeable", display_label: "Wipeable" }, { value: "washable", display_label: "Washable" }]; } },
     tier:            { cols: 3,     src: function () { return [{ value: "essentials", display_label: "Essentials" }, { value: "elevated", display_label: "Elevated" }, { value: "special", display_label: "Special" }]; } },
     condition_grade: { cols: 2,     src: function () { return OPTION_LISTS.condition_grade || []; } },
-    occasion:        { cols: 2,     src: function () { return OPTION_LISTS.occasion || []; } }
+    occasion:        { cols: 2,     src: function () { return OPTION_LISTS.occasion || []; } },
+    // hers S433: two taps instead of typing; spring and fall not needed
+    season:          { cols: 2,     src: function () { return [{ value: "summer", display_label: "Summer" }, { value: "winter", display_label: "Winter" }]; } }
   };
   // Hers S433: categories run from what the closet holds most of down to the
   // least (inventory counts read S433). A category not on this list goes last.
@@ -4191,11 +4193,21 @@ function titleCase(s) {
       ? tapDoneHtml("brand", v || "No brand", itemType === "toy" ? "Toy" : "Clothing")
       : "";
   }
+  // hers S433: the price and bin location boxes turn green once filled in
+  function paintFilled() {
+    ["retail_value", "bin_location"].forEach(function (k) {
+      var el = root.querySelector('[data-key="' + k + '"]');
+      if (el) el.classList.toggle("ksl-filled", !!String(el.value || "").trim());
+    });
+  }
   function paintTaps() {
     if (!root || !TAP) return;
     Object.keys(TAP).forEach(paintTap);
     paintBrandTap();
+    paintFilled();
   }
+  root.addEventListener("change", paintFilled);
+  root.addEventListener("focusout", function () { setTimeout(paintFilled, 0); });
 
   function fieldVisible(f) {
     return f && !f.classList.contains("ksl-hidden") && !f.classList.contains("ksl-folded") && f.offsetParent !== null;
@@ -4403,6 +4415,9 @@ function titleCase(s) {
       "#ks-list-app .ksl-details>.ksl-field>.ksl-label{min-height:0!important}" +
       "#ks-list-app .ksl-tapfield>select,#ks-list-app .ksl-tapfield>.ksl-combo-wrap,#ks-list-app .ksl-tapfield>.ksl-pills{display:none!important}" +
       "#ks-list-app .ksl-field.is-tapped>.ksl-brand-wrap{display:none!important}" +
+      "#ks-list-app .ksl-tapfield>input[data-key='season']{display:none!important}" +
+      "#ks-list-app input.ksl-filled{background:#1f3a28!important;color:#fff!important;border-color:#4caf73!important;box-shadow:inset 0 0 0 1px #4caf73!important}" +
+      "#ks-list-app [data-field='toy_age_range'] .ksl-pill.is-active{background:#1f3a28!important;color:#fff!important;border-color:#4caf73!important;box-shadow:inset 0 0 0 2px #4caf73!important}" +
       "#ks-list-app .ksl-tap:empty{display:none}" +
       "#ks-list-app .ksl-tap-grid{display:grid;gap:8px;grid-template-columns:repeat(3,minmax(0,1fr))}" +
       "#ks-list-app .ksl-tap-grid.c2{grid-template-columns:repeat(2,minmax(0,1fr))}" +
