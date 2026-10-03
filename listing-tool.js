@@ -406,7 +406,7 @@
     return '<div class="ksl-field" data-field="' + f.key + '" data-group="' + f.group + '">' +
              (f.paste
                ? '<div class="ksl-labelrow"><label class="ksl-label">' + f.label + reqMark + '</label>' +
-                 '<button type="button" class="ksl-paste" data-paste="' + f.key + '">Paste</button></div>'
+                 '<button type="button" class="ksl-paste" data-paste="' + f.key + '">Replace</button></div>'
                : '<label class="ksl-label">' + f.label + reqMark + '</label>') +
              inner + hint +
            '</div>';
@@ -523,12 +523,12 @@
       '</div>' +
       '<div class="ksl-field">' +
         '<div class="ksl-labelrow"><label class="ksl-label">Item name</label>' +
-          '<button type="button" class="ksl-paste" data-paste-id="ksl-edit-name">Paste</button></div>' +
+          '<button type="button" class="ksl-paste" data-paste-id="ksl-edit-name">Replace</button></div>' +
         '<textarea id="ksl-edit-name" rows="3" placeholder="item name"></textarea>' +
       '</div>' +
       '<div class="ksl-field">' +
         '<div class="ksl-labelrow"><label class="ksl-label">Description</label>' +
-          '<button type="button" class="ksl-paste" data-paste-id="ksl-edit-desc">Paste</button></div>' +
+          '<button type="button" class="ksl-paste" data-paste-id="ksl-edit-desc">Replace</button></div>' +
         '<textarea id="ksl-edit-desc" rows="8" placeholder="member-facing description"></textarea>' +
       '</div>' +
       '<div class="ksl-field">' +
@@ -2123,9 +2123,10 @@
     var q = (inp.value || "").trim();
     var ql = q.toLowerCase();
     var list = brandPool();      // S433: both lists until the brand decides the type
+    // S433: nothing lists until she types a letter (a 40-row list buried the box)
     var matches = q
       ? list.filter(function (b) { return (b.brand_name || "").toLowerCase().indexOf(ql) !== -1; })
-      : list.slice();
+      : [];
     // Hers S433: a brand whose name starts with what she typed comes first,
     // and inside that, the brands she has the most of (counts read S433).
     var rankB = function (b) { var i = BRAND_RANK.indexOf(b.brand_name); return i < 0 ? 999 : i; };
@@ -2140,7 +2141,7 @@
       var n = String(x.b.brand_name || "").localeCompare(String(y.b.brand_name || ""));
       return n || x.i - y.i;
     }).map(function (o) { return o.b; });
-    matches = matches.slice(0, 40);   // keep a long list usable
+    matches = matches.slice(0, 8);    // S433: about what fits above the keyboard
     brandMatches = matches;
     var hasExact = !!q && list.some(function (b) {
       return (b.brand_name || "").toLowerCase() === ql;
@@ -4204,7 +4205,10 @@ function titleCase(s) {
     if (ae && ae !== document.body && /^(INPUT|TEXTAREA)$/.test(ae.tagName) && root.contains(ae)) { try { ae.blur(); } catch (e) {} }
   }
   function scrollToEl(el) {
-    var y = el.getBoundingClientRect().top + window.pageYOffset - 16;
+    // S433: land the question well below the top edge. On her iPhone the
+    // page runs under the clock and Safari's top bar, so -16 hid the
+    // question it scrolled to (gender and tier looked skipped).
+    var y = el.getBoundingClientRect().top + window.pageYOffset - 100;
     try { window.scrollTo({ top: y, behavior: "smooth" }); } catch (e) { window.scrollTo(0, y); }
   }
   function schemaOf(key) { return SCHEMA.filter(function (f) { return f.key === key; })[0] || null; }
@@ -4308,6 +4312,15 @@ function titleCase(s) {
     var t = e.target; if (!t || !t.getAttribute) return;
     if (t.getAttribute("data-key") === "brand" || t.getAttribute("data-tap-q")) slideUp(t);
   });
+  // coming back to the page (after checking the tag in another app) with the
+  // Brand box still selected: slide it back to the top
+  function slideBackIfOpen() {
+    var a = document.activeElement;
+    if (a && a.getAttribute && root.contains(a) && (a.getAttribute("data-key") === "brand" || a.getAttribute("data-tap-q"))) slideUp(a);
+  }
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) slideBackIfOpen(); });
+  window.addEventListener("pageshow", slideBackIfOpen);
+  window.addEventListener("focus", slideBackIfOpen);
   root.addEventListener("focusout", function (e) {
     var t = e.target; if (!t || !t.getAttribute) return;
     if (t.getAttribute("data-key") === "brand" || t.getAttribute("data-tap-q")) {
