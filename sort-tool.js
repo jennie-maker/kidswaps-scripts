@@ -17,11 +17,14 @@
    name is in; list rows to tap look different from the typing box; warnings clear as soon as they're fixed.
    v9 (S430, hers): tiers aren't tied to brands. No tier is picked for you, nothing is saved as an
    upgrade or downgrade, a new brand isn't asked its tier. The preview's gold box sits above the
-   placeholder, as in the real email. Finishing waits until the bag has really closed. */
+   placeholder, as in the real email. Finishing waits until the bag has really closed.
+   v10 (S430, hers): the clothing count moves on to the toy count by itself; a search box (brand,
+   category, member) scrolls to the top of the screen so its list shows above the keyboard; the finish
+   screen keeps only what changes from bag to bag. */
 (function () {
   "use strict";
 
-  var BUILD = "sort-tool S430 v9";
+  var BUILD = "sort-tool S430 v10";
   var ROOT_ID = "ks-sort-app";
   var BASE = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1";
   var DOOR = BASE + "/grading-db";
@@ -979,17 +982,22 @@
       "The middle paragraph and the decline lines are left out until the database writes them for both the email and this preview.</p></div>";
   }
   function viewClose() {
-    var c = creditSummary();
-    return '<div class="ss-head"><p class="ss-eyebrow">' + S.records.length + " of " + totalCount() + " items sorted</p><h1 class=\"ss-h1\">Finish " + esc(firstOf(S.member)) + "'s bag</h1>" +
-      '<p class="ss-sub">Her credits land and her email goes out as soon as you finish. To stop for now, just leave the page; the bag stays open.</p></div>' +
-      '<div class="ss-card"><div class="ss-sum"><span>Kept</span><b>' + c.kept + '</b></div><div class="ss-sum"><span>Declined</span><b>' + c.dec + "</b></div>" +
-      '<div class="ss-sum"><span>Credits</span><b>' + esc(c.text) + '</b></div><div class="ss-sum"><span>Plan</span><b>' + esc(plainPlan(S.member && S.member.plan)) + "</b></div></div>" +
-      '<div class="ss-card"><label class="ss-lab" for="ss-pn">A personal note in her email <span class="ss-opt">optional</span></label>' +
-      '<textarea id="ss-pn" class="ss-inp big" data-k="closeNote" autocapitalize="sentences">' + esc(S.close.note) + "</textarea>" +
-      '<p class="ss-hint">The Bag Processed email goes to ' + esc(S.member ? S.member.email : "her") + ". Check S27 is on in Make before you finish.</p></div>" +
-      viewEmail() + errorBox() +
+    // Only what changes from bag to bag (hers, S430): who, the counts, the subject line, the credits, her note.
+    var c = creditSummary(), name = titleName(S.member && S.member.first_name), d = bagDate();
+    var paused = S.member && S.member.status === "paused";
+    var subject = "Hi " + (name || "there") + ", we just finished going through your " + (d ? MONTHS[d.getMonth()] + " " : "") + "bag";
+    return '<div class="ss-head"><p class="ss-eyebrow">' + S.records.length + " of " + totalCount() + " sorted</p><h1 class=\"ss-h1\">Finish " + esc(firstOf(S.member)) + "'s bag</h1>" +
+      '<p class="ss-sub">' + c.kept + " kept · " + c.dec + " declined · " + esc(plainPlan(S.member && S.member.plan)) + (paused ? " · paused" : "") + "</p></div>" +
+      '<div class="ss-card ss-fin">' +
+      (c.kept
+        ? '<div><p class="ss-k">Subject</p><p class="ss-fin-subj">' + esc(subject) + "</p></div>" +
+          '<div class="ss-fin-gold"><p class="ss-k">She earns</p><p>' + esc(creditsPhrase()) + "</p></div>"
+        : '<p class="ss-hint">Nothing kept, so she gets the All Declined email.</p>') +
+      '<div><label class="ss-lab" for="ss-pn">Add a note to her email <span class="ss-opt">optional</span></label>' +
+      '<textarea id="ss-pn" class="ss-inp" rows="2" data-k="closeNote" autocapitalize="sentences">' + esc(S.close.note) + "</textarea></div>" +
+      "</div>" + errorBox() +
       '<button type="button" class="ss-btn" data-act="close"' + (S.busy ? " disabled" : "") + ">" + (S.busy ? "Sending…" : "Finish and send her credits") + "</button>" +
-      '<button type="button" class="ss-btn ghost" data-act="back-to-items">Back to the items</button>';
+      '<button type="button" class="ss-link ss-back" data-act="back-to-items">Back to the items</button>';
   }
   function viewClosed() {
     var s = S.closedSummary || { name: "Her", credits: { total: 0 } };
@@ -1043,6 +1051,13 @@
     if (S.screen === "start") {
       S.start[k] = v;
       if (k === "memberQ") { S.start.member = null; searchMembers(); }
+      if (k === "clothing") {
+        // A one-digit count moves on after a short pause (so 12 can still be typed); two digits move on at once.
+        clearTimeout(S.ccTimer);
+        if (/^\d+$/.test(v)) S.ccTimer = setTimeout(function () {
+          var t = document.getElementById("ss-tc"); if (t) { t.focus(); try { t.select(); } catch (er) {} }
+        }, v.length >= 2 ? 0 : 900);
+      }
       return;
     }
     if (k === "closeNote") { S.close.note = v; var np = root.querySelector('[data-part="note"]'); if (np) np.innerHTML = viewNote(); return; }
@@ -1082,7 +1097,10 @@
       case "member": S.start.member = S.start.members[Number(val)]; S.start.memberQ = S.start.member.email; S.start.members = []; break;
       case "member-clear": S.start.member = null; break;
       case "start": startBag(); return;
-      case "resume": S.screen = "sort"; newItem((S.records.length && S.records[S.records.length - 1].item_type) || "clothing"); break;
+      case "resume":
+        newItem((S.records.length && S.records[S.records.length - 1].item_type) || "clothing");
+        S.screen = S.records.length >= totalCount() && totalCount() > 0 ? "close" : "sort";   // fully sorted: straight to Finish
+        break;
       case "cancel-bag": cancelBag(); return;
       case "type":
         if (it.type !== val) {
@@ -1171,6 +1189,7 @@
     s.id = "ss-style";
     s.textContent = [
       "#" + ROOT_ID + "{display:block;width:100%;background:#161514;min-height:100vh}",
+      ".ss-searching .ss-wrap{padding-bottom:75vh}",
       ".ss-wrap{box-sizing:border-box;max-width:560px;margin:0 auto;padding:20px 16px 140px;color:#f4efe9;font-family:'Quicksand',system-ui,-apple-system,sans-serif;display:flex;flex-direction:column;gap:14px}",
       ".ss-wrap *{box-sizing:border-box}",
       ".ss-head{display:flex;flex-direction:column;gap:6px}",
@@ -1264,6 +1283,12 @@
       ".ss-toast{background:#3a3020;border:1px solid #e0a43a;color:#f0c77a;border-radius:12px;padding:10px 14px;font-size:14px;font-weight:600}",
       ".ss-card > .ss-eyebrow{margin:-2px 0 -4px}",
       ".ss-choice .ss-pill{min-height:56px;font-size:17px;font-weight:700}",
+      ".ss-fin{gap:12px}",
+      ".ss-k{margin:0 0 2px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#bdb5ab;font-weight:700}",
+      ".ss-fin-subj{margin:0;font-size:16px;font-weight:700;line-height:1.35}",
+      ".ss-fin-gold{border-top:2px solid #eda920;border-bottom:2px solid #eda920;padding:8px 0}",
+      ".ss-fin-gold p:last-child{margin:0;font-size:17px;font-weight:700}",
+      ".ss-back{align-self:center;padding:6px 0}",
       ".em{background:#fff;color:#211b1a;border-radius:12px;overflow:hidden;font-family:'Quicksand',system-ui,sans-serif}",
       ".em-top{background:#f3f1ea;padding:12px 14px;border-bottom:1px solid #e3ded4}",
       ".em-k{margin:0;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#6e6a63;font-weight:700}",
@@ -1312,6 +1337,16 @@
     root.addEventListener("input", onInput);
     root.addEventListener("change", onChange);
     root.addEventListener("focusout", onBlur);
+    root.addEventListener("focusin", function (e) {
+      // Brand, category and member searches: bring the box to the top so its list shows above the keyboard.
+      var k = e.target.getAttribute && e.target.getAttribute("data-k");
+      if (k !== "brandQ" && k !== "catQ" && k !== "memberQ") return;
+      root.classList.add("ss-searching");
+      setTimeout(function () {
+        var y = e.target.getBoundingClientRect().top + window.pageYOffset - 12;
+        try { window.scrollTo({ top: y, behavior: "smooth" }); } catch (er) { window.scrollTo(0, y); }
+      }, 250);
+    });
     root.addEventListener("keydown", function (e) {
       if (e.key === "Enter" && e.target.tagName === "INPUT") e.preventDefault(); // Enter never saves by accident
     });
