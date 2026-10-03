@@ -24,7 +24,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "sort-tool S430 v10";
+  var BUILD = "sort-tool S433 v11";
   var ROOT_ID = "ks-sort-app";
   var BASE = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1";
   var DOOR = BASE + "/grading-db";
@@ -234,6 +234,28 @@
     var other = b.item_type === "toy" ? "clothing" : "toy", n = b.brand_name.toLowerCase();
     return (S.brands[other] || []).filter(function (x) { return x.brand_name.toLowerCase() === n; })[0] || null;
   }
+  // Hers S433 (same lists as /admin/listing): most-used first, read from inventory counts S433.
+  var BRAND_RANK = ["Gap", "Janie & Jack", "Miscellaneous Essentials", "Nike", "Polo Ralph Lauren",
+    "Lovevery", "Old Navy", "Cat & Jack", "OshKosh B'gosh", "Zara", "Hanna Andersson", "Adidas", "H&M",
+    "The Children's Place", "Tommy Hilfiger", "Nautica", "Crewcuts", "Tea Collection", "Carter's",
+    "Unknown", "7 For All Mankind", "Gymboree", "Champion", "Boden", "Miscellaneous Elevated",
+    "Under Armour", "Levi's", "NFL Licensed Apparel", "Petit Bateau", "KiwiCo", "Columbia", "Jordan",
+    "Mayoral", "Fisher-Price", "Puma", "Rare Editions", "Tucker & Tate", "Cotton On Kids", "Burberry",
+    "Tommy Bahama", "Cynthia Rowley", "All In Motion", "French Toast", "Calvin Klein", "DKNY",
+    "Jumping Beans", "Janod", "Body Glove", "Vans", "NBA Licensed Apparel", "Monica + Andy",
+    "Stitch and Stone", "Land's End", "Splendid", "Melissa & Doug", "Primary", "Nanette Lepore",
+    "Art Class", "Volcom", "Tegu"];
+  var CATEGORY_ORDER = ["Shirts & Tops", "Shorts", "Dresses", "Sweaters and hoodies", "Pants",
+    "Coats and Jackets", "Jeans", "Joggers & Sweats", "Onesie", "Sleepers & Pajamas", "Formal Event",
+    "One pieces", "Outfits and sets", "Overalls", "Duo", "Swimsuits", "Skirts & Skorts", "Vests",
+    "Athletic wear", "Leggings", "Shoes", "Accessories", "Socks", "Costumes", "Rompers & Jumpsuits",
+    "Sports Teams"];
+  function byRank(list, order, nameOf) {
+    var r = function (x) { var i = order.indexOf(nameOf(x)); return i < 0 ? 999 : i; };
+    return list.map(function (x, i) { return { x: x, i: i }; }).sort(function (a, b) {
+      return (r(a.x) - r(b.x)) || String(nameOf(a.x)).localeCompare(String(nameOf(b.x))) || a.i - b.i;
+    }).map(function (o) { return o.x; });
+  }
   function brandList() {
     var it = S.item, all = brandPool();
     var q = it.brandQ.trim().toLowerCase();
@@ -245,7 +267,8 @@
       if (n === q) exact = true;
       if (n.indexOf(q) === 0) starts.push(b); else if (n.indexOf(q) > -1) has.push(b);
     });
-    return { rows: starts.concat(has).slice(0, 8), exact: exact };
+    var bn = function (b) { return b.brand_name; };
+    return { rows: byRank(starts, BRAND_RANK, bn).concat(byRank(has, BRAND_RANK, bn)).slice(0, 8), exact: exact };
   }
   function setType(type) {
     // Changing between clothing and toy clears the answers that belong to the other one. Photos stay.
@@ -263,7 +286,8 @@
     if (!q) return [];
     var starts = [], has = [];
     all.forEach(function (v) { var n = v.toLowerCase(); if (n.indexOf(q) === 0) starts.push(v); else if (n.indexOf(q) > -1) has.push(v); });
-    return starts.concat(has).slice(0, 8);
+    var self = function (v) { return v; };
+    return byRank(starts, CATEGORY_ORDER, self).concat(byRank(has, CATEGORY_ORDER, self)).slice(0, 8);
   }
   function sizeOptions() {
     var key = S.item.category === "Shoes" ? "shoe_size" : "clothing_size";
@@ -559,6 +583,7 @@
       S.busy = false; S.addBrand = null; S.errors = [];
       if (row) pickBrand(row);
       render();
+      if (row && S.screen === "sort") moveOn("brand");   // S433
     }).catch(fail);
   }
   function pickBrand(b) {
@@ -1058,6 +1083,16 @@
           var t = document.getElementById("ss-tc"); if (t) { t.focus(); try { t.select(); } catch (er) {} }
         }, v.length >= 2 ? 0 : 900);
       }
+      if (k === "toy") {
+        // S433: the toy count is the last box, so after the same pause the keyboard drops
+        // and Start sorting comes into view.
+        clearTimeout(S.tcTimer);
+        if (/^\d+$/.test(v)) S.tcTimer = setTimeout(function () {
+          var t = document.getElementById("ss-tc"); if (t && document.activeElement === t) t.blur();
+          var b = root.querySelector('[data-act="start"]');
+          if (b) { try { b.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (er) {} }
+        }, v.length >= 2 ? 0 : 900);
+      }
       return;
     }
     if (k === "closeNote") { S.close.note = v; var np = root.querySelector('[data-part="note"]'); if (np) np.innerHTML = viewNote(); return; }
@@ -1094,7 +1129,11 @@
     S.toast = "";
     switch (act) {
       case "reload": location.reload(); return;
-      case "member": S.start.member = S.start.members[Number(val)]; S.start.memberQ = S.start.member.email; S.start.members = []; break;
+      case "member":
+        S.start.member = S.start.members[Number(val)]; S.start.memberQ = S.start.member.email; S.start.members = [];
+        render();
+        setTimeout(function () { var c = document.getElementById("ss-cc"); if (c && !c.value) { try { c.focus(); } catch (er) {} } }, 0);   // S433
+        return;
       case "member-clear": S.start.member = null; break;
       case "start": startBag(); return;
       case "resume":
@@ -1117,6 +1156,7 @@
       case "brand-type":
         var twin = brandTwin(it.brand);
         if (twin && twin.item_type === val) pickBrand(twin);
+        advance = "brand";
         break;
       case "dtype": setType(val); advance = "dtype"; break;
       case "more": it.more = true; break;
@@ -1178,7 +1218,7 @@
     if (!next) return;
     var inp = next.querySelector('input.ss-inp[data-k]');
     if (inp && !inp.value) { try { inp.focus({ preventScroll: true }); } catch (e) {} }
-    var y = next.getBoundingClientRect().top + window.pageYOffset - 16;
+    var y = next.getBoundingClientRect().top + window.pageYOffset - 100;   // S433: below the clock and Safari's top bar
     try { window.scrollTo({ top: y, behavior: "smooth" }); } catch (e) { window.scrollTo(0, y); }
   }
 
@@ -1343,12 +1383,33 @@
       if (k !== "brandQ" && k !== "catQ" && k !== "memberQ") return;
       root.classList.add("ss-searching");
       setTimeout(function () {
-        var y = e.target.getBoundingClientRect().top + window.pageYOffset - 12;
+        var y = e.target.getBoundingClientRect().top + window.pageYOffset - 100;   // S433: below Safari's top bar
         try { window.scrollTo({ top: y, behavior: "smooth" }); } catch (er) { window.scrollTo(0, y); }
       }, 250);
     });
     root.addEventListener("keydown", function (e) {
-      if (e.key === "Enter" && e.target.tagName === "INPUT") e.preventDefault(); // Enter never saves by accident
+      if (e.key !== "Enter" || e.target.tagName !== "INPUT") return;
+      e.preventDefault(); // Enter never saves by accident
+      // S433: Enter moves on instead. A search box picks its top match; a scanned
+      // tracking number goes to the member box; the counts move along; any other
+      // box goes to the next question.
+      var k = e.target.getAttribute("data-k");
+      if (k === "brandQ" || k === "catQ" || k === "memberQ") {
+        var part = { brandQ: "brands", catQ: "cats", memberQ: "members" }[k];
+        var act = { brandQ: "brand", catQ: "cat", memberQ: "member" }[k];
+        var first = root.querySelector('[data-part="' + part + '"] [data-act="' + act + '"]');
+        if (first) first.click();
+        return;
+      }
+      if (S.screen === "start") {
+        var to = { trackQ: "ss-member", clothing: "ss-tc" }[k];
+        if (to) focusOn(to); else if (k === "toy") e.target.blur();
+        return;
+      }
+      if (S.screen === "sort") {
+        var q = e.target.closest("[data-q]");
+        if (q) { e.target.blur(); moveOn(q.getAttribute("data-q")); }
+      }
     });
     console.log("[sort-tool] " + BUILD);
     render();
