@@ -278,6 +278,7 @@
     defaultCondition();
     populateSizeOptions();
     injectMultipills();
+    if (typeof paintTaps === "function") paintTaps();   // S433: options are in, draw the taps
   }
 
   /* ---- FIELD SCHEMA  (single source of truth) -------------------------- */
@@ -286,28 +287,29 @@
      type:  text | number | select | textarea | checkbox
      add a field later  ==  add one entry here. */
   var SCHEMA = [
-    /* U1 2026-07-01c: size/age/retail lead — manual entry remembers these off the
-     * physical item first. Rarely-filled fields (season/occasion/note) sit dead
-     * last; review order follows this array too. */
-    { key:"clothing_size",  label:"Size",           type:"select", remote:true, combo:true, group:"clothing", required:true, placeholder:"Type to filter\u2026" },
-    { key:"toy_age_range",  label:"Age range",      type:"multipills", remote:true, group:"toy", required:true },
-    { key:"retail_value",   label:"Retail value",   type:"number", group:"both", required:true,  placeholder:"e.g. 48", step:"0.01", min:"0" },
+    /* S433: brand first (the brand decides clothing or toy, the way /admin/sort
+     * does), then the same order /admin/sort asks in. Tap fields fold away once
+     * picked and the page moves on to the next question. Review order follows
+     * this array too. */
     { key:"sku",            label:"SKU",            type:"text",   group:"both", required:true,  placeholder:"KS-00000", hint:"the KS label number on the item" },
-    { key:"brand",          label:"Brand",          type:"text",   group:"both", required:true,  placeholder:"e.g. Patagonia" },
-    { key:"item_name",      label:"Item name",      type:"text",   group:"both", required:true,  placeholder:"auto-fills from brand + category" },
-    { key:"description",    label:"Description",    type:"textarea", group:"both", required:false },
+    { key:"brand",          label:"Brand",          type:"text",   group:"both", required:true,  placeholder:"Type a brand" },
+    { key:"category",       label:"Category",       type:"select", remote:true, combo:true, group:"clothing", required:true, placeholder:"Type to filter\u2026" },
+    { key:"clothing_size",  label:"Size",           type:"select", remote:true, combo:true, group:"clothing", required:true, placeholder:"Type to filter\u2026" },
+    { key:"color",          label:"Color",          type:"select", remote:true, combo:true, group:"clothing", required:true, placeholder:"Type to filter\u2026" },
+    { key:"gender_style",   label:"Gender",         type:"select", group:"clothing", required:false, options:[{value:"boy",label:"Male"},{value:"girl",label:"Female"}] },
+    { key:"toy_age_range",  label:"Age range",      type:"multipills", remote:true, group:"toy", required:true },
     { key:"toy_washability",label:"Washability",    type:"pills",  group:"toy", required:true,  options:["wipeable","washable"] },
     { key:"is_complete",    label:"Completeness",   type:"pills",  group:"toy", required:true,  options:[{value:"complete",label:"Complete"},{value:"missing",label:"Missing pieces"}] },
-    { key:"color",          label:"Color",          type:"select", remote:true, combo:true, group:"clothing", required:true, placeholder:"Type to filter\u2026" },
-    { key:"category",       label:"Category",       type:"select", remote:true, combo:true, group:"clothing", required:true, placeholder:"Type to filter\u2026" },
-    { key:"gender_style",   label:"Gender",         type:"select", group:"clothing", required:false, options:[{value:"boy",label:"Male"},{value:"girl",label:"Female"}] },
     { key:"tier",           label:"Tier",           type:"select", group:"both", required:true,  options:["essentials","elevated","special"] },
-    { key:"resale_value",   label:"Resale value",   type:"number", group:"both", required:false, noOptTag:true, step:"0.01", min:"0", hint:"Auto-fills for Elevated/Special — editable; Essentials skips it" },
     { key:"condition_grade",label:"Condition grade",type:"select", remote:true, group:"both", required:false },
-    { key:"bin_location",   label:"Bin location",   type:"text",     group:"both", required:true,  placeholder:"where it's stored" },
-    { key:"season",         label:"Season",         type:"text",     group:"clothing", required:false, placeholder:"e.g. winter, all-season" },
+    { key:"retail_value",   label:"Retail value",   type:"number", group:"both", required:true,  placeholder:"e.g. 48", step:"0.01", min:"0" },
+    { key:"resale_value",   label:"Resale value",   type:"number", group:"both", required:false, noOptTag:true, step:"0.01", min:"0", hint:"Auto-fills for Elevated/Special — editable; Essentials skips it" },
+    { key:"item_name",      label:"Item name",      type:"textarea", paste:true, rows:3, group:"both", required:true,  placeholder:"auto-fills from brand + category" },
+    { key:"description",    label:"Description",    type:"textarea", paste:true, rows:8, group:"both", required:false },
     { key:"occasion",       label:"Occasion",       type:"select", remote:true, group:"both", required:false },
+    { key:"season",         label:"Season",         type:"text",     group:"clothing", required:false, placeholder:"e.g. winter, all-season" },
     { key:"condition_notes",label:"Personal note",  type:"textarea", group:"both", required:false, placeholder:"e.g. really soft fabric, runs a little big" },
+    { key:"bin_location",   label:"Bin location",   type:"text",     group:"both", required:true,  placeholder:"where it's stored" },
   ];
 
   /* upload validation mirrors inventory-upload */
@@ -374,7 +376,7 @@
         inner = '<select data-key="' + f.key + '">' + opts + '</select>';
       }
     } else if (f.type === "textarea") {
-      inner = '<textarea data-key="' + f.key + '" placeholder="' + (f.placeholder || "") + '"></textarea>';
+      inner = '<textarea data-key="' + f.key + '"' + (f.rows ? ' rows="' + f.rows + '"' : '') + ' placeholder="' + (f.placeholder || "") + '"></textarea>';
     } else if (f.type === "number") {
       inner = '<input type="number" inputmode="decimal" data-key="' + f.key + '" placeholder="' + (f.placeholder || "") +
               '"' + (f.step ? ' step="' + f.step + '"' : "") + (f.min ? ' min="' + f.min + '"' : "") + '>';
@@ -402,7 +404,10 @@
     }
     var hint = f.hint ? '<div class="ksl-err">' + f.hint + '</div>' : '<div class="ksl-err">Required</div>';
     return '<div class="ksl-field" data-field="' + f.key + '" data-group="' + f.group + '">' +
-             '<label class="ksl-label">' + f.label + reqMark + '</label>' +
+             (f.paste
+               ? '<div class="ksl-labelrow"><label class="ksl-label">' + f.label + reqMark + '</label>' +
+                 '<button type="button" class="ksl-paste" data-paste="' + f.key + '">Paste</button></div>'
+               : '<label class="ksl-label">' + f.label + reqMark + '</label>') +
              inner + hint +
            '</div>';
   }
@@ -422,11 +427,12 @@
      Color/Category/Size/Gender group (clothing) or Age/Washability (toy),
      instead of buried at the bottom of the form. */
   var detailsHtml = SCHEMA.map(function (f) {
-    return (f.key === "tier" ? setHtml : "") + fieldHtml(f);
+    return (f.key === "item_name" ? setHtml : "") + fieldHtml(f);
   }).join("");
 
   root.innerHTML =
-    '<h1 class="ksl-title">List an item</h1>' +
+    '<div class="ksl-titlerow"><h1 class="ksl-title">List an item</h1>' +
+      '<button type="button" class="ksl-find-inline ksl-find-returns" id="ksl-mng-returns">Returns / relist</button></div>' +
     '<p class="ksl-sub">Type a SKU to start.</p>' +
 
     /* S432 ONE SKU BOX (her S431 mockup). The form's own SKU field is MOVED into
@@ -438,7 +444,6 @@
       '<div class="ksl-find-actions">' +
         '<button type="button" class="ksl-manage-ghost" id="ksl-new-item">Start a new item</button>' +
         '<button type="button" class="ksl-find-clear" id="ksl-clear-form">Clear form</button>' +
-        '<button type="button" class="ksl-manage-ghost ksl-find-returns" id="ksl-mng-returns">Returns / relist</button>' +
       '</div>' +
       '<div class="ksl-find-count" id="ksl-find-count"></div>' +
     '</div>' +
@@ -448,12 +453,6 @@
       '<button class="ksl-restore-yes" id="ksl-restore-yes">Restore</button></span>' +
     '</div>' +
 
-    '<div class="ksl-card ksl-choose ksl-hidden" id="ksl-choose"><h3>Clothing or toy?</h3>' +
-      '<div class="ksl-choose-row">' +
-        '<button type="button" class="ksl-choose-btn" data-choose="clothing">Clothing</button>' +
-        '<button type="button" class="ksl-choose-btn" data-choose="toy">Toy</button>' +
-      '</div>' +
-    '</div>' +
     '<div class="ksl-card ksl-sorted ksl-hidden" id="ksl-sorted">' +
       '<div class="ksl-sorted-top">' +
         '<span class="ksl-sorted-ok"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5"/></svg> <span id="ksl-sorted-when">From sorting</span></span>' +
@@ -493,7 +492,7 @@
     '</div>' +
 
     '<div class="ksl-card ksl-details"><h3 id="ksl-details-title">Details</h3>' +
-      '<p class="ksl-type-wait">The details open once you pick clothing or toy.</p>' + detailsHtml +
+      '<p class="ksl-type-wait">Pick the brand first. It tells the page if this is clothing or a toy.</p>' + detailsHtml +
       '<p class="ksl-complete-line" id="ksl-complete-line" data-group="toy"></p>' +
     '</div>' +
 
@@ -523,12 +522,14 @@
         '<div class="ksl-edit-resale-box" id="ksl-edit-resale-display">\u2014</div>' +
       '</div>' +
       '<div class="ksl-field">' +
-        '<label class="ksl-label">Item name</label>' +
-        '<input type="text" id="ksl-edit-name" placeholder="item name">' +
+        '<div class="ksl-labelrow"><label class="ksl-label">Item name</label>' +
+          '<button type="button" class="ksl-paste" data-paste-id="ksl-edit-name">Paste</button></div>' +
+        '<textarea id="ksl-edit-name" rows="3" placeholder="item name"></textarea>' +
       '</div>' +
       '<div class="ksl-field">' +
-        '<label class="ksl-label">Description</label>' +
-        '<textarea id="ksl-edit-desc" rows="4" placeholder="member-facing description"></textarea>' +
+        '<div class="ksl-labelrow"><label class="ksl-label">Description</label>' +
+          '<button type="button" class="ksl-paste" data-paste-id="ksl-edit-desc">Paste</button></div>' +
+        '<textarea id="ksl-edit-desc" rows="8" placeholder="member-facing description"></textarea>' +
       '</div>' +
       '<div class="ksl-field">' +
         '<label class="ksl-label">Status</label>' +
@@ -751,7 +752,7 @@
     if (nameField) {
       var anchor = (itemType === "toy")
         ? root.querySelector('.ksl-field[data-field="brand"]')
-        : root.querySelector('.ksl-field[data-field="gender_style"]');
+        : root.querySelector('.ksl-field[data-field="resale_value"]');
       if (anchor && anchor.nextSibling !== nameField) {
         anchor.parentNode.insertBefore(nameField, anchor.nextSibling);
       }
@@ -772,6 +773,7 @@
     // warm the pre-approved brand list for this type (cached per type in
     // BRANDS_BY_TYPE): clothing fetches at init, toy lazily on first switch.
     loadBrands(itemType);
+    if (typeof paintTaps === "function") paintTaps();   // S433
   }
   root.querySelectorAll(".ksl-toggle button").forEach(function (b) {
     b.addEventListener("click", function () {
@@ -832,6 +834,7 @@
     closeAllCombos();
     defaultCondition();        // next item starts on the "great" default
     resetSorted();             // S432: unfold the "from sorting" fields, empty the summary
+    resetTaps();               // S433: every tap question open again
   }
 
   /* ---- FIX #6 2026-07-08: pull-down-from-top -> fresh blank listing ----- */
@@ -1403,12 +1406,13 @@
     var ae = document.activeElement;            // never steal focus mid-typing
     if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) && ae.type !== "file") return;
     setTimeout(function () {
-      // U1: the form now opens on Size (clothing) / Age (toy) — land the cursor there.
-      // size is a combo: focus the visible filter, not the hidden data-key input.
-      var c = (itemType === "toy")
-        ? root.querySelector('[data-pillbox="toy_age_range"] .ksl-pill')
-        : (root.querySelector('[data-combo="clothing_size"]') || root.querySelector('[data-key="clothing_size"]'));
-      if (c && c.offsetParent !== null) { try { c.focus(); } catch (e) {} }
+      // S433: the first open question (the brand on a new item)
+      if (FORM_STATE === "new" && !newTypePicked) {
+        var bi = brandInputEl();
+        if (bi && bi.offsetParent !== null) { try { bi.focus(); } catch (e) {} }
+        return;
+      }
+      tapMoveOn(null);
     }, 50);
   }
   function armPhotoFirst() {
@@ -1559,6 +1563,7 @@
       // re-assert resale tier-gate after a restore (tier value is now in place)
       applyResaleVisibility();
       applyDuoState();           // DUO: restored category may be "Duo" -> re-apply optional brand/color
+      resetTaps();               // S433: restored answers show folded
     } catch (e) {}
   }
   root.addEventListener("input", saveDraft);
@@ -2117,11 +2122,11 @@
     if (!inp || !box) return;
     var q = (inp.value || "").trim();
     var ql = q.toLowerCase();
-    var list = BRANDS_BY_TYPE[itemType] || [];
+    var list = brandPool();      // S433: both lists until the brand decides the type
     var matches = q
       ? list.filter(function (b) { return (b.brand_name || "").toLowerCase().indexOf(ql) !== -1; })
       : list.slice();
-    matches = matches.slice(0, 30);   // keep a 90+ row list usable
+    matches = matches.slice(0, 40);   // keep a long list usable
     brandMatches = matches;
     var hasExact = !!q && list.some(function (b) {
       return (b.brand_name || "").toLowerCase() === ql;
@@ -2131,13 +2136,18 @@
         ? '<span class="ksl-brand-tier">' + escBrand(b.default_tier) + '</span>' : "";
       var pencil = b.id
         ? '<span class="ksl-brand-edit" data-brand-edit="' + i + '" title="Edit brand">\u270E</span>' : "";
+      var kind = '<span class="ksl-brand-kind">' + (b._type === "toy" ? "Toy" : "Clothing") + '</span>';
       return '<div class="ksl-brand-opt" data-brand-idx="' + i + '">' +
                '<span class="ksl-brand-nm">' + escBrand(b.brand_name) + '</span>' +
-               tier + pencil + '</div>';
+               kind + tier + pencil + '</div>';
     }).join("");
     if (!matches.length && q) html = '<div class="ksl-brand-empty">No match in your list</div>';
     if (q && !hasExact) {
       html += '<div class="ksl-brand-add" data-brand-add="1">+ Add &ldquo;' + escBrand(q) + '&rdquo;</div>';
+    }
+    // S433: a toy can list with no brand (toys only; clothing needs its brand)
+    if (FORM_STATE !== "sorted" && !(newTypePicked && itemType === "clothing")) {
+      html += '<div class="ksl-brand-add" data-brand-nobrand="1">No brand (toys only)</div>';
     }
     if (!html) { closeBrandSuggest(); return; }
     box.innerHTML = html;
@@ -2148,15 +2158,41 @@
     if (box) { box.classList.remove("is-open"); box.innerHTML = ""; }
     brandMatches = [];
   }
-  function pickBrand(name) {
+  // S433: brand rows from both lists, each tagged with its type. A sorted item
+  // keeps its sorted type, so it only searches that list.
+  function brandPool() {
+    var tag = function (t) {
+      return (BRANDS_BY_TYPE[t] || []).map(function (b) { b._type = t; return b; });
+    };
+    if (FORM_STATE === "sorted") return tag(itemType);
+    return tag("clothing").concat(tag("toy"));
+  }
+  function pickBrand(name, type) {
+    if (type && !decideType(type)) return;   // S433: the brand decides clothing or toy
+    noBrandToy = false;
+    brandEditing = false;
     setField("brand", name);             // value + bubbling input -> autoName composes
     var inp = brandInputEl();
     if (inp) clearCueFor(inp);           // a deliberate pick drops any "from grading" tag
     closeBrandSuggest();
+    paintTaps();
+    tapMoveOn("brand");
   }
 
   /* add-new modal (built once, lazily) */
   var brandModal = null, brandModalName = "", brandModalTier = "essentials";
+  var brandModalType = "";           // S433: "" until she answers, when no brand has decided the type
+  function paintBrandModalType() {
+    if (!brandModal) return;
+    var ask = brandModalMode === "add" && FORM_STATE !== "sorted" && !newTypePicked;
+    var row = brandModal.querySelector(".ksl-bm-typerow");
+    if (row) row.style.display = ask ? "" : "none";
+    brandModal.querySelectorAll("[data-bm-type]").forEach(function (b) {
+      b.classList.toggle("is-active", b.getAttribute("data-bm-type") === brandModalType);
+    });
+    var cf = brandModal.querySelector(".ksl-bm-confirm");
+    if (cf && brandModalMode === "add" && cf.textContent === "Add brand") cf.disabled = ask && !brandModalType;
+  }
   /* BR edit-mode context */
   var brandModalMode = "add";        // "add" | "edit"
   var brandEditId = null, brandEditOrigName = "", brandEditOrigTier = "", brandEditType = "";
@@ -2180,6 +2216,13 @@
           '<input type="text" class="ksl-bm-nameinput" autocomplete="off" spellcheck="false" />' +
         '</div>' +
         '<p class="ksl-bm-err" data-bm-err></p>' +
+        '<div class="ksl-bm-typerow">' +
+          '<p class="ksl-bm-label">Clothing or toys?</p>' +
+          '<div class="ksl-bm-tiers">' +
+            '<button type="button" class="ksl-bm-tier" data-bm-type="clothing">Clothing</button>' +
+            '<button type="button" class="ksl-bm-tier" data-bm-type="toy">Toys</button>' +
+          '</div>' +
+        '</div>' +
         '<p class="ksl-bm-label ksl-bm-tierlabel">Default tier</p>' +
         '<div class="ksl-bm-tiers">' +
           '<button type="button" class="ksl-bm-tier" data-bm-tier="essentials">essentials</button>' +
@@ -2203,6 +2246,11 @@
     m.querySelectorAll("[data-bm-tier]").forEach(function (b) {
       b.addEventListener("click", function () {
         brandModalTier = b.getAttribute("data-bm-tier"); paintBrandModalTiers();
+      });
+    });
+    m.querySelectorAll("[data-bm-type]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        brandModalType = b.getAttribute("data-bm-type"); paintBrandModalType();
       });
     });
     m.querySelector(".ksl-bm-cancel").addEventListener("click", closeBrandModal);
@@ -2249,6 +2297,8 @@
     paintBrandModalTiers();
     var cf = brandModal.querySelector(".ksl-bm-confirm");
     cf.disabled = false; cf.textContent = "Add brand";
+    brandModalType = newTypePicked ? itemType : "";
+    paintBrandModalType();
     showBrandModalState("add");
     brandModal.classList.add("is-open");
     closeBrandSuggest();
@@ -2256,7 +2306,7 @@
   function closeBrandModal() { cascadeCtx = null; if (brandModal) brandModal.classList.remove("is-open"); }
   function submitBrandAdd() {
     var cf = brandModal.querySelector(".ksl-bm-confirm");
-    var name = brandModalName, type = itemType, tier = brandModalTier;
+    var name = brandModalName, type = brandModalType || itemType, tier = brandModalTier;
     cf.disabled = true; cf.textContent = "Adding\u2026";
     getToken().then(function (t) {
       return fetch(FN_BRAND, {
@@ -2269,11 +2319,11 @@
       });
     }).then(function (r) { return r.json(); }).then(function (d) {
       if (d && d.ok) {
-        pickBrand(name); closeBrandModal();
+        closeBrandModal(); pickBrand(name, type);
         showToast("Added \u201c" + name + "\u201d to your brand list");
         delete BRANDS_BY_TYPE[type]; loadBrands(type);   // refresh so the new row carries its id (edit needs it)
       } else if (d && d.reason === "exists") {
-        pickBrand(name); closeBrandModal();
+        closeBrandModal(); pickBrand(name, type);
         showToast("Already in your list \u2014 selected it");
         delete BRANDS_BY_TYPE[type]; loadBrands(type);   // refresh canonical row
       } else {
@@ -2314,6 +2364,7 @@
     var cf = brandModal.querySelector(".ksl-bm-confirm");
     cf.disabled = false; cf.textContent = "Save changes";
     showBrandModalState("edit");
+    paintBrandModalType();
     brandModal.classList.add("is-open");
     closeBrandSuggest();
   }
@@ -2430,7 +2481,7 @@
     if (!box || !box.classList.contains("is-open")) return;
     if (e.key === "Enter") {
       e.preventDefault();
-      if (brandMatches.length) pickBrand(brandMatches[0].brand_name);
+      if (brandMatches.length) pickBrand(brandMatches[0].brand_name, brandMatches[0]._type);
       else openBrandModal((t.value || "").trim());
     }
   });
@@ -2445,7 +2496,17 @@
     var opt = e.target.closest ? e.target.closest(".ksl-brand-opt") : null;
     if (opt && root.contains(opt)) {
       var b = brandMatches[parseInt(opt.getAttribute("data-brand-idx"), 10)];
-      if (b) pickBrand(b.brand_name);
+      if (b) pickBrand(b.brand_name, b._type);
+      return;
+    }
+    var nob = e.target.closest ? e.target.closest("[data-brand-nobrand]") : null;
+    if (nob && root.contains(nob)) {
+      if (!decideType("toy")) return;
+      brandEditing = false; noBrandToy = true;
+      setField("brand", "");
+      closeBrandSuggest();
+      paintTaps();
+      tapMoveOn("brand");
       return;
     }
     var add = e.target.closest ? e.target.closest("[data-brand-add]") : null;
@@ -2923,8 +2984,7 @@ function titleCase(s) {
     // new-item chooser or the sorting summary
     var ph = root.querySelector("[data-photos-card]");
     if (on && ph) ph.classList.remove("ksl-hidden");
-    if (on) { var ch = $("ksl-choose"), so = $("ksl-sorted");
-      if (ch) ch.classList.add("ksl-hidden"); if (so) so.classList.add("ksl-hidden"); }
+    if (on) { var so = $("ksl-sorted"); if (so) so.classList.add("ksl-hidden"); }
   }
 
   /* hosted photo_urls -> the three fixed slots (front/back/detail) + video.
@@ -3357,8 +3417,8 @@ function titleCase(s) {
     if (mng) mng.classList.toggle("ksl-hidden", on);
     if (pnl) pnl.classList.toggle("ksl-hidden", !on);
     if (on && rest) rest.classList.add("ksl-hidden");
-    if (on) { var ch = $("ksl-choose"), so = $("ksl-sorted");   // S432
-      if (ch) ch.classList.add("ksl-hidden"); if (so) so.classList.add("ksl-hidden"); }
+    if (on) { var so = $("ksl-sorted"); if (so) so.classList.add("ksl-hidden"); }   // S432
+    var rl = $("ksl-mng-returns"); if (rl) rl.classList.toggle("ksl-hidden", on);   // S433
   }
 
   function enterLookupMode() {
@@ -3674,16 +3734,12 @@ function titleCase(s) {
     if (ph) ph.classList.toggle("ksl-hidden", !open);
     if (det) { det.classList.toggle("ksl-hidden", !open); det.classList.toggle("is-waiting", waiting); }
     if (submitBtn) submitBtn.classList.toggle("ksl-hidden", !open || waiting);
-    var ch = $("ksl-choose");
-    if (ch) ch.classList.toggle("ksl-hidden", FORM_STATE !== "new");
-    root.querySelectorAll("[data-choose]").forEach(function (b) {
-      b.classList.toggle("is-active", newTypePicked && b.getAttribute("data-choose") === itemType);
-    });
     var so = $("ksl-sorted");
     if (so) so.classList.toggle("ksl-hidden", !(FORM_STATE === "sorted" && SORTED_FOLDED));
     var ttl = $("ksl-details-title");
     if (ttl) ttl.textContent = (FORM_STATE === "sorted") ? "Still needed" : "Details";
     paintCompleteLine();
+    paintTaps();
   }
 
   function fieldEl(key) { return root.querySelector('.ksl-field[data-field="' + key + '"]'); }
@@ -3834,20 +3890,39 @@ function titleCase(s) {
       prefillNextSku(true);              // FRESH only: never pulls a sorted item
     }
     paintForm();
-    var ch = $("ksl-choose");
-    if (ch) { try { ch.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {} }
+    armPhotoFirst();
   }
 
-  function pickType(t) {
-    if (t !== "toy" && t !== "clothing") return;
-    if (newTypePicked && t === itemType) return;
-    if (newTypePicked && hasContent() &&
-        !window.confirm("Switching to " + (t === "toy" ? "Toy" : "Clothing") + " will clear this item. Continue?")) return;
-    var keep = skuEl ? skuEl.value : "";
-    if (newTypePicked) { clearItem(); if (skuEl) skuEl.value = keep; lastLookup = keep; }
+  // S433: the brand decides clothing or toy (no "Clothing or toy?" question).
+  // Returns false if she cancels a switch. A switch keeps the SKU and photos.
+  function decideType(t) {
+    if (t !== "toy" && t !== "clothing") return true;
+    if (newTypePicked && t === itemType) return true;
+    if (newTypePicked && otherAnswers() &&
+        !window.confirm("That's a " + (t === "toy" ? "toy" : "clothing") + " brand. Switching clears the answers below the brand. Continue?")) return false;
+    if (newTypePicked) {
+      var keepSku = skuEl ? skuEl.value : "";
+      var keep = { slots: slots, video: video, thumbUrl: thumbUrl };
+      clearItem();
+      if (skuEl) skuEl.value = keepSku;
+      lastLookup = keepSku;
+      slots = keep.slots; video = keep.video; thumbUrl = keep.thumbUrl;
+      renderAllSlots();
+    }
     itemType = t; newTypePicked = true;
     applyType(); paintForm(); saveDraft();
-    armPhotoFirst();
+    return true;
+  }
+  // anything answered besides the SKU, the brand and the default condition
+  function otherAnswers() {
+    var any = false;
+    root.querySelectorAll("[data-key]").forEach(function (el) {
+      var k = el.getAttribute("data-key"), v = (el.value || "").trim();
+      if (!v || k === "sku" || k === "brand") return;
+      if (k === "condition_grade" && v === "great") return;
+      any = true;
+    });
+    return any || setChk.checked;
   }
 
   function clearForm() {
@@ -3921,9 +3996,6 @@ function titleCase(s) {
       "#ks-list-app .ksl-find-inline{padding:0}" +
       "#ks-list-app .ksl-find-count{font-size:.86rem;opacity:.7}" +
       "#ks-list-app .ksl-find-count:empty,#ks-list-app .ksl-find-note:empty{display:none}" +
-      "#ks-list-app .ksl-choose-row{display:flex;gap:10px}" +
-      "#ks-list-app .ksl-choose-btn{flex:1;min-height:60px;padding:16px 10px;border:1px solid rgba(255,255,255,.22);border-radius:14px;background:rgba(255,255,255,.04);color:inherit;font:inherit;font-size:1.15rem;font-weight:600;cursor:pointer}" +
-      "#ks-list-app .ksl-choose-btn.is-active{border-color:#5DA868;background:#2F4A33;color:#D9F2DC}" +
       "#ks-list-app .ksl-sorted{border-color:#3E6B45!important}" +
       "#ks-list-app .ksl-sorted-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 8px}" +
       "#ks-list-app .ksl-sorted-ok{display:flex;align-items:center;gap:6px;color:#8FD19A;font-size:.9rem;font-weight:600}" +
@@ -3931,7 +4003,7 @@ function titleCase(s) {
       "#ks-list-app .ksl-sorted-body{font-size:1rem;line-height:1.5}" +
       "#ks-list-app .ksl-type-wait{display:none;margin:0;font-size:.86rem;opacity:.7}" +
       "#ks-list-app .ksl-details.is-waiting .ksl-type-wait{display:block}" +
-      "#ks-list-app .ksl-details.is-waiting>.ksl-field,#ks-list-app .ksl-details.is-waiting>.ksl-complete-line{display:none!important}" +
+      "#ks-list-app .ksl-details.is-waiting>.ksl-field:not([data-field='brand']),#ks-list-app .ksl-details.is-waiting>.ksl-complete-line{display:none!important}" +
       "#ks-list-app .ksl-complete-line{grid-column:1/-1;flex-basis:100%;width:100%;margin:4px 0 0;font-size:.84rem;opacity:.75}" +
       "#ks-list-app .ksl-details>.ksl-field[data-field=\"is_complete\"]{grid-column:1/-1;flex-basis:100%;max-width:100%}";
     document.head.appendChild(st);
@@ -3945,9 +4017,6 @@ function titleCase(s) {
     });
     var nb = $("ksl-new-item"); if (nb) nb.addEventListener("click", function () { startNew(null); });
     var cb = $("ksl-clear-form"); if (cb) cb.addEventListener("click", clearForm);
-    root.querySelectorAll("[data-choose]").forEach(function (b) {
-      b.addEventListener("click", function () { pickType(b.getAttribute("data-choose")); });
-    });
     var ed = $("ksl-sorted-edit"); if (ed) ed.addEventListener("click", unfoldSorted);
     var note = $("ksl-find-note");
     if (note) note.addEventListener("click", function (e) {
@@ -3964,6 +4033,309 @@ function titleCase(s) {
       if (e.target.closest('[data-pill="is_complete"]')) setTimeout(paintCompleteLine, 0);
     });
   })();
+
+  /* ---- S433 TAP QUESTIONS (her S432 ask: flow like /admin/sort) ---------- */
+  /* Every pick-from-a-list question is a row of taps. A pick turns green, folds
+     to one line with Change, and the page moves on to the next open question.
+     The real value still lives in the field's own [data-key] input or select,
+     so saving, drafts, review, the sorted summary and the resale maths are
+     untouched: a tap just writes that value through setField.
+     ⚠ Never hide a tap field with .ksl-hidden: collectFields() skips those.
+       The CSS hides only the old control inside it (.ksl-tapfield). */
+  var TAP = {
+    category:        { list: true,  src: function () { return OPTION_LISTS.category || []; } },
+    clothing_size:   { cols: 4,     src: function () { return comboSource("clothing_size"); } },
+    color:           { cols: 3,     src: function () { return OPTION_LISTS.color || []; } },
+    gender_style:    { cols: 2,     src: function () { return [{ value: "boy", display_label: "Male" }, { value: "girl", display_label: "Female" }]; } },
+    toy_washability: { cols: 2,     src: function () { return [{ value: "wipeable", display_label: "Wipeable" }, { value: "washable", display_label: "Washable" }]; } },
+    tier:            { cols: 3,     src: function () { return [{ value: "essentials", display_label: "Essentials" }, { value: "elevated", display_label: "Elevated" }, { value: "special", display_label: "Special" }]; } },
+    condition_grade: { cols: 2,     src: function () { return OPTION_LISTS.condition_grade || []; } },
+    occasion:        { cols: 2,     src: function () { return OPTION_LISTS.occasion || []; } }
+  };
+  var tapEditing = {};      // key -> true while she has tapped Change
+  var tapQuery = {};        // category filter text
+  var brandEditing = false; // brand box open after Change or while typing
+  var noBrandToy = false;   // she picked "No brand (toys only)"
+
+  function tapVal(key) {
+    var el = root.querySelector('[data-key="' + key + '"]');
+    return el ? String(el.value || "").trim() : "";
+  }
+  function tapLabel(key, v) {
+    var rows = TAP[key] ? TAP[key].src() : [];
+    for (var i = 0; i < rows.length; i++) if (rows[i].value === v) return rows[i].display_label || rows[i].value;
+    return v;
+  }
+  function tapAnswered(key) {
+    if (key === "brand") return newTypePicked && (!!tapVal("brand") || noBrandToy) && !brandEditing;
+    return !!tapVal(key) && !tapEditing[key];
+  }
+  function resetTaps() { tapEditing = {}; tapQuery = {}; brandEditing = false; noBrandToy = false; paintTaps(); }
+
+  (function mountTaps() {
+    Object.keys(TAP).forEach(function (key) {
+      var f = fieldEl(key); if (!f) return;
+      f.classList.add("ksl-tapfield");
+      var box = document.createElement("div");
+      box.className = "ksl-tap"; box.setAttribute("data-tap", key);
+      var err = f.querySelector(".ksl-err");
+      f.insertBefore(box, err || null);
+    });
+    var bf = fieldEl("brand");
+    if (bf) {
+      var bb = document.createElement("div");
+      bb.className = "ksl-tap"; bb.setAttribute("data-tap", "brand");
+      bf.insertBefore(bb, bf.querySelector(".ksl-err"));
+    }
+  })();
+
+  function tapDoneHtml(key, label, small) {
+    return '<button type="button" class="ksl-tap-done" data-tap-change="' + key + '">' +
+             '<span>\u2713 ' + esc(label) + (small ? ' <small>' + esc(small) + '</small>' : '') + '</span><u>Change</u></button>';
+  }
+  function tapListHtml(key) {
+    var v = tapVal(key), q = (tapQuery[key] || "").trim().toLowerCase();
+    var rows = TAP[key].src();
+    if (!rows.length) return '<p class="ksl-tap-wait">Loading\u2026</p>';
+    var starts = [], has = [];
+    rows.forEach(function (r) {
+      var n = String(r.display_label || r.value).toLowerCase();
+      if (!q || n.indexOf(q) === 0) starts.push(r); else if (n.indexOf(q) > -1) has.push(r);
+    });
+    var list = starts.concat(has);
+    if (!list.length) return '<p class="ksl-tap-wait">No match.</p>';
+    return list.map(function (r) {
+      return '<button type="button" class="ksl-tap-row' + (r.value === v ? " sel" : "") + '" data-tap-pick="' + key + '" data-val="' + esc(r.value) + '">' +
+             esc(r.display_label || r.value) + '</button>';
+    }).join("");
+  }
+  function paintTapList(key) {
+    var el = root.querySelector('[data-tap-list="' + key + '"]');
+    if (el) el.innerHTML = tapListHtml(key);
+  }
+  function paintTap(key) {
+    var box = root.querySelector('.ksl-tap[data-tap="' + key + '"]');
+    if (!box) return;
+    var v = tapVal(key);
+    if (v && !tapEditing[key]) { box.innerHTML = tapDoneHtml(key, tapLabel(key, v)); return; }
+    var spec = TAP[key];
+    if (spec.list) {
+      var qEl = box.querySelector('[data-tap-q="' + key + '"]');
+      if (!qEl) {
+        box.innerHTML = '<input type="text" class="ksl-tap-q" data-tap-q="' + key + '" autocomplete="off" autocorrect="off" placeholder="Type to filter">' +
+                        '<div class="ksl-tap-list" data-tap-list="' + key + '"></div>';
+        box.querySelector("input").value = tapQuery[key] || "";
+      }
+      paintTapList(key);
+      return;
+    }
+    var rows = spec.src();
+    if (!rows.length) { box.innerHTML = '<p class="ksl-tap-wait">Loading\u2026</p>'; return; }
+    box.innerHTML = '<div class="ksl-tap-grid c' + (spec.cols || 3) + '">' + rows.map(function (r) {
+      return '<button type="button" class="ksl-tap-pill' + (r.value === v ? " sel" : "") + '" data-tap-pick="' + key + '" data-val="' + esc(r.value) + '">' +
+             esc(r.display_label || r.value) + '</button>';
+    }).join("") + '</div>';
+  }
+  function paintBrandTap() {
+    var f = fieldEl("brand"), box = root.querySelector('.ksl-tap[data-tap="brand"]');
+    if (!f || !box) return;
+    var v = tapVal("brand");
+    var folded = !brandEditing && newTypePicked && (v || noBrandToy);
+    f.classList.toggle("is-tapped", !!folded);
+    box.innerHTML = folded
+      ? tapDoneHtml("brand", v || "No brand", itemType === "toy" ? "Toy" : "Clothing")
+      : "";
+  }
+  function paintTaps() {
+    if (!root || !TAP) return;
+    Object.keys(TAP).forEach(paintTap);
+    paintBrandTap();
+  }
+
+  function fieldVisible(f) {
+    return f && !f.classList.contains("ksl-hidden") && !f.classList.contains("ksl-folded") && f.offsetParent !== null;
+  }
+  function dropKeyboard() {
+    var ae = document.activeElement;
+    if (ae && ae !== document.body && /^(INPUT|TEXTAREA)$/.test(ae.tagName) && root.contains(ae)) { try { ae.blur(); } catch (e) {} }
+  }
+  function scrollToEl(el) {
+    var y = el.getBoundingClientRect().top + window.pageYOffset - 16;
+    try { window.scrollTo({ top: y, behavior: "smooth" }); } catch (e) { window.scrollTo(0, y); }
+  }
+  function schemaOf(key) { return SCHEMA.filter(function (f) { return f.key === key; })[0] || null; }
+
+  // Move on to the next question that still needs an answer. A required box
+  // that's empty gets the cursor (so the keyboard comes up); anything else just
+  // scrolls into view. Answered taps and the optional extras are skipped.
+  function tapMoveOn(fromKey) {
+    var det = root.querySelector(".ksl-details");
+    if (!det || EDIT_MODE || LOOKUP_MODE) return;
+    var fields = Array.prototype.slice.call(det.children).filter(function (el) { return el.classList.contains("ksl-field"); });
+    var i = fromKey ? fields.indexOf(fieldEl(fromKey)) : -1;
+    for (var j = i + 1; j < fields.length; j++) {
+      var f = fields[j], k = f.getAttribute("data-field");
+      if (!fieldVisible(f)) continue;
+      if (k === "__set" || k === "is_complete") continue;
+      if (TAP[k] || k === "brand") {
+        if (tapAnswered(k)) continue;
+        if (TAP[k] && !(schemaOf(k) || {}).required && k !== "gender_style") continue;
+        if (k === "brand") { var bi = brandInputEl(); if (bi) { try { bi.focus({ preventScroll: true }); } catch (e) {} } }
+        else dropKeyboard();
+        scrollToEl(f); return;
+      }
+      if (k === "toy_age_range") { if (tapVal(k)) continue; dropKeyboard(); scrollToEl(f); return; }
+      var inp = f.querySelector("input[data-key]:not([type=hidden]), textarea[data-key]");
+      if (!inp) continue;
+      var sf = schemaOf(k) || {};
+      if (inp.value.trim()) { if (k === "item_name") { dropKeyboard(); scrollToEl(f); return; } continue; }
+      if (!sf.required) continue;
+      try { inp.focus({ preventScroll: true }); } catch (e) {}
+      scrollToEl(f); return;
+    }
+  }
+
+  root.addEventListener("click", function (e) {
+    if (!e.target.closest) return;
+    var pick = e.target.closest("[data-tap-pick]");
+    if (pick && root.contains(pick)) {
+      var key = pick.getAttribute("data-tap-pick"), val = pick.getAttribute("data-val");
+      setField(key, val);
+      if (key === "toy_washability") reflectPills();
+      var f = fieldEl(key); if (f) { f.classList.remove("ksl-cued", "has-error"); }
+      tapEditing[key] = false; tapQuery[key] = "";
+      paintTaps(); saveDraft();
+      tapMoveOn(key);
+      return;
+    }
+    var ch = e.target.closest("[data-tap-change]");
+    if (ch && root.contains(ch)) {
+      var k = ch.getAttribute("data-tap-change");
+      if (k === "brand") {
+        brandEditing = true; paintTaps();
+        var bi = brandInputEl();
+        if (bi) { try { bi.focus(); bi.select(); } catch (er) {} }
+        return;
+      }
+      tapEditing[k] = true; tapQuery[k] = ""; paintTap(k);
+      var q = root.querySelector('[data-tap-q="' + k + '"]');
+      if (q) { try { q.focus(); } catch (er) {} }
+      return;
+    }
+    var pb = e.target.closest("[data-paste],[data-paste-id]");
+    if (pb && root.contains(pb)) {
+      var id = pb.getAttribute("data-paste-id");
+      var target = id ? $(id) : root.querySelector('[data-key="' + pb.getAttribute("data-paste") + '"]');
+      pasteInto(target, !!(target && (target.id === "ksl-edit-name" || target.getAttribute("data-key") === "item_name")));
+    }
+  });
+
+  root.addEventListener("input", function (e) {
+    var t = e.target; if (!t || !t.getAttribute) return;
+    var q = t.getAttribute("data-tap-q");
+    if (q) { tapQuery[q] = t.value; paintTapList(q); return; }
+    // an item name is one line: a pasted or typed line break becomes a space
+    if ((t.getAttribute("data-key") === "item_name" || t.id === "ksl-edit-name") && /\n/.test(t.value)) {
+      t.value = t.value.replace(/\s*\n+\s*/g, " ");
+    }
+    var k = t.getAttribute("data-key"); if (!k) return;
+    if (k === "brand" && e.isTrusted) { brandEditing = true; noBrandToy = false; }
+    paintTaps();
+  });
+
+  // Enter moves on: from a one-line box to the next question, and from the
+  // item name to the description (the description keeps Enter for new lines)
+  root.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter" || e.shiftKey) return;
+    var t = e.target; if (!t || !t.getAttribute) return;
+    var q = t.getAttribute("data-tap-q");
+    if (q) {
+      e.preventDefault();
+      var first = root.querySelector('[data-tap-list="' + q + '"] [data-tap-pick]');
+      if (first) first.click();
+      return;
+    }
+    if (t.id === "ksl-edit-name") { e.preventDefault(); var d = $("ksl-edit-desc"); if (d) d.focus(); return; }
+    var k = t.getAttribute("data-key");
+    if (!k || k === "sku" || k === "brand" || k === "bin_location" || k === "description" || k === "condition_notes") return;
+    if (t.tagName === "TEXTAREA" && k !== "item_name") return;
+    e.preventDefault();
+    if (k === "item_name") { var ds = root.querySelector('[data-key="description"]'); if (ds) { ds.focus(); scrollToEl(ds.closest(".ksl-field")); } return; }
+    tapMoveOn(k);
+  });
+
+  // Paste button: replaces the box with what's on the clipboard. On iPhone,
+  // Safari shows its own small "Paste" bubble to tap once more; a website
+  // can't skip that. If the clipboard can't be read, the box is selected so a
+  // long-press paste replaces it.
+  function pasteInto(el, oneLine) {
+    if (!el) return;
+    function fail() {
+      try { el.focus(); el.select(); } catch (e) {}
+      showToast("Couldn't reach the clipboard. Hold the box and tap Paste.", true);
+    }
+    function done(txt) {
+      txt = String(txt || "");
+      if (oneLine) txt = txt.replace(/\s*\n+\s*/g, " ");
+      txt = txt.trim();
+      if (!txt) { showToast("Nothing to paste.", true); return; }
+      el.value = txt;
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      if (el.getAttribute("data-key") === "item_name") nameTouched = true;
+      clearCueFor(el);
+      try { el.focus(); el.setSelectionRange(txt.length, txt.length); } catch (e) {}
+    }
+    try {
+      if (navigator.clipboard && navigator.clipboard.readText) navigator.clipboard.readText().then(done, fail);
+      else fail();
+    } catch (e) { fail(); }
+  }
+
+  (function injectTapCss() {
+    if (document.getElementById("ksl-tap-css")) return;
+    var st = document.createElement("style");
+    st.id = "ksl-tap-css";
+    st.textContent =
+      /* one question per row, like /admin/sort */
+      "#ks-list-app .ksl-details>.ksl-field{max-width:100%!important;flex-basis:100%!important;width:100%;grid-column:1/-1}" +
+      "#ks-list-app .ksl-details>.ksl-field>.ksl-label{min-height:0!important}" +
+      "#ks-list-app .ksl-tapfield>select,#ks-list-app .ksl-tapfield>.ksl-combo-wrap,#ks-list-app .ksl-tapfield>.ksl-pills{display:none!important}" +
+      "#ks-list-app .ksl-field.is-tapped>.ksl-brand-wrap{display:none!important}" +
+      "#ks-list-app .ksl-tap:empty{display:none}" +
+      "#ks-list-app .ksl-tap-grid{display:grid;gap:8px;grid-template-columns:repeat(3,minmax(0,1fr))}" +
+      "#ks-list-app .ksl-tap-grid.c2{grid-template-columns:repeat(2,minmax(0,1fr))}" +
+      "#ks-list-app .ksl-tap-grid.c4{grid-template-columns:repeat(4,minmax(0,1fr))}" +
+      "#ks-list-app .ksl-tap-pill{min-height:50px;padding:8px 6px;border-radius:12px;border:1px solid #4a4542;background:#2e2a28;color:#f4efe9;font:inherit;font-size:15px;font-weight:600;line-height:1.2;cursor:pointer}" +
+      "#ks-list-app .ksl-tap-pill.sel,#ks-list-app .ksl-tap-row.sel{background:#1f3a28;color:#fff;box-shadow:inset 0 0 0 2px #4caf73;border-color:#4caf73}" +
+      "#ks-list-app .ksl-tap-q{width:100%;box-sizing:border-box;height:52px;border-radius:12px;font-size:17px;padding:0 14px}" +
+      "#ks-list-app .ksl-tap-list{display:flex;flex-direction:column;border:1px solid #3a3634;border-radius:12px;overflow:hidden;margin-top:8px;max-height:340px;overflow-y:auto}" +
+      "#ks-list-app .ksl-tap-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:52px;padding:0 14px;border:0;border-top:1px solid #3a3634;background:#2e2a28;color:#f4efe9;font:inherit;font-size:16px;font-weight:600;text-align:left;cursor:pointer;width:100%}" +
+      "#ks-list-app .ksl-tap-row:first-child{border-top:0}" +
+      "#ks-list-app .ksl-tap-row:not(.sel)::after{content:'Tap to pick';flex:none;font-size:11.5px;font-weight:700;color:#161514;background:#f4efe9;border-radius:99px;padding:4px 9px}" +
+      "#ks-list-app .ksl-tap-done{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:52px;padding:8px 14px;border:0;border-radius:12px;background:#1f3a28;color:#fff;box-shadow:inset 0 0 0 2px #4caf73;font:inherit;font-size:16px;font-weight:600;text-align:left;cursor:pointer}" +
+      "#ks-list-app .ksl-tap-done small{font-size:12px;font-weight:600;color:#bfe3cb;margin-left:6px}" +
+      "#ks-list-app .ksl-tap-done u{flex:none;font-size:13px;color:#9fe0b6}" +
+      "#ks-list-app .ksl-tap-wait{margin:0;font-size:.86rem;opacity:.7}" +
+      "#ks-list-app .ksl-brand-kind{font-size:11px;font-weight:700;letter-spacing:.03em;padding:2px 7px;border-radius:99px;background:rgba(255,255,255,.12);margin-left:auto;margin-right:6px}" +
+      /* big, paste-friendly name and description boxes */
+      "#ks-list-app .ksl-labelrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}" +
+      "#ks-list-app .ksl-labelrow .ksl-label{margin:0}" +
+      "#ks-list-app .ksl-paste{min-height:36px;padding:6px 14px;border-radius:99px;border:1px solid rgba(255,255,255,.25);background:transparent;color:inherit;font:inherit;font-size:14px;font-weight:700;cursor:pointer}" +
+      "#ks-list-app textarea[data-key=\"item_name\"],#ks-list-app #ksl-edit-name{width:100%;box-sizing:border-box;min-height:84px;font-size:17px;line-height:1.4;padding:12px 14px;resize:vertical}" +
+      "#ks-list-app textarea[data-key=\"description\"],#ks-list-app #ksl-edit-desc{width:100%;box-sizing:border-box;min-height:210px;font-size:16px;line-height:1.45;padding:12px 14px;resize:vertical}" +
+      /* the top card: Returns / relist beside the title, two buttons in one row */
+      "#ks-list-app .ksl-titlerow{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}" +
+      "#ks-list-app .ksl-titlerow .ksl-find-returns{margin:0;white-space:nowrap}" +
+      "#ks-list-app .ksl-find-actions{display:grid!important;grid-template-columns:1fr auto;gap:10px;align-items:center}" +
+      "#ks-list-app .ksl-find-actions .ksl-find-clear{padding:8px 4px}";
+    document.head.appendChild(st);
+  })();
+
+  // both brand lists up front: until a brand is picked, the search covers both
+  Promise.all([loadBrands("clothing"), loadBrands("toy")]).then(function () {
+    var bi = brandInputEl();
+    if (bi && document.activeElement === bi) renderBrandSuggest();
+  });
 
   paintForm();
   setFindNote("");
