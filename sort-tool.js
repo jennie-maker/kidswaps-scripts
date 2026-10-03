@@ -14,11 +14,14 @@
    carries its short name now, kept ones too (saved as graded_item_name for listing).
    v8 (S430, hers): one "Miscellaneous" brand in the list (clothing or toy and the tier decide which
    Miscellaneous row it saves as); a big item number; Keep or Decline waits until the category or short
-   name is in; list rows to tap look different from the typing box; warnings clear as soon as they're fixed. */
+   name is in; list rows to tap look different from the typing box; warnings clear as soon as they're fixed.
+   v9 (S430, hers): tiers aren't tied to brands. No tier is picked for you, nothing is saved as an
+   upgrade or downgrade, a new brand isn't asked its tier. The preview's gold box sits above the
+   placeholder, as in the real email. Finishing waits until the bag has really closed. */
 (function () {
   "use strict";
 
-  var BUILD = "sort-tool S430 v8";
+  var BUILD = "sort-tool S430 v9";
   var ROOT_ID = "ks-sort-app";
   var BASE = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1";
   var DOOR = BASE + "/grading-db";
@@ -432,7 +435,7 @@
     }
     it.half = Number(rec.credit_amount_at_grading) === 0.5;
     it.halfReason = rec.credit_amount_reason || "";
-    it.tier = rec.tier || (b ? b.default_tier : "") || "";
+    it.tier = rec.tier || "";
     it.sku = rec.label_number || S.nextSku;
     (rec.photo_urls || []).forEach(function (u, i) { if (u && SLOTS[i]) it.photos[SLOTS[i].key] = { status: "done", url: u, preview: u }; });
     if (rec.video_url) it.video = { status: "done", url: rec.video_url, preview: rec.video_url };
@@ -478,12 +481,11 @@
           S.errors = [sku + " is already used. Check the sticker, or use " + S.nextSku + "."]; it.skuOpen = true;
           render(); throw null;
         }
-        var b = baseBody(false), def = it.brand.misc ? (it.half ? "essentials" : it.tier) : (it.brand.default_tier || "essentials");
+        var b = baseBody(false);
         var tier = it.half ? "essentials" : it.tier;
-        var r = tierRank(tier), d = tierRank(def);
         b.tier = tier;
-        b.would_be_tier = def;
-        b.tier_override_reason = r > d ? "Upgrade (pristine)" : (r < d ? "Downgrade (worn condition)" : null);
+        b.would_be_tier = tier;          // tiers aren't tied to brands (hers, S430)
+        b.tier_override_reason = null;
         b.retail_value = it.type === "clothing" ? (TIER_RETAIL[tier] || null) : null;
         b.label_number = sku;
         b.is_matching_set = it.type === "clothing" && it.category === "Sets";
@@ -534,13 +536,13 @@
   }
   function saveBrand() {
     var a = S.addBrand, it = S.item;
-    if (!a.name.trim() || !a.tier || !a.type) { S.errors = ["Type the brand name, and pick clothing or toy and its tier."]; render(); return; }
+    if (!a.name.trim() || !a.type) { S.errors = ["Type the brand name, and pick clothing or toys."]; render(); return; }
     S.busy = true; render();
     door("POST", "/brands", {
       brand_name: a.name.trim(),
       item_type: a.type,
-      default_tier: a.tier === "condition_gated" ? "essentials" : a.tier,
-      condition_restriction: a.tier === "condition_gated" ? "new_or_like_new_only" : null,
+      default_tier: "essentials",   // the brands table still has the column; sorting no longer reads it
+      condition_restriction: a.newOnly ? "new_or_like_new_only" : null,
       last_verified: new Date().toISOString().split("T")[0]
     }, { Accept: "application/vnd.pgrst.object+json" }).then(function (d) {
       var row = firstRow(d);
@@ -561,7 +563,6 @@
     if (b.misc) it.typeSet = false;   // Miscellaneous asks clothing or toy
     else if (b.item_type && b.item_type !== it.type) setType(b.item_type); else it.typeSet = true;
     it.brand = b; it.brandQ = b.brand_name; it.noBrand = false;
-    if (!it.half) it.tier = b.default_tier || "essentials";
   }
 
   /* ---------- start, cancel and close a bag ---------- */
@@ -666,8 +667,25 @@
     }).then(function (r) {
       if (!r.ok) throw new Error("Make answered " + r.status + ". The bag isn't finished and nothing was sent");
       S.closedSummary = { name: firstOf(S.member), credits: creditSummary() };
-      S.busy = false; S.screen = "closed"; render(); window.scrollTo(0, 0);
+      S.toast = "Sent. Waiting for the bag to close…"; render();
+      return waitForClose(b.id, 20);
+    }).then(function (closed) {
+      if (closed === undefined) return;
+      S.busy = false; S.toast = "";
+      if (closed) { S.screen = "closed"; render(); window.scrollTo(0, 0); return; }
+      S.errors = ["Make has the bag, but it hasn't closed after a minute. Don't tap Finish again. Check S27's History in Make, and tell Claude what it shows."];
+      render();
     }).catch(fail);
+  }
+  // Make answers "got it" before S27 runs, so check the bag itself: done once it leaves stage_1_in_progress.
+  function waitForClose(id, tries) {
+    return new Promise(function (r) { setTimeout(r, 3000); }).then(function () {
+      return door("GET", "/intake_batches?id=eq." + id + "&select=status");
+    }).then(function (rows) {
+      var st = rows && rows[0] && rows[0].status;
+      if (st && st !== "stage_1_in_progress") return true;
+      return tries > 1 ? waitForClose(id, tries - 1) : false;
+    }, function () { return tries > 1 ? waitForClose(id, tries - 1) : false; });
   }
 
   /* ---------- drawing ---------- */
@@ -740,16 +758,14 @@
       var fixed = it.choice === "decline" && it.typeSet;
       return '<div class="ss-addbrand"><p class="ss-lab">New brand: ' + esc(a.name) + "</p>" +
         (fixed ? "" : '<p class="ss-hint">Clothing or toys?</p>' + pills([{ value: "clothing", label: "Clothing" }, { value: "toy", label: "Toys" }], function (v) { return a.type === v; }, "newbrand-type", "two")) +
-        '<p class="ss-hint">Its usual tier. This is saved for every future item from this brand.</p>' +
-        pills([{ value: "essentials", label: "Essentials" }, { value: "elevated", label: "Elevated" }, { value: "special", label: "Special" }, { value: "condition_gated", label: "Only new or like new" }],
-          function (v) { return a.tier === v; }, "newbrand-tier", "two") +
+        '<button type="button" class="ss-mini' + (a.newOnly ? " sel" : "") + '" data-act="newbrand-newonly">' + (a.newOnly ? "✓ " : "") + "Only accepted new or like new</button>" +
         '<div class="ss-grid2"><button type="button" class="ss-btn small" data-act="newbrand-save"' + (S.busy ? " disabled" : "") + '>Save brand</button><button type="button" class="ss-btn small ghost" data-act="newbrand-cancel">Cancel</button></div></div>';
     }
     var bl = brandList(), q = it.brandQ.trim();
     var rows = bl.rows.map(function (b) {
       var both = !(it.choice === "decline" && it.typeSet);
       return '<button type="button" class="ss-row' + (it.brand && it.brand.id === b.id ? " sel" : "") + '" data-act="brand" data-val="' + esc(b.id) + '">' + esc(b.brand_name) +
-        " <small>" + (b.misc ? "Clothing or toy, any tier" : (both ? (b.item_type === "toy" ? "Toy · " : "Clothing · ") : "") + esc(TIER_LABEL[b.default_tier] || "")) + (b.condition_restriction === "new_or_like_new_only" ? " · new or like new only" : "") + "</small></button>";
+        " <small>" + (b.misc ? "Clothing or toy" : (b.item_type === "toy" ? "Toy" : "Clothing")) + (b.condition_restriction === "new_or_like_new_only" ? " · new or like new only" : "") + "</small></button>";
     }).join("");
     if (q.length >= 2 && !bl.exact && !(it.brand && it.brand.brand_name.toLowerCase() === q.toLowerCase())) {
       rows += '<button type="button" class="ss-row add" data-act="newbrand">+ Add "' + esc(q) + '" as a new brand</button>';
@@ -770,7 +786,7 @@
     var it = S.item, brandPicked = it.brand && !S.addBrand;
     var h = '<div data-q="brand"><label class="ss-lab" for="ss-brand">Brand</label>';
     if (brandPicked) {
-      h += pickedRow("brand-change", it.brand.brand_name, it.brand.misc ? "" : (it.brand.item_type === "toy" ? "Toy · " : "Clothing · ") + esc(TIER_LABEL[it.brand.default_tier] || "") + (it.brand.condition_restriction === "new_or_like_new_only" ? " · new or like new only" : ""));
+      h += pickedRow("brand-change", it.brand.brand_name, it.brand.misc ? "" : (it.brand.item_type === "toy" ? "Toy" : "Clothing") + (it.brand.condition_restriction === "new_or_like_new_only" ? " · new or like new only" : ""));
       if (brandTwin(it.brand)) {
         h += '<p class="ss-hint">This brand makes clothing and toys. Which is this?</p>' +
           pills([{ value: "clothing", label: "Clothing" }, { value: "toy", label: "Toy" }], function (v) { return it.type === v; }, "brand-type", "two");
@@ -864,7 +880,7 @@
     var tierCard = '<div class="ss-card" data-q="tier"><p class="ss-eyebrow">Because it\'s kept</p><div><p class="ss-lab">Tier <span class="ss-req">*</span></p>' +
       pills([{ value: "essentials", label: "Essentials" }, { value: "elevated", label: "Elevated" }, { value: "special", label: "Special" }],
         function (v) { return !it.half && it.tier === v; }, "tier", "three") +
-      '<p class="ss-hint">' + (it.brand.misc ? "Miscellaneous has no usual tier, so pick the one that fits this piece." : "Picked for you from the brand (" + esc(TIER_LABEL[it.brand.default_tier] || "Essentials") + "). Change it if this piece is better or worse than usual.") + "</p>" +
+      '<p class="ss-hint">Pick the tier that fits this piece.</p>' +
       '<button type="button" class="ss-mini' + (it.half ? " sel" : "") + '" data-act="tier" data-val="half">' + (it.half ? "✓ " : "") + "Half credit</button>" +
       (it.half ? '<input class="ss-inp ss-gap" type="text" data-k="halfReason" placeholder="Why half? (optional, just for you)" value="' + esc(it.halfReason) + '">' : "") + "</div>" +
       (it.skuOpen
@@ -954,9 +970,9 @@
       (paused ? "" : '<p class="em-pre">Here\'s what you earned and where to find new favorites.</p>') + "</div>" +
       '<div class="em-body"><p class="em-brand">KidSwaps</p>' + (dateLine ? '<p class="em-date">' + esc(dateLine) + "</p>" : "") +
       '<p class="em-hi">Hi ' + esc(name || "there") + ",</p>" +
-      '<div class="em-gap">Her bag summary and decline lines go here, written by S27 when you finish.</div>' +
       '<div class="em-gold"><p class="em-gold-h">What you earned from this batch</p><p class="em-gold-n">' + esc(creditsPhrase()) + "</p>" +
       (paused ? "" : '<p class="em-gold-s">Your credits are in your bank now.</p>') + "</div>" +
+      '<div class="em-gap">Her bag summary and decline lines go here, written by S27 when you finish.</div>' +
       '<div data-part="note">' + viewNote() + "</div>" +
       '<p class="em-sign">Thanks for swapping,<br>Jennie</p><span class="em-btn">Go to my dashboard</span></div></div>' +
       '<p class="ss-hint">' + (paused ? "She's paused, so her email is the Paused version: it also says her credits are held until she comes back. " : "") +
@@ -1088,7 +1104,7 @@
       case "more": it.more = true; break;
       case "nobrand": it.noBrand = true; it.brand = null; it.brandQ = ""; it.typeSet = false; advance = "brand"; break;
       case "newbrand": S.addBrand = { name: it.brandQ.trim(), tier: "", type: (it.choice === "decline" && it.typeSet) ? it.type : "" }; break;
-      case "newbrand-tier": S.addBrand.tier = val; break;
+      case "newbrand-newonly": S.addBrand.newOnly = !S.addBrand.newOnly; break;
       case "newbrand-type": S.addBrand.type = val; break;
       case "newbrand-save": saveBrand(); return;
       case "newbrand-cancel": S.addBrand = null; break;
@@ -1108,7 +1124,6 @@
       case "choice":
         it.choice = val; S.errors = [];
         if (val === "decline" && it.sizeOther && it.reasons.indexOf("Size out of range") < 0 && it.type === "clothing") it.reasons.push("Size out of range");
-        if (val === "keep" && it.brand && !it.tier && !it.half) it.tier = it.brand.default_tier || "essentials";
         advance = "choice";
         break;
       case "reason": var ri = it.reasons.indexOf(val); if (ri > -1) it.reasons.splice(ri, 1); else it.reasons.push(val); break;
