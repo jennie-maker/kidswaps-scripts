@@ -295,14 +295,14 @@
     { key:"brand",          label:"Brand",          type:"text",   group:"both", required:true,  placeholder:"Type a brand" },
     { key:"category",       label:"Category",       type:"select", remote:true, combo:true, group:"clothing", required:true, placeholder:"Type to filter\u2026" },
     { key:"clothing_size",  label:"Size",           type:"select", remote:true, combo:true, group:"clothing", required:true, placeholder:"Type to filter\u2026" },
+    { key:"toy_age_range",  label:"Age range",      type:"multipills", remote:true, group:"toy", required:true },
+    { key:"retail_value",   label:"Retail value",   type:"number", group:"both", required:true,  placeholder:"e.g. 48", step:"0.01", min:"0" },
     { key:"color",          label:"Color",          type:"select", remote:true, combo:true, group:"clothing", required:true, placeholder:"Type to filter\u2026" },
     { key:"gender_style",   label:"Gender",         type:"select", group:"clothing", required:false, options:[{value:"boy",label:"Male"},{value:"girl",label:"Female"}] },
-    { key:"toy_age_range",  label:"Age range",      type:"multipills", remote:true, group:"toy", required:true },
     { key:"toy_washability",label:"Washability",    type:"pills",  group:"toy", required:true,  options:["wipeable","washable"] },
     { key:"is_complete",    label:"Completeness",   type:"pills",  group:"toy", required:true,  options:[{value:"complete",label:"Complete"},{value:"missing",label:"Missing pieces"}] },
     { key:"tier",           label:"Tier",           type:"select", group:"both", required:true,  options:["essentials","elevated","special"] },
     { key:"condition_grade",label:"Condition grade",type:"select", remote:true, group:"both", required:false },
-    { key:"retail_value",   label:"Retail value",   type:"number", group:"both", required:true,  placeholder:"e.g. 48", step:"0.01", min:"0" },
     { key:"resale_value",   label:"Resale value",   type:"number", group:"both", required:false, noOptTag:true, step:"0.01", min:"0", hint:"Auto-fills for Elevated/Special — editable; Essentials skips it" },
     { key:"item_name",      label:"Item name",      type:"textarea", paste:true, rows:3, group:"both", required:true,  placeholder:"auto-fills from brand + category" },
     { key:"description",    label:"Description",    type:"textarea", paste:true, rows:8, group:"both", required:false },
@@ -2126,6 +2126,20 @@
     var matches = q
       ? list.filter(function (b) { return (b.brand_name || "").toLowerCase().indexOf(ql) !== -1; })
       : list.slice();
+    // Hers S433: a brand whose name starts with what she typed comes first,
+    // and inside that, the brands she has the most of (counts read S433).
+    var rankB = function (b) { var i = BRAND_RANK.indexOf(b.brand_name); return i < 0 ? 999 : i; };
+    matches = matches.map(function (b, i) { return { b: b, i: i }; }).sort(function (x, y) {
+      if (ql) {
+        var xs = (x.b.brand_name || "").toLowerCase().indexOf(ql) === 0 ? 0 : 1;
+        var ys = (y.b.brand_name || "").toLowerCase().indexOf(ql) === 0 ? 0 : 1;
+        if (xs !== ys) return xs - ys;
+      }
+      var r = rankB(x.b) - rankB(y.b);
+      if (r) return r;
+      var n = String(x.b.brand_name || "").localeCompare(String(y.b.brand_name || ""));
+      return n || x.i - y.i;
+    }).map(function (o) { return o.b; });
     matches = matches.slice(0, 40);   // keep a long list usable
     brandMatches = matches;
     var hasExact = !!q && list.some(function (b) {
@@ -4045,7 +4059,7 @@ function titleCase(s) {
   var TAP = {
     category:        { list: true,  src: function () { return byCategoryOrder(OPTION_LISTS.category || []); } },
     clothing_size:   { cols: 4,     src: function () { return comboSource("clothing_size"); } },
-    color:           { cols: 3,     src: function () { return OPTION_LISTS.color || []; } },
+    color:           { cols: 3,     src: function () { return byColorOrder(OPTION_LISTS.color || []); } },
     gender_style:    { cols: 2,     src: function () { return [{ value: "boy", display_label: "Male" }, { value: "girl", display_label: "Female" }]; } },
     toy_washability: { cols: 2,     src: function () { return [{ value: "wipeable", display_label: "Wipeable" }, { value: "washable", display_label: "Washable" }]; } },
     tier:            { cols: 3,     src: function () { return [{ value: "essentials", display_label: "Essentials" }, { value: "elevated", display_label: "Elevated" }, { value: "special", display_label: "Special" }]; } },
@@ -4059,6 +4073,25 @@ function titleCase(s) {
     "One pieces", "Outfits and sets", "Overalls", "Duo", "Swimsuits", "Skirts & Skorts", "Vests",
     "Athletic wear", "Leggings", "Shoes", "Accessories", "Socks", "Costumes", "Rompers & Jumpsuits",
     "Sports Teams"];
+  // Hers S433: most-used brands first (top 60 by inventory count, read S433);
+  // any other brand follows in alphabetical order.
+  var BRAND_RANK = ["Gap", "Janie & Jack", "Miscellaneous Essentials", "Nike", "Polo Ralph Lauren",
+    "Lovevery", "Old Navy", "Cat & Jack", "OshKosh B'gosh", "Zara", "Hanna Andersson", "Adidas", "H&M",
+    "The Children's Place", "Tommy Hilfiger", "Nautica", "Crewcuts", "Tea Collection", "Carter's",
+    "Unknown", "7 For All Mankind", "Gymboree", "Champion", "Boden", "Miscellaneous Elevated",
+    "Under Armour", "Levi's", "NFL Licensed Apparel", "Petit Bateau", "KiwiCo", "Columbia", "Jordan",
+    "Mayoral", "Fisher-Price", "Puma", "Rare Editions", "Tucker & Tate", "Cotton On Kids", "Burberry",
+    "Tommy Bahama", "Cynthia Rowley", "All In Motion", "French Toast", "Calvin Klein", "DKNY",
+    "Jumping Beans", "Janod", "Body Glove", "Vans", "NBA Licensed Apparel", "Monica + Andy",
+    "Stitch and Stone", "Land's End", "Splendid", "Melissa & Doug", "Primary", "Nanette Lepore",
+    "Art Class", "Volcom", "Tegu"];
+  // Hers S433: colors from what the closet holds most of down to the least
+  var COLOR_ORDER = ["Blue", "Multi", "Black", "Navy", "Grey", "Pink", "Beige", "White", "Red", "Green",
+    "Purple", "Yellow", "Brown", "Orange", "Ivory", "Coral", "Burgundy"];
+  function byColorOrder(rows) {
+    var rank = function (r) { var i = COLOR_ORDER.indexOf(r.value); return i < 0 ? 999 : i; };
+    return rows.slice().sort(function (a, b) { return rank(a) - rank(b); });
+  }
   function byCategoryOrder(rows) {
     var rank = function (r) { var i = CATEGORY_ORDER.indexOf(r.value); return i < 0 ? 999 : i; };
     return rows.slice().sort(function (a, b) { return rank(a) - rank(b); });
@@ -4261,6 +4294,31 @@ function titleCase(s) {
     }
   });
 
+  // Hers S433: tapping the Brand box (or a category filter) slides it to the
+  // top of the screen so the matches sit under it, above the keyboard. The
+  // page gets extra room at the bottom while that box is open, or there'd be
+  // nothing to scroll into.
+  function slideUp(el) {
+    var f = el.closest(".ksl-field") || el;
+    root.classList.add("ksl-searching");
+    setTimeout(function () { scrollToEl(f); }, 60);
+    setTimeout(function () { scrollToEl(f); }, 380);   // again once the keyboard is up
+  }
+  root.addEventListener("focusin", function (e) {
+    var t = e.target; if (!t || !t.getAttribute) return;
+    if (t.getAttribute("data-key") === "brand" || t.getAttribute("data-tap-q")) slideUp(t);
+  });
+  root.addEventListener("focusout", function (e) {
+    var t = e.target; if (!t || !t.getAttribute) return;
+    if (t.getAttribute("data-key") === "brand" || t.getAttribute("data-tap-q")) {
+      setTimeout(function () {
+        var a = document.activeElement;
+        if (!(a && a.getAttribute && (a.getAttribute("data-key") === "brand" || a.getAttribute("data-tap-q")))) {
+          root.classList.remove("ksl-searching");
+        }
+      }, 250);
+    }
+  });
   root.addEventListener("input", function (e) {
     var t = e.target; if (!t || !t.getAttribute) return;
     var q = t.getAttribute("data-tap-q");
@@ -4347,6 +4405,10 @@ function titleCase(s) {
       "#ks-list-app .ksl-tap-done small{font-size:12px;font-weight:600;color:#bfe3cb;margin-left:6px}" +
       "#ks-list-app .ksl-tap-done u{flex:none;font-size:13px;color:#9fe0b6}" +
       "#ks-list-app .ksl-tap-wait{margin:0;font-size:.86rem;opacity:.7}" +
+      "#ks-list-app.ksl-searching{padding-bottom:75vh}" +
+      "#ks-list-app .ksl-brand-wrap{position:relative}" +
+      "#ks-list-app [data-field='brand'] .ksl-brand-results{position:static!important;max-height:none!important;margin-top:8px}" +
+      "#ks-list-app .ksl-brand-opt{min-height:50px;display:flex;align-items:center;gap:6px}" +
       "#ks-list-app .ksl-brand-kind{font-size:11px;font-weight:700;letter-spacing:.03em;padding:2px 7px;border-radius:99px;background:rgba(255,255,255,.12);margin-left:auto;margin-right:6px}" +
       /* big, paste-friendly name and description boxes */
       "#ks-list-app .ksl-labelrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}" +
