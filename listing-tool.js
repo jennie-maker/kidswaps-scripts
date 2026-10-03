@@ -4043,7 +4043,7 @@ function titleCase(s) {
      ⚠ Never hide a tap field with .ksl-hidden: collectFields() skips those.
        The CSS hides only the old control inside it (.ksl-tapfield). */
   var TAP = {
-    category:        { list: true,  src: function () { return OPTION_LISTS.category || []; } },
+    category:        { list: true,  src: function () { return byCategoryOrder(OPTION_LISTS.category || []); } },
     clothing_size:   { cols: 4,     src: function () { return comboSource("clothing_size"); } },
     color:           { cols: 3,     src: function () { return OPTION_LISTS.color || []; } },
     gender_style:    { cols: 2,     src: function () { return [{ value: "boy", display_label: "Male" }, { value: "girl", display_label: "Female" }]; } },
@@ -4052,6 +4052,17 @@ function titleCase(s) {
     condition_grade: { cols: 2,     src: function () { return OPTION_LISTS.condition_grade || []; } },
     occasion:        { cols: 2,     src: function () { return OPTION_LISTS.occasion || []; } }
   };
+  // Hers S433: categories run from what the closet holds most of down to the
+  // least (inventory counts read S433). A category not on this list goes last.
+  var CATEGORY_ORDER = ["Shirts & Tops", "Shorts", "Dresses", "Sweaters and hoodies", "Pants",
+    "Coats and Jackets", "Jeans", "Joggers & Sweats", "Onesie", "Sleepers & Pajamas", "Formal Event",
+    "One pieces", "Outfits and sets", "Overalls", "Duo", "Swimsuits", "Skirts & Skorts", "Vests",
+    "Athletic wear", "Leggings", "Shoes", "Accessories", "Socks", "Costumes", "Rompers & Jumpsuits",
+    "Sports Teams"];
+  function byCategoryOrder(rows) {
+    var rank = function (r) { var i = CATEGORY_ORDER.indexOf(r.value); return i < 0 ? 999 : i; };
+    return rows.slice().sort(function (a, b) { return rank(a) - rank(b); });
+  }
   var tapEditing = {};      // key -> true while she has tapped Change
   var tapQuery = {};        // category filter text
   var brandEditing = false; // brand box open after Change or while typing
@@ -4173,6 +4184,26 @@ function titleCase(s) {
     if (!det || EDIT_MODE || LOOKUP_MODE) return;
     var fields = Array.prototype.slice.call(det.children).filter(function (el) { return el.classList.contains("ksl-field"); });
     var i = fromKey ? fields.indexOf(fieldEl(fromKey)) : -1;
+    // Hers S433: straight down the page. After an answer the page steps to the
+    // very next question below it, answered or not, in order. Only the first
+    // landing (no fromKey, after the photos) looks for the first open question.
+    if (fromKey) {
+      for (var n = i + 1; n < fields.length; n++) {
+        var nf = fields[n];
+        if (!fieldVisible(nf)) continue;
+        var nk = nf.getAttribute("data-field");
+        var ni = nf.querySelector("input[data-key]:not([type=hidden]), textarea[data-key]");
+        var typing = ni && !TAP[nk] && nk !== "brand";
+        if (typing && !ni.value.trim() && (schemaOf(nk) || {}).required) {
+          try { ni.focus({ preventScroll: true }); } catch (e) {}
+        } else {
+          dropKeyboard();
+        }
+        scrollToEl(nf);
+        return;
+      }
+      return;
+    }
     for (var j = i + 1; j < fields.length; j++) {
       var f = fields[j], k = f.getAttribute("data-field");
       if (!fieldVisible(f)) continue;
