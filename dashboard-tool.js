@@ -3384,6 +3384,408 @@ function paintCloset(s) {
     } catch (e) {}
   }
 
+  // ---------- THE KIDS STEP (S435, design approved S434) ----------
+  // Mockup: https://claude.ai/artifact/HaqPoPKhU7vqRAUgNpVi63 (four boards).
+  // Shows FIRST, over the whole dashboard, whenever member-state sends no children.
+  // Mandatory, hers S434: at least one child, no skip, no close button.
+  // Asks first name, then Girl / Boy (or "I'd rather not say"), then AGE (months under 2,
+  // years after), never a birthday. The size fills in from the age; Change shows the ten
+  // closet sizes. Saved through member-child { action: "add" } -> add_child_by_memberstack,
+  // which turns the age into an estimated birthday so the age (and the size, unless she
+  // set it by hand) moves forward by itself.
+  // ⚠ KIDS_SIZE_FOR_MONTHS MIRRORS THE DATABASE'S closet_size_for_age. Change both together.
+  // Preview: ?fake=kids shows it on any account and NEVER WRITES.
+  // Wording is Claude's (hers to change): the heading, the three questions, the size line.
+  var KIDS_SIZES = [
+    { value: '6-9M',      label: '6-9M' },
+    { value: '9-12M',     label: '9-12M' },
+    { value: '12-18M',    label: '12-18M' },
+    { value: '18-24M',    label: '18-24M' },
+    { value: '2T',        label: '2T' },
+    { value: '3T',        label: '3T' },
+    { value: '4 / XXS',   label: '4' },
+    { value: '5 / XS',    label: '5' },
+    { value: '6 / XS',    label: '6' },
+    { value: '7 / Small', label: '7' }
+  ];
+  function kidsSizeForMonths(m) {
+    if (m < 9)  return '6-9M';
+    if (m < 12) return '9-12M';
+    if (m < 18) return '12-18M';
+    if (m < 24) return '18-24M';
+    if (m < 36) return '2T';
+    if (m < 48) return '3T';
+    if (m < 60) return '4 / XXS';
+    if (m < 72) return '5 / XS';
+    if (m < 84) return '6 / XS';
+    return '7 / Small';
+  }
+  function kidsSizeLabel(v) {
+    for (var i = 0; i < KIDS_SIZES.length; i++) if (KIDS_SIZES[i].value === v) return KIDS_SIZES[i].label;
+    return v || '';
+  }
+  // "a 3T", "a size 4", "12-18M" (no article on the month sizes)
+  function kidsSizePhrase(v) {
+    var l = kidsSizeLabel(v);
+    if (/M$/.test(l)) return l;
+    if (/T$/.test(l)) return 'a ' + l;
+    return 'a size ' + l;
+  }
+  function kidsAgeLabel(age, unit) {
+    if (unit === 'months') return age === 0 ? 'Under 1 month' : age + (age === 1 ? ' month' : ' months');
+    return age + ' years';
+  }
+  // Months used for the size: mid-range, matching the estimated birthday the database saves
+  function kidsAgeMonths(age, unit) { return unit === 'months' ? age : age * 12 + 6; }
+
+  var KIDS_CSS = [
+    '#ks-kids-step{position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147482000;background:#edece0;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:Quicksand,sans-serif;color:#211b1a;}',
+    '#ks-kids-step *{box-sizing:border-box;}',
+    '.ks-kids-step-column{max-width:440px;min-height:100%;margin:0 auto;padding:calc(34px + env(safe-area-inset-top,0px)) 24px calc(30px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:22px;}',
+    '.ks-kids-step-heading-wrap{position:relative;text-align:center;}',
+    '.ks-kids-step-heading-star{position:absolute;top:-6px;right:18px;}',
+    '.ks-kids-step-heading{margin:0;font-family:"Instrument Serif",serif;font-weight:400;font-size:40px;line-height:1.05;}',
+    '.ks-kids-step-name-tag{position:relative;transform:rotate(-2deg);margin:4px 6px;background:#fff;border:2.5px solid #211b1a;border-radius:22px;box-shadow:5px 5px 0 #211b1a;overflow:hidden;}',
+    '.ks-kids-step-name-tag.is-tappable{cursor:pointer;}',
+    '.ks-kids-step-name-tag-top{background:#e54f25;color:#fff;text-align:center;padding:10px 0 8px;font-family:"Instrument Serif",serif;font-size:30px;line-height:1;}',
+    '.ks-kids-step-name-tag-top span{display:block;font-family:Quicksand,sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;margin-top:2px;}',
+    '.ks-kids-step-name-tag-body{padding:18px 20px 20px;display:flex;flex-direction:column;gap:12px;min-height:92px;justify-content:center;}',
+    '.ks-kids-step-name-tag-blank{height:48px;border-bottom:2.5px dashed #b9b5aa;width:70%;}',
+    '.ks-kids-step-name-tag-name{font-family:"Instrument Serif",serif;font-size:48px;line-height:1;word-break:break-word;}',
+    '.ks-kids-step-chips{display:flex;gap:8px;flex-wrap:wrap;}',
+    '.ks-kids-step-chip{padding:6px 12px;border-radius:999px;font-size:14px;font-weight:700;}',
+    '.ks-kids-step-chip--first{background:#f491a9;color:#211b1a;}',
+    '.ks-kids-step-chip--age{background:#eda920;color:#211b1a;}',
+    '.ks-kids-step-chip--size{background:#309359;color:#fff;}',
+    '.ks-kids-step-name-tag-edit{position:absolute;right:16px;bottom:14px;font-size:14px;font-weight:700;color:#211b1a;background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;font-family:Quicksand,sans-serif;}',
+    '.ks-kids-step-question{display:flex;flex-direction:column;gap:12px;}',
+    '.ks-kids-step-question-text{font-family:"Instrument Serif",serif;font-weight:400;font-size:28px;margin:0;line-height:1.15;}',
+    '.ks-kids-step-text-box,.ks-kids-step-age-picker{height:56px;width:100%;border:2.5px solid #211b1a;border-radius:16px;padding:0 16px;font-family:Quicksand,sans-serif;font-size:17px;background:#fff;color:#211b1a;box-shadow:3px 3px 0 #211b1a;-webkit-appearance:none;appearance:none;}',
+    '.ks-kids-step-age-picker{background-image:linear-gradient(45deg,transparent 50%,#211b1a 50%),linear-gradient(135deg,#211b1a 50%,transparent 50%);background-position:calc(100% - 22px) 50%,calc(100% - 16px) 50%;background-size:6px 6px;background-repeat:no-repeat;}',
+    '.ks-kids-step-choice-row{display:flex;gap:12px;}',
+    '.ks-kids-step-choice{flex:1;height:58px;border:2.5px solid #211b1a;background:#fff;border-radius:18px;font-family:Quicksand,sans-serif;font-size:18px;font-weight:700;color:#211b1a;box-shadow:3px 3px 0 #211b1a;cursor:pointer;}',
+    '.ks-kids-step-choice.is-picked{background:#eda920;}',
+    '.ks-kids-step-small-link{align-self:center;font-size:13px;color:#4A4340;margin-top:4px;background:none;border:0;padding:4px;text-decoration:underline;cursor:pointer;font-family:Quicksand,sans-serif;}',
+    '.ks-kids-step-small-link.is-picked{font-weight:700;color:#211b1a;}',
+    '.ks-kids-step-size-line{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:15px;padding:2px 4px;}',
+    '.ks-kids-step-size-change{font-weight:700;color:#211b1a;background:none;border:0;padding:0;text-decoration:underline;cursor:pointer;font-family:Quicksand,sans-serif;font-size:15px;}',
+    '.ks-kids-step-size-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}',
+    '.ks-kids-step-size-choice{height:46px;border:2.5px solid #211b1a;background:#fff;border-radius:14px;font-family:Quicksand,sans-serif;font-size:15px;font-weight:700;color:#211b1a;box-shadow:2px 2px 0 #211b1a;cursor:pointer;padding:0;}',
+    '.ks-kids-step-size-choice.is-picked{background:#eda920;}',
+    '.ks-kids-step-add-another{height:56px;border:2.5px dashed #211b1a;background:transparent;border-radius:18px;font-family:Quicksand,sans-serif;font-size:17px;font-weight:700;color:#211b1a;cursor:pointer;}',
+    '.ks-kids-step-spacer{flex:1;}',
+    '.ks-kids-step-continue{height:58px;border:2.5px solid #211b1a;background:#1c4a91;border-radius:999px;font-family:Quicksand,sans-serif;font-size:18px;font-weight:700;color:#edece0;box-shadow:4px 4px 0 #211b1a;cursor:pointer;}',
+    '.ks-kids-step-continue:disabled{border-color:#b9b5aa;background:transparent;color:#6E6A63;box-shadow:none;cursor:default;}',
+    '.ks-kids-step-error{color:#e54f25;font-size:14px;font-weight:700;text-align:center;margin:0;}',
+    '.ks-kids-step-saved-list{display:flex;flex-direction:column;gap:22px;}'
+  ].join('');
+
+  var _kids = null;   // the open step: { saved: [], cur: {...}, stage, el, fake }
+
+  function kidsStepMaybe(s) {
+    try {
+      if (document.getElementById('ks-kids-step')) return;
+      var fake = (_FAKE === 'kids');
+      var kidsNow = (s && s.children) || [];
+      if (!fake && kidsNow.length) return;
+      // The shop-first landing wait reloads the page when credits land; the step shows then.
+      if (document.getElementById('ks-jjw-cover')) return;
+      kidsStepOpen(fake);
+    } catch (e) { console.error('kids step error', e); }
+  }
+
+  function kidsStepOpen(fake) {
+    if (!document.getElementById('ks-kids-step-style')) {
+      var st = document.createElement('style');
+      st.id = 'ks-kids-step-style';
+      st.textContent = KIDS_CSS;
+      (document.head || document.documentElement).appendChild(st);
+    }
+    var el = document.createElement('div');
+    el.id = 'ks-kids-step';
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-modal', 'true');
+    el.setAttribute('aria-labelledby', 'ks-kids-step-heading');
+    (document.body || document.documentElement).appendChild(el);
+    _kids = { saved: [], cur: kidsBlank(), stage: 'name', el: el, fake: fake, busy: false, error: '', sizeOpen: false };
+    document.documentElement.style.overflow = 'hidden';
+    if (document.body) document.body.style.overflow = 'hidden';
+    if (fake) console.log('[ks-dash] kids step PREVIEW (?fake=kids), saves are not written');
+    kidsRender();
+  }
+
+  function kidsBlank() {
+    return { name: '', gender: '', age: null, unit: '', size: '', byHand: false, replaces: null };
+  }
+
+  function kidsEsc(t) {
+    return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function kidsChipsHtml(c) {
+    var out = '';
+    if (c.gender === 'girl') out += '<span class="ks-kids-step-chip ks-kids-step-chip--first">Girl</span>';
+    if (c.gender === 'boy')  out += '<span class="ks-kids-step-chip ks-kids-step-chip--first">Boy</span>';
+    if (c.age !== null && c.unit) out += '<span class="ks-kids-step-chip ks-kids-step-chip--age">' + kidsEsc(kidsAgeLabel(c.age, c.unit)) + '</span>';
+    if (c.size) out += '<span class="ks-kids-step-chip ks-kids-step-chip--size">Size ' + kidsEsc(kidsSizeLabel(c.size)) + '</span>';
+    return out ? '<div class="ks-kids-step-chips">' + out + '</div>' : '';
+  }
+
+  function kidsNameTagHtml(c, opts) {
+    opts = opts || {};
+    var body = c.name
+      ? '<div class="ks-kids-step-name-tag-name">' + kidsEsc(c.name) + '</div>' + kidsChipsHtml(c)
+      : '<div class="ks-kids-step-name-tag-blank"></div>';
+    return '<div class="ks-kids-step-name-tag' + (opts.tappable ? ' is-tappable' : '') + '"' +
+      (opts.tappable ? ' data-kids-step="change-name" role="button" tabindex="0" aria-label="Change the name"' : '') + '>' +
+      '<div class="ks-kids-step-name-tag-top">Hello!<span>MY NAME IS</span></div>' +
+      '<div class="ks-kids-step-name-tag-body">' + body + '</div>' +
+      (opts.editIndex !== undefined ? '<button type="button" class="ks-kids-step-name-tag-edit" data-kids-step="edit" data-kids-index="' + opts.editIndex + '">Edit</button>' : '') +
+      '</div>';
+  }
+
+  function kidsAgeOptionsHtml(c) {
+    var html = '<option value="">Pick an age</option>';
+    for (var m = 0; m < 24; m++) {
+      var sel = (c.unit === 'months' && c.age === m) ? ' selected' : '';
+      html += '<option value="months:' + m + '"' + sel + '>' + kidsAgeLabel(m, 'months') + '</option>';
+    }
+    for (var y = 2; y <= 12; y++) {
+      var sely = (c.unit === 'years' && c.age === y) ? ' selected' : '';
+      html += '<option value="years:' + y + '"' + sely + '>' + kidsAgeLabel(y, 'years') + '</option>';
+    }
+    return html;
+  }
+
+  function kidsRender() {
+    var k = _kids; if (!k) return;
+    var c = k.cur;
+    var star = '<svg class="ks-kids-step-heading-star" width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1 L14.6 9.4 L23 12 L14.6 14.6 L12 23 L9.4 14.6 L1 12 L9.4 9.4 Z" fill="#f491a9"></path></svg>';
+    var html = '<div class="ks-kids-step-column">' +
+      '<div class="ks-kids-step-heading-wrap">' + star +
+      '<h1 class="ks-kids-step-heading" id="ks-kids-step-heading">Tell us about your kids</h1></div>';
+
+    if (k.stage === 'done') {
+      html += '<div class="ks-kids-step-saved-list">';
+      k.saved.forEach(function (sc, i) { html += kidsNameTagHtml(sc, { editIndex: i }); });
+      html += '</div>' +
+        '<button type="button" class="ks-kids-step-add-another" data-kids-step="add-another">+ Add another child</button>' +
+        '<div class="ks-kids-step-spacer"></div>' +
+        (k.error ? '<p class="ks-kids-step-error" role="alert">' + kidsEsc(k.error) + '</p>' : '') +
+        '<button type="button" class="ks-kids-step-continue" data-kids-step="finish"' + (k.busy ? ' disabled' : '') + '>Continue</button>';
+    } else {
+      html += kidsNameTagHtml(c, { tappable: k.stage !== 'name' });
+      var canGo = false;
+      if (k.stage === 'name') {
+        html += '<div class="ks-kids-step-question">' +
+          '<label for="ks-kids-step-name-box" class="ks-kids-step-question-text">What\'s your child\'s first name?</label>' +
+          '<input id="ks-kids-step-name-box" class="ks-kids-step-text-box" type="text" maxlength="40" autocomplete="off" autocapitalize="words" enterkeyhint="next" value="' + kidsEsc(c.name) + '">' +
+          '</div>';
+        canGo = !!c.name.trim();
+      } else if (k.stage === 'gender') {
+        html += '<div class="ks-kids-step-question">' +
+          '<div class="ks-kids-step-question-text">' + kidsEsc(c.name) + ' is a…</div>' +
+          '<div class="ks-kids-step-choice-row">' +
+          '<button type="button" class="ks-kids-step-choice' + (c.gender === 'girl' ? ' is-picked' : '') + '" data-kids-step="gender" data-kids-value="girl">Girl</button>' +
+          '<button type="button" class="ks-kids-step-choice' + (c.gender === 'boy' ? ' is-picked' : '') + '" data-kids-step="gender" data-kids-value="boy">Boy</button>' +
+          '</div>' +
+          '<button type="button" class="ks-kids-step-small-link' + (c.gender === 'not_said' ? ' is-picked' : '') + '" data-kids-step="gender" data-kids-value="not_said">I\'d rather not say</button>' +
+          '</div>';
+        canGo = !!c.gender;
+      } else if (k.stage === 'age') {
+        var who = c.gender === 'girl' ? 'she wears' : (c.gender === 'boy' ? 'he wears' : kidsEsc(c.name) + ' wears');
+        html += '<div class="ks-kids-step-question">' +
+          '<label for="ks-kids-step-age-picker" class="ks-kids-step-question-text">How old is ' + kidsEsc(c.name) + '?</label>' +
+          '<select id="ks-kids-step-age-picker" class="ks-kids-step-age-picker">' + kidsAgeOptionsHtml(c) + '</select>';
+        if (c.size) {
+          html += '<div class="ks-kids-step-size-line"><span>' +
+            (c.byHand ? kidsEsc(c.name) + ' wears <b>' + kidsEsc(kidsSizeLabel(c.size)) + '</b>.'
+                      : 'We think ' + who + ' <b>' + kidsEsc(kidsSizePhrase(c.size)) + '</b>.') +
+            '</span><button type="button" class="ks-kids-step-size-change" data-kids-step="size-open">Change</button></div>';
+        }
+        if (k.sizeOpen) {
+          html += '<div class="ks-kids-step-size-grid" role="group" aria-label="Sizes">';
+          KIDS_SIZES.forEach(function (sz) {
+            html += '<button type="button" class="ks-kids-step-size-choice' + (c.size === sz.value ? ' is-picked' : '') + '" data-kids-step="size" data-kids-value="' + kidsEsc(sz.value) + '">' + kidsEsc(sz.label) + '</button>';
+          });
+          html += '</div>';
+        }
+        html += '</div>';
+        canGo = c.age !== null && !!c.size && !k.busy;
+      }
+      html += '<div class="ks-kids-step-spacer"></div>' +
+        (k.error ? '<p class="ks-kids-step-error" role="alert">' + kidsEsc(k.error) + '</p>' : '') +
+        '<button type="button" class="ks-kids-step-continue" data-kids-step="continue"' + (canGo ? '' : ' disabled') + '>' + (k.busy ? 'Saving…' : 'Continue') + '</button>';
+    }
+    html += '</div>';
+    k.el.innerHTML = html;
+    kidsWire();
+  }
+
+  function kidsWire() {
+    var k = _kids; if (!k) return;
+    var box = k.el.querySelector('#ks-kids-step-name-box');
+    if (box) {
+      box.addEventListener('input', function () {
+        k.cur.name = box.value;
+        var go = k.el.querySelector('[data-kids-step="continue"]');
+        if (go) go.disabled = !box.value.trim();
+        var tagBody = k.el.querySelector('.ks-kids-step-name-tag-body');
+        if (tagBody) tagBody.innerHTML = box.value.trim()
+          ? '<div class="ks-kids-step-name-tag-name">' + kidsEsc(box.value.trim()) + '</div>'
+          : '<div class="ks-kids-step-name-tag-blank"></div>';
+      });
+      box.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter') { ev.preventDefault(); kidsContinue(); }
+      });
+      setTimeout(function () { try { box.focus(); } catch (e) {} }, 50);
+    }
+    var age = k.el.querySelector('#ks-kids-step-age-picker');
+    if (age) {
+      age.addEventListener('change', function () {
+        var v = age.value;
+        if (!v) { k.cur.age = null; k.cur.unit = ''; if (!k.cur.byHand) k.cur.size = ''; kidsRender(); return; }
+        var p = v.split(':');
+        k.cur.unit = p[0]; k.cur.age = parseInt(p[1], 10);
+        if (!k.cur.byHand) k.cur.size = kidsSizeForMonths(kidsAgeMonths(k.cur.age, k.cur.unit));
+        k.error = '';
+        kidsRender();
+      });
+    }
+    var tag = k.el.querySelector('[data-kids-step="change-name"]');
+    if (tag) tag.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); kidsGo('name'); }
+    });
+  }
+
+  function kidsGo(stage) {
+    if (!_kids) return;
+    _kids.stage = stage; _kids.error = ''; _kids.sizeOpen = false;
+    kidsRender();
+    try { _kids.el.scrollTop = 0; } catch (e) {}
+  }
+
+  function kidsContinue() {
+    var k = _kids; if (!k || k.busy) return;
+    var c = k.cur;
+    if (k.stage === 'name') {
+      c.name = c.name.trim();
+      if (!c.name) return;
+      kidsGo('gender');
+    } else if (k.stage === 'gender') {
+      if (c.gender) kidsGo('age');
+    } else if (k.stage === 'age') {
+      if (c.age === null || !c.size) return;
+      kidsSave();
+    }
+  }
+
+  function kidsSave() {
+    var k = _kids; var c = k.cur;
+    k.busy = true; k.error = ''; kidsRender();
+    var payload = {
+      name: c.name, gender: c.gender, age: String(c.age), age_unit: c.unit,
+      size: c.byHand ? c.size : '', size_by_hand: c.byHand ? 'true' : 'false'
+    };
+    var done = function (resp) {
+      k.busy = false;
+      if (resp && resp.ok && resp.child) {
+        var saved = { id: resp.child.id, name: c.name, gender: c.gender, age: c.age, unit: c.unit,
+                      size: resp.child.size || c.size, byHand: c.byHand };
+        var replaced = c.replaces;
+        if (replaced) {
+          for (var i = 0; i < k.saved.length; i++) if (k.saved[i].id === replaced) { k.saved.splice(i, 1, saved); saved = null; break; }
+          kidsRemoveOld(replaced);
+        }
+        if (saved) k.saved.push(saved);
+        k.cur = kidsBlank();
+        kidsGo('done');
+      } else {
+        console.error('kids step save error', resp);
+        k.error = "Couldn't save that. Please try again.";
+        kidsRender();
+      }
+    };
+    if (k.fake) {
+      setTimeout(function () { done({ ok: true, child: { id: 'preview-' + Date.now(), size: c.size } }); }, 400);
+      return;
+    }
+    var token = window.$memberstackDom.getMemberCookie();
+    if (!token) { done(null); return; }
+    fetch(CHILD_URL, {
+      method: 'POST',
+      headers: { 'x-ms-token': token, 'apikey': ANON, 'Authorization': 'Bearer ' + ANON, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'add', child: payload })
+    })
+      .then(function (r) { return r.json(); })
+      .then(done)
+      .catch(function (e) { console.error('kids step save error', e); done(null); });
+  }
+
+  // Editing a saved child saves her again as new, then removes the old row (the remove path)
+  function kidsRemoveOld(id) {
+    if (!_kids || _kids.fake || !id) return;
+    var token = window.$memberstackDom.getMemberCookie();
+    if (!token) return;
+    fetch(CHILD_URL, {
+      method: 'POST',
+      headers: { 'x-ms-token': token, 'apikey': ANON, 'Authorization': 'Bearer ' + ANON, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'remove', child_id: id })
+    }).then(function (r) { return r.json(); })
+      .then(function (resp) { if (!resp || !resp.ok) console.error('kids step: old row not removed', id, resp); })
+      .catch(function (e) { console.error('kids step: old row not removed', id, e); });
+  }
+
+  function kidsFinish() {
+    var k = _kids; if (!k || !k.saved.length) return;
+    k.busy = true; kidsRender();
+    var close = function () {
+      if (k.el.parentNode) k.el.parentNode.removeChild(k.el);
+      document.documentElement.style.overflow = '';
+      if (document.body) document.body.style.overflow = '';
+      _kids = null;
+    };
+    if (k.fake) { close(); return; }
+    // Repaint the dashboard's kids list from the server, then lift the step
+    var token = window.$memberstackDom.getMemberCookie();
+    fetch(FN_URL, { method: 'POST', headers: { 'x-ms-token': token, 'apikey': ANON, 'Authorization': 'Bearer ' + ANON } })
+      .then(function (r) { return r.json(); })
+      .then(function (st) { if (st && !st.error) paintChildren(st); })
+      .catch(function () {})
+      .then(close);
+  }
+
+  document.addEventListener('click', function (ev) {
+    var k = _kids; if (!k) return;
+    var t = ev.target && ev.target.closest ? ev.target.closest('[data-kids-step]') : null;
+    if (!t || !k.el.contains(t)) return;
+    var act = t.getAttribute('data-kids-step');
+    var val = t.getAttribute('data-kids-value');
+    if (act === 'continue') { ev.preventDefault(); kidsContinue(); }
+    else if (act === 'change-name') { kidsGo('name'); }
+    else if (act === 'gender') {
+      ev.preventDefault();
+      k.cur.gender = val; kidsRender();
+      setTimeout(function () { if (_kids && _kids.stage === 'gender') kidsGo('age'); }, 350);
+    }
+    else if (act === 'size-open') { ev.preventDefault(); k.sizeOpen = !k.sizeOpen; kidsRender(); }
+    else if (act === 'size') {
+      ev.preventDefault();
+      k.cur.size = val; k.cur.byHand = true; k.sizeOpen = false; kidsRender();
+    }
+    else if (act === 'add-another') { ev.preventDefault(); k.cur = kidsBlank(); kidsGo('name'); }
+    else if (act === 'edit') {
+      ev.preventDefault();
+      var sc = k.saved[parseInt(t.getAttribute('data-kids-index'), 10)];
+      if (!sc) return;
+      k.cur = { name: sc.name, gender: sc.gender, age: sc.age, unit: sc.unit, size: sc.size, byHand: sc.byHand, replaces: sc.id };
+      kidsGo('name');
+    }
+    else if (act === 'finish') { ev.preventDefault(); kidsFinish(); }
+  });
+
   // ---------- RUN ----------
   setTimeout(reveal, 4000);
 
@@ -3404,7 +3806,7 @@ function paintCloset(s) {
   })
     .then(function (res) { return res.json(); })
     .then(function (state) {
-if (state && !state.error) { applyFake(state); nameFromState(state); paint(state); paintGreeting(state); paintBagButton(state); addrBuild(); packWaitStart(); jjWaitMaybe(state); planNoteMaybe(state); }
+if (state && !state.error) { applyFake(state); nameFromState(state); paint(state); paintGreeting(state); paintBagButton(state); addrBuild(); packWaitStart(); jjWaitMaybe(state); planNoteMaybe(state); kidsStepMaybe(state); }
 else { console.error('member-state error', state); neutralGreeting(); jjWaitMaybe(null); }
     })
     .catch(function (e) { console.error('member-state paint error', e); neutralGreeting(); });
