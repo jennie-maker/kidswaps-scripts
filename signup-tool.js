@@ -1370,6 +1370,29 @@
     paintNav({ onNext: function () { checkAddress(ask); } });
   }
 
+  /* ---- S437: TIDY THE CITY AND STREET AT THE SOURCE ----------------------
+     Hers S437. Whatever is saved here is what step 5, checkout, the thank-you
+     sheet and the Order Confirmation email print, so it is tidied ONCE, here.
+     Only a field typed ALL lowercase or ALL capitals is changed ("san diego",
+     "SAN DIEGO" -> "San Diego"). If she used capitals herself ("McFarland")
+     it is left exactly as typed. Directions (N, NW...) and PO stay capitals.
+     line2 (her unit) is never touched. */
+  function tidyCase(v) {
+    v = String(v || '').replace(/\s+/g, ' ').trim();
+    if (!/[a-z]/i.test(v)) return v;
+    if (v !== v.toLowerCase() && v !== v.toUpperCase()) return v;
+    return v.toLowerCase().replace(/[a-z][a-z']*/g, function (w) {
+      if (/^(n|s|e|w|ne|nw|se|sw|po)$/.test(w)) return w.toUpperCase();
+      return w.charAt(0).toUpperCase() + w.slice(1);
+    }).replace(/(\d)([A-Z])([a-z]+)/g, function (m, d, c, rest) {
+      return d + c.toLowerCase() + rest;   /* "1St" back to "1st" */
+    });
+  }
+  function tidyAddr() {
+    S.addr.line1 = tidyCase(S.addr.line1);
+    S.addr.city  = tidyCase(S.addr.city);
+  }
+
   function addrComplete() {
     var a = S.addr;
     return a.line1.trim() && a.city.trim() && a.state.trim() && a.zip.trim();
@@ -1380,6 +1403,7 @@
     if (!addrComplete()) { note(body, 'ks-wz-err', COPY.s4.errMissing); return; }
     if (!/^[A-Za-z]{2}$/.test(S.addr.state)) { note(body, 'ks-wz-err', COPY.s4.errState); return; }
     note(body, 'ks-wz-err', '');
+    tidyAddr();
 
     if (!lock(nextBtn)) return;
 
@@ -1468,6 +1492,7 @@
         S.addr.state = S.addrSugg.state || S.addr.state;
         S.addr.zip   = (S.addrSugg.zip || S.addr.zip).slice(0, 5);
         S.addr.line2 = keep;
+        tidyAddr();
       }
       track('addr_ask', { code: S.addrCode, choice: 'accept' });
       go(5);
