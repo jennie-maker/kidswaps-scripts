@@ -1054,7 +1054,7 @@ label.textContent = 'Credit Bank';   // hers S406
   // the pour waits until the bowl is on screen (a phone may need a scroll)
   function whenBankOnScreen(box, go) {
     var done = false;
-    function once() { if (!done) { done = true; setTimeout(go, 250); } }
+    function once() { if (!done) { done = true; setTimeout(function () { kidsWhenClosed(go); }, 250); } }   // S435: waits for the kids step
     if (!('IntersectionObserver' in window)) { once(); return; }
     var io = new IntersectionObserver(function (ents) { ents.forEach(function (en) { if (en.isIntersecting) { io.disconnect(); once(); } }); }, { threshold: 0.6 });
     io.observe(box);
@@ -3409,6 +3409,7 @@ function paintCloset(s) {
     { value: '7 / Small', label: '7' }
   ];
   function kidsSizeForMonths(m) {
+    if (m < 3)  return '';            // S435: outside the closet's range, no size (database returns null)
     if (m < 9)  return '6-9M';
     if (m < 12) return '9-12M';
     if (m < 18) return '12-18M';
@@ -3418,7 +3419,8 @@ function paintCloset(s) {
     if (m < 60) return '4 / XXS';
     if (m < 72) return '5 / XS';
     if (m < 84) return '6 / XS';
-    return '7 / Small';
+    if (m < 108) return '7 / Small';
+    return '';
   }
   function kidsSizeLabel(v) {
     for (var i = 0; i < KIDS_SIZES.length; i++) if (KIDS_SIZES[i].value === v) return KIDS_SIZES[i].label;
@@ -3435,6 +3437,7 @@ function paintCloset(s) {
   // choices are the month ranges; each saves as its middle month, so the estimated birthday
   // sits mid-range and the database picks the same size.
   var KIDS_AGES = [
+    { unit: 'months', age: 4,  label: '3 to 6 months',   chip: '3-6 months' },
     { unit: 'months', age: 7,  label: '6 to 9 months',   chip: '6-9 months' },
     { unit: 'months', age: 10, label: '9 to 12 months',  chip: '9-12 months' },
     { unit: 'months', age: 15, label: '12 to 18 months', chip: '12-18 months' },
@@ -3445,8 +3448,17 @@ function paintCloset(s) {
     { unit: 'years',  age: 5,  label: '5 years',  chip: '5 years' },
     { unit: 'years',  age: 6,  label: '6 years',  chip: '6 years' },
     { unit: 'years',  age: 7,  label: '7 years',  chip: '7 years' },
-    { unit: 'other',  age: 0,  label: 'Other',    chip: '' }        // hers S435: outside the range, saved with no age or size
+    { unit: 'years',  age: 8,  label: '8 years',  chip: '8 years' }
   ];
+  // "Other" (hers S435) opens a number box plus Months / Years, for any age outside the list.
+  function kidsInList(age, unit) {
+    for (var i = 0; i < KIDS_AGES.length; i++) if (KIDS_AGES[i].unit === unit && KIDS_AGES[i].age === age) return true;
+    return false;
+  }
+  // First letter of each word capitalised, the rest left as typed (so McKenzie stays McKenzie)
+  function kidsCap(n) {
+    return String(n || '').trim().replace(/(^|[\s-])(\S)/g, function (m, a, b) { return a + b.toUpperCase(); });
+  }
   function kidsAgeLabel(age, unit) {
     for (var i = 0; i < KIDS_AGES.length; i++) if (KIDS_AGES[i].unit === unit && KIDS_AGES[i].age === age) return KIDS_AGES[i].chip;
     return unit === 'months' ? age + ' months' : age + ' years';
@@ -3455,7 +3467,7 @@ function paintCloset(s) {
   function kidsAgeMonths(age, unit) { return unit === 'months' ? age : age * 12 + 6; }
 
   var KIDS_CSS = [
-    '#ks-kids-step{position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147482000;background:#edece0;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:Quicksand,sans-serif;color:#211b1a;}',
+    '#ks-kids-step{position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147482000;background:rgba(237,236,224,0.86);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:Quicksand,sans-serif;color:#211b1a;}',
     '#ks-kids-step *{box-sizing:border-box;}',
     '.ks-kids-step-column{max-width:440px;min-height:100%;margin:0 auto;padding:calc(34px + env(safe-area-inset-top,0px)) 24px calc(84px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:22px;}',
     '.ks-kids-step-heading-wrap{position:relative;text-align:center;}',
@@ -3501,6 +3513,10 @@ function paintCloset(s) {
   ].join('');
 
   var _kids = null;   // the open step: { saved: [], cur: {...}, stage, el, fake }
+  // S435, hers: the dashboard shows faintly through the step, and the coin pour waits
+  // until the step is finished. whenBankOnScreen hands its start to this.
+  var _kidsAfter = [];
+  function kidsWhenClosed(fn) { if (_kids) _kidsAfter.push(fn); else fn(); }
 
   function kidsStepMaybe(s) {
     try {
@@ -3535,7 +3551,7 @@ function paintCloset(s) {
   }
 
   function kidsBlank() {
-    return { name: '', gender: '', age: null, unit: '', size: '', byHand: false, replaces: null };
+    return { name: '', gender: '', age: null, unit: '', size: '', byHand: false, replaces: null, other: false };
   }
 
   function kidsEsc(t) {
@@ -3548,7 +3564,9 @@ function paintCloset(s) {
     var out = '';
     if (c.gender === 'girl') out += '<span class="ks-kids-step-chip ks-kids-step-chip--first">Girl</span>';
     if (c.gender === 'boy')  out += '<span class="ks-kids-step-chip ks-kids-step-chip--first">Boy</span>';
-    if (c.age !== null && c.unit === 'years') out += '<span class="ks-kids-step-chip ks-kids-step-chip--age">' + kidsEsc(kidsAgeLabel(c.age, c.unit)) + '</span>';
+    // Under 2 the size chip already says the range (6-9M etc.), so that age chip is dropped
+    var sameAsSize = c.unit === 'months' && !c.byHand && [7, 10, 15, 21].indexOf(c.age) !== -1;
+    if (c.age !== null && c.unit && !sameAsSize) out += '<span class="ks-kids-step-chip ks-kids-step-chip--age">' + kidsEsc(kidsAgeLabel(c.age, c.unit)) + '</span>';
     if (c.size) out += '<span class="ks-kids-step-chip ks-kids-step-chip--size">Size ' + kidsEsc(kidsSizeLabel(c.size)) + '</span>';
     return out ? '<div class="ks-kids-step-chips">' + out + '</div>' : '';
   }
@@ -3556,7 +3574,7 @@ function paintCloset(s) {
   function kidsNameTagHtml(c, opts) {
     opts = opts || {};
     var body = c.name
-      ? '<div class="ks-kids-step-name-tag-name">' + kidsEsc(c.name) + '</div>' + kidsChipsHtml(c)
+      ? '<div class="ks-kids-step-name-tag-name">' + kidsEsc(kidsCap(c.name)) + '</div>' + kidsChipsHtml(c)
       : '<div class="ks-kids-step-name-tag-blank"></div>';
     return '<div class="ks-kids-step-name-tag' + (opts.tappable ? ' is-tappable' : '') + '"' +
       (opts.tappable ? ' data-kids-step="change-name" role="button" tabindex="0" aria-label="Change the name"' : '') + '>' +
@@ -3569,10 +3587,15 @@ function paintCloset(s) {
   function kidsAgeOptionsHtml(c) {
     var html = '<option value="">Pick an age</option>';
     KIDS_AGES.forEach(function (a) {
-      var sel = (c.unit === a.unit && c.age === a.age) ? ' selected' : '';
+      var sel = (!c.other && c.unit === a.unit && c.age === a.age) ? ' selected' : '';
       html += '<option value="' + a.unit + ':' + a.age + '"' + sel + '>' + a.label + '</option>';
     });
+    html += '<option value="other"' + (c.other ? ' selected' : '') + '>Other</option>';
     return html;
+  }
+  function kidsOtherValid(c) {
+    if (c.age === null || !c.unit) return false;
+    return c.unit === 'months' ? (c.age >= 0 && c.age <= 23) : (c.age >= 2 && c.age <= 17);
   }
 
   function kidsRender() {
@@ -3595,18 +3618,20 @@ function paintCloset(s) {
       var canGo = false;
       if (k.stage === 'name') {
         html += '<div class="ks-kids-step-name-tag">' +
-          '<div class="ks-kids-step-name-tag-top">Hello!<span>MY NAME IS</span></div>' +
+          '<div class="ks-kids-step-name-tag-top">Hello!<span>MY CHILD\'S NAME IS</span></div>' +
           '<div class="ks-kids-step-name-tag-body">' +
           '<input id="ks-kids-step-name-box" class="ks-kids-step-name-on-tag" type="text" maxlength="40" autocomplete="off" autocapitalize="words" enterkeyhint="next" placeholder="Name" aria-label="Your child\'s first name" value="' + kidsEsc(c.name) + '">' +
           '</div></div>' +
           '<p class="ks-kids-step-tag-hint">Write your child\'s first name on the tag.</p>';
+        // ⚠ The tag says MY CHILD'S NAME IS while she types, then MY NAME IS once it's filled
+        //   (hers S435: she must never put her own name here).
         canGo = !!c.name.trim();
       } else {
         html += kidsNameTagHtml(c, { tappable: true });
       }
       if (k.stage === 'gender') {
         html += '<div class="ks-kids-step-question">' +
-          '<div class="ks-kids-step-question-text">' + kidsEsc(c.name) + ' is a…</div>' +
+          '<div class="ks-kids-step-question-text">' + kidsEsc(kidsCap(c.name)) + ' is a…</div>' +
           '<div class="ks-kids-step-choice-row">' +
           '<button type="button" class="ks-kids-step-choice' + (c.gender === 'girl' ? ' is-picked' : '') + '" data-kids-step="gender" data-kids-value="girl">Girl</button>' +
           '<button type="button" class="ks-kids-step-choice' + (c.gender === 'boy' ? ' is-picked' : '') + '" data-kids-step="gender" data-kids-value="boy">Boy</button>' +
@@ -3615,17 +3640,24 @@ function paintCloset(s) {
           '</div>';
         canGo = !!c.gender;
       } else if (k.stage === 'age') {
-        var who = c.gender === 'girl' ? 'she wears' : (c.gender === 'boy' ? 'he wears' : kidsEsc(c.name) + ' wears');
+        var who = c.gender === 'girl' ? 'she wears' : (c.gender === 'boy' ? 'he wears' : kidsEsc(kidsCap(c.name)) + ' wears');
         html += '<div class="ks-kids-step-question">' +
-          '<label for="ks-kids-step-age-picker" class="ks-kids-step-question-text">How old is ' + kidsEsc(c.name) + '?</label>' +
+          '<label for="ks-kids-step-age-picker" class="ks-kids-step-question-text">How old is ' + kidsEsc(kidsCap(c.name)) + '?</label>' +
           '<select id="ks-kids-step-age-picker" class="ks-kids-step-age-picker">' + kidsAgeOptionsHtml(c) + '</select>';
-        if (c.size && c.unit !== 'other') {
+        if (c.other) {
+          html += '<div class="ks-kids-step-choice-row">' +
+            '<input id="ks-kids-step-other-age" class="ks-kids-step-text-box" type="text" inputmode="numeric" maxlength="2" placeholder="Age" aria-label="Age" style="flex:1" value="' + (c.age === null ? '' : c.age) + '">' +
+            '<button type="button" class="ks-kids-step-choice' + (c.unit === 'months' ? ' is-picked' : '') + '" data-kids-step="other-unit" data-kids-value="months">Months</button>' +
+            '<button type="button" class="ks-kids-step-choice' + (c.unit === 'years' ? ' is-picked' : '') + '" data-kids-step="other-unit" data-kids-value="years">Years</button>' +
+            '</div>';
+        }
+        if (c.size) {
           html += '<div class="ks-kids-step-size-line"><span>' +
-            (c.byHand ? kidsEsc(c.name) + ' wears <b>' + kidsEsc(kidsSizeLabel(c.size)) + '</b>.'
+            (c.byHand ? kidsEsc(kidsCap(c.name)) + ' wears <b>' + kidsEsc(kidsSizeLabel(c.size)) + '</b>.'
                       : 'We think ' + who + ' <b>' + kidsEsc(kidsSizePhrase(c.size)) + '</b>.') +
             '</span><button type="button" class="ks-kids-step-size-change" data-kids-step="size-open">Change</button></div>';
         }
-        if (k.sizeOpen && c.unit !== 'other') {
+        if (k.sizeOpen) {
           html += '<div class="ks-kids-step-size-grid" role="group" aria-label="Sizes">';
           KIDS_SIZES.forEach(function (sz) {
             html += '<button type="button" class="ks-kids-step-size-choice' + (c.size === sz.value ? ' is-picked' : '') + '" data-kids-step="size" data-kids-value="' + kidsEsc(sz.value) + '">' + kidsEsc(sz.label) + '</button>';
@@ -3633,7 +3665,7 @@ function paintCloset(s) {
           html += '</div>';
         }
         html += '</div>';
-        canGo = c.age !== null && (!!c.size || c.unit === 'other') && !k.busy;
+        canGo = (c.other ? kidsOtherValid(c) : (c.age !== null && !!c.size)) && !k.busy;
       }
       html += '<div class="ks-kids-step-spacer"></div>' +
         (k.error ? '<p class="ks-kids-step-error" role="alert">' + kidsEsc(k.error) + '</p>' : '') +
@@ -3662,13 +3694,30 @@ function paintCloset(s) {
     if (age) {
       age.addEventListener('change', function () {
         var v = age.value;
+        if (v === 'other') {
+          k.cur.other = true; k.cur.age = null; k.cur.unit = ''; if (!k.cur.byHand) k.cur.size = '';
+          k.error = ''; kidsRender();
+          var ob = k.el.querySelector('#ks-kids-step-other-age'); if (ob) ob.focus();
+          return;
+        }
+        k.cur.other = false;
         if (!v) { k.cur.age = null; k.cur.unit = ''; if (!k.cur.byHand) k.cur.size = ''; kidsRender(); return; }
         var p = v.split(':');
         k.cur.unit = p[0]; k.cur.age = parseInt(p[1], 10);
-        if (k.cur.unit === 'other') { k.cur.size = ''; k.cur.byHand = false; k.sizeOpen = false; }
-        else if (!k.cur.byHand) k.cur.size = kidsSizeForMonths(kidsAgeMonths(k.cur.age, k.cur.unit));
+        if (!k.cur.byHand) k.cur.size = kidsSizeForMonths(kidsAgeMonths(k.cur.age, k.cur.unit));
         k.error = '';
         kidsRender();
+      });
+    }
+    var ob = k.el.querySelector('#ks-kids-step-other-age');
+    if (ob) {
+      ob.addEventListener('input', function () {
+        var n = ob.value.replace(/[^0-9]/g, ''); if (n !== ob.value) ob.value = n;
+        k.cur.age = n === '' ? null : parseInt(n, 10);
+        kidsOtherSize();
+        kidsRender();                            // redraw (size line, chips, Continue), keep her typing
+        var again = k.el.querySelector('#ks-kids-step-other-age');
+        if (again) { again.focus(); try { again.setSelectionRange(again.value.length, again.value.length); } catch (e) {} }
       });
     }
     var tag = k.el.querySelector('[data-kids-step="change-name"]');
@@ -3677,6 +3726,11 @@ function paintCloset(s) {
     });
   }
 
+  function kidsOtherSize() {
+    var c = _kids.cur;
+    if (c.byHand) return;
+    c.size = kidsOtherValid(c) ? kidsSizeForMonths(c.unit === 'months' ? c.age : c.age * 12 + 6) : '';
+  }
   function kidsGo(stage) {
     if (!_kids) return;
     _kids.stage = stage; _kids.error = ''; _kids.sizeOpen = false;
@@ -3694,7 +3748,7 @@ function paintCloset(s) {
     } else if (k.stage === 'gender') {
       if (c.gender) kidsGo('age');
     } else if (k.stage === 'age') {
-      if (c.age === null || (!c.size && c.unit !== 'other')) return;
+      if (c.other ? !kidsOtherValid(c) : (c.age === null || !c.size)) return;
       kidsSave();
     }
   }
@@ -3703,14 +3757,14 @@ function paintCloset(s) {
     var k = _kids; var c = k.cur;
     k.busy = true; k.error = ''; kidsRender();
     var payload = {
-      name: c.name, gender: c.gender, age: String(c.age), age_unit: c.unit,
-      size: (c.byHand && c.unit !== 'other') ? c.size : '', size_by_hand: (c.byHand && c.unit !== 'other') ? 'true' : 'false'
+      name: kidsCap(c.name), gender: c.gender, age: String(c.age), age_unit: c.unit,
+      size: c.byHand ? c.size : '', size_by_hand: c.byHand ? 'true' : 'false'
     };
     var done = function (resp) {
       k.busy = false;
       if (resp && resp.ok && resp.child) {
-        var saved = { id: resp.child.id, name: c.name, gender: c.gender, age: c.age, unit: c.unit,
-                      size: c.unit === 'other' ? '' : (resp.child.size || c.size), byHand: c.byHand };
+        var saved = { id: resp.child.id, name: kidsCap(c.name), gender: c.gender, age: c.age, unit: c.unit,
+                      size: resp.child.size || '', byHand: c.byHand, other: c.other };
         var replaced = c.replaces;
         if (replaced) {
           for (var i = 0; i < k.saved.length; i++) if (k.saved[i].id === replaced) { k.saved.splice(i, 1, saved); saved = null; break; }
@@ -3763,6 +3817,8 @@ function paintCloset(s) {
       document.documentElement.style.overflow = '';
       if (document.body) document.body.style.overflow = '';
       _kids = null;
+      var q = _kidsAfter; _kidsAfter = [];
+      q.forEach(function (fn) { try { fn(); } catch (e) { console.error('kids step: after-close error', e); } });
     };
     if (k.fake) { close(); return; }
     // Repaint the dashboard's kids list from the server, then lift the step
@@ -3787,6 +3843,10 @@ function paintCloset(s) {
       k.cur.gender = val; kidsRender();
       setTimeout(function () { if (_kids && _kids.stage === 'gender') kidsGo('age'); }, 350);
     }
+    else if (act === 'other-unit') {
+      ev.preventDefault();
+      k.cur.unit = val; kidsOtherSize(); kidsRender();
+    }
     else if (act === 'size-open') { ev.preventDefault(); k.sizeOpen = !k.sizeOpen; kidsRender(); }
     else if (act === 'size') {
       ev.preventDefault();
@@ -3797,7 +3857,8 @@ function paintCloset(s) {
       ev.preventDefault();
       var sc = k.saved[parseInt(t.getAttribute('data-kids-index'), 10)];
       if (!sc) return;
-      k.cur = { name: sc.name, gender: sc.gender, age: sc.age, unit: sc.unit, size: sc.size, byHand: sc.byHand, replaces: sc.id };
+      k.cur = { name: sc.name, gender: sc.gender, age: sc.age, unit: sc.unit, size: sc.size, byHand: sc.byHand, replaces: sc.id,
+                other: !kidsInList(sc.age, sc.unit) };
       kidsGo('name');
     }
     else if (act === 'finish') { ev.preventDefault(); kidsFinish(); }
