@@ -2499,64 +2499,89 @@ function paintCloset(s) {
 
   // ---------- CHILDREN (list paint) ----------
   
+  // S436, hers: the kids list in Account & Settings is the name-tag look in small (mockup
+  // https://claude.ai/artifact/3CfkAdU7USMt8b59F2FAcx boards 3 and 4). Up to two size chips,
+  // "14 months" under 2, Edit opens the kids step on that child, "+ Add another child" opens
+  // it for a new one. The old Webflow template (data-child-template) is no longer used, and
+  // the quiz lines it carried (style, brands...) aren't shown; the quiz is post-launch.
+  // ⚠ The row keeps class ks-child, data-child-id and the data-child-remove button, because
+  //   wireChildRemove finds them by those names.
+  var _lastKids = [];
+  var KIDS_LIST_CSS = [
+    '.ks-kids-list{display:flex;flex-direction:column;gap:12px;padding:4px 0 10px;font-family:Quicksand,sans-serif;color:#211b1a;}',
+    '.ks-kids-list-row{display:flex;align-items:center;gap:14px;padding:14px 16px;border:2px solid #211b1a;border-radius:16px;background:#fff;}',
+    '.ks-kids-list-initial{flex:0 0 48px;height:48px;border-radius:12px;background:#e54f25;color:#fff;display:flex;align-items:center;justify-content:center;font-family:"Instrument Serif",serif;font-size:28px;line-height:1;}',
+    '.ks-kids-list-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;}',
+    '.ks-kids-list-name{font-family:"Instrument Serif",serif;font-size:26px;line-height:1;word-break:break-word;}',
+    '.ks-kids-list-chips{display:flex;gap:6px;flex-wrap:wrap;}',
+    '.ks-kids-list-chip{padding:5px 11px;border-radius:999px;font-size:13px;font-weight:700;color:#211b1a;}',
+    '.ks-kids-list-chip--gender{background:#f491a9;}',
+    '.ks-kids-list-chip--age{background:#eda920;}',
+    '.ks-kids-list-chip--size{background:#309359;color:#fff;}',
+    '.ks-kids-list-links{display:flex;flex-direction:column;gap:4px;align-items:flex-end;}',
+    '.ks-kids-list-links button{background:none;border:0;padding:4px 0;font-family:Quicksand,sans-serif;font-size:14px;font-weight:700;color:#211b1a;text-decoration:underline;cursor:pointer;}',
+    '.ks-kids-list-links .ks-kids-list-remove{color:#6E6A63;font-weight:500;}',
+    '.ks-kids-list-add{height:50px;width:100%;border:2px dashed #211b1a;border-radius:16px;background:transparent;font-family:Quicksand,sans-serif;font-size:16px;font-weight:700;color:#211b1a;cursor:pointer;}',
+    '@media (max-width:479px){.ks-kids-list-initial{display:none;}.ks-kids-list-row{padding:12px 14px;}}'
+  ].join('');
+
+  function kidsListSizes(c) {
+    if (c.sizes && c.sizes.length) return c.sizes.slice(0, 2);
+    return c.size_top ? [c.size_top] : [];
+  }
+
   function paintChildren(s) {
     var kids = (s && s.children) || [];
+    _lastKids = kids;
     var list = document.querySelector('.ks-children-list');
     var tpl  = document.querySelector('[data-child-template="true"]');
     var empty = document.querySelector('.ks-children-empty');
-    if (!list || !tpl) return;
-
-    list.innerHTML = '';
-
-    if (!kids.length) {
-      if (empty) empty.style.display = '';
-      return;
+    if (!list) return;
+    if (tpl) tpl.style.display = 'none';
+    if (!document.getElementById('ks-kids-list-style')) {
+      var st = document.createElement('style');
+      st.id = 'ks-kids-list-style';
+      st.textContent = KIDS_LIST_CSS;
+      (document.head || document.documentElement).appendChild(st);
     }
-    if (empty) empty.style.display = 'none';
+    if (empty) empty.style.display = kids.length ? 'none' : '';
 
-    function line(node, sel, val, prefix) {
-      var el = node.querySelector(sel);
-      if (!el) return;
-      if (val === undefined || val === null || val === '') { el.style.display = 'none'; return; }
-      el.textContent = (prefix || '') + val;
-      el.style.display = '';
-    }
-
+    var html = '<div class="ks-kids-list">';
     kids.forEach(function (c) {
-      var node = tpl.cloneNode(true);
-      node.removeAttribute('data-child-template');
-      node.style.display = '';
-      node.classList.add('ks-child-rendered');
-
-      line(node, '.ks-child-name', c.name || 'Child');
-
-      var ageText = null;
-      if (c.age_years === 0 || c.age_years) {
-        ageText = c.age_years + (c.age_years === 1 ? ' year old' : ' years old');
+      var name = kidsCap(c.name || 'Child');
+      var chips = '';
+      if (c.gender === 'girl') chips += '<span class="ks-kids-list-chip ks-kids-list-chip--gender">Girl</span>';
+      if (c.gender === 'boy')  chips += '<span class="ks-kids-list-chip ks-kids-list-chip--gender">Boy</span>';
+      var m = (c.age_months === 0 || c.age_months) ? c.age_months : null;
+      if (m !== null) {
+        var ageText = m < 24 ? (m === 1 ? '1 month' : m + ' months') : Math.floor(m / 12) + ' years';
+        chips += '<span class="ks-kids-list-chip ks-kids-list-chip--age">' + kidsEsc(ageText) + '</span>';
       }
-      line(node, '.ks-child-age', ageText);
-
-      var sizes = null;
-      if (c.size_top && c.size_bottom) sizes = 'Sizes: ' + c.size_top + ' top / ' + c.size_bottom + ' bottom';
-      else if (c.size_top)    sizes = 'Top size: ' + c.size_top;
-      else if (c.size_bottom) sizes = 'Bottom size: ' + c.size_bottom;
-      line(node, '.ks-child-sizes', sizes);
-
-      line(node, '.ks-child-toyage',    c.toy_age_range,          'Toy age range: ');
-      line(node, '.ks-child-style',     c.style_profile,          'Style: ');
-      line(node, '.ks-child-condition', c.condition_preference,   'Condition: ');
-      line(node, '.ks-child-week',      c.typical_week,           'Typical week: ');
-      line(node, '.ks-child-hoping',    c.most_hoping_to_find,    'Hoping to find: ');
-      line(node, '.ks-child-brands',    c.preferred_brand_groups, 'Brands: ');
-      line(node, '.ks-child-updated',   c.last_updated ? fmtDate(c.last_updated) : null, 'Profile updated ');
-
-      node.setAttribute('data-child-id', c.id);
-      var rm = node.querySelector('[data-child-remove]');
-      if (rm) { rm.setAttribute('data-child-name', c.name || 'this child'); }
-
-      list.appendChild(node);
+      kidsListSizes(c).forEach(function (sz) {
+        chips += '<span class="ks-kids-list-chip ks-kids-list-chip--size">Size ' + kidsEsc(kidsSizeLabel(sz)) + '</span>';
+      });
+      html += '<div class="ks-kids-list-row ks-child" data-child-id="' + kidsEsc(c.id) + '">' +
+        '<div class="ks-kids-list-initial" aria-hidden="true">' + kidsEsc(name.charAt(0)) + '</div>' +
+        '<div class="ks-kids-list-main"><div class="ks-kids-list-name">' + kidsEsc(name) + '</div>' +
+        (chips ? '<div class="ks-kids-list-chips">' + chips + '</div>' : '') + '</div>' +
+        '<div class="ks-kids-list-links">' +
+        '<button type="button" data-kids-account="edit" data-child-id="' + kidsEsc(c.id) + '">Edit</button>' +
+        '<button type="button" class="ks-kids-list-remove" data-child-remove="true" data-child-name="' + kidsEsc(name) + '">Remove</button>' +
+        '</div></div>';
     });
+    html += '<button type="button" class="ks-kids-list-add" data-kids-account="add">' + (kids.length ? '+ Add another child' : '+ Add a child') + '</button></div>';
+    list.innerHTML = html;
+    accResize(list.querySelector('.ks-kids-list-add'));
   }
+
+  // Edit / Add from the list open the kids step over the page
+  document.addEventListener('click', function (ev) {
+    var t = ev.target && ev.target.closest ? ev.target.closest('[data-kids-account]') : null;
+    if (!t) return;
+    ev.preventDefault();
+    var act = t.getAttribute('data-kids-account');
+    kidsOpenFromAccount(act === 'edit' ? t.getAttribute('data-child-id') : null);
+  });
 
   // ---------- EMAIL PREFERENCES ----------
   function paintEmailPrefs(s) {
@@ -3467,9 +3492,12 @@ function paintCloset(s) {
   function kidsAgeMonths(age, unit) { return unit === 'months' ? age : age * 12 + 6; }
 
   var KIDS_CSS = [
-    '#ks-kids-step{position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147482000;background:rgba(237,236,224,0.86);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:Quicksand,sans-serif;color:#211b1a;}',
+    '#ks-kids-step{position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147482000;background:rgba(237,236,224,0.55);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:Quicksand,sans-serif;color:#211b1a;}',
     '#ks-kids-step *{box-sizing:border-box;}',
-    '.ks-kids-step-column{max-width:440px;min-height:100%;margin:0 auto;padding:calc(34px + env(safe-area-inset-top,0px)) 24px calc(84px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:22px;}',
+    '.ks-kids-step-column{max-width:480px;margin:calc(40px + env(safe-area-inset-top,0px)) auto calc(40px + env(safe-area-inset-bottom,0px));padding:30px 24px 28px;background:#edece0;border-radius:28px;box-shadow:0 24px 60px rgba(33,27,26,0.22);display:flex;flex-direction:column;gap:22px;}',
+    '@media (max-width:560px){.ks-kids-step-column{margin:calc(12px + env(safe-area-inset-top,0px)) 12px calc(24px + env(safe-area-inset-bottom,0px));padding:26px 18px 24px;}}',
+    '.ks-kids-step-size-note{font-size:15px;margin:0;padding:0 4px;}',
+    '.ks-kids-step-size-grows{font-size:14px;color:#4A4340;margin:0;padding:0 4px;}',
     '.ks-kids-step-heading-wrap{position:relative;text-align:center;}',
     '.ks-kids-step-heading-star{position:absolute;top:-6px;right:18px;}',
     '.ks-kids-step-heading{margin:0;font-family:"Instrument Serif",serif;font-weight:400;font-size:40px;line-height:1.05;}',
@@ -3505,7 +3533,7 @@ function paintCloset(s) {
     '.ks-kids-step-size-choice{height:46px;border:2.5px solid #211b1a;background:#fff;border-radius:14px;font-family:Quicksand,sans-serif;font-size:15px;font-weight:700;color:#211b1a;box-shadow:2px 2px 0 #211b1a;cursor:pointer;padding:0;}',
     '.ks-kids-step-size-choice.is-picked{background:#eda920;}',
     '.ks-kids-step-add-another{height:56px;border:2.5px dashed #211b1a;background:transparent;border-radius:18px;font-family:Quicksand,sans-serif;font-size:17px;font-weight:700;color:#211b1a;cursor:pointer;}',
-    '.ks-kids-step-spacer{flex:1;}',
+    '.ks-kids-step-spacer{flex:0 0 4px;}',
     '.ks-kids-step-continue{height:58px;border:2.5px solid #211b1a;background:#1c4a91;border-radius:999px;font-family:Quicksand,sans-serif;font-size:18px;font-weight:700;color:#edece0;box-shadow:4px 4px 0 #211b1a;cursor:pointer;}',
     '.ks-kids-step-continue:disabled{border-color:#b9b5aa;background:transparent;color:#6E6A63;box-shadow:none;cursor:default;}',
     '.ks-kids-step-error{color:#e54f25;font-size:14px;font-weight:700;text-align:center;margin:0;}',
@@ -3550,8 +3578,31 @@ function paintCloset(s) {
     kidsRender();
   }
 
+  // S436: a saved child from member-state, in the step's own shape (for Edit)
+  function kidsFromServerChild(c) {
+    var m = (c.age_months === 0 || c.age_months) ? c.age_months : null;
+    var unit = '', age = null;
+    if (m !== null) { if (m < 24) { unit = 'months'; age = m; } else { unit = 'years'; age = Math.floor(m / 12); } }
+    return { id: c.id, name: kidsCap(c.name || ''), gender: c.gender || '', age: age, unit: unit,
+             sizes: kidsListSizes(c), byHand: !!c.size_by_hand, other: age !== null && !kidsInList(age, unit) };
+  }
+  function kidsEditCopy(sc) {
+    return { name: sc.name, gender: sc.gender, age: sc.age, unit: sc.unit, sizes: (sc.sizes || []).slice(),
+             byHand: sc.byHand, replaces: sc.id, other: sc.other };
+  }
+  // Edit (a child id) or Add (null) from the kids list in Account & Settings
+  function kidsOpenFromAccount(editId) {
+    if (_kids) return;
+    kidsStepOpen(_FAKE === 'kids');
+    _kids.saved = _lastKids.map(kidsFromServerChild);
+    var sc = null;
+    if (editId) for (var i = 0; i < _kids.saved.length; i++) if (String(_kids.saved[i].id) === String(editId)) sc = _kids.saved[i];
+    _kids.cur = sc ? kidsEditCopy(sc) : kidsBlank();
+    kidsGo('name');
+  }
+
   function kidsBlank() {
-    return { name: '', gender: '', age: null, unit: '', size: '', byHand: false, replaces: null, other: false };
+    return { name: '', gender: '', age: null, unit: '', sizes: [], byHand: false, replaces: null, other: false };
   }
 
   function kidsEsc(t) {
@@ -3567,7 +3618,7 @@ function paintCloset(s) {
     // Under 2 the size chip already says the range (6-9M etc.), so that age chip is dropped
     var sameAsSize = c.unit === 'months' && !c.byHand && [7, 10, 15, 21].indexOf(c.age) !== -1;
     if (c.age !== null && c.unit && !sameAsSize) out += '<span class="ks-kids-step-chip ks-kids-step-chip--age">' + kidsEsc(kidsAgeLabel(c.age, c.unit)) + '</span>';
-    if (c.size) out += '<span class="ks-kids-step-chip ks-kids-step-chip--size">Size ' + kidsEsc(kidsSizeLabel(c.size)) + '</span>';
+    (c.sizes || []).forEach(function (sz) { out += '<span class="ks-kids-step-chip ks-kids-step-chip--size">Size ' + kidsEsc(kidsSizeLabel(sz)) + '</span>'; });
     return out ? '<div class="ks-kids-step-chips">' + out + '</div>' : '';
   }
 
@@ -3596,6 +3647,27 @@ function paintCloset(s) {
   function kidsOtherValid(c) {
     if (c.age === null || !c.unit) return false;
     return c.unit === 'months' ? (c.age >= 0 && c.age <= 23) : (c.age >= 2 && c.age <= 17);
+  }
+
+  // S436: up to two sizes. The months the size is read from (null until an age is picked)
+  function kidsMonthsOf(c) {
+    if (c.age === null || !c.unit) return null;
+    if (c.other && !kidsOtherValid(c)) return null;
+    return kidsAgeMonths(c.age, c.unit);
+  }
+  function kidsRefreshSize(c) {
+    if (c.byHand) return;
+    var m = kidsMonthsOf(c);
+    var s = m === null ? '' : kidsSizeForMonths(m);
+    c.sizes = s ? [s] : [];
+  }
+  function kidsSizeIndex(v) {
+    for (var i = 0; i < KIDS_SIZES.length; i++) if (KIDS_SIZES[i].value === v) return i;
+    return 99;
+  }
+  // "size 7", "sizes 5 and 6"
+  function kidsSizesWords(list) {
+    return (list.length > 1 ? 'sizes ' : 'size ') + list.map(kidsSizeLabel).join(' and ');
   }
 
   function kidsRender() {
@@ -3651,25 +3723,46 @@ function paintCloset(s) {
             '<button type="button" class="ks-kids-step-choice' + (c.unit === 'years' ? ' is-picked' : '') + '" data-kids-step="other-unit" data-kids-value="years">Years</button>' +
             '</div>';
         }
-        if (c.size) {
-          html += '<div class="ks-kids-step-size-line"><span>' +
-            (c.byHand ? kidsEsc(kidsCap(c.name)) + ' wears <b>' + kidsEsc(kidsSizeLabel(c.size)) + '</b>.'
-                      : 'We think ' + who + ' <b>' + kidsEsc(kidsSizePhrase(c.size)) + '</b>.') +
-            '</span><button type="button" class="ks-kids-step-size-change" data-kids-step="size-open">Change</button></div>';
+        var mo = kidsMonthsOf(c);
+        var nm = kidsEsc(kidsCap(c.name));
+        var sug = mo === null ? '' : kidsSizeForMonths(mo);
+        var showGrid = k.sizeOpen;
+        if (mo !== null) {
+          if (c.byHand && c.sizes.length) {
+            html += '<div class="ks-kids-step-size-line"><span>' + nm + ' wears ' + kidsEsc(kidsSizesWords(c.sizes)) + '.</span>' +
+              '<button type="button" class="ks-kids-step-size-change" data-kids-step="size-open">' + (k.sizeOpen ? 'Done' : 'Change') + '</button></div>';
+          } else if (sug) {
+            html += '<div class="ks-kids-step-size-line"><span>We think ' + who + ' <b>' + kidsEsc(kidsSizePhrase(sug)) + '</b>.</span>' +
+              '<button type="button" class="ks-kids-step-size-change" data-kids-step="size-open">' + (k.sizeOpen ? 'Done' : 'Change') + '</button></div>';
+          } else {
+            // Past the closet's sizes by age (or under 3 months): the sizes show straight away
+            showGrid = true;
+            var pr = c.gender === 'girl' ? 'she' : (c.gender === 'boy' ? 'he' : nm);
+            html += '<p class="ks-kids-step-size-note">' + (mo < 3
+              ? 'Our closet starts at 6-9M. Pick the size ' + pr + ' wears, up to two.'
+              : 'Our closet goes up to size 7. Pick the size ' + pr + ' wears, up to two.') + '</p>';
+          }
         }
-        if (k.sizeOpen) {
+        if (mo !== null && showGrid) {
+          if (sug || (c.byHand && c.sizes.length)) html += '<p class="ks-kids-step-size-note">Pick up to two.</p>';
           html += '<div class="ks-kids-step-size-grid" role="group" aria-label="Sizes">';
           KIDS_SIZES.forEach(function (sz) {
-            html += '<button type="button" class="ks-kids-step-size-choice' + (c.size === sz.value ? ' is-picked' : '') + '" data-kids-step="size" data-kids-value="' + kidsEsc(sz.value) + '">' + kidsEsc(sz.label) + '</button>';
+            var on = c.sizes.indexOf(sz.value) !== -1;
+            html += '<button type="button" class="ks-kids-step-size-choice' + (on ? ' is-picked' : '') + '" aria-pressed="' + on + '" data-kids-step="size" data-kids-value="' + kidsEsc(sz.value) + '">' + kidsEsc(sz.label) + '</button>';
           });
           html += '</div>';
+          if (c.byHand && c.sizes.length) {
+            html += '<p class="ks-kids-step-size-grows">' + (c.gender === 'girl' ? 'Her sizes move up as she grows.'
+              : (c.gender === 'boy' ? 'His sizes move up as he grows.' : 'Sizes move up as ' + nm + ' grows.')) + '</p>';
+          }
         }
         html += '</div>';
-        canGo = (c.other ? kidsOtherValid(c) : (c.age !== null && !!c.size)) && !k.busy;
+        canGo = kidsMonthsOf(c) !== null && !k.busy;
       }
       html += '<div class="ks-kids-step-spacer"></div>' +
         (k.error ? '<p class="ks-kids-step-error" role="alert">' + kidsEsc(k.error) + '</p>' : '') +
-        '<button type="button" class="ks-kids-step-continue" data-kids-step="continue"' + (canGo ? '' : ' disabled') + '>' + (k.busy ? 'Saving…' : 'Continue') + '</button>';
+        '<button type="button" class="ks-kids-step-continue" data-kids-step="continue"' + (canGo ? '' : ' disabled') + '>' + (k.busy ? 'Saving…' : 'Continue') + '</button>' +
+        (k.saved.length && !k.busy ? '<button type="button" class="ks-kids-step-small-link" data-kids-step="back-to-list">Never mind</button>' : '');
     }
     html += '</div>';
     k.el.innerHTML = html;
@@ -3695,16 +3788,16 @@ function paintCloset(s) {
       age.addEventListener('change', function () {
         var v = age.value;
         if (v === 'other') {
-          k.cur.other = true; k.cur.age = null; k.cur.unit = ''; if (!k.cur.byHand) k.cur.size = '';
+          k.cur.other = true; k.cur.age = null; k.cur.unit = ''; kidsRefreshSize(k.cur);
           k.error = ''; kidsRender();
           var ob = k.el.querySelector('#ks-kids-step-other-age'); if (ob) ob.focus();
           return;
         }
         k.cur.other = false;
-        if (!v) { k.cur.age = null; k.cur.unit = ''; if (!k.cur.byHand) k.cur.size = ''; kidsRender(); return; }
+        if (!v) { k.cur.age = null; k.cur.unit = ''; kidsRefreshSize(k.cur); kidsRender(); return; }
         var p = v.split(':');
         k.cur.unit = p[0]; k.cur.age = parseInt(p[1], 10);
-        if (!k.cur.byHand) k.cur.size = kidsSizeForMonths(kidsAgeMonths(k.cur.age, k.cur.unit));
+        kidsRefreshSize(k.cur);
         k.error = '';
         kidsRender();
       });
@@ -3727,9 +3820,7 @@ function paintCloset(s) {
   }
 
   function kidsOtherSize() {
-    var c = _kids.cur;
-    if (c.byHand) return;
-    c.size = kidsOtherValid(c) ? kidsSizeForMonths(c.unit === 'months' ? c.age : c.age * 12 + 6) : '';
+    kidsRefreshSize(_kids.cur);
   }
   function kidsGo(stage) {
     if (!_kids) return;
@@ -3748,7 +3839,7 @@ function paintCloset(s) {
     } else if (k.stage === 'gender') {
       if (c.gender) kidsGo('age');
     } else if (k.stage === 'age') {
-      if (c.other ? !kidsOtherValid(c) : (c.age === null || !c.size)) return;
+      if (kidsMonthsOf(c) === null) return;
       kidsSave();
     }
   }
@@ -3758,13 +3849,14 @@ function paintCloset(s) {
     k.busy = true; k.error = ''; kidsRender();
     var payload = {
       name: kidsCap(c.name), gender: c.gender, age: String(c.age), age_unit: c.unit,
-      size: c.byHand ? c.size : '', size_by_hand: c.byHand ? 'true' : 'false'
+      size: c.byHand ? c.sizes.join('|') : '', size_by_hand: (c.byHand && c.sizes.length) ? 'true' : 'false'
     };
     var done = function (resp) {
       k.busy = false;
       if (resp && resp.ok && resp.child) {
         var saved = { id: resp.child.id, name: kidsCap(c.name), gender: c.gender, age: c.age, unit: c.unit,
-                      size: resp.child.size || '', byHand: c.byHand, other: c.other };
+                      sizes: (resp.child.sizes && resp.child.sizes.length) ? resp.child.sizes.slice(0, 2) : c.sizes.slice(),
+                      byHand: c.byHand, other: c.other };
         var replaced = c.replaces;
         if (replaced) {
           for (var i = 0; i < k.saved.length; i++) if (k.saved[i].id === replaced) { k.saved.splice(i, 1, saved); saved = null; break; }
@@ -3780,7 +3872,7 @@ function paintCloset(s) {
       }
     };
     if (k.fake) {
-      setTimeout(function () { done({ ok: true, child: { id: 'preview-' + Date.now(), size: c.size } }); }, 400);
+      setTimeout(function () { done({ ok: true, child: { id: 'preview-' + Date.now(), sizes: c.sizes.slice() } }); }, 400);
       return;
     }
     var token = window.$memberstackDom.getMemberCookie();
@@ -3825,7 +3917,7 @@ function paintCloset(s) {
     var token = window.$memberstackDom.getMemberCookie();
     fetch(FN_URL, { method: 'POST', headers: { 'x-ms-token': token, 'apikey': ANON, 'Authorization': 'Bearer ' + ANON } })
       .then(function (r) { return r.json(); })
-      .then(function (st) { if (st && !st.error) paintChildren(st); })
+      .then(function (st) { if (st && !st.error) paintChildren(st); })   // also refreshes _lastKids
       .catch(function () {})
       .then(close);
   }
@@ -3850,15 +3942,23 @@ function paintCloset(s) {
     else if (act === 'size-open') { ev.preventDefault(); k.sizeOpen = !k.sizeOpen; kidsRender(); }
     else if (act === 'size') {
       ev.preventDefault();
-      k.cur.size = val; k.cur.byHand = true; k.sizeOpen = false; kidsRender();
+      var cc = k.cur;
+      if (!cc.byHand) { cc.sizes = []; cc.byHand = true; }
+      var at = cc.sizes.indexOf(val);
+      if (at !== -1) cc.sizes.splice(at, 1);
+      else { cc.sizes.push(val); if (cc.sizes.length > 2) cc.sizes.shift(); }
+      cc.sizes.sort(function (a, b) { return kidsSizeIndex(a) - kidsSizeIndex(b); });
+      if (!cc.sizes.length) { cc.byHand = false; kidsRefreshSize(cc); }
+      k.sizeOpen = true;   // stays open so a second size is one more tap; Done closes it
+      kidsRender();
     }
     else if (act === 'add-another') { ev.preventDefault(); k.cur = kidsBlank(); kidsGo('name'); }
+    else if (act === 'back-to-list') { ev.preventDefault(); k.cur = kidsBlank(); kidsGo('done'); }
     else if (act === 'edit') {
       ev.preventDefault();
       var sc = k.saved[parseInt(t.getAttribute('data-kids-index'), 10)];
       if (!sc) return;
-      k.cur = { name: sc.name, gender: sc.gender, age: sc.age, unit: sc.unit, size: sc.size, byHand: sc.byHand, replaces: sc.id,
-                other: !kidsInList(sc.age, sc.unit) };
+      k.cur = kidsEditCopy(sc);
       kidsGo('name');
     }
     else if (act === 'finish') { ev.preventDefault(); kidsFinish(); }
