@@ -2520,7 +2520,8 @@ function paintCloset(s) {
     '.ks-kids-list-links{display:flex;gap:12px;align-items:center;flex-shrink:0;}',
     '.ks-kids-list-links button{background:none;border:0;padding:4px 0;font-family:Quicksand,sans-serif;font-size:13px;font-weight:700;color:#211b1a;text-decoration:underline;cursor:pointer;}',
     '.ks-kids-list-links .ks-kids-list-remove{color:#6E6A63;font-weight:500;}',
-    '.ks-kids-list-add{align-self:flex-start;background:none;border:0;padding:4px 0;font-family:Quicksand,sans-serif;font-size:14px;font-weight:700;color:#211b1a;text-decoration:underline;cursor:pointer;}'
+    '.ks-kids-list-bottom-links{display:flex;gap:18px;align-items:center;}',
+    '.ks-kids-list-add{background:none;border:0;padding:4px 0;font-family:Quicksand,sans-serif;font-size:14px;font-weight:700;color:#211b1a;text-decoration:underline;cursor:pointer;}'
   ].join('');
 
   function kidsListSizes(c) {
@@ -2548,13 +2549,6 @@ function paintCloset(s) {
     kids.forEach(function (c) {
       var name = kidsCap(c.name || 'Child');
       var chips = '';
-      if (c.gender === 'girl') chips += '<span class="ks-kids-list-chip ks-kids-list-chip--gender">Girl</span>';
-      if (c.gender === 'boy')  chips += '<span class="ks-kids-list-chip ks-kids-list-chip--gender">Boy</span>';
-      var m = (c.age_months === 0 || c.age_months) ? c.age_months : null;
-      if (m !== null) {
-        var ageText = m < 24 ? (m === 1 ? '1 month' : m + ' months') : Math.floor(m / 12) + ' years';
-        chips += '<span class="ks-kids-list-chip ks-kids-list-chip--age">' + kidsEsc(ageText) + '</span>';
-      }
       kidsListSizes(c).forEach(function (sz) {
         chips += '<span class="ks-kids-list-chip ks-kids-list-chip--size">Size ' + kidsEsc(kidsSizeLabel(sz)) + '</span>';
       });
@@ -2562,11 +2556,15 @@ function paintCloset(s) {
         '<div class="ks-kids-list-main"><div class="ks-kids-list-name">' + kidsEsc(name) + '</div>' +
         (chips ? '<div class="ks-kids-list-chips">' + chips + '</div>' : '') + '</div>' +
         '<div class="ks-kids-list-links">' +
-        '<button type="button" data-kids-account="edit" data-child-id="' + kidsEsc(c.id) + '">Edit</button>' +
         '<button type="button" class="ks-kids-list-remove" data-child-remove="true" data-child-name="' + kidsEsc(name) + '">Remove</button>' +
         '</div></div>';
     });
-    html += '<button type="button" class="ks-kids-list-add" data-kids-account="add">' + (kids.length ? '+ Add another child' : '+ Add a child') + '</button></div>';
+    // S436, hers: gender and age only change to fix a mistake, so they live in the edit view.
+    // One Edit link beside Add opens the step on the whole list.
+    html += '<div class="ks-kids-list-bottom-links">' +
+      '<button type="button" class="ks-kids-list-add" data-kids-account="add">' + (kids.length ? '+ Add another child' : '+ Add a child') + '</button>' +
+      (kids.length ? '<button type="button" class="ks-kids-list-add" data-kids-account="edit">Edit</button>' : '') +
+      '</div></div>';
     list.innerHTML = html;
     accResize(list.querySelector('.ks-kids-list-add'));
   }
@@ -2577,7 +2575,7 @@ function paintCloset(s) {
     if (!t) return;
     ev.preventDefault();
     var act = t.getAttribute('data-kids-account');
-    kidsOpenFromAccount(act === 'edit' ? t.getAttribute('data-child-id') : null);
+    kidsOpenFromAccount(act);
   });
 
   // ---------- EMAIL PREFERENCES ----------
@@ -3587,15 +3585,14 @@ function paintCloset(s) {
     return { name: sc.name, gender: sc.gender, age: sc.age, unit: sc.unit, sizes: (sc.sizes || []).slice(),
              byHand: sc.byHand, replaces: sc.id, other: sc.other };
   }
-  // Edit (a child id) or Add (null) from the kids list in Account & Settings
-  function kidsOpenFromAccount(editId) {
+  // From the kids list in Account & Settings: 'edit' opens every saved tag (each with its
+  // own Edit), 'add' opens a blank tag
+  function kidsOpenFromAccount(mode) {
     if (_kids) return;
     kidsStepOpen(_FAKE === 'kids');
     _kids.saved = _lastKids.map(kidsFromServerChild);
-    var sc = null;
-    if (editId) for (var i = 0; i < _kids.saved.length; i++) if (String(_kids.saved[i].id) === String(editId)) sc = _kids.saved[i];
-    _kids.cur = sc ? kidsEditCopy(sc) : kidsBlank();
-    kidsGo('name');
+    _kids.cur = kidsBlank();
+    kidsGo(mode === 'edit' && _kids.saved.length ? 'done' : 'name');
   }
 
   function kidsBlank() {
