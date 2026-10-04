@@ -401,6 +401,9 @@
       /* ⚠ INHERITED FROM THE OLD INJECTOR, NEVER APPROVED. Stiff for the house
          voice. Shipping it unchanged rather than redrafting it. */
       errConsent: 'Please confirm you understand your membership renews automatically before continuing.',
+      /* S437, HERS. Shown when Create is tapped and Cloudflare's robot check
+         (Turnstile, run by Memberstack inside the form) has no answer yet. */
+      errRobot: 'We couldn\u2019t finish a quick security check in this browser. Wait a few seconds and tap Create my account again. If it keeps happening, try a different browser or turn off your browser add-ons, or email me at jennie@kidswaps.com.',
       /* ⚠ SUPERSEDES the spring ruling "Agree & Continue to Payment Setup".
          That label was written when payment came next. In the wizard it does
          not — the code step comes next, then Stripe. RULED Session 63. */
@@ -1074,8 +1077,12 @@
       if (opts.autocomplete) {
         input.setAttribute('autocomplete', opts.autocomplete);
         /* ⚠⚠ RULED S74, HERS: ADDRESS CASING IS FIXED AT ENTRY, NOT AFTER.
-           The phone capitalises AS SHE TYPES and she can override it. NO
-           transformation at display, NONE at save.
+           The phone capitalises AS SHE TYPES and she can override it.
+           ⚠ S437, HERS, SUPERSEDES "NONE AT SAVE": tidyAddr() now fixes the
+           street and city when she taps Next, but ONLY an all-lowercase or
+           all-capitals field, and BEFORE step 5, so step 5 still shows exactly
+           what is saved. The S74 reasoning below still holds for anything she
+           typed with her own capitals, which is never touched.
            ⚠ REASONING, so it is not re-litigated: any automatic capitalising
            breaks Mc, Mac, O', hyphens and directionals. If it happens as she
            types she SEES it and fixes it; afterwards she never knows. And the
@@ -1645,6 +1652,26 @@
           return false;
         }
         if (S.busy) { ev.preventDefault(); return false; }
+        /* S437: THE ROBOT CHECK. Memberstack runs Cloudflare Turnstile inside
+           the form and quietly refuses the signup when it has failed (error
+           600010, seen S394 in Chrome with add-ons): no code, no message, a
+           dead button. Its answer is a hidden input, cf-turnstile-response
+           (read S437: one input, filled, ~770 characters, button enabled).
+           EMPTY = not passed: stop, say so, and ask Cloudflare to run it again
+           so the next tap can work. MISSING = Memberstack changed how it works:
+           carry on exactly as before, never block on a guess.
+           ⚠ If a failed check ever DISABLES the button, this click never fires;
+           not seen (the S437 read had it enabled). */
+        var af = activeForm();
+        var ts = (af && af.querySelector('[name="cf-turnstile-response"]')) ||
+                 document.querySelector('#ks-signup [name="cf-turnstile-response"]');
+        if (ts && !ts.value) {
+          ev.preventDefault();
+          note(body, 'ks-wz-err', COPY.s5.errRobot);
+          track('robot_check_blocked');
+          try { if (window.turnstile && window.turnstile.reset) window.turnstile.reset(); } catch (e) {}
+          return false;
+        }
         if (!syncHidden()) { ev.preventDefault(); note(body, 'ks-wz-err', COPY.errGeneric); return false; }
         S.busy = true;
         S.codeSent = true;
@@ -2632,7 +2659,7 @@
         '[data-ground] .ks-wz-err,[data-ground] .ks-wz-ask-text,',
         '[data-ground] .ks-wz-sum-a,[data-ground] .ks-wz-link{color:#FFFFFF;}',
       '[data-ground] .ks-wz-sub,[data-ground] .ks-wz-assent,',
-        '[data-ground] .ks-wz-assent-link,',
+        '[data-ground] .ks-wz-assent-link,[data-ground] .ks-wz-preframe,',   /* S437: the Stripe line matches the agree line */
         '[data-ground] .ks-wz-btn-quiet{color:#EEEFE3;}',
       '[data-ground] .ks-wz-sum-b{color:rgba(255,255,255,.72);}',
       '[data-ground] .ks-wz-sum-sub{color:rgba(255,255,255,.72);}',   /* S421 */
