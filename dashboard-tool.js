@@ -2509,8 +2509,9 @@ function paintCloset(s) {
   var _lastKids = [];
   var KIDS_LIST_CSS = [
     '.ks-kids-list{display:flex;flex-direction:column;gap:8px;padding:2px 0 8px;font-family:Quicksand,sans-serif;color:#211b1a;}',
-    '.ks-kids-list-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid #d8d4c8;border-radius:12px;background:#fff;}',
-    '.ks-kids-list-main{flex:1;min-width:0;display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;}',
+    '.ks-kids-list-tiles{display:flex;flex-wrap:wrap;gap:8px;}',
+    '.ks-kids-list-row{display:inline-flex;align-items:center;max-width:100%;padding:8px 12px;border:1px solid #d8d4c8;border-radius:12px;background:#fff;}',
+    '.ks-kids-list-main{min-width:0;display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;}',
     '.ks-kids-list-name{font-size:16px;font-weight:700;line-height:1.2;word-break:break-word;}',
     '.ks-kids-list-chips{display:flex;gap:5px;flex-wrap:wrap;}',
     '.ks-kids-list-chip{padding:2px 8px;border-radius:999px;font-size:12px;font-weight:700;line-height:1.5;color:#211b1a;}',
@@ -2545,7 +2546,7 @@ function paintCloset(s) {
     }
     if (empty) empty.style.display = kids.length ? 'none' : '';
 
-    var html = '<div class="ks-kids-list">';
+    var html = '<div class="ks-kids-list"><div class="ks-kids-list-tiles">';
     kids.forEach(function (c) {
       var name = kidsCap(c.name || 'Child');
       var chips = '';
@@ -2555,13 +2556,11 @@ function paintCloset(s) {
       html += '<div class="ks-kids-list-row ks-child" data-child-id="' + kidsEsc(c.id) + '">' +
         '<div class="ks-kids-list-main"><div class="ks-kids-list-name">' + kidsEsc(name) + '</div>' +
         (chips ? '<div class="ks-kids-list-chips">' + chips + '</div>' : '') + '</div>' +
-        '<div class="ks-kids-list-links">' +
-        '<button type="button" class="ks-kids-list-remove" data-child-remove="true" data-child-name="' + kidsEsc(name) + '">Remove</button>' +
-        '</div></div>';
+        '</div>';
     });
     // S436, hers: gender and age only change to fix a mistake, so they live in the edit view.
     // One Edit link beside Add opens the step on the whole list.
-    html += '<div class="ks-kids-list-bottom-links">' +
+    html += '</div><div class="ks-kids-list-bottom-links">' +
       '<button type="button" class="ks-kids-list-add" data-kids-account="add">' + (kids.length ? '+ Add another child' : '+ Add a child') + '</button>' +
       (kids.length ? '<button type="button" class="ks-kids-list-add" data-kids-account="edit">Edit</button>' : '') +
       '</div></div>';
@@ -3491,6 +3490,7 @@ function paintCloset(s) {
     '#ks-kids-step *{box-sizing:border-box;}',
     '.ks-kids-step-column{max-width:480px;margin:calc(40px + env(safe-area-inset-top,0px)) auto calc(40px + env(safe-area-inset-bottom,0px));padding:30px 24px 28px;background:#edece0;border-radius:28px;box-shadow:0 24px 60px rgba(33,27,26,0.22);display:flex;flex-direction:column;gap:22px;}',
     '@media (max-width:560px){.ks-kids-step-column{margin:calc(12px + env(safe-area-inset-top,0px)) 12px calc(24px + env(safe-area-inset-bottom,0px));padding:26px 18px 24px;}}',
+    '.ks-kids-step-remove-link{color:#b3401c;margin-top:10px;}',
     '.ks-kids-step-size-note{font-size:15px;margin:0;padding:0 4px;}',
     '.ks-kids-step-size-grows{font-size:14px;color:#4A4340;margin:0;padding:0 4px;}',
     '.ks-kids-step-heading-wrap{position:relative;text-align:center;}',
@@ -3750,12 +3750,12 @@ function paintCloset(s) {
             showGrid = true;
             var pr = c.gender === 'girl' ? 'she' : (c.gender === 'boy' ? 'he' : nm);
             html += '<p class="ks-kids-step-size-note">' + (mo < 3
-              ? 'Our closet starts at 6-9M. Pick the size ' + pr + ' wears, up to two.'
-              : 'Our closet goes up to size 7. Pick the size ' + pr + ' wears, up to two.') + '</p>';
+              ? 'Our closet currently starts at 6-9M. Pick the size ' + pr + ' wears. You can select two sizes if you want.'
+              : 'Our closet currently goes up to size 7. Pick the size ' + pr + ' wears. You can select two sizes if you want.') + '</p>';
           }
         }
         if (mo !== null && showGrid) {
-          if (sug || (c.byHand && c.sizes.length)) html += '<p class="ks-kids-step-size-note">Pick up to two.</p>';
+          if (sug || (c.byHand && c.sizes.length)) html += '<p class="ks-kids-step-size-note">You can select two sizes if you want.</p>';
           html += '<div class="ks-kids-step-size-grid" role="group" aria-label="Sizes">';
           KIDS_SIZES.forEach(function (sz) {
             var on = c.sizes.indexOf(sz.value) !== -1;
@@ -3774,7 +3774,8 @@ function paintCloset(s) {
       html += '<div class="ks-kids-step-spacer"></div>' +
         (k.error ? '<p class="ks-kids-step-error" role="alert">' + kidsEsc(k.error) + '</p>' : '') +
         '<button type="button" class="ks-kids-step-continue" data-kids-step="continue"' + (canGo ? '' : ' disabled') + '>' + (k.busy ? 'Saving…' : (editing ? 'Save' : 'Continue')) + '</button>' +
-        ((k.saved.length || k.entry) && !k.busy ? '<button type="button" class="ks-kids-step-small-link" data-kids-step="back-to-list">Cancel</button>' : '');
+        ((k.saved.length || k.entry) && !k.busy ? '<button type="button" class="ks-kids-step-small-link" data-kids-step="back-to-list">Cancel</button>' : '') +
+        (editing && c.replaces && !k.busy ? '<button type="button" class="ks-kids-step-small-link ks-kids-step-remove-link" data-kids-step="remove-child">Remove ' + kidsEsc(kidsCap(c.name || 'this child')) + '</button>' : '');
     }
     html += '</div>';
     k.el.innerHTML = html;
@@ -3970,6 +3971,18 @@ function paintCloset(s) {
       kidsRender();
     }
     else if (act === 'add-another') { ev.preventDefault(); k.cur = kidsBlank(); kidsGo('name'); }
+    else if (act === 'remove-child') {
+      ev.preventDefault();
+      var rid = k.cur.replaces;
+      var rname = kidsCap(k.cur.name || 'this child');
+      if (!rid || !window.confirm('Remove ' + rname + '? You can add them again later.')) return;
+      kidsRemoveOld(rid);   // the same remove call (skipped in the preview)
+      for (var ri = 0; ri < k.saved.length; ri++) if (k.saved[ri].id === rid) { k.saved.splice(ri, 1); break; }
+      k.changed = true;
+      k.cur = kidsBlank();
+      if (!k.saved.length) { k.entry = null; kidsGo('name'); }   // at least one child, always
+      else kidsGo('done');
+    }
     else if (act === 'back-to-list') {
       ev.preventDefault();
       // Opened with "+ Add" from Account & Settings and nothing saved yet: Cancel closes it all
