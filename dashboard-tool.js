@@ -2508,21 +2508,19 @@ function paintCloset(s) {
   //   wireChildRemove finds them by those names.
   var _lastKids = [];
   var KIDS_LIST_CSS = [
-    '.ks-kids-list{display:flex;flex-direction:column;gap:12px;padding:4px 0 10px;font-family:Quicksand,sans-serif;color:#211b1a;}',
-    '.ks-kids-list-row{display:flex;align-items:center;gap:14px;padding:14px 16px;border:2px solid #211b1a;border-radius:16px;background:#fff;}',
-    '.ks-kids-list-initial{flex:0 0 48px;height:48px;border-radius:12px;background:#e54f25;color:#fff;display:flex;align-items:center;justify-content:center;font-family:"Instrument Serif",serif;font-size:28px;line-height:1;}',
-    '.ks-kids-list-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;}',
-    '.ks-kids-list-name{font-family:"Instrument Serif",serif;font-size:26px;line-height:1;word-break:break-word;}',
-    '.ks-kids-list-chips{display:flex;gap:6px;flex-wrap:wrap;}',
-    '.ks-kids-list-chip{padding:5px 11px;border-radius:999px;font-size:13px;font-weight:700;color:#211b1a;}',
+    '.ks-kids-list{display:flex;flex-direction:column;gap:8px;padding:2px 0 8px;font-family:Quicksand,sans-serif;color:#211b1a;}',
+    '.ks-kids-list-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid #d8d4c8;border-radius:12px;background:#fff;}',
+    '.ks-kids-list-main{flex:1;min-width:0;display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;}',
+    '.ks-kids-list-name{font-size:16px;font-weight:700;line-height:1.2;word-break:break-word;}',
+    '.ks-kids-list-chips{display:flex;gap:5px;flex-wrap:wrap;}',
+    '.ks-kids-list-chip{padding:2px 8px;border-radius:999px;font-size:12px;font-weight:700;line-height:1.5;color:#211b1a;}',
     '.ks-kids-list-chip--gender{background:#f491a9;}',
     '.ks-kids-list-chip--age{background:#eda920;}',
     '.ks-kids-list-chip--size{background:#309359;color:#fff;}',
-    '.ks-kids-list-links{display:flex;flex-direction:column;gap:4px;align-items:flex-end;}',
-    '.ks-kids-list-links button{background:none;border:0;padding:4px 0;font-family:Quicksand,sans-serif;font-size:14px;font-weight:700;color:#211b1a;text-decoration:underline;cursor:pointer;}',
+    '.ks-kids-list-links{display:flex;gap:12px;align-items:center;flex-shrink:0;}',
+    '.ks-kids-list-links button{background:none;border:0;padding:4px 0;font-family:Quicksand,sans-serif;font-size:13px;font-weight:700;color:#211b1a;text-decoration:underline;cursor:pointer;}',
     '.ks-kids-list-links .ks-kids-list-remove{color:#6E6A63;font-weight:500;}',
-    '.ks-kids-list-add{height:50px;width:100%;border:2px dashed #211b1a;border-radius:16px;background:transparent;font-family:Quicksand,sans-serif;font-size:16px;font-weight:700;color:#211b1a;cursor:pointer;}',
-    '@media (max-width:479px){.ks-kids-list-initial{display:none;}.ks-kids-list-row{padding:12px 14px;}}'
+    '.ks-kids-list-add{align-self:flex-start;background:none;border:0;padding:4px 0;font-family:Quicksand,sans-serif;font-size:14px;font-weight:700;color:#211b1a;text-decoration:underline;cursor:pointer;}'
   ].join('');
 
   function kidsListSizes(c) {
@@ -2561,7 +2559,6 @@ function paintCloset(s) {
         chips += '<span class="ks-kids-list-chip ks-kids-list-chip--size">Size ' + kidsEsc(kidsSizeLabel(sz)) + '</span>';
       });
       html += '<div class="ks-kids-list-row ks-child" data-child-id="' + kidsEsc(c.id) + '">' +
-        '<div class="ks-kids-list-initial" aria-hidden="true">' + kidsEsc(name.charAt(0)) + '</div>' +
         '<div class="ks-kids-list-main"><div class="ks-kids-list-name">' + kidsEsc(name) + '</div>' +
         (chips ? '<div class="ks-kids-list-chips">' + chips + '</div>' : '') + '</div>' +
         '<div class="ks-kids-list-links">' +
