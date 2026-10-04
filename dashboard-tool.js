@@ -3431,9 +3431,25 @@ function paintCloset(s) {
     if (/T$/.test(l)) return 'a ' + l;
     return 'a size ' + l;
   }
+  // S435, hers: the age list IS the closet's size range (6 months to 7 years). Under 2 the
+  // choices are the month ranges; each saves as its middle month, so the estimated birthday
+  // sits mid-range and the database picks the same size.
+  var KIDS_AGES = [
+    { unit: 'months', age: 7,  label: '6 to 9 months',   chip: '6-9 months' },
+    { unit: 'months', age: 10, label: '9 to 12 months',  chip: '9-12 months' },
+    { unit: 'months', age: 15, label: '12 to 18 months', chip: '12-18 months' },
+    { unit: 'months', age: 21, label: '18 to 24 months', chip: '18-24 months' },
+    { unit: 'years',  age: 2,  label: '2 years',  chip: '2 years' },
+    { unit: 'years',  age: 3,  label: '3 years',  chip: '3 years' },
+    { unit: 'years',  age: 4,  label: '4 years',  chip: '4 years' },
+    { unit: 'years',  age: 5,  label: '5 years',  chip: '5 years' },
+    { unit: 'years',  age: 6,  label: '6 years',  chip: '6 years' },
+    { unit: 'years',  age: 7,  label: '7 years',  chip: '7 years' },
+    { unit: 'other',  age: 0,  label: 'Other',    chip: '' }        // hers S435: outside the range, saved with no age or size
+  ];
   function kidsAgeLabel(age, unit) {
-    if (unit === 'months') return age === 0 ? 'Under 1 month' : age + (age === 1 ? ' month' : ' months');
-    return age + ' years';
+    for (var i = 0; i < KIDS_AGES.length; i++) if (KIDS_AGES[i].unit === unit && KIDS_AGES[i].age === age) return KIDS_AGES[i].chip;
+    return unit === 'months' ? age + ' months' : age + ' years';
   }
   // Months used for the size: mid-range, matching the estimated birthday the database saves
   function kidsAgeMonths(age, unit) { return unit === 'months' ? age : age * 12 + 6; }
@@ -3441,23 +3457,27 @@ function paintCloset(s) {
   var KIDS_CSS = [
     '#ks-kids-step{position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147482000;background:#edece0;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:Quicksand,sans-serif;color:#211b1a;}',
     '#ks-kids-step *{box-sizing:border-box;}',
-    '.ks-kids-step-column{max-width:440px;min-height:100%;margin:0 auto;padding:calc(34px + env(safe-area-inset-top,0px)) 24px calc(30px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:22px;}',
+    '.ks-kids-step-column{max-width:440px;min-height:100%;margin:0 auto;padding:calc(34px + env(safe-area-inset-top,0px)) 24px calc(84px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:22px;}',
     '.ks-kids-step-heading-wrap{position:relative;text-align:center;}',
     '.ks-kids-step-heading-star{position:absolute;top:-6px;right:18px;}',
     '.ks-kids-step-heading{margin:0;font-family:"Instrument Serif",serif;font-weight:400;font-size:40px;line-height:1.05;}',
-    '.ks-kids-step-name-tag{position:relative;transform:rotate(-2deg);margin:4px 6px;background:#fff;border:2.5px solid #211b1a;border-radius:22px;box-shadow:5px 5px 0 #211b1a;overflow:hidden;}',
+    '.ks-kids-step-name-tag{position:relative;margin:4px 6px;background:#fff;border:2.5px solid #211b1a;border-radius:22px;box-shadow:5px 5px 0 #211b1a;overflow:hidden;}',
     '.ks-kids-step-name-tag.is-tappable{cursor:pointer;}',
     '.ks-kids-step-name-tag-top{background:#e54f25;color:#fff;text-align:center;padding:10px 0 8px;font-family:"Instrument Serif",serif;font-size:30px;line-height:1;}',
     '.ks-kids-step-name-tag-top span{display:block;font-family:Quicksand,sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;margin-top:2px;}',
     '.ks-kids-step-name-tag-body{padding:18px 20px 20px;display:flex;flex-direction:column;gap:12px;min-height:92px;justify-content:center;}',
     '.ks-kids-step-name-tag-blank{height:48px;border-bottom:2.5px dashed #b9b5aa;width:70%;}',
-    '.ks-kids-step-name-tag-name{font-family:"Instrument Serif",serif;font-size:48px;line-height:1;word-break:break-word;}',
+    '.ks-kids-step-name-on-tag{width:100%;border:0;border-bottom:2.5px dashed #b9b5aa;background:transparent;outline:none;padding:0 0 4px;font-family:"Instrument Serif",serif;font-size:48px;line-height:1.1;color:#211b1a;border-radius:0;-webkit-appearance:none;appearance:none;}',
+    '.ks-kids-step-name-on-tag::placeholder{color:#b9b5aa;}',
+    '.ks-kids-step-name-on-tag:focus{border-bottom-color:#211b1a;}',
+    '.ks-kids-step-tag-hint{text-align:center;font-size:15px;color:#4A4340;margin:0;}',
+    '.ks-kids-step-name-tag-name{padding-right:36px;font-family:"Instrument Serif",serif;font-size:48px;line-height:1;word-break:break-word;}',
     '.ks-kids-step-chips{display:flex;gap:8px;flex-wrap:wrap;}',
     '.ks-kids-step-chip{padding:6px 12px;border-radius:999px;font-size:14px;font-weight:700;}',
     '.ks-kids-step-chip--first{background:#f491a9;color:#211b1a;}',
     '.ks-kids-step-chip--age{background:#eda920;color:#211b1a;}',
     '.ks-kids-step-chip--size{background:#309359;color:#fff;}',
-    '.ks-kids-step-name-tag-edit{position:absolute;right:16px;bottom:14px;font-size:14px;font-weight:700;color:#211b1a;background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;font-family:Quicksand,sans-serif;}',
+    '.ks-kids-step-name-tag-edit{position:absolute;right:16px;top:76px;font-size:14px;font-weight:700;color:#211b1a;background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;font-family:Quicksand,sans-serif;}',
     '.ks-kids-step-question{display:flex;flex-direction:column;gap:12px;}',
     '.ks-kids-step-question-text{font-family:"Instrument Serif",serif;font-weight:400;font-size:28px;margin:0;line-height:1.15;}',
     '.ks-kids-step-text-box,.ks-kids-step-age-picker{height:56px;width:100%;border:2.5px solid #211b1a;border-radius:16px;padding:0 16px;font-family:Quicksand,sans-serif;font-size:17px;background:#fff;color:#211b1a;box-shadow:3px 3px 0 #211b1a;-webkit-appearance:none;appearance:none;}',
@@ -3528,7 +3548,7 @@ function paintCloset(s) {
     var out = '';
     if (c.gender === 'girl') out += '<span class="ks-kids-step-chip ks-kids-step-chip--first">Girl</span>';
     if (c.gender === 'boy')  out += '<span class="ks-kids-step-chip ks-kids-step-chip--first">Boy</span>';
-    if (c.age !== null && c.unit) out += '<span class="ks-kids-step-chip ks-kids-step-chip--age">' + kidsEsc(kidsAgeLabel(c.age, c.unit)) + '</span>';
+    if (c.age !== null && c.unit === 'years') out += '<span class="ks-kids-step-chip ks-kids-step-chip--age">' + kidsEsc(kidsAgeLabel(c.age, c.unit)) + '</span>';
     if (c.size) out += '<span class="ks-kids-step-chip ks-kids-step-chip--size">Size ' + kidsEsc(kidsSizeLabel(c.size)) + '</span>';
     return out ? '<div class="ks-kids-step-chips">' + out + '</div>' : '';
   }
@@ -3548,14 +3568,10 @@ function paintCloset(s) {
 
   function kidsAgeOptionsHtml(c) {
     var html = '<option value="">Pick an age</option>';
-    for (var m = 0; m < 24; m++) {
-      var sel = (c.unit === 'months' && c.age === m) ? ' selected' : '';
-      html += '<option value="months:' + m + '"' + sel + '>' + kidsAgeLabel(m, 'months') + '</option>';
-    }
-    for (var y = 2; y <= 12; y++) {
-      var sely = (c.unit === 'years' && c.age === y) ? ' selected' : '';
-      html += '<option value="years:' + y + '"' + sely + '>' + kidsAgeLabel(y, 'years') + '</option>';
-    }
+    KIDS_AGES.forEach(function (a) {
+      var sel = (c.unit === a.unit && c.age === a.age) ? ' selected' : '';
+      html += '<option value="' + a.unit + ':' + a.age + '"' + sel + '>' + a.label + '</option>';
+    });
     return html;
   }
 
@@ -3576,15 +3592,19 @@ function paintCloset(s) {
         (k.error ? '<p class="ks-kids-step-error" role="alert">' + kidsEsc(k.error) + '</p>' : '') +
         '<button type="button" class="ks-kids-step-continue" data-kids-step="finish"' + (k.busy ? ' disabled' : '') + '>Continue</button>';
     } else {
-      html += kidsNameTagHtml(c, { tappable: k.stage !== 'name' });
       var canGo = false;
       if (k.stage === 'name') {
-        html += '<div class="ks-kids-step-question">' +
-          '<label for="ks-kids-step-name-box" class="ks-kids-step-question-text">What\'s your child\'s first name?</label>' +
-          '<input id="ks-kids-step-name-box" class="ks-kids-step-text-box" type="text" maxlength="40" autocomplete="off" autocapitalize="words" enterkeyhint="next" value="' + kidsEsc(c.name) + '">' +
-          '</div>';
+        html += '<div class="ks-kids-step-name-tag">' +
+          '<div class="ks-kids-step-name-tag-top">Hello!<span>MY NAME IS</span></div>' +
+          '<div class="ks-kids-step-name-tag-body">' +
+          '<input id="ks-kids-step-name-box" class="ks-kids-step-name-on-tag" type="text" maxlength="40" autocomplete="off" autocapitalize="words" enterkeyhint="next" placeholder="Name" aria-label="Your child\'s first name" value="' + kidsEsc(c.name) + '">' +
+          '</div></div>' +
+          '<p class="ks-kids-step-tag-hint">Write your child\'s first name on the tag.</p>';
         canGo = !!c.name.trim();
-      } else if (k.stage === 'gender') {
+      } else {
+        html += kidsNameTagHtml(c, { tappable: true });
+      }
+      if (k.stage === 'gender') {
         html += '<div class="ks-kids-step-question">' +
           '<div class="ks-kids-step-question-text">' + kidsEsc(c.name) + ' is a…</div>' +
           '<div class="ks-kids-step-choice-row">' +
@@ -3599,13 +3619,13 @@ function paintCloset(s) {
         html += '<div class="ks-kids-step-question">' +
           '<label for="ks-kids-step-age-picker" class="ks-kids-step-question-text">How old is ' + kidsEsc(c.name) + '?</label>' +
           '<select id="ks-kids-step-age-picker" class="ks-kids-step-age-picker">' + kidsAgeOptionsHtml(c) + '</select>';
-        if (c.size) {
+        if (c.size && c.unit !== 'other') {
           html += '<div class="ks-kids-step-size-line"><span>' +
             (c.byHand ? kidsEsc(c.name) + ' wears <b>' + kidsEsc(kidsSizeLabel(c.size)) + '</b>.'
                       : 'We think ' + who + ' <b>' + kidsEsc(kidsSizePhrase(c.size)) + '</b>.') +
             '</span><button type="button" class="ks-kids-step-size-change" data-kids-step="size-open">Change</button></div>';
         }
-        if (k.sizeOpen) {
+        if (k.sizeOpen && c.unit !== 'other') {
           html += '<div class="ks-kids-step-size-grid" role="group" aria-label="Sizes">';
           KIDS_SIZES.forEach(function (sz) {
             html += '<button type="button" class="ks-kids-step-size-choice' + (c.size === sz.value ? ' is-picked' : '') + '" data-kids-step="size" data-kids-value="' + kidsEsc(sz.value) + '">' + kidsEsc(sz.label) + '</button>';
@@ -3613,7 +3633,7 @@ function paintCloset(s) {
           html += '</div>';
         }
         html += '</div>';
-        canGo = c.age !== null && !!c.size && !k.busy;
+        canGo = c.age !== null && (!!c.size || c.unit === 'other') && !k.busy;
       }
       html += '<div class="ks-kids-step-spacer"></div>' +
         (k.error ? '<p class="ks-kids-step-error" role="alert">' + kidsEsc(k.error) + '</p>' : '') +
@@ -3632,10 +3652,6 @@ function paintCloset(s) {
         k.cur.name = box.value;
         var go = k.el.querySelector('[data-kids-step="continue"]');
         if (go) go.disabled = !box.value.trim();
-        var tagBody = k.el.querySelector('.ks-kids-step-name-tag-body');
-        if (tagBody) tagBody.innerHTML = box.value.trim()
-          ? '<div class="ks-kids-step-name-tag-name">' + kidsEsc(box.value.trim()) + '</div>'
-          : '<div class="ks-kids-step-name-tag-blank"></div>';
       });
       box.addEventListener('keydown', function (ev) {
         if (ev.key === 'Enter') { ev.preventDefault(); kidsContinue(); }
@@ -3649,7 +3665,8 @@ function paintCloset(s) {
         if (!v) { k.cur.age = null; k.cur.unit = ''; if (!k.cur.byHand) k.cur.size = ''; kidsRender(); return; }
         var p = v.split(':');
         k.cur.unit = p[0]; k.cur.age = parseInt(p[1], 10);
-        if (!k.cur.byHand) k.cur.size = kidsSizeForMonths(kidsAgeMonths(k.cur.age, k.cur.unit));
+        if (k.cur.unit === 'other') { k.cur.size = ''; k.cur.byHand = false; k.sizeOpen = false; }
+        else if (!k.cur.byHand) k.cur.size = kidsSizeForMonths(kidsAgeMonths(k.cur.age, k.cur.unit));
         k.error = '';
         kidsRender();
       });
@@ -3677,7 +3694,7 @@ function paintCloset(s) {
     } else if (k.stage === 'gender') {
       if (c.gender) kidsGo('age');
     } else if (k.stage === 'age') {
-      if (c.age === null || !c.size) return;
+      if (c.age === null || (!c.size && c.unit !== 'other')) return;
       kidsSave();
     }
   }
@@ -3687,13 +3704,13 @@ function paintCloset(s) {
     k.busy = true; k.error = ''; kidsRender();
     var payload = {
       name: c.name, gender: c.gender, age: String(c.age), age_unit: c.unit,
-      size: c.byHand ? c.size : '', size_by_hand: c.byHand ? 'true' : 'false'
+      size: (c.byHand && c.unit !== 'other') ? c.size : '', size_by_hand: (c.byHand && c.unit !== 'other') ? 'true' : 'false'
     };
     var done = function (resp) {
       k.busy = false;
       if (resp && resp.ok && resp.child) {
         var saved = { id: resp.child.id, name: c.name, gender: c.gender, age: c.age, unit: c.unit,
-                      size: resp.child.size || c.size, byHand: c.byHand };
+                      size: c.unit === 'other' ? '' : (resp.child.size || c.size), byHand: c.byHand };
         var replaced = c.replaces;
         if (replaced) {
           for (var i = 0; i < k.saved.length; i++) if (k.saved[i].id === replaced) { k.saved.splice(i, 1, saved); saved = null; break; }
