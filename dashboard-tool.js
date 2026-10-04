@@ -3592,7 +3592,18 @@ function paintCloset(s) {
     kidsStepOpen(_FAKE === 'kids');
     _kids.saved = _lastKids.map(kidsFromServerChild);
     _kids.cur = kidsBlank();
+    _kids.entry = mode;
     kidsGo(mode === 'edit' && _kids.saved.length ? 'done' : 'name');
+  }
+  // Close with nothing changed (no reload of the list)
+  function kidsCloseNow() {
+    var k = _kids; if (!k) return;
+    if (k.el.parentNode) k.el.parentNode.removeChild(k.el);
+    document.documentElement.style.overflow = '';
+    if (document.body) document.body.style.overflow = '';
+    _kids = null;
+    var q = _kidsAfter; _kidsAfter = [];
+    q.forEach(function (fn) { try { fn(); } catch (e) { console.error('kids step: after-close error', e); } });
   }
 
   function kidsBlank() {
@@ -3664,6 +3675,10 @@ function paintCloset(s) {
     return (list.length > 1 ? 'sizes ' : 'size ') + list.map(kidsSizeLabel).join(' and ');
   }
 
+  function kidsEditReady(c) {
+    return !!String(c.name || '').trim() && !!c.gender && kidsMonthsOf(c) !== null;
+  }
+
   function kidsRender() {
     var k = _kids; if (!k) return;
     var c = k.cur;
@@ -3679,23 +3694,24 @@ function paintCloset(s) {
         '<button type="button" class="ks-kids-step-add-another" data-kids-step="add-another">+ Add another child</button>' +
         '<div class="ks-kids-step-spacer"></div>' +
         (k.error ? '<p class="ks-kids-step-error" role="alert">' + kidsEsc(k.error) + '</p>' : '') +
-        '<button type="button" class="ks-kids-step-continue" data-kids-step="finish"' + (k.busy ? ' disabled' : '') + '>Continue</button>';
+        '<button type="button" class="ks-kids-step-continue" data-kids-step="finish"' + (k.busy ? ' disabled' : '') + '>' + (k.entry ? 'Done' : 'Continue') + '</button>';
     } else {
       var canGo = false;
-      if (k.stage === 'name') {
+      var editing = k.stage === 'edit';   // S436: the edit form, every answer on one screen
+      if (k.stage === 'name' || editing) {
         html += '<div class="ks-kids-step-name-tag">' +
-          '<div class="ks-kids-step-name-tag-top">Hello!<span>MY CHILD\'S NAME IS</span></div>' +
+          '<div class="ks-kids-step-name-tag-top">Hello!<span>' + (editing ? 'MY NAME IS' : 'MY CHILD\'S NAME IS') + '</span></div>' +
           '<div class="ks-kids-step-name-tag-body">' +
           '<input id="ks-kids-step-name-box" class="ks-kids-step-name-on-tag" type="text" maxlength="40" autocomplete="off" autocapitalize="words" enterkeyhint="next" placeholder="Name" aria-label="Your child\'s first name" value="' + kidsEsc(c.name) + '">' +
           '</div></div>' +
-          '<p class="ks-kids-step-tag-hint">Write your child\'s first name on the tag.</p>';
+          (editing ? '' : '<p class="ks-kids-step-tag-hint">Write your child\'s first name on the tag.</p>');
         // ⚠ The tag says MY CHILD'S NAME IS while she types, then MY NAME IS once it's filled
         //   (hers S435: she must never put her own name here).
         canGo = !!c.name.trim();
       } else {
         html += kidsNameTagHtml(c, { tappable: true });
       }
-      if (k.stage === 'gender') {
+      if (k.stage === 'gender' || editing) {
         html += '<div class="ks-kids-step-question">' +
           '<div class="ks-kids-step-question-text">' + kidsEsc(kidsCap(c.name)) + ' is a…</div>' +
           '<div class="ks-kids-step-choice-row">' +
@@ -3705,7 +3721,8 @@ function paintCloset(s) {
           '<button type="button" class="ks-kids-step-small-link' + (c.gender === 'not_said' ? ' is-picked' : '') + '" data-kids-step="gender" data-kids-value="not_said">I\'d rather not say</button>' +
           '</div>';
         canGo = !!c.gender;
-      } else if (k.stage === 'age') {
+      }
+      if (k.stage === 'age' || editing) {
         var who = c.gender === 'girl' ? 'she wears' : (c.gender === 'boy' ? 'he wears' : kidsEsc(kidsCap(c.name)) + ' wears');
         html += '<div class="ks-kids-step-question">' +
           '<label for="ks-kids-step-age-picker" class="ks-kids-step-question-text">How old is ' + kidsEsc(kidsCap(c.name)) + '?</label>' +
@@ -3753,10 +3770,11 @@ function paintCloset(s) {
         html += '</div>';
         canGo = kidsMonthsOf(c) !== null && !k.busy;
       }
+      if (editing) canGo = kidsEditReady(c) && !k.busy;
       html += '<div class="ks-kids-step-spacer"></div>' +
         (k.error ? '<p class="ks-kids-step-error" role="alert">' + kidsEsc(k.error) + '</p>' : '') +
-        '<button type="button" class="ks-kids-step-continue" data-kids-step="continue"' + (canGo ? '' : ' disabled') + '>' + (k.busy ? 'Saving…' : 'Continue') + '</button>' +
-        (k.saved.length && !k.busy ? '<button type="button" class="ks-kids-step-small-link" data-kids-step="back-to-list">Never mind</button>' : '');
+        '<button type="button" class="ks-kids-step-continue" data-kids-step="continue"' + (canGo ? '' : ' disabled') + '>' + (k.busy ? 'Saving…' : (editing ? 'Save' : 'Continue')) + '</button>' +
+        ((k.saved.length || k.entry) && !k.busy ? '<button type="button" class="ks-kids-step-small-link" data-kids-step="back-to-list">Cancel</button>' : '');
     }
     html += '</div>';
     k.el.innerHTML = html;
@@ -3770,12 +3788,12 @@ function paintCloset(s) {
       box.addEventListener('input', function () {
         k.cur.name = box.value;
         var go = k.el.querySelector('[data-kids-step="continue"]');
-        if (go) go.disabled = !box.value.trim();
+        if (go) go.disabled = k.stage === 'edit' ? !kidsEditReady(k.cur) : !box.value.trim();
       });
       box.addEventListener('keydown', function (ev) {
         if (ev.key === 'Enter') { ev.preventDefault(); kidsContinue(); }
       });
-      setTimeout(function () { try { box.focus(); } catch (e) {} }, 50);
+      if (k.stage === 'name') setTimeout(function () { try { box.focus(); } catch (e) {} }, 50);
     }
     var age = k.el.querySelector('#ks-kids-step-age-picker');
     if (age) {
@@ -3835,6 +3853,10 @@ function paintCloset(s) {
     } else if (k.stage === 'age') {
       if (kidsMonthsOf(c) === null) return;
       kidsSave();
+    } else if (k.stage === 'edit') {
+      c.name = String(c.name || '').trim();
+      if (!kidsEditReady(c)) return;
+      kidsSave();
     }
   }
 
@@ -3858,6 +3880,7 @@ function paintCloset(s) {
         }
         if (saved) k.saved.push(saved);
         k.cur = kidsBlank();
+        k.changed = true;
         kidsGo('done');
       } else {
         console.error('kids step save error', resp);
@@ -3947,13 +3970,18 @@ function paintCloset(s) {
       kidsRender();
     }
     else if (act === 'add-another') { ev.preventDefault(); k.cur = kidsBlank(); kidsGo('name'); }
-    else if (act === 'back-to-list') { ev.preventDefault(); k.cur = kidsBlank(); kidsGo('done'); }
+    else if (act === 'back-to-list') {
+      ev.preventDefault();
+      // Opened with "+ Add" from Account & Settings and nothing saved yet: Cancel closes it all
+      if (k.entry === 'add' && !k.changed) { kidsCloseNow(); return; }
+      k.cur = kidsBlank(); kidsGo('done');
+    }
     else if (act === 'edit') {
       ev.preventDefault();
       var sc = k.saved[parseInt(t.getAttribute('data-kids-index'), 10)];
       if (!sc) return;
       k.cur = kidsEditCopy(sc);
-      kidsGo('name');
+      kidsGo('edit');
     }
     else if (act === 'finish') { ev.preventDefault(); kidsFinish(); }
   });
