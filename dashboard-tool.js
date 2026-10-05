@@ -3129,19 +3129,6 @@ function paintCloset(s) {
     }
   };
 
-  // One address, rendered as the lines that will ACTUALLY BE STORED.
-  // ⚠⚠ line2 IS CARRIED THROUGH BOTH CANDIDATES, UNCHANGED. Shippo never returns a unit
-  // and a correction never touches hers - rendering it in both is how she can SEE that
-  // accepting a suggestion is not going to erase her apartment number. An apartment is a door.
-  // ⚠ NOT PRETTIFIED. Shippo answers in capitals; if it does, she sees capitals and chooses
-  // knowing that. Showing one string and storing another is the failure this exists to stop.
-  function addrFmt(a, line2) {
-    var out = [esc(a.line1)];
-    if (line2) out.push(esc(line2));
-    out.push(esc(a.city + ', ' + a.state + ' ' + a.zip));
-    return out.join('<br>');
-  }
-
   function addrConfirmClear() {
     var card = addrCard();
     if (!card) return;
@@ -3153,38 +3140,86 @@ function paintCloset(s) {
     addrResize();
   }
 
+  // ================= S442: THE STOP BOX (hers, mockup https://claude.ai/artifact/2PAqVQb6YMhQQT4HCRLUTA) =================
+  // A cream box with a coral line on top so it reads as a STOP, not a suggestion. Every
+  // choice is an equal card with its own button; "Let me edit it" sits underneath. Same
+  // box for all three codes. Her S51 lines are kept word for word; the heading is hers S442.
+  // ⚠ The account panel is never wider than 420px, so the cards always stack. Do not try
+  // to put them side by side in there.
+  var ADDR_STOP_HEAD = 'Your address isn\u2019t saved yet.';
+  var ADDR_EDIT_LABEL = 'Let me edit it';
+  // Claude's wording S442, hers to change. Only shown when the ZIP is short AND there is
+  // no found version to take, so the only way on is to fix it.
+  var ADDR_ZIP_FIX = 'ZIP needs to be 5 digits.';
+
+  // A ZIP she could actually be mailed at: 5 digits, or ZIP+4.
+  function addrZipOk(z) { return /^\d{5}(-?\d{4})?$/.test(String(z || '').trim()); }
+
+  // Marks the parts of the found version that differ from what she typed (case ignored,
+  // since case alone is not a correction she needs to look for).
+  function addrSame(a, b) {
+    return String(a || '').replace(/\s+/g, ' ').trim().toLowerCase() ===
+           String(b || '').replace(/\s+/g, ' ').trim().toLowerCase();
+  }
+  function addrMark(v, changed) {
+    return changed ? '<span class="ks-addr-diff">' + esc(v) + '</span>' : esc(v);
+  }
+
+  // ⚠ NOT PRETTIFIED. Each card shows the lines that will ACTUALLY BE STORED.
+  // ⚠⚠ line2 IS CARRIED THROUGH BOTH CANDIDATES, UNCHANGED (Shippo never returns a unit).
+  function addrCardValue(a, line2, typed) {
+    var out = [addrMark(a.line1, typed && !addrSame(a.line1, typed.line1))];
+    if (line2) out.push(esc(line2));
+    out.push(addrMark(a.city, typed && !addrSame(a.city, typed.city)) + ', ' +
+             addrMark(a.state, typed && !addrSame(a.state, typed.state)) + ' ' +
+             addrMark(a.zip, typed && !addrSame(a.zip, typed.zip)));
+    return out.join('<br>');
+  }
+
+  function addrOptCard(label, valueHtml, btnText, mode) {
+    return '<div class="ks-addr-opt">' +
+             '<span class="ks-addr-opt-label">' + esc(label) + '</span>' +
+             '<div class="ks-addr-opt-value">' + valueHtml + '</div>' +
+             (btnText ? '<button type="button" class="ks-addr-opt-btn" data-addr-mode="' + mode + '">' + esc(btnText) + '</button>' : '') +
+           '</div>';
+  }
+
+  // PURE: answer + what she typed in, HTML out. Nothing in here touches the page.
+  // ⚠ Returns '' on a code we have no words for (the caller fails safe).
+  function addrConfirmHTML(res, pending) {
+    var cfg = ADDR_ASK[res.code];
+    if (!cfg) return '';
+    var typed = res.typed || pending || {};
+    var zipOk = addrZipOk(typed.zip);
+    var hasFound = res.code === 'corrected' && res.suggestion;
+
+    var html = '<p class="ks-addr-stop-head">' + esc(ADDR_STOP_HEAD) + '</p>' +
+               '<p class="ks-addr-confirm-msg">' + esc(cfg.msg) + '</p>' +
+               '<div class="ks-addr-opts">';
+    if (hasFound) {
+      // S442, hers: never offer "Keep what I typed" on a ZIP that can't be mailed to.
+      if (zipOk) html += addrOptCard('You typed', addrCardValue(typed, typed.line2, null), cfg.alt, 'mine');
+      html += addrOptCard('We found', addrCardValue(res.suggestion, typed.line2, typed), cfg.go, 'suggested');
+    } else {
+      // flagged / not_found: one card, what she typed, with Save anyway (unless the ZIP is short).
+      html += addrOptCard('You typed', addrCardValue(typed, typed.line2, null), zipOk ? cfg.go : '', 'mine');
+    }
+    html += '</div>';
+    if (!hasFound && !zipOk) html += '<p class="ks-addr-zipfix">' + esc(ADDR_ZIP_FIX) + '</p>';
+    html += '<button type="button" class="ks-addr-confirm-edit">' + esc(ADDR_EDIT_LABEL) + '</button>';
+    return html;
+  }
+
   function addrShowConfirm(res) {
     var card = addrCard();
     if (!card) return;
-    var cfg = ADDR_ASK[res.code];
-    // ⚠ FAIL SAFE ON AN UNKNOWN CODE. A future server code we have no words for must never
-    // paint an empty box with two unlabelled buttons.
-    if (!cfg) { addrStatus('That didn\u2019t save. Try again, or email us.', false); return; }
+    var html = addrConfirmHTML(res, ADDR_PENDING);
+    // ⚠ FAIL SAFE ON AN UNKNOWN CODE. Never paint an empty box with unlabelled buttons.
+    if (!html) { addrStatus('That didn\u2019t save. Try again, or email us.', false); return; }
 
     var box  = card.querySelector('.ks-addr-confirm');
     var acts = card.querySelector('.ks-addr-actions');
     if (!box) return;
-
-    var typed = res.typed || {};
-    var html  = '<div class="ks-addr-confirm-msg">' + esc(cfg.msg) + '</div>';
-
-    if (res.code === 'corrected' && res.suggestion) {
-      html += '<div class="ks-addr-choices">' +
-                '<div class="ks-addr-choice">' +
-                  '<span class="ks-addr-choice-label">You typed</span>' +
-                  '<div class="ks-addr-choice-value">' + addrFmt(typed, typed.line2) + '</div>' +
-                '</div>' +
-                '<div class="ks-addr-choice">' +
-                  '<span class="ks-addr-choice-label">We found</span>' +
-                  '<div class="ks-addr-choice-value">' + addrFmt(res.suggestion, typed.line2) + '</div>' +
-                '</div>' +
-              '</div>';
-    }
-
-    html += '<div class="ks-addr-confirm-actions">' +
-              '<button type="button" class="ks-addr-confirm-go">' + esc(cfg.go) + '</button>' +
-              '<button type="button" class="ks-addr-confirm-alt">' + esc(cfg.alt) + '</button>' +
-            '</div>';
 
     box.innerHTML = html;
     box.style.display = '';
@@ -3192,39 +3227,57 @@ function paintCloset(s) {
     // how she ends up saving the thing she just declined.
     if (acts) acts.style.display = 'none';
 
-    box.querySelector('.ks-addr-confirm-go').addEventListener('click', function () {
-      addrSave(res.code === 'corrected' ? 'suggested' : 'mine');
+    box.querySelectorAll('.ks-addr-opt-btn').forEach(function (b) {
+      b.addEventListener('click', function () { addrSave(b.getAttribute('data-addr-mode')); });
     });
-    box.querySelector('.ks-addr-confirm-alt').addEventListener('click', function () {
-      if (cfg.altMode) { addrSave(cfg.altMode); return; }
-      addrConfirmClear();                       // "Let me edit it" - back to the fields
+    box.querySelector('.ks-addr-confirm-edit').addEventListener('click', function () {
+      addrConfirmClear();                       // back to the fields
       var first = card.querySelector('.ks-addr-input');
       if (first) first.focus();
     });
 
-    // ⚠⚠ RESIZE BEFORE FOCUS. This card lives in an accordion body frozen at the height it
-    // had when it opened, so anything that grows inside it is clipped and renders perfectly
-    // below the visible edge (§DASH.9). Focusing something she cannot see is worse than not
-    // focusing at all.
+    // ⚠⚠ RESIZE BEFORE FOCUS (§DASH.9): the accordion body is frozen at its open height.
     addrResize();
-    box.querySelector('.ks-addr-confirm-go').focus();
+    var firstBtn = box.querySelector('.ks-addr-opt-btn') || box.querySelector('.ks-addr-confirm-edit');
+    if (firstBtn) firstBtn.focus();
+    // On a phone the box can open below the screen; bring its top into view.
+    if (box.scrollIntoView) { try { box.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) {} }
   }
 
   // Busy state has to cover THREE buttons now, because the save can be fired from the form
   // row or from the confirm row and only one of them is on screen at a time.
-  function addrBusy(on) {
+  function addrBusy(on, mode) {
     var card = addrCard();
     if (!card) return;
     var save = card.querySelector('.ks-addr-save');
-    var go   = card.querySelector('.ks-addr-confirm-go');
-    var alt  = card.querySelector('.ks-addr-confirm-alt');
     if (save) { save.disabled = on; save.textContent = on ? 'Saving\u2026' : 'Save address'; }
-    if (go) {
-      go.disabled = on;
-      if (on) { go.setAttribute('data-label', go.textContent); go.textContent = 'Saving\u2026'; }
-      else if (go.getAttribute('data-label')) { go.textContent = go.getAttribute('data-label'); }
-    }
-    if (alt) alt.disabled = on;
+    card.querySelectorAll('.ks-addr-opt-btn').forEach(function (b) {
+      b.disabled = on;
+      if (on && b.getAttribute('data-addr-mode') === mode) {
+        b.setAttribute('data-label', b.textContent); b.textContent = 'Saving\u2026';
+      } else if (!on && b.getAttribute('data-label')) {
+        b.textContent = b.getAttribute('data-label'); b.removeAttribute('data-label');
+      }
+    });
+    var ed = card.querySelector('.ks-addr-confirm-edit');
+    if (ed) ed.disabled = on;
+  }
+
+  /* ---- S442: TIDY THE CITY AND STREET, SAME RULE AS SIGNUP (S437) ----------
+     Copied from signup-tool.js tidyCase, unchanged. Only a field typed ALL lowercase
+     or ALL capitals changes ("san diego" -> "San Diego"); her own capitals are never
+     touched; N, NW, PO stay capitals; line2 (her unit) is never touched.
+     ⚠ Change both files together. */
+  function tidyCase(v) {
+    v = String(v || '').replace(/\s+/g, ' ').trim();
+    if (!/[a-z]/i.test(v)) return v;
+    if (v !== v.toLowerCase() && v !== v.toUpperCase()) return v;
+    return v.toLowerCase().replace(/[a-z][a-z']*/g, function (w) {
+      if (/^(n|s|e|w|ne|nw|se|sw|po)$/.test(w)) return w.toUpperCase();
+      return w.charAt(0).toUpperCase() + w.slice(1);
+    }).replace(/(\d)([A-Z])([a-z]+)/g, function (m, d, c, rest) {
+      return d + c.toLowerCase() + rest;   /* "1St" back to "1st" */
+    });
   }
 
   // confirm === null        -> first pass, she has not been asked yet
@@ -3256,10 +3309,17 @@ function paintCloset(s) {
         addrStatus('We need a street, city, state and ZIP to mail your bag.', false);
         return;
       }
+      // S442: tidy street and city, and show her the tidied words in the fields.
+      body.line1 = tidyCase(body.line1);
+      body.city  = tidyCase(body.city);
+      card.querySelectorAll('.ks-addr-input').forEach(function (inp) {
+        var k = inp.getAttribute('data-addr');
+        if (k === 'line1' || k === 'city') inp.value = body[k];
+      });
       ADDR_PENDING = body;
     }
 
-    addrBusy(true);
+    addrBusy(true, confirm);
     addrStatus('', true);
 
     var token = window.$memberstackDom.getMemberCookie();   // bare string, never a promise
