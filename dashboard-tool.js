@@ -2648,7 +2648,9 @@ function paintCloset(s) {
   var KIDS_LIST_CSS = [
     '.ks-kids-list{display:flex;flex-direction:column;gap:8px;padding:2px 0 8px;font-family:Quicksand,sans-serif;color:#211b1a;}',
     '.ks-kids-list-tiles{display:flex;flex-wrap:wrap;gap:8px;}',
-    '.ks-kids-list-row{display:inline-flex;align-items:center;max-width:100%;padding:8px 12px;border:1px solid #d8d4c8;border-radius:12px;background:#fff;}',
+    '.ks-kids-list-row{display:inline-flex;align-items:center;max-width:100%;padding:8px 12px;border:1px solid #d8d4c8;border-radius:12px;background:#fff;font-family:Quicksand,sans-serif;color:#211b1a;text-align:left;cursor:pointer;appearance:none;}',
+    '.ks-kids-list-row:hover{border-color:#211b1a;}',
+    '.ks-kids-list-row:focus-visible{outline:2px solid #211b1a;outline-offset:2px;}',
     '.ks-kids-list-main{min-width:0;display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;}',
     '.ks-kids-list-name{font-size:16px;font-weight:700;line-height:1.2;word-break:break-word;}',
     '.ks-kids-list-chips{display:flex;gap:5px;flex-wrap:wrap;}',
@@ -2685,22 +2687,22 @@ function paintCloset(s) {
     if (empty) empty.style.display = kids.length ? 'none' : '';
 
     var html = '<div class="ks-kids-list"><div class="ks-kids-list-tiles">';
-    kids.forEach(function (c) {
+    kids.forEach(function (c, i) {
       var name = kidsCap(c.name || 'Child');
       var chips = '';
       kidsListSizes(c).forEach(function (sz) {
         chips += '<span class="ks-kids-list-chip ks-kids-list-chip--size">Size ' + kidsEsc(kidsSizeLabel(sz)) + '</span>';
       });
-      html += '<div class="ks-kids-list-row ks-child" data-child-id="' + kidsEsc(c.id) + '">' +
-        '<div class="ks-kids-list-main"><div class="ks-kids-list-name">' + kidsEsc(name) + '</div>' +
-        (chips ? '<div class="ks-kids-list-chips">' + chips + '</div>' : '') + '</div>' +
-        '</div>';
+      // S442, hers: the whole tile is the way in to edit that child.
+      html += '<button type="button" class="ks-kids-list-row ks-child" data-child-id="' + kidsEsc(c.id) + '"' +
+        ' data-kids-account="edit-one" data-kids-index="' + i + '" aria-label="Edit ' + kidsEsc(name) + '">' +
+        '<span class="ks-kids-list-main"><span class="ks-kids-list-name">' + kidsEsc(name) + '</span>' +
+        (chips ? '<span class="ks-kids-list-chips">' + chips + '</span>' : '') + '</span>' +
+        '</button>';
     });
-    // S436, hers: gender and age only change to fix a mistake, so they live in the edit view.
-    // One Edit link beside Add opens the step on the whole list.
+    // S442, hers: no separate Edit link; tapping a tile edits that child.
     html += '</div><div class="ks-kids-list-bottom-links">' +
       '<button type="button" class="ks-kids-list-add" data-kids-account="add">' + (kids.length ? '+ Add another child' : '+ Add a child') + '</button>' +
-      (kids.length ? '<button type="button" class="ks-kids-list-add" data-kids-account="edit">Edit</button>' : '') +
       '</div></div>';
     list.innerHTML = html;
     accResize(list.querySelector('.ks-kids-list-add'));
@@ -2712,7 +2714,7 @@ function paintCloset(s) {
     if (!t) return;
     ev.preventDefault();
     var act = t.getAttribute('data-kids-account');
-    kidsOpenFromAccount(act);
+    kidsOpenFromAccount(act, parseInt(t.getAttribute('data-kids-index'), 10));
   });
 
   // ---------- EMAIL PREFERENCES ----------
@@ -3785,12 +3787,18 @@ function paintCloset(s) {
   }
   // From the kids list in Account & Settings: 'edit' opens every saved tag (each with its
   // own Edit), 'add' opens a blank tag
-  function kidsOpenFromAccount(mode) {
+  function kidsOpenFromAccount(mode, idx) {
     if (_kids) return;
     kidsStepOpen(_FAKE === 'kids');
     _kids.saved = _lastKids.map(kidsFromServerChild);
     _kids.cur = kidsBlank();
     _kids.entry = mode;
+    // S442: a tapped tile opens straight on that child's edit form.
+    if (mode === 'edit-one' && _kids.saved[idx]) {
+      _kids.cur = kidsEditCopy(_kids.saved[idx]);
+      kidsGo('edit');
+      return;
+    }
     kidsGo(mode === 'edit' && _kids.saved.length ? 'done' : 'name');
   }
   // Close with nothing changed (no reload of the list)
@@ -4184,7 +4192,8 @@ function paintCloset(s) {
     else if (act === 'back-to-list') {
       ev.preventDefault();
       // Opened with "+ Add" from Account & Settings and nothing saved yet: Cancel closes it all
-      if (k.entry === 'add' && !k.changed) { kidsCloseNow(); return; }
+      // S442: the same for a tapped tile, Cancel with nothing changed goes back to the page.
+      if ((k.entry === 'add' || k.entry === 'edit-one') && !k.changed) { kidsCloseNow(); return; }
       k.cur = kidsBlank(); kidsGo('done');
     }
     else if (act === 'edit') {
