@@ -20,14 +20,17 @@
    placeholder, as in the real email. Finishing waits until the bag has really closed.
    v10 (S430, hers): the clothing count moves on to the toy count by itself; a search box (brand,
    category, member) scrolls to the top of the screen so its list shows above the keyboard; the finish
-   screen keeps only what changes from bag to bag. */
+   screen keeps only what changes from bag to bag.
+   v12 (S440): the finish screen's subject, preview line, opening, decline lines and credits come from
+   get_bag_email_parts (through grading-db), the same words S27 sends, so it matches the real email.
+   The unused S429 email preview is gone. */
 (function () {
   "use strict";
 
-  var BUILD = "sort-tool S433 v11";
+  var BUILD = "sort-tool S440 v12";
   var ROOT_ID = "ks-sort-app";
   var BASE = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1";
-  var DOOR = BASE + "/grading-db";
+  var DOOR = BASE + "/grading-db";   // S440: also lets through POST /rpc/get_bag_email_parts, and no other function
   var FN_UPLOAD = BASE + "/inventory-upload";
   var REST = "https://ajsobivqxexcniwifxzz.supabase.co/rest/v1";
   var ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqc29iaXZxeGV4Y25pd2lmeHp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNzI4MjIsImV4cCI6MjA5MTk0ODgyMn0.IFtzADITLHrEhnc8oHfjzyulcxWySp0o3s6v8XTZ5VM";   // public anon key, the same one listing-tool.js uses
@@ -981,46 +984,72 @@
     if (parts.length < 2) return parts.join("");
     return parts.slice(0, -1).join(", ") + " and " + parts[parts.length - 1];
   }
-  function viewNote() {
-    var n = S.close.note.trim();
-    return n ? '<p class="em-note">✍️ ' + esc(n) + "</p>" : "";
+  // S440: her email's words come from the database, the same function S27 uses (get_bag_email_parts),
+  // so the finish screen matches the real email word for word. Asked when the screen opens, and again
+  // whenever the sorted items change. If it can't be reached, the old page-built lines show instead.
+  var PARTS = { key: "", loading: false, data: null, failed: false };
+  function partsKey() {
+    return (S.batch && S.batch.id || "") + "|" + S.records.map(function (r) {
+      return [r.id, r.status, r.tier, r.would_be_tier, r.credit_amount_at_grading, r.brand, r.category, r.graded_item_name, (r.reject_reason || []).join("+")].join(",");
+    }).join(";");
   }
-  function viewEmail() {
-    var c = creditSummary(), name = titleName(S.member && S.member.first_name), d = bagDate();
-    var paused = S.member && S.member.status === "paused";
-    if (!c.kept) {
-      return '<div class="ss-card"><p class="ss-lab">Her email</p><p class="ss-sub">Nothing was kept, so she gets the All Declined email. Its preview isn\'t built yet.</p></div>';
-    }
-    var subject = "Hi " + (name || "there") + ", we just finished going through your " + (d ? MONTHS[d.getMonth()] + " " : "") + "bag";
-    var dateLine = d ? "Batch received " + MONTHS[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear() : "";
-    return '<div class="ss-card"><p class="ss-lab">Her email, exactly as it will send</p>' +
-      '<div class="em"><div class="em-top"><p class="em-k">Subject</p><p class="em-subj">' + esc(subject) + "</p>" +
-      (paused ? "" : '<p class="em-pre">Here\'s what you earned and where to find new favorites.</p>') + "</div>" +
-      '<div class="em-body"><p class="em-brand">KidSwaps</p>' + (dateLine ? '<p class="em-date">' + esc(dateLine) + "</p>" : "") +
-      '<p class="em-hi">Hi ' + esc(name || "there") + ",</p>" +
-      '<div class="em-gold"><p class="em-gold-h">What you earned from this batch</p><p class="em-gold-n">' + esc(creditsPhrase()) + "</p>" +
-      (paused ? "" : '<p class="em-gold-s">Your credits are in your bank now.</p>') + "</div>" +
-      '<div class="em-gap">Her bag summary and decline lines go here, written by S27 when you finish.</div>' +
-      '<div data-part="note">' + viewNote() + "</div>" +
-      '<p class="em-sign">Thanks for swapping,<br>Jennie</p><span class="em-btn">Go to my dashboard</span></div></div>' +
-      '<p class="ss-hint">' + (paused ? "She's paused, so her email is the Paused version: it also says her credits are held until she comes back. " : "") +
-      "The middle paragraph and the decline lines are left out until the database writes them for both the email and this preview.</p></div>";
+  function ensureParts() {
+    var k = partsKey();
+    if (!S.batch || PARTS.key === k) return;
+    PARTS = { key: k, loading: true, data: null, failed: false };
+    door("POST", "/rpc/get_bag_email_parts", { p_batch_id: S.batch.id }).then(function (d) {
+      if (PARTS.key !== k) return;
+      PARTS.loading = false;
+      if (d && typeof d === "object" && d.kind) PARTS.data = d; else PARTS.failed = true;
+      if (S.screen === "close") render();
+    }).catch(function () {
+      if (PARTS.key !== k) return;
+      PARTS.loading = false; PARTS.failed = true;
+      if (S.screen === "close") render();
+    });
   }
+  // The decline lines arrive as the email's own HTML (bold label, line breaks), already made safe by the
+  // database. Only <strong>, </strong> and <br> are let through as tags.
+  function safeLines(h) { return String(h || "").replace(/<(?!\/?strong>|br>)/g, "&lt;"); }
+  var PREVIEW_LINE = {
+    all_kept: "Here's what you earned and where to find new favorites.",
+    some_declined: "Here's what you earned and where to find new favorites.",
+    all_declined: "Here's how it went, and what to send next time."
+  };
+  var PREVIEW_PAUSED = "Your credits are safe with the rest of your bank.";
   function viewClose() {
     // Only what changes from bag to bag (hers, S430): who, the counts, the subject line, the credits, her note.
-    var c = creditSummary(), name = titleName(S.member && S.member.first_name), d = bagDate();
-    var paused = S.member && S.member.status === "paused";
-    var subject = "Hi " + (name || "there") + ", we just finished going through your " + (d ? MONTHS[d.getMonth()] + " " : "") + "bag";
-    return '<div class="ss-head"><p class="ss-eyebrow">' + S.records.length + " of " + totalCount() + " sorted</p><h1 class=\"ss-h1\">Finish " + esc(firstOf(S.member)) + "'s bag</h1>" +
-      '<p class="ss-sub">' + c.kept + " kept · " + c.dec + " declined · " + esc(plainPlan(S.member && S.member.plan)) + (paused ? " · paused" : "") + "</p></div>" +
-      '<div class="ss-card ss-fin">' +
-      (c.kept
-        ? '<div><p class="ss-k">Subject</p><p class="ss-fin-subj">' + esc(subject) + "</p></div>" +
-          '<div class="ss-fin-gold"><p class="ss-k">She earns</p><p>' + esc(creditsPhrase()) + "</p></div>"
-        : '<p class="ss-hint">Nothing kept, so she gets the All Declined email.</p>') +
-      '<div><label class="ss-lab" for="ss-pn">Add a note to her email <span class="ss-opt">optional</span></label>' +
-      '<textarea id="ss-pn" class="ss-inp" rows="2" data-k="closeNote" autocapitalize="sentences">' + esc(S.close.note) + "</textarea></div>" +
-      "</div>" + errorBox() +
+    // S440: the subject, preview line, opening, decline lines and credits are the database's words.
+    ensureParts();
+    var c = creditSummary(), paused = S.member && S.member.status === "paused";
+    var head = '<div class="ss-head"><p class="ss-eyebrow">' + S.records.length + " of " + totalCount() + " sorted</p><h1 class=\"ss-h1\">Finish " + esc(firstOf(S.member)) + "'s bag</h1>" +
+      '<p class="ss-sub">' + c.kept + " kept · " + c.dec + " declined · " + esc(plainPlan(S.member && S.member.plan)) + (paused ? " · paused" : "") + "</p></div>";
+    var noteBox = '<div><label class="ss-lab" for="ss-pn">Add a note to her email <span class="ss-opt">optional</span></label>' +
+      '<textarea id="ss-pn" class="ss-inp" rows="2" data-k="closeNote" autocapitalize="sentences">' + esc(S.close.note) + "</textarea></div>";
+    var body, P = PARTS.data;
+    if (P) {
+      var subject = "Hi " + (P.first_name || "there") + ", we just finished going through your " + (P.bag_month ? P.bag_month + " " : "") + "bag";
+      var pre = P.is_paused && P.kind !== "all_declined" ? PREVIEW_PAUSED : (PREVIEW_LINE[P.kind] || "");
+      body = '<div><p class="ss-k">Subject</p><p class="ss-fin-subj">' + esc(subject) + "</p>" +
+          (pre ? '<p class="ss-fin-pre">' + esc(pre) + "</p>" : "") + "</div>" +
+        (P.kind === "all_declined"
+          ? '<p class="ss-hint">Nothing kept, so she gets the All Declined email, in its own wording.</p>'
+          : '<div><p class="ss-k">Opening</p><p class="ss-fin-text">' + esc(P.opening_line || "") + "</p></div>") +
+        (P.decline_lines ? '<div><p class="ss-k">What came back</p><p class="ss-fin-text">' + safeLines(P.decline_lines) + "</p></div>" : "") +
+        (P.credits_phrase ? '<div class="ss-fin-gold"><p class="ss-k">She earns</p><p>' + esc(P.credits_phrase) + "</p></div>" : "") +
+        (P.is_paused && P.kind !== "all_declined" ? '<p class="ss-hint">She\'s paused, so her email is the Paused version.</p>' : "");
+    } else {
+      var name = titleName(S.member && S.member.first_name), d = bagDate();
+      var subj = "Hi " + (name || "there") + ", we just finished going through your " + (d ? MONTHS[d.getMonth()] + " " : "") + "bag";
+      body = (PARTS.loading
+          ? '<p class="ss-hint">Loading her email\'s words…</p>'
+          : '<p class="ss-hint">Couldn\'t load her email\'s words, so these are the page\'s own. Finishing still works.</p>') +
+        (c.kept
+          ? '<div><p class="ss-k">Subject</p><p class="ss-fin-subj">' + esc(subj) + "</p></div>" +
+            '<div class="ss-fin-gold"><p class="ss-k">She earns</p><p>' + esc(creditsPhrase()) + "</p></div>"
+          : '<p class="ss-hint">Nothing kept, so she gets the All Declined email.</p>');
+    }
+    return head + '<div class="ss-card ss-fin">' + body + noteBox + "</div>" + errorBox() +
       '<button type="button" class="ss-btn" data-act="close"' + (S.busy ? " disabled" : "") + ">" + (S.busy ? "Sending…" : "Finish and send her credits") + "</button>" +
       '<button type="button" class="ss-link ss-back" data-act="back-to-items">Back to the items</button>';
   }
@@ -1095,7 +1124,7 @@
       }
       return;
     }
-    if (k === "closeNote") { S.close.note = v; var np = root.querySelector('[data-part="note"]'); if (np) np.innerHTML = viewNote(); return; }
+    if (k === "closeNote") { S.close.note = v; return; }
     var it = S.item; if (!it) return;
     var hadName = !!(it.toyName || "").trim();
     it[k] = v;
@@ -1328,24 +1357,9 @@
       ".ss-fin-subj{margin:0;font-size:16px;font-weight:700;line-height:1.35}",
       ".ss-fin-gold{border-top:2px solid #eda920;border-bottom:2px solid #eda920;padding:8px 0}",
       ".ss-fin-gold p:last-child{margin:0;font-size:17px;font-weight:700}",
+      ".ss-fin-pre{margin:4px 0 0;font-size:13.5px;color:#6e6a63;line-height:1.4}",
+      ".ss-fin-text{margin:2px 0 0;font-size:15px;line-height:1.45}",
       ".ss-back{align-self:center;padding:6px 0}",
-      ".em{background:#fff;color:#211b1a;border-radius:12px;overflow:hidden;font-family:'Quicksand',system-ui,sans-serif}",
-      ".em-top{background:#f3f1ea;padding:12px 14px;border-bottom:1px solid #e3ded4}",
-      ".em-k{margin:0;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#6e6a63;font-weight:700}",
-      ".em-subj{margin:2px 0 0;font-size:15px;font-weight:700;line-height:1.35}",
-      ".em-pre{margin:4px 0 0;font-size:13px;color:#6e6a63;line-height:1.35}",
-      ".em-body{padding:16px 14px 18px;display:flex;flex-direction:column;gap:10px}",
-      ".em-brand{margin:0;font-weight:700;font-size:18px}",
-      ".em-date{margin:-6px 0 0;font-size:12.5px;color:#6e6a63}",
-      ".em-hi{margin:4px 0 0;font-size:15px}",
-      ".em-gap{border:1.5px dashed #cfc8bc;border-radius:10px;padding:10px 12px;font-size:12.5px;color:#8a837a;line-height:1.4}",
-      ".em-gold{background:#fdf6e3;border-top:2px solid #eda920;border-bottom:2px solid #eda920;padding:12px 14px;text-align:center}",
-      ".em-gold-h{margin:0;font-size:13px;color:#6e6a63;font-weight:700}",
-      ".em-gold-n{margin:4px 0 0;font-size:17px;font-weight:700}",
-      ".em-gold-s{margin:4px 0 0;font-size:13px;color:#6e6a63}",
-      ".em-note{margin:0;font-size:15px;line-height:1.45}",
-      ".em-sign{margin:0;font-size:15px;line-height:1.5}",
-      ".em-btn{align-self:flex-start;background:#e54f25;color:#fff;border-radius:99px;padding:10px 18px;font-weight:700;font-size:14px}",
       "@media (min-width:768px){.ss-wrap{padding-top:40px}}"
     ].join("\n");
     document.head.appendChild(s);
