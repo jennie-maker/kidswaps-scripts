@@ -2016,3 +2016,73 @@
     .ks-hero-card { padding: 18px 16px 18px; }
     .ks-hero-card .ks-bank-label { margin: 0 0 12px; }
   }
+
+  /* ============================================================
+     S441 HERS: THE BANK SECTION, TWO HALVES (mockup round 3, approved).
+     Credits on one side, swaps on the other, on the white page. No box, no "Credit Bank"
+     heading, no white card around the bowl. It sits ABOVE the grid (dashboard-tool.js moves
+     it), so Recent activity is no longer its equal. The dashboard is the ONE exception to
+     her S400 "every bank looks the same" rule (hers S441): checkout and the thank-you
+     screen keep their card. Bowl, coins and colours are unchanged everywhere.
+     ⚠ This block is last in the file on purpose; delete it to undo the look alone.
+     ============================================================ */
+  body .ks-hero-card {
+    max-width: 680px;
+    margin: 44px auto 0;
+    padding: 0;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0;
+  }
+  .ks-greet-headline { padding-top: 12px; }
+
+  .ks-bank-halves { display: flex; flex-direction: column; align-items: center; max-width: 320px; margin: 0 auto; }
+  .ks-half { width: 100%; }
+  .ks-half-rule { width: 64px; height: 1px; background: #D9D7CB; margin: 32px auto; }
+  .ks-bank-halves.is-solo .ks-half-rule,
+  .ks-bank-halves.is-solo .ks-half--swaps { display: none; }
+
+  /* the credits half: no card, smaller bowl, the total said once */
+  .ks-hero-card .ksb { background: none; border: 0; border-radius: 0; padding: 0; margin: 0; gap: 10px; }
+  .ks-hero-card .ksb-pile { width: 220px; }
+  .ks-hero-card .ksb-meta { gap: 8px; }
+  .ks-hero-card .ksb-eyebrow { text-transform: none; letter-spacing: 0; font-size: 15px; font-weight: 400; margin: 6px 0 0; }
+  .ks-hero-card .ksb-cap { font-size: 52px; }
+  .ks-hero-card .ksb-tiers { gap: 8px 22px; font-size: 16px; margin-top: 4px; }
+  .ks-hero-card .ksb-pk b { font-weight: 500; }
+  .ks-hero-card .ksb-line { max-width: 300px; font-size: 15px; color: #1E1A19; }
+
+  /* the swaps half */
+  .ks-half--swaps { text-align: center; }
+  .ks-hero-card .ks-half--swaps .ks-cycle-bar-wrap { margin: 0; }
+  .ks-sw-h { font-family: "Instrument Serif", Georgia, serif; font-weight: 400; font-size: 30px; line-height: 1; color: #1E1A19; margin: 0 0 8px; }
+  .ks-half--swaps .ks-cycle-plan { font-size: 13px; color: #6E6A63; margin: 0 0 16px; }
+  .ks-sw-row { margin: 0 0 14px; }
+  .ks-sw-num { font-size: 15px; color: #1E1A19; margin: 0 0 8px; }
+  .ks-sw-num b { font-weight: 600; }
+  .ks-sw-dots { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; }
+  .ks-sw-dot { display: block; width: 18px; height: 18px; border-radius: 50%; box-sizing: border-box; border: 2px solid #CFCCBF; }
+  .ks-sw-dot.is-on.k-clothing { background: #EDA920; border-color: #B7801A; }
+  .ks-sw-dot.is-on.k-toy { background: #1F5C38; border-color: #1F5C38; }
+  .ks-half--swaps .ks-cycle-zero { font-size: 16px; font-weight: 500; line-height: 1.5; margin: 4px 0 0; }
+  .ks-hero-card .ks-half--swaps .ks-cycle-line { margin: 2px 0 0 !important; font-size: 15px !important; color: #1E1A19 !important; }
+
+  /* "Short on credits?" sits under both halves */
+  .ks-hero-card .credit-pack-menu { margin: 36px auto 0; max-width: 420px; }
+
+  /* "N credits added since you joined" now sits under the Recent activity heading */
+  .ks-sec-activity .ks-bank-earned { font-size: 13px; line-height: 1.5; color: #6E6A63; margin: 2px 0 8px; padding: 0; border: 0; }
+  .ks-sec-activity .ks-bank-earned b { font-weight: 600; color: #6E6A63; }
+
+  @media (min-width: 768px) {
+    .ks-bank-halves { display: grid; grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr); gap: 44px; align-items: center; max-width: 640px; }
+    .ks-half-rule { width: 1px; height: auto; align-self: stretch; margin: 0; }
+    .ks-bank-halves.is-solo { display: flex; max-width: 340px; }
+    .ks-hero-card .ksb-pile { width: 230px; }
+    .ks-hero-card .ksb-cap { font-size: 54px; }
+    body .ks-hero-card { margin-top: 56px; }
+  }
+  @media (min-width: 940px) {
+    .ks-grid { margin-top: 64px; }
+    .ks-rail .ks-sec-activity .ks-panel-h { font-size: 17px; }
+  }

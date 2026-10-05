@@ -510,8 +510,12 @@ function paintHeadline(member) {
       // in motion" reads as a contradiction, because "already" answers an objection nobody
       // raised. NOT ONE WORD OF EITHER STRING CHANGED — ONLY THE ORDER.
       // DO NOT "simplify" this back to base-then-bag.
+      // S441 HERS: on `capped` the swaps half already says it, so the base line is dropped
+      // whenever that half shows. A bag sentence still shows on its own. No swaps half = as before.
+      if (state === 'capped' && !pre && swapsHalfOn(s)) base = '';
       sub.textContent = pre ? pre.sub
-                            : (bag ? (state === 'zero' ? bag : bag + ' ' + base) : base);
+                            : (bag ? (state === 'zero' ? bag : (base ? bag + ' ' + base : bag)) : base);
+      sub.style.display = sub.textContent ? '' : 'none';
       sub.classList.toggle('ks-greet-accent', cfg.accent === true);
     }
     if (pre) setCTA(pre.cta, 'closet', pre.href || closetHref(s));
@@ -652,7 +656,7 @@ function cycleLineString(s) {
       line.parentNode.insertBefore(wrap, line);
     }
     var caps = s.caps || {}, used = s.used_this_cycle;
-    if (!used) { wrap.style.display = 'none'; return; }
+    if (!used || swapsHalfOff(s)) { wrap.style.display = 'none'; line.style.display = 'none'; arrangeHalves(); return; }
     var rows = [];
     [['clothing', 'clothing'], ['toy', 'toy']].forEach(function (k) {
       var cap = parseFloat(caps[k[0]]); if (isNaN(cap) || cap <= 0) return;
@@ -660,10 +664,21 @@ function cycleLineString(s) {
       var left = Math.max(cap - u, 0);
       rows.push({ name: k[1], left: left, cap: cap });
     });
-    if (!rows.length) { wrap.style.display = 'none'; return; }
+    if (!rows.length) { wrap.style.display = 'none'; line.style.display = 'none'; arrangeHalves(); return; }
     wrap.style.display = '';
+    line.style.display = '';
     var plan = s.plan ? String(s.plan).trim() : '';
-    var html = plan ? '<div class="ks-cycle-plan">' + esc(plan) + '</div>' : '';
+    // S441 HERS: the swaps half. A heading, the plan name, then one row of dots per kind her
+    // plan covers ("Clothing: 7 of 10 left"). A FILLED dot is a swap she still has (gold for
+    // clothing, green for toys, the coin colours); a used swap is an empty ring.
+    var html = '<div class="ks-sw-h">Swaps this month</div>' +
+               (plan ? '<div class="ks-cycle-plan">' + esc(plan) + '</div>' : '');
+    rows.forEach(function (r0) {
+      var n = Math.min(Math.round(r0.cap), 20), on = Math.min(Math.round(r0.left), n), dots = '';
+      for (var d = 0; d < n; d++) dots += '<i class="ks-sw-dot k-' + r0.name + (d < on ? ' is-on' : '') + '"></i>';
+      html += '<div class="ks-sw-row"><div class="ks-sw-num"><b>' + (r0.name === 'toy' ? 'Toys' : 'Clothing') +
+              ':</b> ' + r0.left + ' of ' + r0.cap + ' left</div><div class="ks-sw-dots" aria-hidden="true">' + dots + '</div></div>';
+    });
     var allUsed = rows.every(function (r0) { return r0.left === 0; });
     if (allUsed) {
       var reset = cycleLineString(s).replace(/^Your swaps reset /, '').replace(/\.$/, '');
@@ -672,15 +687,44 @@ function cycleLineString(s) {
       html += '<p class="ks-cycle-zero">You\u2019ve used this month\u2019s <b>' + esc(what) + '</b>. ' +
               'Extra swaps are $5 each' + (reset ? ' until your swaps reset ' + esc(reset) : '') + '.</p>';
       line.style.display = 'none';                 // the date lives in the sentence
-    } else {
-      rows.forEach(function (r0) {
-        var words = rows.length === 1 ? ' swaps left this month' : ' ' + r0.name + ' swaps left';
-        html += '<div class="ks-cycle-num"><b>' + r0.left + ' of ' + r0.cap + '</b>' + esc(words) + '</div>' +
-                '<div class="ks-cycle-bar-track"><i class="ks-cycle-bar-fill" style="width:' +
-                  ((r0.left / r0.cap) * 100).toFixed(1) + '%"></i></div>';
-      });
     }
     wrap.innerHTML = html;
+    arrangeHalves();
+  }
+
+  // S441: paused or cancelled = no swaps half (she can't swap). Cancelled also has no caps.
+  function swapsHalfOff(s) {
+    var ms = String((s && s.member_status) || '').toLowerCase();
+    return ms === 'paused' || ms === 'cancelled';
+  }
+  // True when the swaps half will show, read from the same numbers paintCycleBar uses.
+  function swapsHalfOn(s) {
+    if (!s || !s.used_this_cycle || swapsHalfOff(s)) return false;
+    var caps = s.caps || {};
+    return (parseFloat(caps.clothing) > 0) || (parseFloat(caps.toy) > 0);
+  }
+
+  // S441 HERS: the bank section is two halves, credits and swaps. Every piece is MOVED here,
+  // never rebuilt, so every paint hook keeps working. Phone: stacked with a short rule between.
+  // 768px and up: side by side with a thin line between, no wider than the greeting.
+  // No swaps half (paused, cancelled, no numbers) = the credits half sits alone, centred.
+  function arrangeHalves() {
+    var card = document.querySelector('.ks-hero-card'), ksb = document.querySelector('.ksb');
+    if (!card || !ksb || !ksb.parentNode) return;
+    var h = card.querySelector('.ks-bank-halves');
+    if (!h) {
+      h = document.createElement('div');
+      h.className = 'ks-bank-halves';
+      h.innerHTML = '<div class="ks-half ks-half--credits"></div><div class="ks-half-rule" aria-hidden="true"></div><div class="ks-half ks-half--swaps"></div>';
+      ksb.parentNode.insertBefore(h, ksb);
+    }
+    var L = h.querySelector('.ks-half--credits'), R = h.querySelector('.ks-half--swaps');
+    if (ksb.parentNode !== L) L.appendChild(ksb);
+    var w = document.querySelector('.ks-cycle-bar-wrap'), cl = document.querySelector('.ks-cycle-line');
+    if (w && w.parentNode !== R) R.appendChild(w);
+    if (cl && cl.parentNode !== R) R.appendChild(cl);
+    h.classList.toggle('is-solo', !(w && w.style.display !== 'none'));
+    if (_bankFit) _bankFit();
   }
 
   function cycleBarCss() {
@@ -709,6 +753,7 @@ function paintBankLabel() {
       row.parentNode.insertBefore(label, row);
     }
 label.textContent = 'Credit Bank';   // hers S406
+    label.style.display = 'none';        // S441 hers: the heading is gone; "You have" says it
   }
 
   var PLAN_PRICE = { 'basics': 30, 'toy chest': 45, 'full wardrobe': 45, 'everything bag': 70 };
@@ -873,7 +918,8 @@ label.textContent = 'Credit Bank';   // hers S406
     var cap = capOverride || (total === 0 ? '0 credits' : (empty ? 'Half a credit' : (total === 1 ? '1 credit' : String(total) + ' credits')));
     function kind(x, withTiers) {
       return '<div class="ksb-pk' + (x[1] ? '' : ' zero') + '"><span class="lab"><img alt="" src="' + PILE_ART + x[0] + '-face.webp"><b>' +
-        esc(String(x[1]) + ' ' + x[0] + ' credit' + (x[1] === 1 ? '' : 's')) + '</b></span>' +
+        esc(String(x[1]) + ' ' + x[0] + (withTiers ? ' credit' + (x[1] === 1 ? '' : 's') : '')) + '</b></span>' +   // S441 hers: "6 clothing" beside the coin
+
         (withTiers ? '<span class="tl">' + bankTierWords(bct[x[0]]) + '</span>' : '') + '</div>';
     }
     var meta, pop = '';
@@ -1093,6 +1139,7 @@ label.textContent = 'Credit Bank';   // hers S406
     // opens the dashboard in a background tab or leaves early still gets her pour next time.
     var willPour = bankPile(wrap, info, from, opts.still ? null : function () { bankSeenSet(info.coins); });
     if (!opts.still && !willPour) bankSeenSet(info.coins);
+    arrangeHalves();
   }
 
 function paintCoins(s) {
@@ -1797,7 +1844,11 @@ function paintCoins(s) {
 
     // The grid takes the hero's place in the flow, then swallows it.
     wrap.insertBefore(grid, hero);
-    main.appendChild(hero);
+    // ⚠⚠ S441 HERS (mockup round 3 approved): THE BANK SITS ABOVE THE GRID, centred and full
+    //   width of the page column, so Recent activity no longer sits beside it as an equal.
+    //   Phone order is unchanged (the bank was first there already). Rollback: put back
+    //   main.appendChild(hero) in place of the line below.
+    wrap.insertBefore(hero, grid);
 
     // THE PRIMARY ACTION SITS UNDER THE GREETING, CENTRED. It is the PAGE's one action,
     // not the credit card's conclusion — inside the hero it read as a random left-aligned
@@ -2125,6 +2176,7 @@ function paintCloset(s) {
         '<div class="ks-empty" style="padding:8px 8px 4px">' +
           '<div class="ks-empty-p">Your bags and swaps will show up here once your first bag is graded.</div>' +
         '</div>';
+      placeEarned();
       return;
     }
 
@@ -2135,12 +2187,14 @@ function paintCloset(s) {
       html += '<button type="button" class="ks-showall">Show more</button>';
     }
     panel.innerHTML = html;
+    placeEarned();
 
     var btn = panel.querySelector('.ks-showall');
     if (btn) {
       btn.addEventListener('click', function () {
         panel.innerHTML = '<div class="ks-panel-h">Recent activity</div>' +
                           list.map(actRowHTML).join('');
+        placeEarned();
       });
     }
   }
@@ -2210,7 +2264,7 @@ function paintCloset(s) {
 
     var card = document.querySelector('.ks-hero-card');
     if (!card) return;
-    var el = card.querySelector('.ks-bank-earned');
+    var el = _earnedEl;
 
     var lt     = (s && s.lifetime) || {};
     var earned = Number(lt.credits_earned) || 0;
@@ -2222,13 +2276,24 @@ function paintCloset(s) {
     if (!el) {
       el = document.createElement('div');
       el.className = 'ks-bank-earned';
-      card.appendChild(el);                            // sits after the cycle bar, bank footer
+      _earnedEl = el;
     }
     el.style.display = '';
     // S393 HER RULING: "added", not "earned" - a starter pack is bought, not earned,
     // and "added" is true of both.
     el.innerHTML = '<b>' + esc(String(earned)) + ' credit' + (earned === 1 ? '' : 's') +
                    '</b> added since you joined on ' + esc(since) + '.';
+    placeEarned();
+  }
+  // S441 HERS: "N credits added since you joined" is history, so it sits under the Recent
+  // activity heading. paintActivity rewrites its panel, so it is placed again after every paint.
+  var _earnedEl = null;
+  function placeEarned() {
+    if (!_earnedEl) return;
+    var p = document.querySelector('.ks-sec-activity .ks-panel');
+    var h = p && p.querySelector('.ks-panel-h');
+    if (!h) { if (_earnedEl.parentNode) _earnedEl.parentNode.removeChild(_earnedEl); return; }
+    if (h.nextSibling !== _earnedEl) h.parentNode.insertBefore(_earnedEl, h.nextSibling);
   }
   /* ⚠⚠ THE CREDIT PACK MENU — S355. Markup is Webflow's; styling is dashboard.css.
      (1) paintImpact() APPENDS .ks-bank-earned to the card, which would land it BELOW this menu,
