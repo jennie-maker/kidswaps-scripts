@@ -692,6 +692,56 @@ function cycleLineString(s) {
     arrangeHalves();
   }
 
+  // ⚠⚠ S441 HERS: THE CORAL "MORE BELOW" ARROW, PHONES ONLY (under 768px). Pinned to the
+  //   bottom of the screen on a soft white pill, it bobs to say there's more. It stays until the
+  //   LAST section of the page reaches the screen, then fades (and comes back if she scrolls up).
+  //   A tap scrolls to the next section that isn't fully on screen yet. Reduced motion: still,
+  //   and the scroll jumps instead of gliding. The look lives in dashboard.css (.ks-more-arrow).
+  //   Sections are read by their real position on screen, because phones reorder the cards
+  //   with CSS order (the DOM order is not the visual order).
+  var _moreUpdate = null;
+  function moreSections() {
+    var out = [], sw = document.querySelector('.ks-bank-halves:not(.is-solo) .ks-half--swaps');
+    if (sw && sw.offsetHeight) out.push(sw);
+    var pm = document.querySelector('.ks-hero-card .credit-pack-menu');
+    if (pm && pm.offsetHeight) out.push(pm);
+    [].forEach.call(document.querySelectorAll('.ks-grid .ks-closet-sec'), function (e) {
+      if (e.offsetHeight) out.push(e);
+    });
+    return out;
+  }
+  function moreArrow() {
+    if (_moreUpdate) { _moreUpdate(); return; }
+    if (!document.body || !window.matchMedia) return;
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ks-more-arrow is-gone';
+    b.setAttribute('aria-label', 'Scroll down for more');
+    b.innerHTML = '<svg width="22" height="14" viewBox="0 0 22 14" fill="none" aria-hidden="true"><path d="M2 2 L11 11 L20 2" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
+    document.body.appendChild(b);
+    var mq = window.matchMedia('(max-width: 767px)');
+    function update() {
+      var l = moreSections(), lastTop = -1e9;
+      l.forEach(function (e) { lastTop = Math.max(lastTop, e.getBoundingClientRect().top); });
+      var on = mq.matches && l.length > 0 && lastTop > window.innerHeight - 60;
+      b.classList.toggle('is-gone', !on);
+    }
+    b.addEventListener('click', function () {
+      var l = moreSections().map(function (e) { var r = e.getBoundingClientRect(); return { top: r.top, bottom: r.bottom }; })
+        .sort(function (x, y) { return x.top - y.top; });
+      var next = null;
+      for (var i = 0; i < l.length; i++) { if (l[i].top > 90 && l[i].bottom > window.innerHeight - 20) { next = l[i]; break; } }
+      if (!next) return;
+      var still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      try { window.scrollTo({ top: window.pageYOffset + next.top - 24, behavior: still ? 'auto' : 'smooth' }); }
+      catch (e) { window.scrollTo(0, window.pageYOffset + next.top - 24); }
+    });
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    _moreUpdate = update;
+    update(); setTimeout(update, 1500); setTimeout(update, 4000);
+  }
+
   // S441: paused or cancelled = no swaps half (she can't swap). Cancelled also has no caps.
   function swapsHalfOff(s) {
     var ms = String((s && s.member_status) || '').toLowerCase();
@@ -1590,6 +1640,7 @@ function paintCoins(s) {
     paintPackMenu();  // S355 — must follow paintImpact, which appends to the card
    paintChildren(s);
     paintEmailPrefs(s);
+    moreArrow();      // S441 hers: the coral arrow, phones only
 
     // If the 4s failsafe already revealed the page (slow Memberstack, slow fetch), the
     // coins are being armed onto a VISIBLE page. Spin them now instead of waiting on

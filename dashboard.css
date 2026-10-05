@@ -2086,3 +2086,43 @@
     .ks-grid { margin-top: 64px; }
     .ks-rail .ks-sec-activity .ks-panel-h { font-size: 17px; }
   }
+
+  /* S441 HERS, round two: phones get the TIGHTENED spacing (the "first phone screen" boards),
+     plus the coral arrow pinned at the bottom of the screen (dashboard-tool.js moreArrow). */
+  .ks-sec-activity .ks-bank-earned { text-align: left !important; }
+  @media (max-width: 767px) {
+    .ks-greet-headline { padding-top: 4px; }
+    body .ks-hero-card { margin-top: 18px; }
+    .ks-hero-card .ksb-pile { width: 190px; }
+    .ks-hero-card .ksb-cap { font-size: 44px; }
+    .ks-half-rule { margin: 22px auto; }
+    .ks-sw-h { font-size: 26px; }
+    .ks-half--swaps .ks-cycle-plan { margin-bottom: 12px; }
+  }
+  .ks-more-arrow {
+    position: fixed;
+    left: 50%;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
+    z-index: 50;
+    width: 56px;
+    height: 44px;
+    margin-left: -28px;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 4px 14px rgba(30, 26, 25, 0.12);
+    color: #D65A35;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: opacity .3s ease;
+  }
+  .ks-more-arrow svg { animation: ksMoreBob 1.6s ease-in-out infinite; }
+  .ks-more-arrow:focus-visible { outline: 2px solid #1E1A19; outline-offset: 2px; }
+  .ks-more-arrow.is-gone { opacity: 0; pointer-events: none; }
+  html:not([data-ks-ready="1"]) .ks-more-arrow { display: none; }
+  @media (min-width: 768px) { .ks-more-arrow { display: none; } }
+  @keyframes ksMoreBob { 0%, 100% { transform: translateY(-2px); } 50% { transform: translateY(5px); } }
+  @media (prefers-reduced-motion: reduce) { .ks-more-arrow svg { animation: none; } }
