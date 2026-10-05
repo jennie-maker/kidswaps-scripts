@@ -724,7 +724,9 @@ function cycleLineString(s) {
       var l = moreSections(), lastTop = -1e9;
       l.forEach(function (e) { lastTop = Math.max(lastTop, e.getBoundingClientRect().top); });
       var on = mq.matches && l.length > 0 && lastTop > window.innerHeight - 60;
+      var wasGone = b.classList.contains('is-gone');
       b.classList.toggle('is-gone', !on);
+      if (on && wasGone) setTimeout(lift, 0);   // re-check its spot each time it comes back
     }
     b.addEventListener('click', function () {
       var l = moreSections().map(function (e) { var r = e.getBoundingClientRect(); return { top: r.top, bottom: r.bottom }; })
@@ -736,10 +738,30 @@ function cycleLineString(s) {
       try { window.scrollTo({ top: window.pageYOffset + next.top - 24, behavior: still ? 'auto' : 'smooth' }); }
       catch (e) { window.scrollTo(0, window.pageYOffset + next.top - 24); }
     });
+    // S441: anything else pinned to that spot (today Memberstack's Test Mode badge) would
+    // cover the arrow, so it sits just above whatever is there. Nothing there = its own spot.
+    function lift() {
+      b.style.bottom = '';
+      if (!document.elementsFromPoint || b.classList.contains('is-gone')) return;
+      var r = b.getBoundingClientRect(), hits = document.elementsFromPoint(window.innerWidth / 2, r.top + r.height / 2);
+      for (var i = 0; i < hits.length; i++) {
+        var e = hits[i];
+        if (e === b || b.contains(e)) continue;
+        for (var a = e; a && a !== document.body && a !== document.documentElement; a = a.parentElement) {
+          if (getComputedStyle(a).position === 'fixed') {
+            var fr = a.getBoundingClientRect();
+            if (fr.top < r.bottom && fr.bottom > r.top) b.style.bottom = Math.round(window.innerHeight - fr.top + 10) + 'px';
+            return;
+          }
+        }
+        return;   // the first thing under it is page content, so the spot is clear
+      }
+    }
+    function updateLift() { update(); lift(); }
     window.addEventListener('scroll', update, { passive: true });
-    window.addEventListener('resize', update);
+    window.addEventListener('resize', updateLift);
     _moreUpdate = update;
-    update(); setTimeout(update, 1500); setTimeout(update, 4000);
+    update(); setTimeout(updateLift, 1500); setTimeout(updateLift, 4000); setTimeout(updateLift, 8000);
   }
 
   // S441: paused or cancelled = no swaps half (she can't swap). Cancelled also has no caps.
