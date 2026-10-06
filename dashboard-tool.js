@@ -172,9 +172,41 @@ function paintHeadline(member) {
   // trusted an "existing closet href" that never existed — the button rendered
   // perfectly and went nowhere on active/capped/expiring/zero, live, for weeks.
   // A state must never be able to paint a CTA with no destination.
+  // ---------- QUIET GREETING (S445, hers) ----------
+  // Canvas https://claude.ai/artifact/RCYGe1xzwYZ9Thdxgnkf5Z, option A. A settled member's
+  // greeting is words only: the big coral button is hidden and the same words and address
+  // become a text link at the end of her line. Big buttons stay for just-joined (Start
+  // shopping), pre-credit (See what we accept), and Reactivate / Resume membership (Claude's
+  // call S445, hers to change: those are the page's one real job in those states).
+  // LINK LOOK, hers S445: every text link on this page is navy #1c4a91, bold, NO UNDERLINE;
+  // links that take her somewhere or open something carry the small arrow (ksArrow).
+  // ⚠ The link is BUILT, not the Webflow button moved: .ks-greet-sub is rewritten with
+  // textContent on every paint, which would delete a moved button for good. setCTA always
+  // takes quiet mode off first, so every path that wants the big button gets it back.
+  function ksArrow() {
+    return '<svg class="ks-link-arrow" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" focusable="false">' +
+           '<path d="M2 6h8M7 3l3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
+  }
+  function greetQuiet(on, text, href) {
+    var cta = document.querySelector('.ks-greet-cta');
+    var sub = document.querySelector('.ks-greet-sub');
+    var row = document.querySelector('.ks-cta-row');
+    var old = document.querySelector('.ks-greet-link'); if (old) old.remove();
+    if (cta) cta.classList.toggle('is-quiet', !!on);
+    if (row) row.classList.toggle('is-empty', !!on);
+    if (!on || !sub) return;
+    var a = document.createElement('a');
+    a.className = 'ks-greet-link';
+    a.href = href || '/browse';
+    a.innerHTML = esc(text) + ksArrow();
+    if (sub.textContent.trim()) sub.appendChild(document.createTextNode(' '));
+    sub.appendChild(a);
+    sub.style.display = '';
+  }
   function setCTA(text, mode, href) {
     var cta = document.querySelector('.ks-greet-cta');
     if (!cta) return;
+    greetQuiet(false);
     cta.textContent = text;
   if (mode === 'manage') {
       cta.removeAttribute('href');
@@ -377,7 +409,7 @@ function paintHeadline(member) {
         'padding-bottom:10px;margin-bottom:6px;border-bottom:1px solid #EEE;}' +
       '.ks-mem-menu .ks-plan-chip b{color:#1E1A19;font-weight:600;}' +
       '.ks-mem-item{display:block;padding:6px 0;font-size:14px;color:#D24F28;text-decoration:none;cursor:pointer;}' +
-      '.ks-mem-item:hover{text-decoration:underline;}';
+      '.ks-mem-item:hover{color:#1c4a91;}';
     document.head.appendChild(st);
   }
   function nextCss() {
@@ -400,7 +432,7 @@ function paintHeadline(member) {
       '.ks-next-tx{font-size:14px;line-height:1.5;color:#76716C;}' +
       '.ks-next-st.is-now .ks-next-tx{color:#1E1A19;font-weight:500;}' +
       '.ks-next-ship{font-size:12px;color:#76716C;margin-top:8px;}' +
-      '.ks-next-ship button{all:unset;cursor:pointer;color:#D24F28;text-decoration:underline;}' +
+      '.ks-next-ship button{all:unset;cursor:pointer;color:#1c4a91;font-weight:700;text-decoration:none;}' +
       '@media (max-width:640px){.ks-next-path{grid-template-columns:1fr;gap:18px;}' +
         '.ks-next-path:before{top:28px;bottom:28px;left:27px;right:auto;width:2px;height:auto;' +
         'background:repeating-linear-gradient(180deg,#D9D6CC 0 6px,transparent 6px 12px);}' +
@@ -519,7 +551,10 @@ function paintHeadline(member) {
       sub.classList.toggle('ks-greet-accent', cfg.accent === true);
     }
     if (pre) setCTA(pre.cta, 'closet', pre.href || closetHref(s));
-    else     setCTA(cfg.cta, cfg.mode, cfg.href);
+    else {
+      setCTA(cfg.cta, cfg.mode, cfg.href);
+      if (state !== 'cancelled' && state !== 'paused') greetQuiet(true, cfg.cta, cfg.href);   // S445 hers
+    }
   }
   function neutralGreeting() {
     var sub = document.querySelector('.ks-greet-sub');
@@ -910,7 +945,7 @@ label.textContent = 'Credit Bank';   // hers S406
       '.ksb-pk.zero b{color:#6E6A63;font-weight:500;}' +
       '.ksb-pk .tl{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 12px;}' +
       '.ksb-ess{color:#6E6A63;}.ksb-elev{color:#1c4a91;font-weight:600;}.ksb-spec{color:#e54f25;font-weight:600;}' +
-      '.ksb-hint{display:inline-block;margin:0;border:0;background:none;padding:3px 0;font-family:inherit;font-size:12.5px;color:#6E6A63;text-decoration:underline;text-underline-offset:3px;border-radius:4px;cursor:pointer;}' +
+      '.ksb-hint{display:inline-block;margin:0;border:0;background:none;padding:3px 0;font-family:inherit;font-size:13px;font-weight:700;color:#1c4a91;text-decoration:none;border-radius:4px;cursor:pointer;}' +
       '.ksb-hint:focus-visible{outline:2px solid #211b1a;outline-offset:2px;}' +
       '.ksb-hint .tp{display:none;}' +
       '@media (hover:none){.ksb-hint .hv{display:none;}.ksb-hint .tp{display:inline;}}' +
@@ -1007,7 +1042,7 @@ label.textContent = 'Credit Bank';   // hers S406
     } else {
       meta = '<div class="ksb-eyebrow">You have</div><div class="ksb-cap">' + esc(cap) + '</div>' +
         '<div class="ksb-tiers">' + shown.map(function (x) { return kind(x, false); }).join('') + '</div>' +
-        '<button class="ksb-hint" type="button" aria-expanded="false"><span class="hv">Hover to see your tiers</span><span class="tp">Tap to see your tiers</span></button>';
+        '<button class="ksb-hint" type="button" aria-expanded="false"><span class="hv">Hover to see your tiers</span><span class="tp">Tap to see your tiers</span>' + ksArrow() + '</button>';
       pop = '<div class="ksb-pop" role="region" aria-label="Your credits by tier"><div class="pop-h">Your credits by tier</div>' +
         '<div class="ksb-tiers">' + shown.map(function (x) { return kind(x, true); }).join('') + '</div>' +
         '<p class="pop-p">' + esc(BANK_PANEL_LINE) + '</p></div>';
@@ -2433,9 +2468,9 @@ function paintCloset(s) {
 
   // One green line under the button (the existing .ks-sb-stop card). Replaces any older one.
   function nbLine(text) {
-    var anchor = document.querySelector('.ks-cta-row');
+    var anchor = document.querySelector('.ks-nb-cta') || document.querySelector('.ks-cta-row');   // S445: under the bag link
     if (!anchor || !anchor.parentNode) return;
-    var old = anchor.parentNode.querySelector('.ks-sb-stop'); if (old) old.remove();
+    var old = document.querySelector('.ks-sb-stop'); if (old) old.remove();
     var line = document.createElement('div');
     line.className = 'ks-sb-stop';
     line.setAttribute('role', 'status');
@@ -2454,9 +2489,10 @@ function paintCloset(s) {
       cta.parentNode.insertBefore(row, cta);
       row.appendChild(cta);
     }
+    row.classList.toggle('is-empty', cta.classList.contains('is-quiet'));   // S445: quiet greeting
     var oldBtn = document.querySelector('.ks-nb-cta'); if (oldBtn) oldBtn.remove();
     var oldSb  = row.querySelector('.ks-sb-cta');      if (oldSb) oldSb.remove();
-    var oldLine = row.parentNode.querySelector('.ks-sb-stop'); if (oldLine) oldLine.remove();
+    var oldLine = document.querySelector('.ks-sb-stop'); if (oldLine) oldLine.remove();
 
     var ms = String(s.member_status || '').toLowerCase();
     if (ms !== 'active' || !s.plan) { console.log('[ks-dash] bag button: not active / no plan. Hidden.'); return; }
@@ -2467,10 +2503,14 @@ function paintCloset(s) {
     var btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'ks-nb-cta';
-    btn.textContent = 'Need another bag?';
+    btn.innerHTML = 'Need another bag?' + ksArrow();   // S445: a text link with the arrow
     btn.setAttribute('aria-haspopup', 'dialog');
     btn.onclick = function () { nbOpen(b, btn); };
-    row.appendChild(btn);    // S444 hers: beside the greeting button, smaller, to save height
+    // S445 hers (option A): a small link under Swaps this month, after the reset line.
+    // No swaps half showing = on its own line under the greeting.
+    var swH = document.querySelector('.ks-half--swaps'), swW = document.querySelector('.ks-cycle-bar-wrap');
+    if (swH && swW && swW.parentNode === swH && swW.style.display !== 'none') swH.appendChild(btn);
+    else row.parentNode.insertBefore(btn, row.nextSibling);
     console.log('[ks-dash] bag button: shown, choice =', nbChoice(b));
 
     // Back from Stripe after paying for the extra bag (successUrl carries ksbag=paid).
@@ -2732,10 +2772,10 @@ function paintCloset(s) {
     '.ks-kids-list-chip--age{background:#eda920;}',
     '.ks-kids-list-chip--size{background:#309359;color:#fff;}',
     '.ks-kids-list-links{display:flex;gap:12px;align-items:center;flex-shrink:0;}',
-    '.ks-kids-list-links button{background:none;border:0;padding:4px 0;font-family:Quicksand,sans-serif;font-size:13px;font-weight:700;color:#211b1a;text-decoration:underline;cursor:pointer;}',
+    '.ks-kids-list-links button{background:none;border:0;padding:4px 0;font-family:Quicksand,sans-serif;font-size:13px;font-weight:700;color:#1c4a91;text-decoration:none;cursor:pointer;}',
     '.ks-kids-list-links .ks-kids-list-remove{color:#6E6A63;font-weight:500;}',
     '.ks-kids-list-bottom-links{display:flex;gap:18px;align-items:center;}',
-    '.ks-kids-list-add{background:none;border:0;padding:4px 0;font-family:Quicksand,sans-serif;font-size:14px;font-weight:700;color:#211b1a;text-decoration:underline;cursor:pointer;}'
+    '.ks-kids-list-add{background:none;border:0;padding:4px 0;font-family:Quicksand,sans-serif;font-size:14px;font-weight:700;color:#1c4a91;text-decoration:none;cursor:pointer;}'
   ].join('');
 
   function kidsListSizes(c) {
@@ -3791,7 +3831,7 @@ function paintCloset(s) {
     '.ks-kids-step-chip--first{background:#f491a9;color:#211b1a;}',
     '.ks-kids-step-chip--age{background:#eda920;color:#211b1a;}',
     '.ks-kids-step-chip--size{background:#309359;color:#fff;}',
-    '.ks-kids-step-name-tag-edit{position:absolute;right:16px;top:76px;font-size:14px;font-weight:700;color:#211b1a;background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;font-family:Quicksand,sans-serif;}',
+    '.ks-kids-step-name-tag-edit{position:absolute;right:16px;top:76px;font-size:14px;font-weight:700;color:#1c4a91;background:none;border:0;padding:0;cursor:pointer;text-decoration:none;font-family:Quicksand,sans-serif;}',
     '.ks-kids-step-question{display:flex;flex-direction:column;gap:12px;}',
     '.ks-kids-step-question-text{font-family:"Instrument Serif",serif;font-weight:400;font-size:28px;margin:0;line-height:1.15;}',
     '.ks-kids-step-text-box,.ks-kids-step-age-picker{height:56px;width:100%;border:2.5px solid #211b1a;border-radius:16px;padding:0 16px;font-family:Quicksand,sans-serif;font-size:17px;background:#fff;color:#211b1a;box-shadow:3px 3px 0 #211b1a;-webkit-appearance:none;appearance:none;}',
@@ -3799,10 +3839,10 @@ function paintCloset(s) {
     '.ks-kids-step-choice-row{display:flex;gap:12px;}',
     '.ks-kids-step-choice{flex:1;height:58px;border:2.5px solid #211b1a;background:#fff;border-radius:18px;font-family:Quicksand,sans-serif;font-size:18px;font-weight:700;color:#211b1a;box-shadow:3px 3px 0 #211b1a;cursor:pointer;}',
     '.ks-kids-step-choice.is-picked{background:#eda920;}',
-    '.ks-kids-step-small-link{align-self:center;font-size:13px;color:#4A4340;margin-top:4px;background:none;border:0;padding:4px;text-decoration:underline;cursor:pointer;font-family:Quicksand,sans-serif;}',
+    '.ks-kids-step-small-link{align-self:center;font-size:13px;font-weight:700;color:#1c4a91;margin-top:4px;background:none;border:0;padding:4px;text-decoration:none;cursor:pointer;font-family:Quicksand,sans-serif;}',
     '.ks-kids-step-small-link.is-picked{font-weight:700;color:#211b1a;}',
     '.ks-kids-step-size-line{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:15px;padding:2px 4px;}',
-    '.ks-kids-step-size-change{font-weight:700;color:#211b1a;background:none;border:0;padding:0;text-decoration:underline;cursor:pointer;font-family:Quicksand,sans-serif;font-size:15px;}',
+    '.ks-kids-step-size-change{font-weight:700;color:#1c4a91;background:none;border:0;padding:0;text-decoration:none;cursor:pointer;font-family:Quicksand,sans-serif;font-size:15px;}',
     '.ks-kids-step-size-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}',
     '.ks-kids-step-size-choice{height:46px;border:2.5px solid #211b1a;background:#fff;border-radius:14px;font-family:Quicksand,sans-serif;font-size:15px;font-weight:700;color:#211b1a;box-shadow:2px 2px 0 #211b1a;cursor:pointer;padding:0;}',
     '.ks-kids-step-size-choice.is-picked{background:#eda920;}',

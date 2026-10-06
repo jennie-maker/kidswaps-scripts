@@ -1156,7 +1156,7 @@
   /* Contact support computed to rgb(0,0,238) — raw browser blue — DESPITE carrying
      .ks-cta. Nothing was styling it. Coral TEXT, never a solid coral button. */
   .ks-account-panel a.ks-cta { color: #D65A35; text-decoration: none; }
-  .ks-account-panel a.ks-cta:hover { color: #BE4C2E; text-decoration: underline; }
+  .ks-account-panel a.ks-cta:hover { color: #BE4C2E; text-decoration: none; }
 
   /* Remove: a destructive action should be quiet, not blue. Its inline opacity:0.6 is
      deleted at source in the embed (§DASH.2: no opacity for colour). */
@@ -1421,7 +1421,7 @@
     font-size: 14px;
     font-weight: 700;
     color: #FFFFFF;
-    text-decoration: underline;
+    text-decoration: none;   /* S445 hers: no underlined links on this page */
     cursor: pointer;
   }
   .ks-account-panel .ks-addr-confirm-edit:focus-visible { outline: 2px solid #FFFFFF; outline-offset: 2px; }
@@ -2135,13 +2135,15 @@
    white tile, a navy line round it, navy action button. Bottom sheet on a phone, a centred
    card from 600px up. Delete this whole block (and the JS block) to undo. */
   .ks-nb-cta {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
     margin: 0;
-    padding: 11px 20px;
-    border-radius: 999px;
-    border: 1px solid #D9D6CC;
-    background: #FFFFFF;
-    color: #211B1A;
+    padding: 6px 2px;
+    border-radius: 6px;
+    border: 0;
+    background: none;
+    color: #1c4a91;
+    font-family: 'Quicksand', sans-serif;
     font-size: 14px;
     font-weight: 700;
     white-space: nowrap;
@@ -2154,9 +2156,9 @@
     .ks-cta-row { flex-direction: row; gap: 10px; }
     .ks-cta-row .ks-nb-cta { font-size: 14px; padding: 11px 18px; }
   }
-  .ks-nb-cta:hover { border-color: #1c4a91; color: #1c4a91; }
+  .ks-nb-cta:hover { color: #163a73; }
   .ks-nb-cta:focus-visible { outline: 2px solid #1E1A19; outline-offset: 3px; }
-  .ks-nb-cta[disabled] { color: #75736E; border-color: #EEEFE3; cursor: default; }
+  .ks-nb-cta[disabled] { color: #75736E; cursor: default; }
   html.ks-nb-lock, html.ks-nb-lock body { overflow: hidden; }
   .ks-nb-back {
     position: fixed; inset: 0; z-index: 1000;
@@ -2210,3 +2212,26 @@
     .ks-nb-sheet { max-width: 440px; border-radius: 22px; padding-bottom: 28px; }
   }
   @media (prefers-reduced-motion: reduce) { .ks-nb-back, .ks-nb-sheet { transition: none; } }
+
+/* ---------- QUIET GREETING AND THE LINK LOOK (S445, hers) ----------
+   Canvas https://claude.ai/artifact/RCYGe1xzwYZ9Thdxgnkf5Z, option A. Settled members get no
+   big button in the greeting; the same words are a navy text link at the end of her line.
+   Every text link on this page: navy, bold, no underline; the arrow marks the ones that go
+   somewhere. "Need another bag?" sits under Swaps this month. Delete this block (and the JS
+   greetQuiet) to undo. */
+  .ks-greet-cta.is-quiet { display: none !important; }
+  .ks-cta-row.is-empty { display: none; }
+  .ks-greet-link {
+    font-family: 'Quicksand', sans-serif;
+    font-style: normal;
+    font-size: 16px;
+    font-weight: 700;
+    color: #1c4a91;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .ks-greet-link:hover { color: #163a73; text-decoration: none; }
+  .ks-greet-link:focus-visible { outline: 2px solid #1E1A19; outline-offset: 3px; border-radius: 4px; }
+  .ks-link-arrow { display: inline-block; margin-left: 5px; vertical-align: -1px; flex: none; }
+  .ks-half--swaps .ks-nb-cta { display: flex; margin: 10px auto 0; }
+  .ks-half--swaps .ks-sb-stop { font-size: 15px; }
