@@ -287,7 +287,7 @@ function paintHeadline(member) {
   // which is the wrong-member copy this item exists to fix.
   var PRECREDIT = {
     prebag: {
-      sub: 'We\u2019re getting your first swap bag ready. It will arrive already prelabeled, so all you have to do is fill it up and send it back. Outgrowing things is about to get a lot more fun.',
+      sub: 'We\u2019re getting your swap bag ready. It will arrive already prelabeled, so all you have to do is fill it up and send it back. Outgrowing things is about to get a lot more fun.',
       /* S393 HER RULING: "See what we accept", same page. She already knows how it
          works; what she needs now is what to put in the bag. */
       cta: 'See what we accept', href: '/the-closet-standard'
