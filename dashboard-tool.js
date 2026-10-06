@@ -710,7 +710,13 @@ function cycleLineString(s) {
                (plan ? '<div class="ks-cycle-plan">' + esc(plan) + '</div>' : '');
     rows.forEach(function (r0) {
       var n = Math.min(Math.round(r0.cap), 20), on = Math.min(Math.round(r0.left), n), dots = '';
-      for (var d = 0; d < n; d++) dots += '<i class="ks-sw-dot k-' + r0.name + (d < on ? ' is-on' : '') + '"></i>';
+      // S446 hers: no stragglers. More than 8 dots split into even rows (10 = two rows of 5).
+      var per = n > 8 ? Math.ceil(n / Math.ceil(n / 8)) : n;
+      for (var d = 0; d < n; d++) {
+        if (d % per === 0) dots += (d ? '</div>' : '') + '<div class="ks-sw-dotline">';
+        dots += '<i class="ks-sw-dot k-' + r0.name + (d < on ? ' is-on' : '') + '"></i>';
+      }
+      if (n) dots += '</div>';
       html += '<div class="ks-sw-row"><div class="ks-sw-num"><b>' + (r0.name === 'toy' ? 'Toys' : 'Clothing') +
               ':</b> ' + r0.left + ' of ' + r0.cap + ' left</div><div class="ks-sw-dots" aria-hidden="true">' + dots + '</div></div>';
     });
@@ -2539,9 +2545,19 @@ function paintCloset(s) {
     console.log('[ks-dash] bag button: shown, choice =', nbChoice(b));
 
     // Back from Stripe after paying for the extra bag (successUrl carries ksbag=paid).
+    // ⚠ S446: seen on walk1, the plan's On Purchase redirect in Memberstack wins and she lands
+    //   on plain /dashboard. So the tap also leaves a note (sessionStorage ksBagPaid, a time).
+    //   Within the hour, once her bag choice is no longer "extra" (the paid bag exists), the
+    //   line shows once and the note goes. A cancel leaves her on "extra", so no line.
+    //   If Make hasn't made the bag yet when she lands, the line shows on her next load.
     try {
       var q = new URLSearchParams(window.location.search);
-      if (q.get('ksbag') === 'paid') {
+      var paidAt = 0;
+      try { paidAt = +sessionStorage.getItem('ksBagPaid') || 0; } catch (e) {}
+      var paidFresh = paidAt && (Date.now() - paidAt) < 3600000;
+      if (paidAt && !paidFresh) { try { sessionStorage.removeItem('ksBagPaid'); } catch (e) {} }
+      if (q.get('ksbag') === 'paid' || (paidFresh && nbChoice(b) !== 'extra')) {
+        try { sessionStorage.removeItem('ksBagPaid'); } catch (e) {}
         nbLine(NB_DONE);
         q.delete('ksbag');
         var u = window.location.pathname + (q.toString() ? '?' + q.toString() : '') + window.location.hash;
@@ -2663,6 +2679,7 @@ function paintCloset(s) {
         var msd = window.$memberstackDom;
         if (!msd || typeof msd.purchasePlansWithCheckout !== 'function') { fail('no purchasePlansWithCheckout'); return; }
         go.disabled = true; go.textContent = 'Opening Stripe\u2026';
+        try { sessionStorage.setItem('ksBagPaid', String(Date.now())); } catch (e) {}   // S446, see the return check
         var home = window.location.origin + window.location.pathname;
         Promise.resolve(msd.purchasePlansWithCheckout({
           priceId: EXTRA_BAG_PRICE,

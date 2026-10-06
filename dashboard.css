@@ -2062,7 +2062,8 @@
   .ks-sw-row { margin: 0 0 14px; }
   .ks-sw-num { font-size: 15px; color: #1E1A19; margin: 0 0 8px; }
   .ks-sw-num b { font-weight: 600; }
-  .ks-sw-dots { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; }
+  .ks-sw-dots { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+  .ks-sw-dotline { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; }   /* S446: one row of dots */
   .ks-sw-dot { display: block; width: 18px; height: 18px; border-radius: 50%; box-sizing: border-box; border: 2px solid #CFCCBF; }
   .ks-sw-dot.is-on.k-clothing { background: #EDA920; border-color: #B7801A; }
   .ks-sw-dot.is-on.k-toy { background: #1F5C38; border-color: #1F5C38; }
