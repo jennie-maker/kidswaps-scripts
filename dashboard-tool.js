@@ -2224,15 +2224,18 @@ function paintCloset(s) {
     var when = fmtShort(e.ts);
     var title, detail, icon, glyph;
 
+    // S445 hers: drawn icons that mean something, kept simple (canvas RCYGe1xzwYZ9Thdxgnkf5Z,
+    // Icons board, row 2). A swap is a navy hanger; credits in are a gold coin with a plus,
+    // green when the source names toys. Drawn, never typed (her star-glyph rule applies).
     if (e.type === 'swap') {
       icon = 'ks-act-icon--swap';
-      glyph = '\u2191';
+      glyph = '<svg width="18" height="14" viewBox="0 0 18 14" aria-hidden="true" focusable="false"><path d="M9 4.2a1.8 1.8 0 1 0-1.8-1.8M9 4.2v1.3L1.5 11.2h15L9 5.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
       var n = parseFloat(e.items) || 0;
       title = 'You swapped for ' + n + ' item' + (n === 1 ? '' : 's');
       detail = (e.item_names && e.item_names.length) ? e.item_names.join(', ') : '';
     } else {
-      icon = 'ks-act-icon--earn';
-      glyph = '\u25C6';
+      icon = /toy/i.test(String(e.source || '')) ? 'ks-act-icon--toy' : 'ks-act-icon--earn';
+      glyph = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" focusable="false"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>';
       var c = parseFloat(e.credits) || 0;
       var cTxt = c + ' credit' + (c === 1 ? '' : 's') + ' added to your bank';
       var src = e.source;
@@ -2284,7 +2287,7 @@ function paintCloset(s) {
         '<div class="ks-empty" style="padding:8px 8px 4px">' +
           '<div class="ks-empty-p">Your bags and swaps will show up here once your first bag is graded.</div>' +
         '</div>';
-      placeEarned();
+      placeEarned(); nbPlace();
       return;
     }
 
@@ -2295,14 +2298,14 @@ function paintCloset(s) {
       html += '<button type="button" class="ks-showall">Show more</button>';
     }
     panel.innerHTML = html;
-    placeEarned();
+    placeEarned(); nbPlace();
 
     var btn = panel.querySelector('.ks-showall');
     if (btn) {
       btn.addEventListener('click', function () {
         panel.innerHTML = '<div class="ks-panel-h">Recent activity</div>' +
                           list.map(actRowHTML).join('');
-        placeEarned();
+        placeEarned(); nbPlace();
       });
     }
   }
@@ -2478,6 +2481,24 @@ function paintCloset(s) {
     anchor.parentNode.insertBefore(line, anchor.nextSibling);
   }
 
+  // S445 hers (second round): "Need another bag?" sits under the Recent activity heading,
+  // after "N credits added since you joined". paintActivity rewrites that panel (Show more),
+  // so it calls nbPlace again after every paint. No activity section showing = under Swaps
+  // this month; no swaps half either = its own line under the greeting.
+  var _nbBtn = null, _nbRow = null;
+  function nbPlace() {
+    var btn = _nbBtn; if (!btn) return;
+    var p = document.querySelector('.ks-sec-activity .ks-panel');
+    var h = p && p.querySelector('.ks-panel-h');
+    if (h && p.parentNode && p.parentNode.style.display !== 'none') {
+      var after = (h.nextSibling && h.nextSibling.classList && h.nextSibling.classList.contains('ks-bank-earned')) ? h.nextSibling : h;
+      if (after.nextSibling !== btn) after.parentNode.insertBefore(btn, after.nextSibling);
+      return;
+    }
+    var swH = document.querySelector('.ks-half--swaps'), swW = document.querySelector('.ks-cycle-bar-wrap');
+    if (swH && swW && swW.parentNode === swH && swW.style.display !== 'none') { swH.appendChild(btn); return; }
+    if (_nbRow && _nbRow.parentNode) _nbRow.parentNode.insertBefore(btn, _nbRow.nextSibling);
+  }
   function paintBagButton(s) {
     var cta = document.querySelector('.ks-greet-cta');
     if (!cta) return;                                  // no CTA, no row. Fail closed.
@@ -2491,6 +2512,7 @@ function paintCloset(s) {
     }
     row.classList.toggle('is-empty', cta.classList.contains('is-quiet'));   // S445: quiet greeting
     var oldBtn = document.querySelector('.ks-nb-cta'); if (oldBtn) oldBtn.remove();
+    _nbBtn = null;
     var oldSb  = row.querySelector('.ks-sb-cta');      if (oldSb) oldSb.remove();
     var oldLine = document.querySelector('.ks-sb-stop'); if (oldLine) oldLine.remove();
 
@@ -2506,11 +2528,8 @@ function paintCloset(s) {
     btn.innerHTML = 'Need another bag?' + ksArrow();   // S445: a text link with the arrow
     btn.setAttribute('aria-haspopup', 'dialog');
     btn.onclick = function () { nbOpen(b, btn); };
-    // S445 hers (option A): a small link under Swaps this month, after the reset line.
-    // No swaps half showing = on its own line under the greeting.
-    var swH = document.querySelector('.ks-half--swaps'), swW = document.querySelector('.ks-cycle-bar-wrap');
-    if (swH && swW && swW.parentNode === swH && swW.style.display !== 'none') swH.appendChild(btn);
-    else row.parentNode.insertBefore(btn, row.nextSibling);
+    _nbBtn = btn; _nbRow = row;
+    nbPlace();
     console.log('[ks-dash] bag button: shown, choice =', nbChoice(b));
 
     // Back from Stripe after paying for the extra bag (successUrl carries ksbag=paid).

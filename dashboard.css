@@ -2235,3 +2235,49 @@
   .ks-link-arrow { display: inline-block; margin-left: 5px; vertical-align: -1px; flex: none; }
   .ks-half--swaps .ks-nb-cta { display: flex; margin: 10px auto 0; }
   .ks-half--swaps .ks-sb-stop { font-size: 15px; }
+  .ks-sec-activity .ks-nb-cta { display: inline-flex; margin: 0 0 8px; }
+  .ks-sec-activity .ks-sb-stop { font-size: 15px; margin: 4px 0 12px; }
+
+/* ---------- STAR RULES AND THE ACTIVITY ICONS (S445, hers) ----------
+   Canvas https://claude.ai/artifact/RCYGe1xzwYZ9Thdxgnkf5Z, third row. Between the centred
+   sections (greeting, credits, swaps) a hairline with a small gold star in the middle. Where
+   the page turns left-aligned, the star moves to the LEFT end of the line, and every break
+   below uses that left star. Stars sit still (hers). Drawn, never a typed character.
+   Line: ink at 16%. Star: #eda920. Delete this block to undo the rules and icons alone. */
+  body .ks-hero-card::before {
+    content: "";
+    display: block;
+    width: 100%;
+    height: 16px;
+    margin: 0 0 32px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpolygon points='8.00,0.00 10.12,5.09 15.61,5.53 11.42,9.11 12.70,14.47 8.00,11.60 3.30,14.47 4.58,9.11 0.39,5.53 5.88,5.09' fill='%23eda920'/%3E%3C/svg%3E") center / 16px 16px no-repeat, linear-gradient(rgba(33,27,26,.16), rgba(33,27,26,.16)) left center / calc(50% - 20px) 1px no-repeat, linear-gradient(rgba(33,27,26,.16), rgba(33,27,26,.16)) right center / calc(50% - 20px) 1px no-repeat;
+  }
+  body .ks-hero-card::after {
+    content: "";
+    display: block;
+    width: 100%;
+    height: 16px;
+    margin: 40px 0 0;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpolygon points='8.00,0.00 10.12,5.09 15.61,5.53 11.42,9.11 12.70,14.47 8.00,11.60 3.30,14.47 4.58,9.11 0.39,5.53 5.88,5.09' fill='%23eda920'/%3E%3C/svg%3E") left center / 16px 16px no-repeat, linear-gradient(rgba(33,27,26,.16), rgba(33,27,26,.16)) right center / calc(100% - 28px) 1px no-repeat;
+  }
+  .ks-sec-activity .ks-panel,
+  .ks-sec-hcw      .ks-panel {
+    border-top: 0;
+    padding-top: 44px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpolygon points='8.00,0.00 10.12,5.09 15.61,5.53 11.42,9.11 12.70,14.47 8.00,11.60 3.30,14.47 4.58,9.11 0.39,5.53 5.88,5.09' fill='%23eda920'/%3E%3C/svg%3E") left top / 16px 16px no-repeat, linear-gradient(rgba(33,27,26,.16), rgba(33,27,26,.16)) right 7.5px / calc(100% - 28px) 1px no-repeat;
+  }
+  @media (max-width: 767px) {
+    body .ks-hero-card { margin-top: 30px; }
+    .ks-half-rule {
+      width: 100%;
+      height: 16px;
+      margin: 30px auto;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpolygon points='8.00,0.00 10.12,5.09 15.61,5.53 11.42,9.11 12.70,14.47 8.00,11.60 3.30,14.47 4.58,9.11 0.39,5.53 5.88,5.09' fill='%23eda920'/%3E%3C/svg%3E") center / 16px 16px no-repeat, linear-gradient(rgba(33,27,26,.16), rgba(33,27,26,.16)) left center / calc(50% - 20px) 1px no-repeat, linear-gradient(rgba(33,27,26,.16), rgba(33,27,26,.16)) right center / calc(50% - 20px) 1px no-repeat;
+    }
+  }
+
+  /* the activity icons: simple drawn shapes on her colours (hers S445) */
+  .ks-act-icon { border-radius: 50%; }
+  .ks-act-icon--earn { background: #eda920; color: #211b1a; }
+  .ks-act-icon--toy  { background: #309359; color: #edece0; }
+  .ks-act-icon--swap { background: #1c4a91; color: #edece0; }
