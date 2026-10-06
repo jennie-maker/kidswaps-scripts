@@ -2153,7 +2153,7 @@ function paintCoins(s) {
     return sec.querySelector('.ks-panel');
   }
 var _EMPTY_TEST = new URLSearchParams(window.location.search).get('empty') === '1';
-  var CLOSET_VISIBLE = 6;
+  var CLOSET_VISIBLE = 40;   // S445 hers: the closet is a sideways-scrolling row of thumbnails, so it shows them all (was 6)
   var CLOSET_H = '<div class="ks-panel-h">My closet</div>';
   var CLOSET_MIN = 3;   // her ruling S213 — see paintCloset
 
