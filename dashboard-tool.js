@@ -1002,6 +1002,12 @@ label.textContent = 'Credit Bank';   // hers S406
       return { line: 'Your first swap bag is getting ready. Fill it up and send it back to earn credits.', btns: [], freeBag: true };
     }
     if (b.bag_out) {
+      // S446 hers: a bag on the desk that is NOT an order's (a free bag request, a make-good
+      // bag, a paid $15 bag) gets her line. order_bag_waiting comes from get_member_bag_state
+      // (S446); if it is missing the old sentence stays, so an old payload never lies worse.
+      if (b.order_bag_waiting === false) {
+        return { line: 'Your swap bag is being packed now. If you want to shop now you can buy a credit pack and place an order.', btns: [PACK] };
+      }
       // found at the S406 build, not in the mockup: a later bag still on the ship desk
       // (it rides inside an order she has placed). Claude's wording; hers to change.
       return { line: 'Your next swap bag is coming with your order. You can also buy a credit pack to shop now.', btns: [PACK] };
@@ -2556,10 +2562,14 @@ function paintCloset(s) {
       try { paidAt = +sessionStorage.getItem('ksBagPaid') || 0; } catch (e) {}
       var paidFresh = paidAt && (Date.now() - paidAt) < 3600000;
       if (paidAt && !paidFresh) { try { sessionStorage.removeItem('ksBagPaid'); } catch (e) {} }
-      if (q.get('ksbag') === 'paid' || (paidFresh && nbChoice(b) !== 'extra')) {
+      // S446: Memberstack returns her with its own tags (fromCheckout=true&msPriceId=...),
+      // seen on walk1. That price ID is the surest sign she just bought the extra bag.
+      var msBack = q.get('fromCheckout') === 'true' && q.get('msPriceId') === EXTRA_BAG_PRICE;
+      if (q.get('ksbag') === 'paid' || msBack || (paidFresh && nbChoice(b) !== 'extra')) {
         try { sessionStorage.removeItem('ksBagPaid'); } catch (e) {}
         nbLine(NB_DONE);
         q.delete('ksbag');
+        if (msBack) { q.delete('fromCheckout'); q.delete('msPriceId'); q.delete('forceRefetch'); }
         var u = window.location.pathname + (q.toString() ? '?' + q.toString() : '') + window.location.hash;
         history.replaceState(history.state, '', u);
       }
