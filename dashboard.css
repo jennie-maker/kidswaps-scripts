@@ -2135,17 +2135,24 @@
    white tile, a navy line round it, navy action button. Bottom sheet on a phone, a centred
    card from 600px up. Delete this whole block (and the JS block) to undo. */
   .ks-nb-cta {
-    display: block;
-    margin: 14px auto 0;
-    padding: 13px 34px;
+    display: inline-block;
+    margin: 0;
+    padding: 11px 20px;
     border-radius: 999px;
     border: 1px solid #D9D6CC;
     background: #FFFFFF;
     color: #211B1A;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 700;
     white-space: nowrap;
     cursor: pointer;
+  }
+  /* S444 hers: the two buttons share one line at every width. On a narrow phone, if they
+     can't both fit, the bag button wraps under rather than squeezing Browse. */
+  .ks-cta-row { flex-wrap: wrap; }
+  @media (max-width: 600px) {
+    .ks-cta-row { flex-direction: row; gap: 10px; }
+    .ks-cta-row .ks-nb-cta { font-size: 14px; padding: 11px 18px; }
   }
   .ks-nb-cta:hover { border-color: #1c4a91; color: #1c4a91; }
   .ks-nb-cta:focus-visible { outline: 2px solid #1E1A19; outline-offset: 3px; }

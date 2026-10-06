@@ -2433,8 +2433,7 @@ function paintCloset(s) {
 
   // One green line under the button (the existing .ks-sb-stop card). Replaces any older one.
   function nbLine(text) {
-    var btn = document.querySelector('.ks-nb-cta');
-    var anchor = btn || document.querySelector('.ks-cta-row');
+    var anchor = document.querySelector('.ks-cta-row');
     if (!anchor || !anchor.parentNode) return;
     var old = anchor.parentNode.querySelector('.ks-sb-stop'); if (old) old.remove();
     var line = document.createElement('div');
@@ -2471,7 +2470,7 @@ function paintCloset(s) {
     btn.textContent = 'Need another bag?';
     btn.setAttribute('aria-haspopup', 'dialog');
     btn.onclick = function () { nbOpen(b, btn); };
-    row.parentNode.insertBefore(btn, row.nextSibling);
+    row.appendChild(btn);    // S444 hers: beside the greeting button, smaller, to save height
     console.log('[ks-dash] bag button: shown, choice =', nbChoice(b));
 
     // Back from Stripe after paying for the extra bag (successUrl carries ksbag=paid).
