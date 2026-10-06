@@ -2281,6 +2281,8 @@
   .ks-act-icon { border-radius: 50%; }
   .ks-act-icon--earn { background: #eda920; color: #211b1a; }
   .ks-act-icon--toy  { background: #309359; color: #edece0; }
+  /* S446 hers: a graded bag that held both kinds, half gold and half green */
+  .ks-act-icon--mixed { background: linear-gradient(90deg, #eda920 50%, #309359 50%); color: #211b1a; }
   .ks-act-icon--swap { background: #1c4a91; color: #edece0; }
   /* S445 fixes off her phone screenshots: the rule under the bank is CENTRED (Look what
      you've done is still centred; the left star starts at Recent activity), and the bag

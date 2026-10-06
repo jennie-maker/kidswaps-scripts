@@ -2226,7 +2226,10 @@ function paintCloset(s) {
 
     // S445 hers: drawn icons that mean something, kept simple (canvas RCYGe1xzwYZ9Thdxgnkf5Z,
     // Icons board, row 2). A swap is a navy hanger; credits in are a gold coin with a plus,
-    // green when the source names toys. Drawn, never typed (her star-glyph rule applies).
+    // green for toy credits. Drawn, never typed (her star-glyph rule applies).
+    // S446: the kind comes from get_member_history's new "kind" field (toy, clothing or mixed);
+    // a mixed graded bag is half gold, half green (hers S446). The old word test on the source
+    // stays only as a fallback for a row that arrives without a kind.
     if (e.type === 'swap') {
       icon = 'ks-act-icon--swap';
       glyph = '<svg width="18" height="14" viewBox="0 0 18 14" aria-hidden="true" focusable="false"><path d="M9 4.2a1.8 1.8 0 1 0-1.8-1.8M9 4.2v1.3L1.5 11.2h15L9 5.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
@@ -2234,7 +2237,10 @@ function paintCloset(s) {
       title = 'You swapped for ' + n + ' item' + (n === 1 ? '' : 's');
       detail = (e.item_names && e.item_names.length) ? e.item_names.join(', ') : '';
     } else {
-      icon = /toy/i.test(String(e.source || '')) ? 'ks-act-icon--toy' : 'ks-act-icon--earn';
+      var kind = e.kind || (/toy/i.test(String(e.source || '')) ? 'toy' : '');
+      icon = kind === 'toy' ? 'ks-act-icon--toy'
+           : kind === 'mixed' ? 'ks-act-icon--mixed'
+           : 'ks-act-icon--earn';
       glyph = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" focusable="false"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>';
       var c = parseFloat(e.credits) || 0;
       var cTxt = c + ' credit' + (c === 1 ? '' : 's') + ' added to your bank';
