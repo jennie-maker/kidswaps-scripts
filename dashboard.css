@@ -1354,6 +1354,13 @@
     color: #FFFFFF;
     margin: 0 0 14px;
   }
+  .ks-account-panel .ks-addr-unit-ask {
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.45;
+    color: #FFFFFF;
+    margin: -4px 0 14px;
+  }
   .ks-account-panel .ks-addr-opts { display: flex; flex-direction: column; gap: 12px; }
   .ks-account-panel .ks-addr-opt {
     background: #FFFFFF;

@@ -3153,6 +3153,9 @@ function paintCloset(s) {
   // Claude's wording S442, hers to change. Only shown when the ZIP is short AND there is
   // no found version to take, so the only way on is to fix it.
   var ADDR_ZIP_FIX = 'ZIP needs to be 5 digits.';
+  // Claude's wording, approved by her S442. Shown only when the unit box was left empty:
+  // Shippo's check cannot see a missing unit (S50), but a carrier can refuse the label (S422).
+  var ADDR_UNIT_ASK = 'No apartment, suite or unit number? If you have one, tap Let me edit it.';
 
   // A ZIP she could actually be mailed at: 5 digits, or ZIP+4.
   function addrZipOk(z) { return /^\d{5}(-?\d{4})?$/.test(String(z || '').trim()); }
@@ -3167,7 +3170,9 @@ function paintCloset(s) {
     return changed ? '<span class="ks-addr-diff">' + esc(v) + '</span>' : esc(v);
   }
 
-  // ⚠ NOT PRETTIFIED. Each card shows the lines that will ACTUALLY BE STORED.
+  // ⚠ NOT PRETTIFIED HERE. Each card shows the lines that will ACTUALLY BE STORED.
+  // (Since S442 the SERVER tidies the found version's street and city before sending it,
+  // and saves that same tidied version, so the card still shows exactly what is stored.)
   // ⚠⚠ line2 IS CARRIED THROUGH BOTH CANDIDATES, UNCHANGED (Shippo never returns a unit).
   function addrCardValue(a, line2, typed) {
     var out = [addrMark(a.line1, typed && !addrSame(a.line1, typed.line1))];
@@ -3197,6 +3202,7 @@ function paintCloset(s) {
 
     var html = '<p class="ks-addr-stop-head">' + esc(ADDR_STOP_HEAD) + '</p>' +
                '<p class="ks-addr-confirm-msg">' + esc(cfg.msg) + '</p>' +
+               (String(typed.line2 || '').trim() ? '' : '<p class="ks-addr-unit-ask">' + esc(ADDR_UNIT_ASK) + '</p>') +
                '<div class="ks-addr-opts">';
     if (hasFound) {
       // S442, hers: never offer "Keep what I typed" on a ZIP that can't be mailed to.
