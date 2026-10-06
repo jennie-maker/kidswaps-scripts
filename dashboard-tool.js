@@ -2403,149 +2403,223 @@ function paintCloset(s) {
     menu.setAttribute('data-ks-armed', '1');
     menu.classList.add('is-armed');
   }
-// ---------- SEND A BAG (§SB step 7a) ----------
-  var BAG_URL = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1/member-bag-request";
+// ---------- NEED ANOTHER BAG? (S444, design S443, option B) ----------
+  // Canvas https://claude.ai/artifact/EkGTDxFZVNDFHFEUF35eve (top two rows, option B colours).
+  // ONE button, "Need another bag?", on its own line under the greeting button, always there
+  // for an active member. It REPLACES the old "Swap Bags" button. A tap opens a sheet with the
+  // ONE choice that fits her right now (the three can never apply at the same time):
+  //   (1) a bag has SHIPPED to her and isn't back: "Something went wrong with my bag"
+  //       -> member-bag-request-more {reason, notes}. Lands in Bag requests; Jennie approves.
+  //   (2) no bag out, free bag used: "I want to send more this month" -> $15 through Stripe
+  //       (Memberstack one-time price). Make S2 route 4 calls issue_paid_bag. NO approval.
+  //   (3) no bag out, free bag not used: "Send my free bag for this month" -> member-bag-request
+  //       (no body, unchanged since §SB 7a).
+  // A bag on the ship desk, or back with us and being sorted, gets a short note instead.
+  // ⚠ FAILS CLOSED like before: not active / no plan / no bags payload / day-one member = no button.
+  // ⚠ ?fake= NEVER WRITES: under a fake state every send shows its line with "(preview)".
+  // ⚠⚠ LAUNCH FLIP: EXTRA_BAG_PRICE is a TEST-mode price. Recreate it in live and change it here.
+  var BAG_URL       = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1/member-bag-request";
+  var BAG_MORE_URL  = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1/member-bag-request-more";
+  var EXTRA_BAG_PRICE = 'prc_extra-empty-swap-bag-qmns0g87';
+  var NB_FAIL = 'That didn\u2019t go through. Refresh the page and try again, or email us.';  // hers, 13 Jul
+  var NB_DONE = 'Consider it done. We\u2019ll get a bag packed and sent your way, so watch your mailbox.'; // hers
+  var NB_SENT = 'Request sent. I\u2019ll take a look and email you soon.';  // S443 board, approved
+
+  function nbChoice(b) {
+    if (b.bag_shipped && !b.return_delivered) return 'problem';
+    if (b.bag_out) return b.return_delivered ? 'sorting' : 'packing';
+    return b.free_bag_used ? 'extra' : 'free';
+  }
+
+  // One green line under the button (the existing .ks-sb-stop card). Replaces any older one.
+  function nbLine(text) {
+    var btn = document.querySelector('.ks-nb-cta');
+    var anchor = btn || document.querySelector('.ks-cta-row');
+    if (!anchor || !anchor.parentNode) return;
+    var old = anchor.parentNode.querySelector('.ks-sb-stop'); if (old) old.remove();
+    var line = document.createElement('div');
+    line.className = 'ks-sb-stop';
+    line.setAttribute('role', 'status');
+    line.textContent = text + (_FAKE ? ' (preview, nothing was sent)' : '');
+    anchor.parentNode.insertBefore(line, anchor.nextSibling);
+  }
 
   function paintBagButton(s) {
     var cta = document.querySelector('.ks-greet-cta');
     if (!cta) return;                                  // no CTA, no row. Fail closed.
-
-    // THE ROW ALWAYS EXISTS once the CTA does. A SOLO cta centres in it exactly as before —
-    // most members never see the button and there is NO GAP where it would have been.
+    // The row still wraps the greeting CTA (its CSS centres it). MOVE, NEVER CLONE.
     var row = document.querySelector('.ks-cta-row');
     if (!row) {
       row = document.createElement('div');
       row.className = 'ks-cta-row';
       cta.parentNode.insertBefore(row, cta);
-      row.appendChild(cta);   // ⚠⚠ MOVE, NEVER CLONE. appendChild relocates the live node with
-                              // its classes and listeners intact. setCTA's onclick rides along.
-                              // Rebuild this element and you delete the greeting CTA's behaviour.
+      row.appendChild(cta);
     }
-
-    var old = row.querySelector('.ks-sb-cta');           if (old) old.remove();
-    // ⚠ SCOPED TO THE ROW'S CONTAINER (S90). A page-wide sweep for a class that used to
-    // carry three different messages is a wider blast radius than this job needs.
+    var oldBtn = document.querySelector('.ks-nb-cta'); if (oldBtn) oldBtn.remove();
+    var oldSb  = row.querySelector('.ks-sb-cta');      if (oldSb) oldSb.remove();
     var oldLine = row.parentNode.querySelector('.ks-sb-stop'); if (oldLine) oldLine.remove();
 
-    // ---- CHECK 0 — cancelled / no plan. HIDE. RULED BY JENNIE (25th session).
-    // ⚠⚠ A SERVER GUARD IS NOT A CLIENT FORK. get_member_bag_state returns FACTS, NOT
-    // ELIGIBILITY — it never reads status. A cancelled member comes back bag_out:false /
-    // free_bag_used:false / has_bag_history:true — INDISTINGUISHABLE from a member who is
-    // OWED her bag. Without this the button PAINTS, she TAPS, and the server REFUSES her.
     var ms = String(s.member_status || '').toLowerCase();
-    if (ms !== 'active' || !s.plan) {
-      console.log('[ks-dash] bag button: check 0 — not active / no plan. Hidden.');
-      return;
-    }
-
-    // ---- FAILS CLOSED ON null. Opposite direction to closet/activity.
-    // null means "WE DON'T KNOW", never "no bag out". A hidden closet is cosmetic;
-    // a button shown on unknown state MAILS A BAG.
+    if (ms !== 'active' || !s.plan) { console.log('[ks-dash] bag button: not active / no plan. Hidden.'); return; }
     var b = s.bags;
-    if (!b) {
-      console.log('[ks-dash] bag button: payload.bags is null — hidden (fail closed).');
-      return;
-    }
+    if (!b) { console.log('[ks-dash] bag button: payload.bags is null. Hidden (fail closed).'); return; }
+    if (b.has_bag_history === false) { console.log('[ks-dash] bag button: day-one member. Hidden.'); return; }
 
-    // ---- has_bag_history false = a DAY-ONE member awaiting her SIGNUP bag. HIDE.
-    // She reads byte-identical to someone owed a bag. This key exists for exactly that.
-    if (b.has_bag_history === false) {
-      console.log('[ks-dash] bag button: no bag history — hidden.');
-      return;
-    }
-
-    // ---- CHECK 1 — a bag is out. STOP. No fork, no fee.
-    // ⚠ bag_out INCLUDES 'open' — a bag still on the ship desk. "In motion" is true in every
-    // bag-out state, which is why the copy does not say "fill it and send it back".
-    if (b.bag_out) {
-      // ⚠⚠ THE MESSAGE MOVED (S90). THE CHECK DID NOT. This return is what stops the
-      // button being built while a bag is out — it is load-bearing and it stays.
-      // The sentence is now painted into .ks-greet-sub by bagSentence(). Nothing is emitted
-      // here any more. DO NOT re-add a card: that is the composition she reversed.
-      console.log('[ks-dash] bag button: check 1 — bag out. Message is in the greeting.');
-      return;
-    }
-
-    // ---- CHECK 2-YES — free bag already used this cycle. HIDE.
-    // ⚠ THE HIDE IS GATED, NOT SHRUGGED: 7b MUST SHIP BEFORE THE OPERATOR TEST-DOOR DROPS.
-    // This logs so a future session is TOLD about the hole instead of re-deriving it.
-    if (b.free_bag_used) {
-      console.log('[ks-dash] bag button: check 2-YES — free bag used this cycle. ' +
-                  'NO PATH BUILT (7b unbuilt, $15 is step 8). Hidden.');
-      return;
-    }
-
-    // ---- CHECK 2-NO — her free bag ships. Self-serve, no operator, no approval.
     var btn = document.createElement('button');
-    btn.type = 'button';                    // ⚠ native <button>. Focus/Enter/Space come free.
-    btn.className = 'ks-sb-cta';
-    btn.textContent = 'Swap Bags';
-    btn.onclick = function () { requestBag(btn, row); };
-    row.appendChild(btn);
-    console.log('[ks-dash] bag button: check 2-NO — button shown.');
-  }
-	function requestBag(btn, row) {
-    if (btn.disabled) return;               // client double-tap guard.
-                                            // ⚠ NOT the real one — request_free_bag takes an
-                                            // ADVISORY XACT LOCK. This is courtesy; that is safety.
-    btn.disabled = true;
-    btn.textContent = 'Sending\u2026';
+    btn.type = 'button';
+    btn.className = 'ks-nb-cta';
+    btn.textContent = 'Need another bag?';
+    btn.setAttribute('aria-haspopup', 'dialog');
+    btn.onclick = function () { nbOpen(b, btn); };
+    row.parentNode.insertBefore(btn, row.nextSibling);
+    console.log('[ks-dash] bag button: shown, choice =', nbChoice(b));
 
-    var token = window.$memberstackDom.getMemberCookie();   // bare string, never {data:{token}}
-
-    // ⚠⚠ NO BODY, ON PURPOSE. Identity from the token. Cycle from get_member_state (the ONLY
-    // cycle authority). Decision from the RPC. THERE IS NOTHING A CLIENT CAN SEND THAT CHANGES
-    // THE OUTCOME. Do not add a body to this call.
-    fetch(BAG_URL, {
-      method: 'POST',
-      headers: {
-        'x-ms-token': token,
-        'apikey': ANON,
-        'Authorization': 'Bearer ' + ANON,
-        'Content-Type': 'application/json'
+    // Back from Stripe after paying for the extra bag (successUrl carries ksbag=paid).
+    try {
+      var q = new URLSearchParams(window.location.search);
+      if (q.get('ksbag') === 'paid') {
+        nbLine(NB_DONE);
+        q.delete('ksbag');
+        var u = window.location.pathname + (q.toString() ? '?' + q.toString() : '') + window.location.hash;
+        history.replaceState(history.state, '', u);
       }
-    })
-    .then(function (r) { return r.json().then(function (j) { return { http: r.status, body: j }; }); })
-    .then(function (res) {
-      console.log('[ks-dash] bag request ->', res.http, res.body);
-
-      if (res.body && res.body.ok) {
-        var done = document.createElement('div');
-        done.className = 'ks-sb-stop';
-        done.textContent = 'Consider it done. We\u2019ll get a bag packed and sent your way, so watch your mailbox.';
-        row.parentNode.insertBefore(done, row.nextSibling);
-        btn.remove();
-        return;
-      }
-
-      // ⚠ A REFUSAL IS NOT AN ERROR. {ok:false, reason:...} is the system WORKING.
-      bagFail(btn, row, (res.body && res.body.reason) || ('refused:' + res.http));
-    })
-    .catch(function (e) {
-      bagFail(btn, row, e);
-    });
+    } catch (e) {}
   }
 
-  // ⚠ ONE LINE FOR BOTH FAILURE PATHS, ON PURPOSE. A member cannot tell a refusal from a
-  // timeout and does not care. A reason-specific string per code would need four more copy
-  // approvals for states nobody has ever hit.
-  // ⚠⚠ "REFRESH" IS LOAD-BEARING, NOT POLITENESS. The likeliest refusal is the SERVER
-  // DISAGREEING WITH WHAT THE PAGE PAINTED — a stale tab, a bag that went out between her
-  // load and her tap. The client's fork is PAINT, NOT PERMISSION; the RPC checks again and is
-  // right to say no. "Try again" would loop her through the same refusal forever. A refresh
-  // re-reads member-state and she then sees the honest STOP line instead.
-  // APPROVED BY JENNIE 2026-07-13. Do not redraft.
-  function bagFail(btn, row, why) {
-    console.log('[ks-dash] bag request NOT COMPLETED:', why);
-    btn.disabled = false;
-    btn.textContent = 'Swap Bags';
-    var msg = row.parentNode.querySelector('.ks-sb-stop');
-    if (!msg) {
-      msg = document.createElement('div');
-      msg.className = 'ks-sb-stop';
-      row.parentNode.insertBefore(msg, row.nextSibling);
+  function nbOpen(b, opener) {
+    if (document.querySelector('.ks-nb-back')) return;
+    var kind = nbChoice(b);
+    var back = document.createElement('div');
+    back.className = 'ks-nb-back';
+    var sheet = document.createElement('div');
+    sheet.className = 'ks-nb-sheet';
+    sheet.setAttribute('role', 'dialog');
+    sheet.setAttribute('aria-modal', 'true');
+    sheet.setAttribute('aria-labelledby', 'ks-nb-h');
+
+    var head = '<div class="ks-nb-top"><h2 id="ks-nb-h" class="ks-nb-h">Need another bag?</h2>' +
+               '<button type="button" class="ks-nb-close">Close</button></div>';
+    var body = '';
+    if (kind === 'problem') {
+      body = '<div class="ks-nb-tile">' +
+        '<div class="ks-nb-t">Something went wrong with my bag</div>' +
+        '<p class="ks-nb-p">Tell me what happened and I\u2019ll look into it, then email you.</p>' +
+        '<div class="ks-nb-picks" role="group" aria-label="What happened">' +
+          '<button type="button" class="ks-nb-pick" data-reason="Never arrived" aria-pressed="false">It never arrived</button>' +
+          '<button type="button" class="ks-nb-pick" data-reason="Lost or damaged" aria-pressed="false">Lost or damaged</button>' +
+        '</div>' +
+        '<label class="ks-nb-lab">Anything I should know? (optional)' +
+          '<textarea class="ks-nb-note" rows="2" maxlength="500"></textarea></label>' +
+        '<button type="button" class="ks-nb-go" disabled>Send request</button>' +
+        '<p class="ks-nb-err" role="alert" hidden></p></div>';
+    } else if (kind === 'extra') {
+      body = '<div class="ks-nb-tile">' +
+        '<div class="ks-nb-t">I want to send more this month</div>' +
+        '<p class="ks-nb-p">You\u2019ve already used this month\u2019s free bag. An extra one is $15, with round trip shipping included.</p>' +
+        '<button type="button" class="ks-nb-go">Get a bag for $15</button>' +
+        '<p class="ks-nb-small">You\u2019ll pay securely with Stripe.</p>' +
+        '<p class="ks-nb-err" role="alert" hidden></p></div>';
+    } else if (kind === 'free') {
+      body = '<div class="ks-nb-tile">' +
+        '<div class="ks-nb-t">Send my free bag for this month</div>' +
+        '<p class="ks-nb-p">Your free bag for this month ships at no charge.</p>' +
+        '<button type="button" class="ks-nb-go">Send my bag</button>' +
+        '<p class="ks-nb-err" role="alert" hidden></p></div>';
+    } else {
+      // ⚠ CLAUDE'S WORDING, hers to change. No choice fits while a bag is on the desk or being sorted.
+      body = '<div class="ks-nb-tile"><p class="ks-nb-p">' + (kind === 'packing'
+        ? 'Your bag is being packed now. Once it ships, you can tell me here if anything goes wrong with it.'
+        : 'Your bag made it back to us and it\u2019s being sorted now. Once that\u2019s done, you can get another bag here.') +
+        '</p></div>';
     }
-    msg.textContent = 'That didn\u2019t go through. Refresh the page and try again, or email us.';
+    sheet.innerHTML = head + body;
+    back.appendChild(sheet);
+    document.body.appendChild(back);
+    document.documentElement.classList.add('ks-nb-lock');
+    requestAnimationFrame(function () { back.classList.add('is-in'); });
+
+    function close() {
+      document.removeEventListener('keydown', onKey);
+      back.remove();
+      document.documentElement.classList.remove('ks-nb-lock');
+      if (opener && document.body.contains(opener)) opener.focus();
+    }
+    function onKey(e) { if (e.key === 'Escape') close(); }
+    document.addEventListener('keydown', onKey);
+    back.addEventListener('click', function (e) { if (e.target === back) close(); });
+    sheet.querySelector('.ks-nb-close').onclick = close;
+    var first = sheet.querySelector('.ks-nb-pick, .ks-nb-go') || sheet.querySelector('.ks-nb-close');
+    if (first) first.focus();
+
+    var go  = sheet.querySelector('.ks-nb-go');
+    var err = sheet.querySelector('.ks-nb-err');
+    function fail(why) {
+      console.log('[ks-dash] bag sheet NOT COMPLETED:', why);
+      if (go) { go.disabled = false; go.textContent = go.getAttribute('data-label'); }
+      if (err) { err.textContent = NB_FAIL; err.hidden = false; }
+    }
+    if (go) go.setAttribute('data-label', go.textContent);
+
+    if (kind === 'problem') {
+      var reason = '';
+      [].forEach.call(sheet.querySelectorAll('.ks-nb-pick'), function (p) {
+        p.onclick = function () {
+          reason = p.getAttribute('data-reason');
+          [].forEach.call(sheet.querySelectorAll('.ks-nb-pick'), function (q) {
+            q.setAttribute('aria-pressed', q === p ? 'true' : 'false');
+          });
+          go.disabled = false;
+        };
+      });
+      go.onclick = function () {
+        if (go.disabled || !reason) return;
+        go.disabled = true; go.textContent = 'Sending\u2026';
+        if (_FAKE) { close(); nbLine(NB_SENT); return; }
+        var note = (sheet.querySelector('.ks-nb-note').value || '').trim().slice(0, 500);
+        nbPost(BAG_MORE_URL, { reason: reason, notes: note }).then(function (res) {
+          if (res.body && res.body.ok) { close(); nbLine(NB_SENT); var o = document.querySelector('.ks-nb-cta'); if (o) o.disabled = true; return; }
+          fail((res.body && res.body.reason) || ('refused:' + res.http));
+        }).catch(fail);
+      };
+    } else if (kind === 'free') {
+      go.onclick = function () {
+        if (go.disabled) return;
+        go.disabled = true; go.textContent = 'Sending\u2026';
+        if (_FAKE) { close(); nbLine(NB_DONE); return; }
+        // ⚠⚠ NO BODY, ON PURPOSE (§SB 7a). Identity from the token, decision from the RPC.
+        nbPost(BAG_URL, null).then(function (res) {
+          if (res.body && res.body.ok) { close(); nbLine(NB_DONE); var o = document.querySelector('.ks-nb-cta'); if (o) o.disabled = true; return; }
+          fail((res.body && res.body.reason) || ('refused:' + res.http));
+        }).catch(fail);
+      };
+    } else if (kind === 'extra') {
+      go.onclick = function () {
+        if (go.disabled) return;
+        if (_FAKE) { close(); nbLine(NB_DONE); return; }
+        var msd = window.$memberstackDom;
+        if (!msd || typeof msd.purchasePlansWithCheckout !== 'function') { fail('no purchasePlansWithCheckout'); return; }
+        go.disabled = true; go.textContent = 'Opening Stripe\u2026';
+        var home = window.location.origin + window.location.pathname;
+        Promise.resolve(msd.purchasePlansWithCheckout({
+          priceId: EXTRA_BAG_PRICE,
+          successUrl: home + '?ksbag=paid',
+          cancelUrl: home,
+          autoRedirect: true
+        })).catch(fail);
+      };
+    }
+  }
+
+  function nbPost(url, body) {
+    var token = window.$memberstackDom.getMemberCookie();   // bare string, never {data:{token}}
+    var opts = {
+      method: 'POST',
+      headers: { 'x-ms-token': token, 'apikey': ANON, 'Authorization': 'Bearer ' + ANON, 'Content-Type': 'application/json' }
+    };
+    if (body) opts.body = JSON.stringify(body);
+    return fetch(url, opts).then(function (r) {
+      return r.json().then(function (j) { console.log('[ks-dash] bag sheet ->', r.status, j); return { http: r.status, body: j }; });
+    });
   }
 // ---------- REVIEW PROMPT ----------
   var REVIEW_URL = "https://g.page/r/CQ6-0phqnjFCEBM/review";

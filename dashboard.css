@@ -2128,3 +2128,78 @@
   @media (min-width: 768px) { .ks-more-arrow { display: none; } }
   @keyframes ksMoreBob { 0%, 100% { transform: translateY(-2px); } 50% { transform: translateY(5px); } }
   @media (prefers-reduced-motion: reduce) { .ks-more-arrow svg { animation: none; } }
+
+/* ---------- NEED ANOTHER BAG? (S444, design S443 option B) ----------
+   Canvas https://claude.ai/artifact/EkGTDxFZVNDFHFEUF35eve. The button sits on its own line
+   under the greeting button: white, grey hairline, ink text. The sheet is cream with ONE
+   white tile, a navy line round it, navy action button. Bottom sheet on a phone, a centred
+   card from 600px up. Delete this whole block (and the JS block) to undo. */
+  .ks-nb-cta {
+    display: block;
+    margin: 14px auto 0;
+    padding: 13px 34px;
+    border-radius: 999px;
+    border: 1px solid #D9D6CC;
+    background: #FFFFFF;
+    color: #211B1A;
+    font-size: 16px;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .ks-nb-cta:hover { border-color: #1c4a91; color: #1c4a91; }
+  .ks-nb-cta:focus-visible { outline: 2px solid #1E1A19; outline-offset: 3px; }
+  .ks-nb-cta[disabled] { color: #75736E; border-color: #EEEFE3; cursor: default; }
+  html.ks-nb-lock, html.ks-nb-lock body { overflow: hidden; }
+  .ks-nb-back {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(33, 27, 26, 0.35);
+    display: flex; align-items: flex-end; justify-content: center;
+    opacity: 0; transition: opacity .2s ease;
+  }
+  .ks-nb-back.is-in { opacity: 1; }
+  .ks-nb-sheet {
+    width: 100%; max-height: 88vh; overflow: auto; box-sizing: border-box;
+    background: #EDECE0; color: #211B1A;
+    border-radius: 22px 22px 0 0;
+    box-shadow: 0 -8px 30px rgba(33, 27, 26, 0.12);
+    padding: 22px 20px calc(env(safe-area-inset-bottom, 0px) + 28px);
+    font-family: 'Quicksand', sans-serif; text-align: left;
+    transform: translateY(24px); transition: transform .25s ease;
+  }
+  .ks-nb-back.is-in .ks-nb-sheet { transform: none; }
+  .ks-nb-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .ks-nb-h { margin: 0; font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 28px; line-height: 1.1; color: #211B1A; }
+  .ks-nb-close { height: 44px; border: 0; background: transparent; padding: 0 4px; font-size: 15px; font-weight: 700; color: #1c4a91; cursor: pointer; }
+  .ks-nb-tile {
+    background: #FFFFFF; border: 2px solid #1c4a91; border-radius: 12px;
+    padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .ks-nb-t { font-size: 15px; font-weight: 700; }
+  .ks-nb-p { margin: 0; font-size: 14px; line-height: 1.45; }
+  .ks-nb-picks { display: flex; gap: 8px; }
+  .ks-nb-pick {
+    flex: 1; padding: 10px 8px; border-radius: 10px; cursor: pointer;
+    font-size: 14px; font-weight: 600; color: #211B1A;
+    background: #FFFFFF; border: 1px solid #D9D6CC;
+  }
+  .ks-nb-pick[aria-pressed="true"] { background: #EDECE0; border: 2px solid #1c4a91; padding: 9px 7px; }
+  .ks-nb-lab { font-size: 13px; font-weight: 600; }
+  .ks-nb-note {
+    display: block; width: 100%; box-sizing: border-box; margin-top: 6px;
+    font-family: inherit; font-size: 16px; border: 1px solid #D9D6CC; border-radius: 10px;
+    padding: 8px; resize: none; background: #FFFFFF; color: #211B1A;
+  }
+  .ks-nb-go {
+    border: 0; border-radius: 999px; padding: 14px; cursor: pointer;
+    font-size: 16px; font-weight: 700; color: #FFFFFF; background: #1c4a91;
+  }
+  .ks-nb-go[disabled] { opacity: .45; cursor: default; }
+  .ks-nb-pick:focus-visible, .ks-nb-go:focus-visible, .ks-nb-close:focus-visible { outline: 2px solid #1E1A19; outline-offset: 2px; }
+  .ks-nb-small { margin: -2px 0 0; font-size: 12px; color: #6E6A63; text-align: center; }
+  .ks-nb-err { margin: 0; font-size: 14px; font-weight: 600; color: #B3261E; }
+  @media (min-width: 600px) {
+    .ks-nb-back { align-items: center; }
+    .ks-nb-sheet { max-width: 440px; border-radius: 22px; padding-bottom: 28px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .ks-nb-back, .ks-nb-sheet { transition: none; } }
