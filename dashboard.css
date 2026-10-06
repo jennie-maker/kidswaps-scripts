@@ -2368,3 +2368,15 @@
     .ks-sec-closet .ks-find { flex-basis: calc((100% - 40px) / 4.4); }
     .ks-sec-closet .ks-closet-grid { scrollbar-width: thin; }
   }
+
+/* ---------- DESKTOP SEAM UNDER THE BANK (S445, hers) ----------
+   940px and up the page splits into two columns under the centred star rule. That rule
+   already opens BOTH columns, so the rail's Recent activity drops its own left star (it
+   floated alone above the column) and its heading lines up with Look what you've done.
+   The gap under the centred rule is tightened to match. Phones are untouched. */
+  @media (min-width: 940px) {
+    .ks-grid { margin-top: 28px; }
+    .ks-rail .ks-sec-activity .ks-panel { background: none; padding-top: 0; margin-top: 0; }
+  }
+  /* S445 hers: the clapping hand after "done" replaces the leaf before "Look". */
+  .ks-look-h .ks-look-clap { margin-left: 0.22em; font-size: 0.78em; line-height: 1; }

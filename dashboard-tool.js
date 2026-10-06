@@ -1793,7 +1793,7 @@ function paintCoins(s) {
        bottom signature, which is what made the card read as an info card with a footnote.
        ⚠ LOOK_SPARK IS CONCATENATED RAW AND MUST NOT BE PASSED THROUGH esc() — it is our own
        markup, not member data. Only LOOK_HEAD is escaped. */
-    var html = '<div class="ks-look-h">' + LOOK_SPARK + '<span>' + esc(LOOK_HEAD) + '</span></div>' +
+    var html = '<div class="ks-look-h"><span>' + esc(LOOK_HEAD) + '</span><span class="ks-look-clap" aria-hidden="true">\uD83D\uDC4F</span></div>'   /* S445 hers: the leaf (LOOK_SPARK, unused now) became a clapping hand after "done" */ +
                '<div class="ks-look-note">' + esc(LOOK_NOTE) + '</div>' +
                '<div class="ks-look-row">';
     if (saved > 0) {
