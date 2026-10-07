@@ -70,6 +70,20 @@
   var _busy = false;
   var _root = null;
   var _formSource = "signup";
+
+  /* ---------- SIGN-UP CODES (S452) ---------------------------------------
+     The sixth tab. A marketing envelope's return label gets a 6-character code
+     (bags-manage make_code, which calls make_signup_code); codes print on 2 x 2 in
+     direct-thermal labels on the MUNBYN, one label per page. Codes are stored without
+     the dash (C8Z355); the dash is added only for people to read. */
+  var _codes = null;      /* null until the "codes" read lands */
+  var _codesErr = "";
+  var _codeCar = "";      /* picked by hand once, then KEPT between scans (never derived) */
+  var _codeMade = null;   /* { code, tracking, carrier } of the last label scanned */
+  var _codePick = {};     /* codes ticked for printing */
+  var _codeTr = "";       /* the scan box, kept across renders */
+  var QR_LIB = "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js";
+  var START_URL = "https://kidswaps.com/start?code=";
   /* S410: the tabbed desk's own state. _tab is the picked tab; _sel holds the picked
      row's key per tab; _idx remembers its position so that when a row LEAVES (shipped,
      cancelled, returned) the row that slid into its place opens next (hers S409). */
@@ -335,7 +349,11 @@
       { key: "cases", label: "Open cases", short: "Cases", rows: (_panel.cases || []).map(caseRow),
         empty: "No open cases. Lost, damaged and all-declined bags land here." },
       { key: "requests", label: "Bag requests", short: "Requests", rows: (_panel.requests || []).map(requestRow),
-        empty: "No requests. Members asking for another bag this cycle land here." }
+        empty: "No requests. Members asking for another bag this cycle land here." },
+      /* S452: the count is codes nobody has signed up with yet (and not lapsed). */
+      { key: "codes", label: "Sign-up codes", short: "Codes", rows: [],
+        count: (_codes || []).filter(function (c) { return codeStatus(c) === "waiting"; }).length,
+        empty: "" }
     ];
   }
 
@@ -615,6 +633,190 @@
       (oldestText ? " · oldest waiting " + oldestText : "") + "</p>";
   }
 
+  /* ---------- sign-up codes (S452) --------------------------------------- */
+
+  function fmtCode(c) { c = String(c || ""); return c.slice(0, 3) + "-" + c.slice(3); }
+  function shortDate(iso) {
+    var d = new Date(iso);
+    return isNaN(d.getTime()) ? "" : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  }
+  function codeStatus(c) {
+    if (c.used_at) return "used";
+    if (c.expires_at && new Date(c.expires_at).getTime() <= Date.now()) return "expired";
+    return "waiting";
+  }
+  var CODE_STATUS = { waiting: "Waiting", used: "Signed up", expired: "Expired" };
+
+  function loadCodes() {
+    return call({ action: "codes" }).then(function (j) {
+      _codes = j.codes || []; _codesErr = ""; render();
+    }, function (e) {
+      console.error("[ks-bags] codes", e);
+      if (_codes === null) _codesErr = "Couldn't load the codes. Tap Refresh.";
+      render();
+    });
+  }
+
+  function codesList() {
+    if (_codes === null) return '<p class="ksb-empty">' + esc(_codesErr || "Loading codes...") + "</p>";
+    var n = _codes.filter(function (c) { return _codePick[c.code]; }).length;
+    var head = '<div class="ksb-codes-head">' +
+      '<button class="ksb-linkbtn" data-act="code-pick-unprinted">Pick all not printed</button>' +
+      '<button class="ksb-btn ksb-btn--go ksb-btn--print" data-act="code-print"' + (n ? "" : " disabled") + ">" +
+        (n ? "Print " + n + (n === 1 ? " label" : " labels") : "Print labels") + "</button>" +
+    "</div>";
+    if (!_codes.length) return head + '<p class="ksb-empty">No codes yet. Scan a return label to make one.</p>';
+    return head + _codes.map(function (c) {
+      var st = codeStatus(c);
+      var on = !!_codePick[c.code];
+      return '<label class="ksb-coderow' + (on ? " is-on" : "") + '">' +
+        '<input type="checkbox" data-code-pick="' + esc(c.code) + '"' + (on ? " checked" : "") + ">" +
+        '<span class="ksb-row-main"><span class="ksb-code">' + esc(fmtCode(c.code)) + "</span>" +
+          '<span class="ksb-row-sub">' + esc(String(c.carrier || "").toUpperCase()) + " · Made " + esc(shortDate(c.created_at)) +
+            " · " + (c.printed_at ? "Printed" : "Not printed") + "</span></span>" +
+        '<span class="ksb-coderow-st ksb-coderow-st--' + st + '">' + CODE_STATUS[st] + "</span>" +
+      "</label>";
+    }).join("");
+  }
+
+  function codesCard() {
+    var made = "";
+    if (_codeMade) {
+      made = '<div class="ksb-codemade">' +
+        '<span class="ksb-codemade-l">The code for this label</span>' +
+        '<span class="ksb-codemade-c">' + esc(fmtCode(_codeMade.code)) + "</span>" +
+        "<span>Return label " + esc(_codeMade.tracking) + " · " + esc(_codeMade.carrier.toUpperCase()) + "</span>" +
+        "<span>It's on the list, ready to print. Scanning this label again shows the same code.</span>" +
+      "</div>";
+    }
+    return '<article class="ksb-codecard">' +
+      '<div class="ksb-codes-t">Make a code</div>' +
+      '<div class="ksb-job">' +
+        '<div class="ksb-field">' +
+          "<label>Scan the return label</label>" +
+          /* inputmode TEXT: UPS numbers start 1Z. Enter (the scanner's) makes the code
+             once a carrier is picked, so a stack of labels is scan, scan, scan. */
+          '<input type="text" inputmode="text" autocomplete="off" spellcheck="false" data-code-tr placeholder="Scan or paste from Shippo" value="' + esc(_codeTr) + '">' +
+        "</div>" +
+        '<div class="ksb-flabel">Carrier</div>' +
+        '<div class="ksb-reasons">' +
+          '<button class="ksb-reason' + (_codeCar === "usps" ? " is-sel" : "") + '" data-act="code-carrier" data-carrier="usps">USPS</button>' +
+          '<button class="ksb-reason' + (_codeCar === "ups" ? " is-sel" : "") + '" data-act="code-carrier" data-carrier="ups">UPS</button>' +
+        "</div>" +
+      "</div>" +
+      '<button class="ksb-btn ksb-btn--go ksb-btn--make" data-act="make-code">Make code</button>' +
+      made +
+    "</article>";
+  }
+
+  function focusCodeInput() {
+    var i = _root.querySelector("[data-code-tr]");
+    if (i) { i.focus(); var v = i.value; i.value = ""; i.value = v; }
+  }
+
+  function makeCode(btn) {
+    var tr = (_codeTr || "").trim();
+    if (!tr) { toast("Scan the return label first."); focusCodeInput(); return; }
+    if (!_codeCar) { toast("Pick the carrier first, USPS or UPS."); return; }
+    if (_busy) return;
+    _busy = true;
+    if (btn) { btn.disabled = true; btn.textContent = "Making..."; }
+    call({ action: "make_code", return_tracking: tr, carrier: _codeCar }).then(function (j) {
+      _codes = j.codes || _codes;
+      _codeMade = { code: j.made, tracking: tr.replace(/[^A-Za-z0-9]/g, "").toUpperCase(), carrier: _codeCar };
+      _codeTr = "";
+      _busy = false;
+      render(); focusCodeInput();
+    }).catch(function (e) {
+      _busy = false;
+      alert(e.message + (e.detail ? "\n\n" + e.detail : ""));
+      render(); focusCodeInput();
+    });
+  }
+
+  var _qrLoading = null;
+  function loadQR() {
+    if (window.qrcode) return Promise.resolve();
+    if (_qrLoading) return _qrLoading;
+    _qrLoading = new Promise(function (ok, no) {
+      var sc = document.createElement("script");
+      sc.src = QR_LIB;
+      sc.onload = function () { window.qrcode ? ok() : no(new Error("The QR maker didn't load.")); };
+      sc.onerror = function () { _qrLoading = null; no(new Error("The QR maker didn't load. Check the connection and try again.")); };
+      document.head.appendChild(sc);
+    });
+    return _qrLoading;
+  }
+
+  /* Black squares only, a 4-square white border all round, level M. */
+  function qrSvg(text) {
+    var q = window.qrcode(0, "M");
+    q.addData(text);
+    q.make();
+    var n = q.getModuleCount(), p = "";
+    for (var y = 0; y < n; y++) for (var x = 0; x < n; x++) {
+      if (q.isDark(y, x)) p += "M" + (x + 4) + " " + (y + 4) + "h1v1h-1z";
+    }
+    return '<svg class="q" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + (n + 8) + " " + (n + 8) +
+      '" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#fff"/><path d="' + p + '" fill="#000"/></svg>';
+  }
+
+  /* ⚠ ONE LABEL PER PAGE, each page exactly 2 x 2 in. In the print dialog: the MUNBYN,
+     the 2 x 2 paper size, Scale 100 (never Fit to page), margins None. */
+  function labelsDoc(list) {
+    var labels = list.map(function (c) {
+      return '<div class="l">' + qrSvg(START_URL + c.code) +
+        '<div class="c">' + esc(fmtCode(c.code)) + "</div>" +
+        '<div class="t">Scan to start.<br>Your bag\'s inside.</div></div>';
+    }).join("");
+    return '<!doctype html><html><head><meta charset="utf-8"><title>KidSwaps code labels</title>' +
+      '<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600;700&display=swap" rel="stylesheet">' +
+      "<style>@page{size:2in 2in;margin:0}html,body{margin:0;padding:0;background:#fff}" +
+      ".l{width:2in;height:2in;box-sizing:border-box;padding:.1in .08in .09in;display:flex;flex-direction:column;align-items:center;justify-content:space-between;" +
+      "break-after:page;page-break-after:always;overflow:hidden;font-family:Quicksand,Arial,sans-serif;color:#000}" +
+      ".l:last-child{break-after:auto;page-break-after:auto}" +
+      ".q{width:1in;height:1in;display:block}.c{font-weight:700;font-size:20pt;letter-spacing:.04em;line-height:1}" +
+      ".t{font-weight:600;font-size:10.5pt;line-height:1.15;text-align:center}</style></head><body>" + labels + "</body></html>";
+  }
+
+  function printCodes(btn) {
+    var picked = (_codes || []).filter(function (c) { return _codePick[c.code]; });
+    if (!picked.length || _busy) return;
+    _busy = true;
+    if (btn) { btn.disabled = true; btn.textContent = "Getting ready..."; }
+    loadQR().then(function () {
+      var f = document.createElement("iframe");
+      f.setAttribute("aria-hidden", "true");
+      f.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden";
+      document.body.appendChild(f);
+      var d = f.contentWindow.document;
+      d.open(); d.write(labelsDoc(picked)); d.close();
+      return new Promise(function (ok) {
+        /* give the font a moment, then print */
+        setTimeout(function () {
+          var fr = (d.fonts && d.fonts.ready) ? d.fonts.ready : Promise.resolve();
+          fr.then(function () {
+            f.contentWindow.focus();
+            f.contentWindow.print();
+            setTimeout(function () { if (f.parentNode) f.parentNode.removeChild(f); }, 60000);
+            ok();
+          });
+        }, 700);
+      });
+    }).then(function () {
+      return call({ action: "mark_printed", codes: picked.map(function (c) { return c.code; }) });
+    }).then(function (j) {
+      _codes = j.codes || _codes;
+      _codePick = {};
+      _busy = false;
+      render();
+    }).catch(function (e) {
+      _busy = false;
+      alert(e.message + (e.detail ? "\n\n" + e.detail : ""));
+      render();
+    });
+  }
+
   /* ---------- render ----------------------------------------------------- */
 
   function isPhone() { return window.matchMedia("(max-width: 899px)").matches; }
@@ -647,7 +849,7 @@
     var tabs = Q.map(function (t) {
       return '<button class="ksb-tab' + (t.key === cur.key ? " is-on" : "") + '" data-act="tab" data-tab="' + t.key + '">' +
         '<span class="ksb-tab-l">' + esc(t.label) + '</span><span class="ksb-tab-s">' + esc(t.short) + "</span>" +
-        '<span class="ksb-tab-n">' + t.rows.length + "</span></button>";
+        '<span class="ksb-tab-n">' + (t.count != null ? t.count : t.rows.length) + "</span></button>";
     }).join("");
 
     var list = cur.rows.map(function (row, i) {
@@ -672,10 +874,12 @@
     else if (selRow.kind === "case") card = caseCard(selRow);
     else card = requestCard(selRow);
 
+    if (cur.key === "codes") { list = codesList(); card = codesCard(); }
+
     var bagsNow = (_panel.envelopes || []).concat(_panel.orders || []);
 
     _root.innerHTML = '' +
-      '<div class="ksb' + (_phoneOpen ? " is-open" : "") + '">' +
+      '<div class="ksb' + (_phoneOpen ? " is-open" : "") + (cur.key === "codes" ? " is-codes" : "") + '">' +
         '<header class="ksb-head">' +
           '<div><h1>The ship desk</h1>' + summaryLine(firstBagMembers(), bagsNow) + "</div>" +
           '<button class="ksb-btn ksb-btn--ghost ksb-btn--sm" data-act="refresh">Refresh</button>' +
@@ -882,6 +1086,28 @@
      page held N copies of the click handler: a confirm could appear twice, and only
      the _busy guard stopped a double write. Bound once here, in boot. */
   function bindOnce() {
+    /* S452: the codes tab's scan box, ticks and scanner Enter */
+    _root.addEventListener("input", function (e) {
+      var t = e.target;
+      if (t.hasAttribute && t.hasAttribute("data-code-tr")) _codeTr = t.value;
+    });
+    _root.addEventListener("change", function (e) {
+      var t = e.target;
+      if (!t.hasAttribute || !t.hasAttribute("data-code-pick")) return;
+      var c = t.getAttribute("data-code-pick");
+      if (t.checked) _codePick[c] = true; else delete _codePick[c];
+      render();
+    });
+    _root.addEventListener("keydown", function (e) {
+      if (e.key !== "Enter") return;
+      var t = e.target;
+      if (!t.hasAttribute || !t.hasAttribute("data-code-tr")) return;
+      e.preventDefault();
+      _codeTr = t.value;
+      if (_codeCar) makeCode(_root.querySelector('[data-act="make-code"]'));
+      else { var b = _root.querySelector('[data-act="code-carrier"]'); if (b) b.focus(); toast("Pick the carrier first, USPS or UPS."); }
+    });
+
     _root.addEventListener("input", function (e) {
       var t = e.target;
       if (!t.hasAttribute || !t.hasAttribute("data-tr")) return;
@@ -909,7 +1135,7 @@
       var act = btn.getAttribute("data-act");
 
       /* ---- the desk itself ---- */
-      if (act === "refresh") { withBusy(call({ action: "read" }), btn, "Loading..."); return; }
+      if (act === "refresh") { withBusy(call({ action: "read" }), btn, "Loading...").then(loadCodes); return; }
       if (act === "tab") { _tab = btn.getAttribute("data-tab"); _phoneOpen = false; render(); return; }
       if (act === "row") {
         var key = btn.getAttribute("data-key");
@@ -921,6 +1147,15 @@
       }
       if (act === "back") { _phoneOpen = false; render(); return; }
       if (act === "send-open") { _sel.bags = "form"; _phoneOpen = true; render(); return; }
+
+      /* ---- S452 sign-up codes ---- */
+      if (act === "code-carrier") { _codeCar = btn.getAttribute("data-carrier"); render(); focusCodeInput(); return; }
+      if (act === "make-code") { makeCode(btn); return; }
+      if (act === "code-pick-unprinted") {
+        (_codes || []).forEach(function (c) { if (!c.printed_at && codeStatus(c) === "waiting") _codePick[c.code] = true; });
+        render(); return;
+      }
+      if (act === "code-print") { printCodes(btn); return; }
 
       if (act === "copy-name" || act === "copy-addr") {
         var holder = btn.closest("[data-ship]");
@@ -1119,6 +1354,23 @@
       R + " .ksb-row-age--fresh{color:#256F43}",
       R + " .ksb-row-age--amber{color:#9A6A0F}",
       R + " .ksb-row-age--red{color:" + RED + "}",
+      /* S452 sign-up codes */
+      R + " .ksb-codes-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px 12px 18px;border-bottom:1px solid " + CREAM + "}",
+      R + " .ksb-linkbtn{border:none;background:none;padding:0;color:" + NAVY + ";font-weight:700;font-size:14px;cursor:pointer;text-align:left}",
+      R + " .ksb-btn--print{height:44px;font-size:15px;padding:0 18px}",
+      R + " .ksb-coderow{display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid " + CREAM + ";cursor:pointer;color:" + INK + ";margin:0;font-weight:400}",
+      R + " .ksb-coderow.is-on{background:#E3E7F1}",
+      R + " .ksb-coderow input{width:20px;height:20px;accent-color:" + NAVY + ";flex-shrink:0;margin:0}",
+      R + " .ksb-code{font-weight:700;font-size:18px;letter-spacing:.04em}",
+      R + " .ksb-coderow-st{font-size:13px;font-weight:600;color:" + GREY + ";white-space:nowrap}",
+      R + " .ksb-coderow-st--used{color:#256F43;font-weight:700}",
+      R + " .ksb-codes-t{font-size:22px;font-weight:700;margin:0 0 14px}",
+      R + " .ksb-codecard .ksb-job{margin-top:0}",
+      R + " .ksb-codecard .ksb-field input{padding-right:14px}",
+      R + " .ksb-btn--make{margin-top:16px}",
+      R + " .ksb-codemade{margin-top:18px;background:" + CREAM + ";border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:5px;font-size:14px;line-height:1.4}",
+      R + " .ksb-codemade-l{font-weight:600;color:" + GREY + "}",
+      R + " .ksb-codemade-c{font-weight:700;font-size:44px;letter-spacing:.06em;line-height:1.1}",
       R + " .ksb-add{display:block;width:calc(100% - 28px);margin:14px;height:48px;border-radius:12px;background:#FFF;border:2px dashed " + LINE + ";color:" + NAVY + ";font-weight:700;font-size:15px;cursor:pointer}",
 
       /* the open card */
@@ -1210,9 +1462,10 @@
         R + " .ksb{padding:4px 12px 40px}" +
         R + " .ksb h1{font-size:36px!important}" +
         R + " .ksb-head{align-items:flex-start}" +
-        /* ⚠ S410, HERS: ALL FIVE TABS VISIBLE AT ONCE ON A PHONE, an overview at a glance.
+        /* ⚠ S410, HERS: ALL TABS VISIBLE AT ONCE ON A PHONE (six since S452), an overview at a glance.
            One row of five tiles: the count big on top, a short name under it. */
-        R + " .ksb-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-bottom:14px}" +
+        /* S452: six tabs now, so two rows of three (approved mockup board 2). */
+        R + " .ksb-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:14px}" +
         R + " .ksb-tab{flex-direction:column;justify-content:center;gap:2px;height:auto;min-height:68px;padding:8px 2px;border-radius:12px;white-space:normal;text-align:center}" +
         R + " .ksb-tab-l{display:none}" +
         R + " .ksb-tab-s{display:block;font-size:11.5px;line-height:1.15;font-weight:600}" +
@@ -1221,6 +1474,9 @@
         R + " .ksb-panes{display:block}" +
         R + " .ksb-list{width:100%}" +
         R + " .ksb-card-pane{display:none}" +
+        /* S452: on the codes tab the Make a code card sits above the list, never full screen */
+        R + " .ksb.is-codes .ksb-panes{display:flex;flex-direction:column;gap:14px}" +
+        R + " .ksb.is-codes .ksb-card-pane{display:block;position:static;order:-1;padding:18px;border-radius:18px}" +
         R + " .ksb.is-open .ksb-card-pane{display:block;position:fixed;inset:0;z-index:9990;border-radius:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 16px 0}" +
         R + " .ksb-back{display:inline-flex;align-items:center;height:40px;padding:0 4px;margin-bottom:8px;border:none;background:none;color:" + NAVY + ";font-weight:700;font-size:16px;cursor:pointer}" +
         R + " .ksb h2.ksb-name{font-size:30px!important}" +
@@ -1251,6 +1507,7 @@
     call({ action: "read" }).then(function (res) {
       _panel = res.panel;
       render();
+      loadCodes();
       /* ⚠ ONE stamp only, at the top of the file. Two [ks-bags] lines means a
          duplicate script tag. */
     }).catch(function (e) {
