@@ -198,6 +198,103 @@
 .header-nav-link.w--current::after { transform: scaleX(1); }
 .header-nav-link.w--current        { color: var(--hdr-ink); }
 
+/* --------------------------------------------------------------------------
+   BROWSE DROPDOWN (S450, design hers S449)
+   Computer: hovering Browse, or tabbing onto it, opens a small cream card
+   with Clothing and Toys. Clicking Browse itself still goes to /browse.
+   Tablets and phones have no hover, so the card never shows there and
+   Browse is a plain link (phones get Clothing and Toys in the drawer).
+   The (hover: hover) gate is load-bearing: without it a tap on a tablet
+   could open the card and leave it stuck open.
+   -------------------------------------------------------------------------- */
+
+.header-browse-group {
+  position: relative;               /* the card hangs off this */
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.header-browse-menu { display: none; }
+
+@media (hover: hover) and (pointer: fine) {
+
+  /* the small arrow after "Browse". ::before, because ::after is the
+     coral underline, which now runs under the arrow too (as in the mockup) */
+  .header-browse-group > .header-nav-link { padding-right: 14px; }
+  .header-browse-group > .header-nav-link::before {
+    content: "\25BE";
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    line-height: 1;
+    color: var(--hdr-ink);
+  }
+
+  .header-browse-menu {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    left: -18px;
+    z-index: 970;
+    width: 170px;
+    margin-top: 10px;
+    padding: 8px 0;
+    background: var(--hdr-cream);
+    border: 1px solid var(--hdr-line);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(30, 26, 25, .10);
+    opacity: 0;
+    visibility: hidden;               /* hidden links can't be tabbed to */
+    transform: translateY(-4px);
+    transition: opacity .16s ease, transform .16s ease, visibility 0s linear .16s;
+  }
+
+  /* an invisible bridge over the 10px gap, so the card doesn't close
+     while the mouse travels down to it */
+  .header-browse-menu::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -12px;
+    height: 12px;
+  }
+
+  .header-browse-group:hover .header-browse-menu,
+  .header-browse-group:focus-within .header-browse-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    transition: opacity .16s ease, transform .16s ease, visibility 0s;
+  }
+}
+
+.header-browse-menu-link {
+  display: block;
+  padding: 12px 18px;
+  font-family: Quicksand, sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 16px;
+  color: var(--hdr-ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.header-browse-menu-link:hover,
+.header-browse-menu-link:focus-visible,
+.header-browse-menu-link.w--current {
+  color: var(--hdr-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--hdr-coral);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 5px;
+}
+
 .header-actions {
   display: flex;
   align-items: center;
@@ -524,6 +621,29 @@
   padding: 10px 0;
   min-width: 190px;                 /* matches .header-drawer-link, same reason */
 }
+
+/* Clothing and Toys under Browse in the drawer (S450, design hers S449):
+   a little smaller, indented, a faint line on the left. The mockup drew
+   the line in cream on a white drawer; the live drawer IS cream, so the
+   line uses the hairline colour or it would vanish. */
+.header-drawer-browse-link {
+  font-family: Quicksand, sans-serif;
+  font-weight: 500;
+  font-size: 15px;
+  line-height: 20px;
+  color: var(--hdr-ink);
+  text-decoration: none;
+  margin-left: 4px;
+  padding: 10px 0 10px 16px;
+  border-left: 2px solid var(--hdr-line);
+  min-width: 170px;                 /* right edge lines up with the 190px links */
+}
+
+/* the drawer list has a 2px gap; close it so the line runs unbroken */
+.header-drawer-browse-link + .header-drawer-browse-link { margin-top: -2px; }
+
+.header-drawer-browse-link:hover,
+.header-drawer-browse-link.w--current { color: var(--hdr-coral); }
 
 .header-drawer-social-link {
   display: inline-flex;
