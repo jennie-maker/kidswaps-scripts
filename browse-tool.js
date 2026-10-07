@@ -571,17 +571,8 @@
       '#ks-detail-root .ks-tiers-body.is-open{display:block;}' +
       '#ks-detail-root .ks-tiers-body p{margin:0;}' +
       '#ks-detail-root .ks-tiers-body p + p{margin-top:10px;}' +
-      /* THE LEDE IS STYLED, NOT TAGGED -- HER RULING S267 ("i dont care if its an h4 i
-         just want it larger, in instrument italic font, and on its own line"). A real
-         H4 here would land under the page's H2 with no H3 between, on a heading outline
-         S260/S261 just finished fixing, and `h4` on this project is already a CLASS NAME
-         THAT LIES ABOUT TAGS. Looks identical, costs nothing.
-         ⚠ INSTRUMENT SERIF ITALIC 400 IS A REAL LOADED FACE ON /browse -- measured S267
-         off document.fonts, reading `loaded`, not merely declared. If a future font
-         cleanup drops it this silently becomes a SHEARED ROMAN, which on a serif looks
-         visibly wrong. The family ships ONE weight, so never reach for a bold here. */
-      '#ks-detail-root .ks-tiers-body .ks-tiers-lede{font-family:"Instrument Serif",Georgia,serif;'
-        + 'font-style:italic;font-weight:400;font-size:19px;line-height:1.15;}' +
+      /* S450, hers: the italic lede ("It isn't always about the label.") is gone, so its
+         style rule went with it. For toys it sometimes IS about the label. */
       /* THE NAME STARTS LEVEL WITH THE TOP OF THE PHOTO, NOT WITH THE LINK ABOVE IT --
          her correction S266. The rail drops by the same amount so all three columns line
          up again. 34px = the toggle row plus its gap.
@@ -1079,9 +1070,11 @@
      same panel carrying a grade like "Good", so the word means two things within an inch of
      itself. Flagged once at S267 and ruled. DO NOT RE-FLAG IT.
      DO NOT REDRAFT ANY OF IT (S0). */
+  /* S450, HERS: the opener "It isn't always about the label." is DROPPED. The pop-over
+     shows on toy items too, and for toys it sometimes IS about the label. The other three
+     paragraphs are untouched, word for word. */
   var TIERS_BODY =
     '<div class="ks-tiers-body" id="ks-tiers-body">' +
-      '<p class="ks-tiers-lede">It isn\u2019t always about the label.</p>' +
       '<p>We grade every item based on condition, demand and what it\u2019s currently worth.</p>' +
       '<p>Most items are essentials. Elevated items are worth more, and special items are ' +
       'the rarest and most valuable.</p>' +
