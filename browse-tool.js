@@ -2219,13 +2219,15 @@ function showBagBlock(title, msg, cta, opts) {
   // Zero usable credits in the shorted class(es): point to send-a-bag (earn) and
   // mention the credit pack, per the standing copy rule. ONE button (send a bag);
   // the pack is plain text in the body, not a second CTA.
-function outOfCreditsBlock(zeroClasses) {
+function outOfCreditsBlock(zeroClasses, have) {
     var title = zeroClasses.length > 1 ? 'Out of credits'
               : zeroClasses[0] === 'toy' ? 'Out of toy credits'
               : 'Out of clothing credits';
     return {
       title: title,
-      msg: 'You\u2019ve picked more than your credits cover right now. Send in a swap bag to earn more. ' +
+      msg: 'You\u2019ve picked more than your credits cover right now. ' +
+           otherKindSentence(zeroClasses, have) +
+           'Send in a swap bag to earn more. ' +
            'If you see something you like and just can\u2019t wait, you can always buy a credit pack.',
       ctas: [
         { label: 'Send in a swap bag', href: '/dashboard' }
@@ -2275,13 +2277,44 @@ function outOfCreditsBlock(zeroClasses) {
 
   // S357: the two shortage messages, chosen in ONE place so the checkout gate and
   // the live check can never disagree about which one she sees.
+  /* S450, THE SHORTAGE WHY (approved S450; the new sentences are Claude's wording,
+     hers to change). A credit only covers its own kind (tiers can cross, kinds never),
+     and nothing used to say so (Olivia, S215). Each sentence ADDS to her message and
+     never replaces it; send-a-bag stays the button. Numbers come from her real bank
+     (have) and her bag (credits used + items left over = items of that kind). */
+  function kindWords(k, n, what) {
+    if (what === 'credit') return n + (k === 'toy' ? ' toy credit' : ' clothing credit') + (n === 1 ? '' : 's');
+    if (k === 'toy') return n + (n === 1 ? ' toy' : ' toys');
+    return n + (n === 1 ? ' clothing item' : ' clothing items');
+  }
+  // Out of one kind while holding the other: "Your 5 toy credits only work on toys. "
+  function otherKindSentence(zeroClasses, have) {
+    if (!have || zeroClasses.length !== 1) return '';
+    var other = zeroClasses[0] === 'toy' ? 'clothing' : 'toy';
+    var n = have[other] || 0;
+    if (!n) return '';
+    return 'Your ' + kindWords(other, n, 'credit') + (n === 1 ? ' only works on ' : ' only work on ') +
+           (other === 'toy' ? 'toys' : 'clothing') + '. ';
+  }
+  // Almost there: "You have 3 clothing credits and 4 clothing items in your bag. "
+  function countSentence(byClass, have, shortClasses) {
+    var parts = [];
+    ['clothing', 'toy'].forEach(function (k) {
+      if (shortClasses.indexOf(k) < 0) return;
+      var h = (have && have[k]) || 0;
+      if (!h) return;
+      parts.push(kindWords(k, h, 'credit') + ' and ' + kindWords(k, h + (byClass[k] || 0), 'item'));
+    });
+    return parts.length ? 'You have ' + parts.join(', and ') + ' in your bag. ' : '';
+  }
+
   function shortageBlock(byClass, have, shortClasses, zeroClasses) {
     if (zeroClasses.length === shortClasses.length) {
       // every shorted class is truly empty -> earn-or-buy, not "remove N"
-      return outOfCreditsBlock(zeroClasses);
+      return outOfCreditsBlock(zeroClasses, have);
     }
     // has some credits, just over-bagged -> point to send-a-bag + pack (one button)
-    return { title: 'Almost there', msg: shortageMessage(byClass),
+    return { title: 'Almost there', msg: countSentence(byClass, have, shortClasses) + shortageMessage(byClass),
              ctas: [{ label: 'Send in a swap bag', href: '/dashboard' }] };
   }
 
