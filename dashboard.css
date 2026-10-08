@@ -8,7 +8,6 @@
      ⚠ THE GENERAL RULE, WIDER THAN THE GATE'S ORIGINAL JOB: ANY WEBFLOW-AUTHORED ELEMENT THE
      SCRIPT MOVES OR RESTYLES NEEDS THIS GATE, not just ones that paint DATA. Its pre-move
      STYLING is placeholder content exactly as much as a dummy number is. */
-  [data-expiry-wrap="true"] { display: none; }
   .ks-greet-headline, .ks-greet-sub, .ks-greet-cta, .ks-account-toggle { visibility: hidden; }
   html[data-ks-ready="1"] .ks-greet-headline,
   html[data-ks-ready="1"] .ks-greet-sub,
@@ -375,7 +374,7 @@
   }
   .ks-account-toggle::after {
     content: "\25BE";
-    font-size: 18px;
+    font-size: 14px;   /* S455: was 18px; now the same size as Manage Membership's arrow */
     color: #D65A35;
     transition: transform 240ms ease;
   }
@@ -498,9 +497,11 @@
      made knowingly. Reusing #1F5C38 (the Look card's green, reads 6.68 on the #EDECE0 bank) so
      it is the SAME green already on the page, not a fourth one. ⚠⚠ TWO CONSUMERS: the bank AND
      the My Closet find cards via TIER_DOT — the green dot appears in both. */
-  .ks-dot--ess  { background: #1F5C38; }
-  .ks-dot--elev { background: #28498D; }
-  .ks-dot--spec { background: #EDA920; }
+  /* S455, hers: the dots now match the bank's tier colours (Essentials grey, Elevated navy,
+     Special coral), on My closet and in the tier panel alike. Before: green / #28498D / gold. */
+  .ks-dot--ess  { background: #6E6A63; }
+  .ks-dot--elev { background: #1C4A91; }
+  .ks-dot--spec { background: #E54F25; }
 
   /* Plan chip — coral-light pill under the greeting sub */
   /* ⚠ LIVES IN THE UTILITY ROW NOW (moved there by buildUtilityRow). It hides itself on a
@@ -2383,3 +2384,17 @@
   }
   /* S445 hers: the clapping hand after "done" replaces the leaf before "Look". */
   .ks-look-h .ks-look-clap { margin-left: 0.22em; font-size: 0.78em; line-height: 1; }
+
+/* ---------- S455, hers ----------
+   (1) My closet's row fades out at its right edge, so it softens into the page instead of
+       stopping hard against Recent activity. Delete these two lines to undo.
+   (2) How credits work sits at the bottom of the main column on a computer too (phones already
+       put it last, order:9 in the stack above). .ks-col is a flex column from 940px, so order
+       works without moving anything in the page. */
+  .ks-sec-closet .ks-closet-grid {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 56px), transparent);
+            mask-image: linear-gradient(to right, #000 calc(100% - 56px), transparent);
+  }
+  @media (min-width: 940px) {
+    .ks-main > .ks-sec-hcw { order: 9; }
+  }
