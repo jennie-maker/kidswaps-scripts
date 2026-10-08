@@ -406,7 +406,7 @@
     return '<div class="ksl-field" data-field="' + f.key + '" data-group="' + f.group + '">' +
              (f.paste
                ? '<div class="ksl-labelrow"><label class="ksl-label">' + f.label + reqMark + '</label>' +
-                 '<button type="button" class="ksl-paste" data-paste="' + f.key + '">Replace</button></div>'
+                 '<button type="button" class="ksl-paste" data-paste="' + f.key + '">Paste</button></div>'
                : '<label class="ksl-label">' + f.label + reqMark + '</label>') +
              inner + hint +
            '</div>';
@@ -467,7 +467,7 @@
     '</div>' +
 
     '<div class="ksl-card" data-photos-card><h3>Photos &amp; video</h3>' +
-      '<p class="ksl-media-help"><strong>Start here \u2014 upload all photos.</strong> Up to 3 photos + 1 short video. Tap a slot, or add them all at once.</p>' +
+      '<p class="ksl-media-help"><strong>Start here: upload all photos.</strong> Up to 3 photos + 1 short video. Tap a slot, or add them all at once.</p>' +
       '<button type="button" class="ksl-batch-btn" data-batch-add>Add all at once</button>' +
       '<input type="file" accept="image/*,video/*" multiple class="ksl-hidden" data-batchinput>' +
       '<div class="ksl-slot-grid">' +
@@ -523,12 +523,12 @@
       '</div>' +
       '<div class="ksl-field">' +
         '<div class="ksl-labelrow"><label class="ksl-label">Item name</label>' +
-          '<button type="button" class="ksl-paste" data-paste-id="ksl-edit-name">Replace</button></div>' +
+          '<button type="button" class="ksl-paste" data-paste-id="ksl-edit-name">Paste</button></div>' +
         '<textarea id="ksl-edit-name" rows="3" placeholder="item name"></textarea>' +
       '</div>' +
       '<div class="ksl-field">' +
         '<div class="ksl-labelrow"><label class="ksl-label">Description</label>' +
-          '<button type="button" class="ksl-paste" data-paste-id="ksl-edit-desc">Replace</button></div>' +
+          '<button type="button" class="ksl-paste" data-paste-id="ksl-edit-desc">Paste</button></div>' +
         '<textarea id="ksl-edit-desc" rows="8" placeholder="member-facing description"></textarea>' +
       '</div>' +
       '<div class="ksl-field">' +
@@ -690,6 +690,9 @@
       /* --- Returns / relist lookup (G build 3) --- */
       "#ks-list-app .ksl-manage-ghost{padding:9px 16px;border:1px solid rgba(255,255,255,.22);border-radius:8px;background:transparent;color:inherit;font:inherit;font-weight:600;cursor:pointer}" +
       "#ks-list-app .ksl-manage-ghost:hover{border-color:var(--ksl-btn);color:#fff}" +
+      /* S455, hers: Start a new item is solid coral, not an outline */
+      "#ks-list-app #ksl-new-item{background:#E54F25;border-color:#E54F25;color:#fff}" +
+      "#ks-list-app #ksl-new-item:hover{background:#B23D22;border-color:#B23D22;color:#fff}" +
       "#ks-list-app .ksl-lookup-back{display:inline-block;margin:0 0 12px;font-size:.85rem;color:var(--ksl-btn);text-decoration:none;cursor:pointer}" +
       "#ks-list-app .ksl-lookup-help{margin:0 0 16px;font-size:.85rem;opacity:.65;line-height:1.4}" +
       "#ks-list-app .ksl-lookup-search{display:flex;gap:10px;margin:0 0 16px}" +
@@ -4103,6 +4106,10 @@ function titleCase(s) {
   var tapQuery = {};        // category filter text
   var brandEditing = false; // brand box open after Change or while typing
   var noBrandToy = false;   // she picked "No brand (toys only)"
+  // S455, hers: the Great default looks unanswered until she taps a condition.
+  // An untouched item still saves as great (defaultCondition sets the value).
+  var conditionPicked = false;
+  function conditionIsDefault(key, v) { return key === "condition_grade" && v === "great" && !conditionPicked; }
 
   function tapVal(key) {
     var el = root.querySelector('[data-key="' + key + '"]');
@@ -4117,7 +4124,11 @@ function titleCase(s) {
     if (key === "brand") return newTypePicked && (!!tapVal("brand") || noBrandToy) && !brandEditing;
     return !!tapVal(key) && !tapEditing[key];
   }
-  function resetTaps() { tapEditing = {}; tapQuery = {}; brandEditing = false; noBrandToy = false; paintTaps(); }
+  function resetTaps() {
+    tapEditing = {}; tapQuery = {}; brandEditing = false; noBrandToy = false; conditionPicked = false;
+    var dt = root.querySelector(".ksl-details"); if (dt) dt.classList.remove("ksl-extras-open");
+    paintTaps();
+  }
 
   (function mountTaps() {
     Object.keys(TAP).forEach(function (key) {
@@ -4135,6 +4146,27 @@ function titleCase(s) {
       bf.insertBefore(bb, bf.querySelector(".ksl-err"));
     }
   })();
+
+  // S455, hers: Occasion and Personal note sit together behind one small line,
+  // closed by default, so the page steps straight past them. Both stay direct
+  // children of .ksl-details (so every data-key loop still finds them); closed,
+  // they're display:none, which fieldVisible() already treats as skipped.
+  (function mountExtras() {
+    var det = root.querySelector(".ksl-details");
+    var occ = fieldEl("occasion"), note = fieldEl("condition_notes");
+    if (!det || !occ || !note) return;
+    var t = document.createElement("button");
+    t.type = "button"; t.className = "ksl-extras-toggle";
+    t.innerHTML = '<span class="ksl-extras-arrow">\u25B8</span> More details (occasion, personal note)';
+    det.insertBefore(t, occ);
+    det.insertBefore(note, occ.nextSibling);
+    occ.classList.add("ksl-extra"); note.classList.add("ksl-extra");
+    t.addEventListener("click", function () { det.classList.toggle("ksl-extras-open"); });
+  })();
+  function openExtrasIfFilled() {
+    var det = root.querySelector(".ksl-details"); if (!det) return;
+    if (tapVal("occasion") || tapVal("condition_notes")) det.classList.add("ksl-extras-open");
+  }
 
   function tapDoneHtml(key, label, small) {
     return '<button type="button" class="ksl-tap-done" data-tap-change="' + key + '">' +
@@ -4164,7 +4196,7 @@ function titleCase(s) {
     var box = root.querySelector('.ksl-tap[data-tap="' + key + '"]');
     if (!box) return;
     var v = tapVal(key);
-    if (v && !tapEditing[key]) { box.innerHTML = tapDoneHtml(key, tapLabel(key, v)); return; }
+    if (v && !tapEditing[key] && !conditionIsDefault(key, v)) { box.innerHTML = tapDoneHtml(key, tapLabel(key, v)); return; }
     var spec = TAP[key];
     if (spec.list) {
       var qEl = box.querySelector('[data-tap-q="' + key + '"]');
@@ -4179,7 +4211,7 @@ function titleCase(s) {
     var rows = spec.src();
     if (!rows.length) { box.innerHTML = '<p class="ksl-tap-wait">Loading\u2026</p>'; return; }
     box.innerHTML = '<div class="ksl-tap-grid c' + (spec.cols || 3) + '">' + rows.map(function (r) {
-      return '<button type="button" class="ksl-tap-pill' + (r.value === v ? " sel" : "") + '" data-tap-pick="' + key + '" data-val="' + esc(r.value) + '">' +
+      return '<button type="button" class="ksl-tap-pill' + (r.value === v && !conditionIsDefault(key, v) ? " sel" : "") + '" data-tap-pick="' + key + '" data-val="' + esc(r.value) + '">' +
              esc(r.display_label || r.value) + '</button>';
     }).join("") + '</div>';
   }
@@ -4202,6 +4234,7 @@ function titleCase(s) {
   }
   function paintTaps() {
     if (!root || !TAP) return;
+    openExtrasIfFilled();
     Object.keys(TAP).forEach(paintTap);
     paintBrandTap();
     paintFilled();
@@ -4280,6 +4313,7 @@ function titleCase(s) {
     var pick = e.target.closest("[data-tap-pick]");
     if (pick && root.contains(pick)) {
       var key = pick.getAttribute("data-tap-pick"), val = pick.getAttribute("data-val");
+      if (key === "condition_grade") conditionPicked = true;
       setField(key, val);
       if (key === "toy_washability") reflectPills();
       var f = fieldEl(key); if (f) { f.classList.remove("ksl-cued", "has-error"); }
@@ -4433,6 +4467,11 @@ function titleCase(s) {
       "#ks-list-app .ksl-tap-done small{font-size:12px;font-weight:600;color:#bfe3cb;margin-left:6px}" +
       "#ks-list-app .ksl-tap-done u{flex:none;font-size:13px;color:#9fe0b6}" +
       "#ks-list-app .ksl-tap-wait{margin:0;font-size:.86rem;opacity:.7}" +
+      /* S455: the More details fold */
+      "#ks-list-app .ksl-details:not(.ksl-extras-open)>.ksl-extra{display:none!important}" +
+      "#ks-list-app .ksl-details.is-waiting>.ksl-extras-toggle{display:none!important}" +
+      "#ks-list-app .ksl-extras-toggle{display:block;width:100%;grid-column:1/-1;flex-basis:100%;max-width:100%;margin:2px 0;padding:10px 0;border:0;background:transparent;color:inherit;opacity:.7;font:inherit;font-size:14px;font-weight:600;text-align:left;cursor:pointer}" +
+      "#ks-list-app .ksl-extras-open .ksl-extras-arrow{display:inline-block;transform:rotate(90deg)}" +
       "#ks-list-app.ksl-searching{padding-bottom:75vh}" +
       "#ks-list-app .ksl-brand-wrap{position:relative}" +
       "#ks-list-app [data-field='brand'] .ksl-brand-results{position:static!important;max-height:none!important;margin-top:8px}" +
