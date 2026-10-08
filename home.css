@@ -5390,3 +5390,34 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
     color: #C9D3C4;
   }
 }
+
+/* ============================================================================
+   v71 (S456) — THE LEFT STACK, TIGHTENED. HERS S456 ("the spacing and visual
+   hierarchy between the three lines ... feel unfinished").
+   MEASURED S456 at 438px: Webflow's own class styles put padding-top:10px on
+   the plan name and padding 0 10px 10px 0 on the swap line. v70 never reset
+   padding, so the savings line sat ~16px further down than the mockup.
+   Phones only. Zeroes that padding and spaces the stack on purpose: name, 4px,
+   swaps, 3px, savings. The stack then measures about the price's own height
+   (~73px), so the two halves sit level.
+   ⚠ Desktop keeps Webflow's padding; nothing above 767 changes.
+   ============================================================================ */
+@media screen and (max-width: 767px) {
+  .pricing-preview-section .pricing-card {
+    row-gap: 0;
+  }
+
+  .pricing-preview-section .pricing-card > .footer-tagline-dark {
+    padding: 0;
+  }
+
+  .pricing-preview-section .pricing-card > .body-text-dark {
+    padding: 0;
+    margin-top: 4px;
+  }
+
+  .pricing-preview-section .pricing-card > .savings-text {
+    padding: 0;
+    margin-top: 3px;
+  }
+}
