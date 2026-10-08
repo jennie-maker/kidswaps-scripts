@@ -64,23 +64,6 @@
      never cost her a signup, and it never blocks her even when it works. */
   var ADDR_CHECK_URL = 'https://ajsobivqxexcniwifxzz.supabase.co/functions/v1/address-check';
 
-  /* THE BANK READ SEAM (§NEXT 2c). member-state reads identity FROM THE
-     TOKEN and ignores any member_id in a body.
-     ⚠⚠ IT IS A **POST**, AND IT WANTS THREE HEADERS. THIS WAS SHIPPED AS A
-     BARE GET WITH ONLY x-ms-token AND IT RETURNED 405 (Method Not Allowed)
-     EVERY SINGLE TIME - so the bank read NEVER ONCE SUCCEEDED between S82 and
-     S83, and could not have. The fail-safe hid it perfectly: she just kept
-     the credit-free sentence, which is a true sentence, so nothing looked
-     broken on the screen. Found S83 by reading the console on the end
-     screen's first ever paint with a real session.
-     ⚠ THE SHAPE BELOW IS COPIED FROM dashboard-tool.js, WHICH HAS BEEN
-     CALLING THIS FUNCTION SUCCESSFULLY EVERY DAY. It is not derived. Do not
-     "simplify" it back to one header: there is NO body and NO Content-Type on
-     the working call either, and that is deliberate, not an omission.
-     ⚠ FAIL-SAFE, NOT FAIL-OPEN, and that is the opposite of ADDR_CHECK_URL
-     above: a failure here DROPS a sentence rather than proceeding with one. */
-  var MEMBER_STATE_URL = 'https://ajsobivqxexcniwifxzz.supabase.co/functions/v1/member-state';
-
   /* The Supabase ANON key. PUBLIC-SAFE (it is the anon role, ~208 chars, and
      it already ships inside dashboard-tool.js on a public CDN). NEVER put a
      service_role or sk_ key here. Every table this reaches is RLS-sealed and
@@ -431,91 +414,17 @@
       errCode: 'That code didn\u2019t work. Check it over, or send a new one.'
     },
 
-    /* ---- end states ---- HER OWN WORDING, REWRITTEN AND APPROVED S81.
-       SUPERSEDES THE SESSION 63 STRINGS, WHICH WERE RETIRED DELIBERATELY.
-       ⚠⚠ DO NOT REDRAFT. Both screens are HEAD + ONE PARAGRAPH. Only
-       "Welcome to KidSwaps!" stands alone; "So glad you joined." is the FIRST
-       SENTENCE of the body, NOT its own line. RULED S81, both screens. */
-    endA: {
-      head: 'Welcome to KidSwaps!',
-      /* ⚠⚠ "shortly" IS A TIMING WORD AND THERE IS NO SHIPPING SLA BEHIND IT
-         (§BAGS). FLAGGED AND OVERRULED BY JENNIE, Session 63, IN HER WORDS:
-         "a bag will never take 9 days, shortly is perfect here." HERS, NOT A
-         DEFAULT. Do not quietly remove it; do not re-flag it. SURVIVED S81
-         through two rewrites.
-         ⚠ THE BODY IS THE SESSION 63 BODY UNCHANGED - only the greeting
-         sentence is prepended. S81: she did NOT take the S74 ending, so the
-         two email promises (bag-arrived, credits-ready) are OFF this screen,
-         and two launch-blocker email dependencies come off with them. This
-         screen now promises nothing the system cannot keep.
-         ⚠⚠ DO NOT "RESTORE" THE S74 ENDING. */
-      body: 'So glad you joined. Your first swap bag will be on its way shortly, so watch ' +
-            'your mailbox. Fill it with what your kids have outgrown and send it back with ' +
-            'the prepaid label that\u2019s already stuck to it. You can start shopping once ' +
-            'you earn your first credits.',
-      cta:  'Go to my dashboard',
-      href: '/dashboard'
-    },
-    endB: {
-      head: 'Welcome to KidSwaps!',
-      /* ⚠ "ready to spend" IS APPROVED ON THIS PATH AND ONLY THIS PATH.
-         §DASH.7's "added to your bank, NEVER ready to spend" lock exists to
-         protect against a lone 0.5 credit. A STARTER PACK ONLY EVER ISSUES
-         WHOLE CREDITS, so the phrase is true here. Narrowed S74, CONFIRMED
-         S81 IN HER WORDS: "if someone bought a starter package their credits
-         are 'ready to spend' so we can use it there." THE LOCK IS UNCHANGED
-         EVERYWHERE A FRACTIONAL CREDIT COULD BE WHAT SHE HOLDS.
-         ⚠ "essential credits" CARRIES NO CLASS - hers, ruled S63, kept
-         again S81. ONE STRING SERVES BOTH PACKS; only the number changes.
-         ⚠ THE COUNT COMES FROM PLANS (6 clothing, 5 toy) AND NEVER FROM THE
-         BANK READ. See bankRead().
-         ⚠ THE COMMA SPLICE before "shipping is covered both ways" IS HERS.
-         Flagged to her S81, not silently fixed. LEAVE IT. */
-      body: function (p) {
-        return 'So glad you joined. Your membership has started, and ' + p.pack.count +
-               ' essential credits are in your bank, ready to spend. Your empty swap bag ' +
-               'will come along with your first order, prepaid label already attached. ' +
-               'Fill it up and send it back to earn more credits, shipping is covered ' +
-               'both ways.';
-      },
-      /* ⚠⚠ THE FALLBACK BODY - HERS, WRITTEN S81, VERBATIM. Painted
-         whenever the bank has not been read. HER RULING: DROP JUST THE CREDIT
-         CLAUSE. Show the greeting, the membership line, the swap-bag line and
-         the button, and NEVER STATE A NUMBER WE DID NOT READ.
-         ⚠ SHE REJECTED THE FULL-STOP VERSION. Her "and" bridges
-         membership-started -> swap bag, so the credit clause lifts out
-         cleanly with no orphaned punctuation. DO NOT "SIMPLIFY" IT BACK TO
-         TWO SENTENCES.
-         ⚠ THIS AND body() DIFFER ONLY IN THE CREDIT CLAUSE. */
-      bodyNoBank: 'So glad you joined. Your membership has started, and your empty swap ' +
-                  'bag will come along with your first order, prepaid label already ' +
-                  'attached. Fill it up and send it back to earn more credits, shipping ' +
-                  'is covered both ways.',
-      /* ⚠ "Shop Now" IS TITLE CASE and it is the ONLY title-case button in
-         this file. Flagged to her S81; she kept it. DO NOT SENTENCE-CASE IT. */
-      cta:  'Shop Now',
-      /* ⚠ THE BUTTON MATCHES HER PACK. RULED S81, reason from S74: a
-         clothing-pack member has a toy cap of 0, so a page full of toys is
-         all doors she cannot walk through. KEYED OFF PLANS.cls - the field
-         exists, so this does not key off the slug. /browse is the safe
-         default and should never fire; only two pack slugs exist today. */
-      href: function (p) {
-        return p.cls === 'clothing' ? '/clothing'
-             : p.cls === 'toy'      ? '/toys'
-             : '/browse';
-      }
-    },
-
     /* ---- chrome ---- APPROVED Session 63.
        ⚠ Back is available on steps 2 to 5 and GONE at step 6 — once the
        account exists and the code is sent, Back is meaningless. */
     nav: {
       back:     'Back',
       next:     'Continue',
-      /* S71: tapOut / tapStay / tapLeave are APPROVED COPY, RETAINED, AND NO
-         LONGER RENDERED. The dialog they belonged to went with the overlay.
-         Kept so the words survive if an exit is ever ruled back in. */
+      /* S455, hers: these render again, in the browser-back warning (steps 2
+         to 5 use tapOut, step 6 uses tapOut6, where the account already exists
+         so "start again" would not be true). See armBackWarning(). */
       tapOut:   'Leave without finishing? You\u2019ll lose what you\u2019ve filled in so far and will need to start again.',
+      tapOut6:  'Leave without finishing? Your account isn\u2019t ready until you enter the code we just emailed you.',
       tapStay:  'Keep going',
       tapLeave: 'Leave'
     },
@@ -607,6 +516,7 @@
   function go(n) {
     if (n < 1 || n > MAX_STEP) return;
     S.step = n;
+    guardHistory();
     render();
     foldFit();   /* belt: the observer covers this too, but not if it is absent */
     track('step_view');
@@ -727,10 +637,85 @@
 
   function armRefreshWarning() {
     window.addEventListener('beforeunload', function (e) {
-      if (!S.dirty || S.step >= 6) return;
+      if (S.leaving || !S.dirty || S.step >= 6) return;
       e.preventDefault();
       e.returnValue = '';          /* the browser supplies its own generic text */
     });
+  }
+
+  /* ---- the browser's Back button (S455, hers; ruled S218) ----------------
+     From step 2 on, the browser's own Back (and the iPhone's swipe back) is
+     caught: she stays on the page and gets her warning. ONE extra history
+     entry is added the first time she leaves step 1; when Back pops it, it is
+     put straight back and the warning shows. Keep going just closes it. Leave
+     goes back past both entries. Step 1 never warns. In-wizard Back is not
+     involved; it never touches history. */
+  function guardHistory() {
+    if (S.guarded || S.leaving || S.step < 2) return;
+    if (!window.history || typeof history.pushState !== 'function') return;
+    try { history.pushState({ ksGuard: 1 }, '', window.location.href); S.guarded = true; } catch (e) {}
+  }
+  function armBackWarning() {
+    if (!window.history || typeof history.pushState !== 'function') return;
+    window.addEventListener('popstate', function () {
+      if (!S.guarded || S.leaving) return;
+      S.guarded = false;
+      if (!S.step || S.step < 2) { S.leaving = true; history.back(); return; }
+      guardHistory();
+      leaveAsk();
+    });
+  }
+  function leaveAsk() {
+    if (document.querySelector('.ks-wz-leave')) return;
+    var scrim = el('div', 'ks-wz-leave');
+    var card = el('div', 'ks-wz-leave-card');
+    card.setAttribute('role', 'dialog');
+    card.setAttribute('aria-modal', 'true');
+    card.appendChild(el('p', 'ks-wz-leave-text', S.step >= 6 ? COPY.nav.tapOut6 : COPY.nav.tapOut));
+    var row = el('div', 'ks-wz-leave-row');
+    var stay = el('button', 'ks-wz-btn ks-wz-btn-primary', COPY.nav.tapStay);
+    var bye = el('button', 'ks-wz-btn ks-wz-btn-ghost', COPY.nav.tapLeave);
+    stay.type = bye.type = 'button';
+    function close() {
+      document.removeEventListener('keydown', onKey);
+      if (scrim.parentNode) scrim.parentNode.removeChild(scrim);
+    }
+    function onKey(e) { if (e.key === 'Escape') { close(); track('leave_ask', { choice: 'stay' }); } }
+    stay.addEventListener('click', function () { close(); track('leave_ask', { choice: 'stay' }); });
+    bye.addEventListener('click', function () {
+      track('leave_ask', { choice: 'leave' });
+      S.leaving = true;
+      close();
+      try { history.go(-2); } catch (e) {}
+      /* Opened /signup directly, with nothing behind it: go home instead.
+         pagehide cancels this if the Back above actually left the page. */
+      var t = setTimeout(function () { window.location.href = '/'; }, 700);
+      window.addEventListener('pagehide', function () { clearTimeout(t); });
+    });
+    document.addEventListener('keydown', onKey);
+    row.appendChild(stay);
+    row.appendChild(bye);
+    card.appendChild(row);
+    scrim.appendChild(card);
+    document.body.appendChild(scrim);
+    try { stay.focus(); } catch (e) {}
+  }
+
+  /* ---- already signed in (S455, hers) ------------------------------------
+     A member who is already logged in has no business on /signup: send her to
+     /dashboard (paused and cancelled members find their Resume or Reactivate
+     button there). Reads the session cookie directly as well, so it does not
+     depend on Memberstack's own script having loaded first. A stale cookie is
+     harmless: /dashboard sends her on to /login. Runs only after resumeEnd()
+     has had its turn. */
+  function signedInAway() {
+    var has = !!memberToken();
+    if (!has) { try { has = /(?:^|;\s*)_ms-mid=/.test(document.cookie); } catch (e) {} }
+    if (!has) return false;
+    track('signed_in_redirect');
+    try { window.location.replace('/dashboard'); }
+    catch (e) { window.location.href = '/dashboard'; }
+    return true;
   }
 
   /* S71: confirmLeave() REMOVED with the close X — it was that button's only
@@ -1817,113 +1802,6 @@
     } catch (e) { return null; }
   }
 
-  /* ⚠ THE ONE PLACE member-state's RESPONSE SHAPE IS KNOWN. If the payload
-     carries no field this recognises, the answer is NO and she keeps the
-     weaker sentence - which is true either way. FAIL-SAFE BY DESIGN.
-     ⚠⚠ NEEDS-CONFIRM: the live field name has never been read back off a
-     real 200. Until it is, the strong line may simply never fire. That is the
-     correct direction to be wrong in, but it is NOT the finished state. */
-  /* ⚠ THE SHAPE IS NO LONGER A GUESS. Read off a real 200 in S83: member-state
-     answers FLAT at the top level - there is no data/ or payload/ envelope -
-     and the count lives at bank.total, a number. by_tier, by_class and
-     by_class_tier sit beside it and are not used here.
-     ⚠⚠ DO NOT REACH FOR signals.has_credits INSTEAD. It exists, and it reads
-     true, and it is WRONG FOR THIS JOB: it belongs to the DASHBOARD'S GREETING
-     ROUTING and is defined as credit_amount >= 1.0, so a lone half-credit
-     routes to the Zero greeting. Hanging this screen off a boolean owned by
-     another surface is how it breaks silently the day that surface is tuned.
-     ⚠⚠ DO NOT REACH FOR available_this_cycle.total EITHER. It is CAP-LIMITED
-     - it answers "how many can she spend this cycle", not "are they in her
-     bank". It equals the pack size today only because 6 clothing on The Basics
-     and 5 toy on The Toy Chest happen to sit exactly at their caps. */
-  function bankHasCredits(j) {
-    if (!j || typeof j !== 'object' || !j.bank) return false;
-    return Number(j.bank.total) > 0;
-  }
-
-  /* PAINT THE WEAKER TRUE VERSION FIRST, THEN STRENGTHEN. The screen renders
-     immediately with the credit clause ABSENT, and the clause is added only
-     once the bank actually answers. No blank state, no flicker of a claim
-     that turns out to be wrong, and if the fetch never returns she is left
-     holding a sentence that is still true.
-     ⚠ CLAUDE'S CALL, REVERSIBLE - not a ruling of hers.
-     ⚠ SHORT TIMEOUT ON PURPOSE. The old consent injector's 10-second
-     fail-open is named in §2 as a hazard. 6s, then stay weak. */
-  function bankRead(para, p) {
-    var tok = memberToken();
-    if (!tok) return;   /* unreachable: resumeEnd gated on this already. */
-
-    var done = false;
-    var timer = setTimeout(function () {
-      if (done) return;
-      done = true;
-      track('end_bank', { code: 'timeout' });
-    }, 6000);
-
-    fetch(MEMBER_STATE_URL, {
-      method: 'POST',
-      headers: {
-        'x-ms-token': tok,
-        'apikey': ANON,
-        'Authorization': 'Bearer ' + ANON
-      }
-    })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (j) {
-        if (done) return;
-        done = true; clearTimeout(timer);
-        if (!bankHasCredits(j)) { track('end_bank', { code: 'empty' }); return; }
-        /* PLANS supplies the number. The bank only supplied permission. */
-        para.textContent = COPY.endB.body(p);
-        track('end_bank', { code: 'ok' });
-      })
-      .catch(function () {
-        if (done) return;
-        done = true; clearTimeout(timer);
-        track('end_bank', { code: 'error' });
-      });
-  }
-
-
-  function endState(kind, p) {
-    var c = (kind === 'pack') ? COPY.endB : COPY.endA;
-    clear(body);
-    formSlot.style.display = 'none';
-    /* ⚠⚠ HIDE THE TOP BAR, NOT THE DOTS. This line read dots.style.display
-       until S77. It was written in S63 when BACK LIVED INSIDE nav, so hiding
-       nav took Back with it. S74 MOVED BACK OUT OF nav INTO THE TOP BAR
-       beside the dots - correct for every path that runs through paintNav,
-       and this is the one path that does not. Back then survived onto the
-       completion screen as a dead pill, and the top bar being
-       justify-content:space-between with its only visible child left put it
-       at the LEFT edge, which is exactly what it looked like.
-       ⚠ NOBODY COULD HAVE SEEN THIS UNTIL NOW - the end screen had never
-       rendered once in four sessions. Found S77 on its first ever paint.
-       ⚠ Hiding the bar also takes its 28px bottom margin, which closes the
-       gap that sat above the headline. DO NOT GO BACK TO HIDING THE DOTS. */
-    topbar.style.display = 'none';
-    nav.style.display = 'none';
-    body.appendChild(el('h2', 'ks-wz-h', c.head));
-
-    /* THE OPENING PAINT IS ALWAYS THE VERSION THAT NEEDS NO BANK DATA. */
-    var para = el('p', 'ks-wz-body-text',
-      c.bodyNoBank ? c.bodyNoBank
-                   : (typeof c.body === 'function' ? c.body(p) : c.body));
-    body.appendChild(para);
-
-    var a = el('a', 'ks-wz-btn ks-wz-btn-primary', c.cta);
-    a.href = (typeof c.href === 'function') ? c.href(p) : c.href;
-    body.appendChild(a);
-
-    /* ⚠ FIRES ONCE, AT THE INITIAL PAINT, and still carries S.plan (set in
-       resumeEnd since S77) so it can say WHICH PLAN CONVERTED. The later
-       upgrade fires end_bank, NOT a second end_state. */
-    track('end_state', { kind: kind });
-
-    if (kind === 'pack') bankRead(para, p);
-  }
-
-
   /* THE CALL SITE. Returns true when it has painted, so boot() knows not to
      render a step on top of it. */
 
@@ -1977,7 +1855,7 @@
        logged-in member who still lands here with the stash (an old redirect, a stale
        tab) is sent on to the dashboard instead of being shown step 1 again.
        The token gate above still decides, so an unpaid abandon-at-step-6 is never sent.
-       endState() and COPY.endA / endB are now unused and can be deleted in a tidy pass. */
+       endState() and COPY.endA / endB were deleted S455 (the wording is kept in the core). */
     track('end_redirect');
     try { window.location.replace('/dashboard'); }
     catch (e) { window.location.href = '/dashboard'; }
@@ -2501,6 +2379,11 @@
 
       /* ---- the address question ---- */
       '.ks-wz-ask{margin-top:16px;}',
+      /* S455: the browser-back warning. Sits over the page, in front of the header. */
+      '.ks-wz-leave{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(30,26,25,.45);}',
+      '.ks-wz-leave-card{background:#FFFFFF;border-radius:16px;max-width:420px;width:100%;padding:24px;box-shadow:0 12px 40px rgba(30,26,25,.25);font-family:Quicksand,system-ui,-apple-system,sans-serif;}',
+      '.ks-wz-leave-text{font-size:16px;line-height:1.5;color:#1E1A19;margin:0 0 18px;}',
+      '.ks-wz-leave-row{display:flex;gap:10px;flex-wrap:wrap;}',
       '.ks-wz-ask-text{font-size:15px;color:#1E1A19;line-height:1.5;margin:0 0 12px;}',
       '.ks-wz-ask-addr{background:#EEEFE3;border-radius:10px;padding:12px 14px;',
         'font-size:15px;color:#1E1A19;line-height:1.5;margin-bottom:12px;}',
@@ -2798,6 +2681,7 @@
     buildShell();
     foldWatch();
     armRefreshWarning();
+    armBackWarning();
 
     /* Best-effort IP, fired early so it is usually in hand before submit.
        NON-FATAL BY DESIGN — if it is blocked or slow the field stays empty
@@ -2811,6 +2695,7 @@
     /* THE HANDOFF IS CHECKED BEFORE THE WIZARD PAINTS. Coming back from
        Stripe there is no step to render. */
     if (!resumeEnd()) {
+      if (signedInAway()) return;
       render();
       track('open');
     }
