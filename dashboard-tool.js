@@ -1102,6 +1102,22 @@ label.textContent = 'Credit Bank';   // hers S406
 
   window.addEventListener('resize', function () { if (_bankFit) _bankFit(); });
 
+  /* S461: THE BOWL REPORTS WHEN ITS POUR IS FINISHED. "Look what you've done" counts up
+     after this (her S163 ruling: after the coins land AND the block is on screen). It used
+     to wait on onTumblesDone, which belonged to the retired coin row and fired at once.
+     markPourDone fires on: the last coin settling · no pour at all (no new coins, empty
+     bowl, reduced motion, the pack wait's still pile) · a safety timer once a pour starts ·
+     armLookEntrance's fallback when the bowl never started pouring. It latches, so nothing
+     downstream ever waits forever. */
+  var _pourDone = false, _pourStarted = false, _pourWaiters = [];
+  function onPourDone(fn) { if (_pourDone) { fn(); return; } _pourWaiters.push(fn); }
+  function markPourDone() {
+    if (_pourDone) return;
+    _pourDone = true;
+    var w = _pourWaiters; _pourWaiters = [];
+    w.forEach(function (fn) { try { fn(); } catch (e) {} });
+  }
+
   // from = how many coins are already sitting there; coins from..n-1 fall. from >= n sits still.
   function bankPile(wrap, info, from, onPour) {
     var box = wrap.querySelector('.ksb-pile'), scene = box.querySelector('.ksb-scene'), world = box.querySelector('.ksb-world');
@@ -1132,6 +1148,7 @@ label.textContent = 'Credit Bank';   // hers S406
     var canMove = !COIN_REDUCE && !!window.requestAnimationFrame;
     if (!n) {                                         // the empty bowl rocks once (hers S403)
       if (canMove) whenBankOnScreen(box, function () { anim(900, function (k) { bowlAt(4 * Math.sin(k * Math.PI * 3) * Math.pow(1 - k, 1.4)); }, function () { bowlAt(0); }); });
+      markPourDone();                                 // S461: nothing pours
       return false;
     }
     var coins = [];
@@ -1166,14 +1183,14 @@ label.textContent = 'Credit Bank';   // hers S406
         anim(60, function (k) { place(c, land.x, land.b, rot, 1 + 0.07 * Math.sin(k * Math.PI), 1 - 0.14 * Math.sin(k * Math.PI)); shadow(c, land.x, land.b, 1); }, function () {
           anim(110, function (k) { place(c, land.x, land.b - Math.sin(k * Math.PI) * hop, rot + rock * k); }, function () {
             anim(220, function (k) { place(c, land.x, land.b, rot + rock * Math.cos(k * Math.PI * 2) * Math.pow(1 - k, 2)); }, function () {
-              if (!spill) { c.busy = 0; settle(c, i); return; }
+              if (!spill) { c.busy = 0; settle(c, i); landed(); return; }
               var p = finalPos(i), dir = Math.sign(s[4]);
               c.e.style.zIndex = p.z; c.sh.style.zIndex = p.z - 1;
               anim(340, function (k) {
                 var x = land.x + (p.x - land.x) * (1 - (1 - k) * (1 - k) * 0.4 - 0.6 * (1 - k)), b = land.b + (p.b - land.b) * k * k;
                 place(c, x, b, rot + dir * 28 * Math.sin(k * Math.PI)); shadow(c, x, p.b, 0.4 + 0.6 * k);
               }, function () {
-                anim(160, function (k) { place(c, p.x, p.b - Math.sin(k * Math.PI) * 2, s[3] + dir * 4 * (1 - k)); }, function () { c.busy = 0; settle(c, i); });
+                anim(160, function (k) { place(c, p.x, p.b - Math.sin(k * Math.PI) * 2, s[3] + dir * 4 * (1 - k)); }, function () { c.busy = 0; settle(c, i); landed(); });
               });
             });
           });
@@ -1183,7 +1200,9 @@ label.textContent = 'Credit Bank';   // hers S406
     if (!canMove) from = n;
     var still = Math.min(from, n);
     for (var i = 0; i < still; i++) { var cc = { key: K(i, PSPOTS[i][2]) }; cc.e = img(cc.key, 1); cc.sh = el('div', 'sh'); coins[i] = cc; settle(cc, i); }
-    if (still >= n) return false;
+    if (still >= n) { markPourDone(); return false; }   // S461: nothing new falls
+    var toLand = n - still;
+    function landed() { toLand--; if (toLand <= 0) markPourDone(); }   // S461: the last coin has settled
     // ⚠ S407: EVERY PICTURE THE POUR USES IS DOWNLOADED FIRST. A coin swaps from its falling
     //   picture to its resting one as it lands; on a first visit the resting picture was not
     //   downloaded yet, so the tall falling picture sat in the resting spot for a moment and
@@ -1206,11 +1225,13 @@ label.textContent = 'Credit Bank';   // hers S406
     whenBankOnScreen(box, function () {
       whenReady(function () {
         if (onPour) onPour();                         // S407: "seen" is written as the coins start falling
+        _pourStarted = true;                          // S461
         var t = 350;
         for (var j = still; j < n; j++) {
           (function (j) { setTimeout(function () { drop(j); }, t); })(j);
           t += j < 14 ? (110 + Math.random() * 90) : (30 + Math.random() * 25);
         }
+        setTimeout(markPourDone, t + 2000);           // S461 safety: the last drop starts by t and settles in about 1.3s
       });
     });
     return true;
@@ -1633,16 +1654,6 @@ function paintCoins(s) {
       // S420 HERS: "dont say anything about half credits". The Webflow note is hidden always.
       note.style.display = 'none';
     }
-    var expiry = s.expiry || {};
-    var numEl  = document.querySelector('.expiry-num');
-    var dateEl = document.querySelector('.expiry-date');
-    if (numEl)  numEl.textContent  = fmt(expiry.expiring_soon_count) + ' ';
-    if (dateEl) dateEl.textContent = fmtDate(expiry.next_expiration_date);
-    var wrap = document.querySelector('[data-expiry-wrap="true"]');
-    if (wrap) {
-      var n = parseFloat(expiry.expiring_soon_count);
-      wrap.style.display = (!expiry.expiring_soon_count || isNaN(n) || n === 0) ? 'none' : '';
-    }
     setText('.ks-membership-plan', s.plan || '');
    var status = s.member_status || '';
     setText('.ks-membership-status', status ? (status.charAt(0).toUpperCase() + status.slice(1)) : '');
@@ -1863,11 +1874,17 @@ function paintCoins(s) {
       _lookFired = true;
       stats.forEach(countUpStat);
     }
-    onTumblesDone(function () { coins = true; go(); });
+    onPourDone(function () { coins = true; go(); });   // S461: was onTumblesDone (the retired coin row)
 
     var io = new IntersectionObserver(function (entries) {
       for (var i = 0; i < entries.length; i++) {
-        if (entries[i].isIntersecting) { seen = true; io.disconnect(); go(); return; }
+        if (entries[i].isIntersecting) {
+          seen = true; io.disconnect(); go();
+          // S461 fallback: the bowl never started pouring (scrolled past it, or it was never
+          // painted), so count up anyway rather than wait forever.
+          setTimeout(function () { if (!_pourStarted) markPourDone(); }, 1500);
+          return;
+        }
       }
     }, { threshold: 0.35 });
     io.observe(sec);
