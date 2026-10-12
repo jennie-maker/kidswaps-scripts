@@ -3064,7 +3064,10 @@ function outOfCreditsBlock(zeroClasses, have) {
     gender:   { field: 'gender_style',    title: 'Gender',      match: 'exact',  order: null,       display: genderLabel },
     color:    { field: 'color',           title: 'Color',       match: 'exact',  order: null,       display: ident,       showAll: true },
     size:     { field: 'size',            title: 'Size',        match: 'exact',  order: SIZE_ORDER, display: ident,       rowFilter: function (it) { return it.category !== 'Shoes'; } },
-    category: { field: 'category',        title: 'Category',    match: 'exact',  order: null,       display: ident,       showAll: true },
+    // S461, hers S455: toy rows carry the lowercase category 'toy', which listed
+    // "toy" in the /browse category filter. Skip those rows when building the
+    // OPTIONS only; the stored value is untouched and toys still show in the grid.
+    category: { field: 'category',        title: 'Category',    match: 'exact',  order: null,       display: ident,       showAll: true, rowFilter: function (it) { return it.category !== 'toy'; } },
     wash:     { field: 'toy_washability', title: 'Washability', match: 'exact',  order: null,       display: capFirst },
     age:      { field: 'size',            title: 'Age',         match: 'tokens', order: AGE_ORDER,  display: ident },
     occasion: { field: 'occasion',        title: 'Occasion',    match: 'exact',  order: OCCASION_ORDER, display: ident },
