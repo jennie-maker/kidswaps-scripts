@@ -750,3 +750,142 @@
     start();
   }
 })();
+
+/* ============================================================================
+ * S468 — REFER A FRIEND: THE INVITE BAND AND BAR (core 1B item 25, step 6).
+ * Board 3 of https://claude.ai/artifact/8SRLeBEmQt8grUxypP5Lgc. CSS: home.css v72.
+ * ----------------------------------------------------------------------------
+ * Runs only where there is a hero (home.js also loads on /faq). Reads ?invite=
+ * first, else the browser's memory: localStorage 'ks_invite' as {code, at}, kept
+ * 60 days. THE SAME KEY, SHAPE AND CLEAN-UP AS signup-tool.js readInvite();
+ * change both together or they stop agreeing.
+ * Asks check_invite_code(p_code), open to the website, answering {valid,
+ * first_name} only (the same call signup makes).
+ *   valid true   → the band above the header and the bar at the bottom, both to
+ *                  /signup?invite=CODE, and "Trial for free" stays hidden.
+ *   valid false  → the memory is forgotten, the page looks normal.
+ *   no answer    → (failure, or nothing in 8 seconds) no banner, the page looks
+ *                  normal, the memory is KEPT for next time (signup does the same).
+ * A logged-in member sees none of it and nothing is remembered (test in a
+ * private window, same as /signup). The name prints as check_invite_code sends
+ * it, the same as signup's "You're joining with ...'s invite." line.
+ * ========================================================================== */
+(function () {
+  var INVITE_KEY  = 'ks_invite';
+  var INVITE_DAYS = 60;
+  var GIVE_UP_MS  = 8000;
+  var CLASS_ON    = 'ks-invited';
+  var CHECK_URL   = 'https://ajsobivqxexcniwifxzz.supabase.co/rest/v1/rpc/check_invite_code';
+  var ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqc29iaXZxeGV4Y25pd2lmeHp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNzI4MjIsImV4cCI6MjA5MTk0ODgyMn0.IFtzADITLHrEhnc8oHfjzyulcxWySp0o3s6v8XTZ5VM';
+  var LOG = '[ks-home] invite:';
+
+  function cleanCode(v) { return String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20); }
+
+  function readInvite() {
+    var code = '';
+    try { code = cleanCode(new URLSearchParams(window.location.search).get('invite')); } catch (e) {}
+    if (code) {
+      try { localStorage.setItem(INVITE_KEY, JSON.stringify({ code: code, at: Date.now() })); } catch (e) {}
+      return code;
+    }
+    try {
+      var m = JSON.parse(localStorage.getItem(INVITE_KEY) || 'null');
+      if (m && m.code && m.at && (Date.now() - m.at) < INVITE_DAYS * 864e5) return cleanCode(m.code);
+    } catch (e) {}
+    return '';
+  }
+
+  function forgetInvite() { try { localStorage.removeItem(INVITE_KEY); } catch (e) {} }
+
+  function signedIn() {
+    try {
+      var d = window.$memberstackDom;
+      if (d && typeof d.getMemberCookie === 'function') {
+        var t = d.getMemberCookie();
+        if (typeof t === 'string' && t) return true;
+      }
+    } catch (e) {}
+    try { return /(?:^|;\s*)_ms-mid=/.test(document.cookie); } catch (e) { return false; }
+  }
+
+  function node(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  function paint(code, name) {
+    var href = '/signup?invite=' + encodeURIComponent(code);
+
+    /* THE BAND, above everything, so it scrolls away under the sticky header. */
+    var band  = node('div', 'ks-invite-band');
+    var inner = node('div', 'ks-invite-band-inner');
+    var p     = node('p', 'ks-invite-band-text');
+    p.appendChild(node('strong', null, name + ' invited you.'));
+    p.appendChild(document.createTextNode(' Join and get 3 credits to start shopping.'));
+    var a = node('a', 'ks-invite-band-link', 'Claim my 3 credits');
+    a.href = href;
+    inner.appendChild(p);
+    inner.appendChild(a);
+    band.appendChild(inner);
+    document.body.insertBefore(band, document.body.firstChild);
+
+    /* THE BAR, pinned to the bottom, with a spacer so the footer stays reachable. */
+    var bar   = node('div', 'ks-invite-bar');
+    var bin   = node('div', 'ks-invite-bar-inner');
+    bin.appendChild(node('p', 'ks-invite-bar-text',
+      'Not ready yet? ' + name + '\u2019s link works whenever you come back, or enter her email when you sign up.'));
+    var b = node('a', 'ks-invite-bar-button', 'Join now');
+    b.href = href;
+    bin.appendChild(b);
+    bar.appendChild(bin);
+    var spacer = node('div', 'ks-invite-spacer');
+    spacer.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(spacer);
+    document.body.appendChild(bar);
+
+    function fit() { spacer.style.height = bar.offsetHeight + 'px'; }
+    fit();
+    window.addEventListener('resize', fit);
+    console.log(LOG, 'shown for', code);
+  }
+
+  function start() {
+    if (!document.querySelector('.hero-section')) return;   /* /faq: nothing */
+    if (signedIn()) return;
+    var code = readInvite();
+    if (!code) return;
+
+    var root = document.documentElement;
+    root.classList.add(CLASS_ON);                          /* hide Trial for free now */
+    var done = false;
+    function settle(res) {
+      if (done) return;
+      done = true;
+      if (res && res.valid === true && !signedIn()) {
+        paint(code, (res.first_name && String(res.first_name).trim()) || 'Your friend');
+        return;
+      }
+      root.classList.remove(CLASS_ON);
+      if (res && res.valid === false) { forgetInvite(); console.log(LOG, 'bad code, forgotten'); }
+      else if (!res) { console.log(LOG, 'check failed or slow, kept for next time'); }
+    }
+    setTimeout(function () { settle(null); }, GIVE_UP_MS);
+    try {
+      fetch(CHECK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON },
+        body: JSON.stringify({ p_code: code })
+      }).then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { settle(j && typeof j === 'object' ? j : null); })
+        .catch(function () { settle(null); });
+    } catch (e) { settle(null); }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+  } else {
+    start();
+  }
+})();

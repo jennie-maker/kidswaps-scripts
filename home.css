@@ -5421,3 +5421,156 @@ html.ks-motion .faq-section .faq-question-row.is-open .faq-question-chevron {
     margin-top: 3px;
   }
 }
+
+/* ============================================================================
+   v72 (S468) — REFER A FRIEND: THE INVITE BAND AND THE INVITE BAR. Board 3 of
+   https://claude.ai/artifact/8SRLeBEmQt8grUxypP5Lgc, approved S462 (wording is
+   Claude's, hers to change). home.js builds both elements; with no invite they
+   never exist, so every rule here is inert on a normal visit.
+   · .ks-invite-band: navy, ABOVE the header (first child of body), so it
+     scrolls away while the sticky header stays. Stacked on phones, one row 768 up.
+   · .ks-invite-bar: white, pinned to the bottom of the screen. home.js adds a
+     spacer at the end of body the bar's height, so the footer is never covered.
+   · html.ks-invited hides the hero's "Trial for free" ONLY (hers S468: it isn't
+     true for an invited friend, who pays her first month at signup). How It
+     Works stays. home.js sets the class while the code is being checked and
+     takes it off again if the code is bad or the check fails.
+   · Join now hovers like every home page button (v70): lift 2px, coral to
+     #B23D22; reduced motion keeps the colour and drops the lift.
+   ⚠ Memberstack's Test Mode badge sits at the bottom too until the live flip.
+   ============================================================================ */
+.ks-invite-band {
+  background: #1C4A91;
+  color: #FFFFFF;
+  font-family: Quicksand, sans-serif;
+}
+
+.ks-invite-band .ks-invite-band-inner {
+  box-sizing: border-box;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 14px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.ks-invite-band .ks-invite-band-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+  font-weight: 500;
+  color: #FFFFFF;
+}
+
+.ks-invite-band .ks-invite-band-text strong {
+  font-weight: 700;
+}
+
+.ks-invite-band .ks-invite-band-link {
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.3;
+  text-decoration: none;
+  border-bottom: 2px solid #EDA920;
+  padding-bottom: 2px;
+}
+
+.ks-invite-band .ks-invite-band-link:hover {
+  color: #FFFFFF;
+  border-bottom-color: #FFFFFF;
+}
+
+.ks-invite-band .ks-invite-band-link:focus-visible,
+.ks-invite-bar .ks-invite-bar-button:focus-visible {
+  outline: 2px solid #EDA920;
+  outline-offset: 3px;
+}
+
+.ks-invite-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 900;
+  background: #FFFFFF;
+  border-top: 1px solid #DAD8CF;
+  color: #1E1A19;
+  font-family: Quicksand, sans-serif;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.ks-invite-bar .ks-invite-bar-inner {
+  box-sizing: border-box;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 16px 20px 22px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ks-invite-bar .ks-invite-bar-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 500;
+  color: #1E1A19;
+}
+
+.ks-invite-bar .ks-invite-bar-button {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  height: 48px;
+  padding: 0 20px;
+  border-radius: 999px;
+  background-color: #E54F25;
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 15px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.ks-invite-bar .ks-invite-bar-button:hover {
+  transform: translateY(-2px);
+  background-color: #B23D22;
+  color: #FFFFFF;
+}
+
+html.ks-invited .hero-section .hero-buttons .hero-button-primary {
+  display: none;
+}
+
+@media screen and (min-width: 768px) {
+  .ks-invite-band .ks-invite-band-inner {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    padding: 12px 40px;
+  }
+
+  .ks-invite-bar .ks-invite-bar-inner {
+    justify-content: center;
+    gap: 24px;
+    padding: 14px 40px;
+  }
+
+  .ks-invite-bar .ks-invite-bar-text {
+    flex: 0 1 auto;
+    font-size: 15px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ks-invite-bar .ks-invite-bar-button:hover {
+    transform: none;
+  }
+}
