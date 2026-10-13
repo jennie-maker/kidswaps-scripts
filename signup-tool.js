@@ -320,9 +320,9 @@
            the white half underneath says what happens next. */
         title: 'I want to send my items first',
         /* S386 HER WORDING: true on this path only (billing waits for the
-           first whole credit); the shop path charges today. Lighter and
-           smaller than the title, her pick off the mockup. */
-        note:  '(no charge today)',
+           first whole credit); the shop path charges today.
+           S469 HERS: an ink pill under the heading, so the parentheses went. */
+        note:  'no charge today',
         sub:   'Send me my first empty swap bag, and I\u2019ll send you my kids\u2019 outgrown items'
       },
       cardB: {
@@ -532,10 +532,15 @@
       /* Board 8: replaces the send-first Stripe line on this path. */
       preframe: 'Stripe handles your card next. Your first month is charged today, '
               + 'and your 3 credits are waiting when you\u2019re back.',
-      /* Board 9: step 1, only when no invite link was used. Optional. */
-      boxLabel: 'Invited by a friend? Enter their email.',
-      boxHelp:  'We\u2019ll match it after you sign up. Shopping first? Your 3 credits land '
-              + 'right away. Sending first? They arrive with the credits from your first bag.'
+      /* Board 9: step 1, only when no invite link was used. Optional.
+         S469 HERS, approved word for word: heading, lead, and the two timing
+         lines (each opens with its green label). */
+      boxLabel: 'Personal invitation',
+      boxLead:  'Enter the email of the person who invited you, and you\u2019ll both get 3 credits.',
+      boxShopL: 'Shopping first?',
+      boxShop:  'Your 3 credits will be added to your bank right away.',
+      boxSendL: 'Sending first?',
+      boxSend:  'Your 3 credits will be added when your first bag is processed.'
     },
 
     /* ---- generic failure ---- APPROVED Session 63.
@@ -1042,21 +1047,17 @@
       top.appendChild(em);
       var txt = el('span', 'ks-wz-fork-txt');
       var t = el('span', 'ks-wz-fork-t', c.title);
-      if (c.note) {
-        t.appendChild(document.createTextNode(' '));
-        t.appendChild(el('span', 'ks-wz-fork-n', c.note));
-      }
       txt.appendChild(t);
+      /* S469 HERS: the note is an ink pill on its own line under the heading. */
+      if (c.note) txt.appendChild(el('span', 'ks-wz-fork-n', c.note));
       top.appendChild(txt);
       top.appendChild(el('span', 'ks-wz-fork-check'));
       b.appendChild(top);
       b.appendChild(el('span', 'ks-wz-fork-s', c.sub));
       b.addEventListener('click', function () {
-        /* S393 HER RULING: she SEES her pick before the page moves. The card
-           fills its check and the other dims for half a second, then step 2.
-           One tap still does it. The guard stops a second tap in the pause. */
-        if (wrap.getAttribute('data-ks-going')) return;
-        wrap.setAttribute('data-ks-going', '1');
+        /* S469 HERS (replaces the S393 auto-advance): a tap only PICKS the
+           card. Its check fills and the other dims, and Continue carries her
+           on, so the invite box under the cards can't be skipped by a tap. */
         /* Changing path invalidates a plan chosen on the other path. */
         if (S.path !== pathKey) { S.path = pathKey; S.plan = null; }
         S.dirty = true;
@@ -1064,7 +1065,7 @@
         [].forEach.call(wrap.querySelectorAll('.ks-wz-fork'), function (f) { f.classList.remove('is-on'); });
         b.classList.add('is-on');
         wrap.classList.add('has-pick');
-        setTimeout(function () { go(2); }, 500);
+        nextBtn.disabled = false;
       });
       wrap.appendChild(b);
     });
@@ -1072,11 +1073,23 @@
 
     /* S465, board 9, HERS S465: UNDER the two cards (asked and kept). Only when
        no invite link was used. Optional, never checked while she types (that
-       would tell her who's a member); S2 matches it after payment. */
+       would tell her who's a member); S2 matches it after payment.
+       S469 HERS: cream box, green border, closed to one row until tapped.
+       It starts OPEN when an email is already in it (she came Back). Closing
+       only hides it: the email stays in S.inviteEmail and still rides. */
     if (!S.invite) {
       var ib = el('div', 'ks-wz-ibox');
-      var ibl = el('label', 'ks-wz-ibox-l', COPY.inv.boxLabel);
-      ibl.setAttribute('for', 'ks-wz-invite-email');
+      var tog = el('button', 'ks-wz-ibox-tog');
+      tog.type = 'button';
+      tog.appendChild(el('span', 'ks-wz-ibox-l', COPY.inv.boxLabel));
+      var chev = el('span', 'ks-wz-ibox-chev');
+      chev.setAttribute('aria-hidden', 'true');
+      tog.appendChild(chev);
+      var panel = el('div', 'ks-wz-ibox-p');
+      panel.id = 'ks-wz-ibox-p';
+      tog.setAttribute('aria-controls', panel.id);
+      var lead = el('label', 'ks-wz-ibox-lead', COPY.inv.boxLead);
+      lead.setAttribute('for', 'ks-wz-invite-email');
       var ibi = el('input', 'ks-wz-input');
       ibi.type = 'email';
       ibi.id = 'ks-wz-invite-email';
@@ -1086,13 +1099,32 @@
       ibi.setAttribute('spellcheck', 'false');
       ibi.value = S.inviteEmail;
       ibi.addEventListener('input', function () { S.inviteEmail = ibi.value.trim(); if (S.inviteEmail) S.dirty = true; });
-      ib.appendChild(ibl);
-      ib.appendChild(ibi);
-      ib.appendChild(el('p', 'ks-wz-ibox-h', COPY.inv.boxHelp));
+      panel.appendChild(lead);
+      panel.appendChild(ibi);
+      [[COPY.inv.boxShopL, COPY.inv.boxShop], [COPY.inv.boxSendL, COPY.inv.boxSend]].forEach(function (ln) {
+        var p = el('p', 'ks-wz-ibox-h');
+        p.appendChild(el('strong', null, ln[0]));
+        p.appendChild(document.createTextNode(' ' + ln[1]));
+        panel.appendChild(p);
+      });
+      function setOpen(open) {
+        ib.classList.toggle('is-open', open);
+        tog.setAttribute('aria-expanded', open ? 'true' : 'false');
+        panel.hidden = !open;
+      }
+      setOpen(!!S.inviteEmail);
+      tog.addEventListener('click', function () {
+        var open = !ib.classList.contains('is-open');
+        setOpen(open);
+        if (open) { try { ibi.focus(); } catch (e) {} }
+      });
+      ib.appendChild(tog);
+      ib.appendChild(panel);
       body.appendChild(ib);
     }
 
-    paintNav({ hideNext: true });
+    /* S469: Continue is the only way on from step 1, faded until a card is picked. */
+    paintNav({ nextDisabled: !S.path, onNext: function () { if (S.path) go(2); } });
   }
 
 
@@ -2161,13 +2193,17 @@
       '.ks-wz-fork--shop{background:#FFFFFF;color:#1E1A19;}',
       '.ks-wz-fork-top{display:flex;align-items:center;gap:14px;position:relative;',
         'background:#E54F25;color:#FFFFFF;padding:16px 46px 16px 18px;}',
+      /* S469 HERS: the shop-first top is her blue; send-first stays coral. */
+      '.ks-wz-fork--shop .ks-wz-fork-top{background:#28498D;}',
       '.ks-wz-forks.has-pick .ks-wz-fork:not(.is-on){opacity:.5;}',
       /* S385: the emoji sits left of the words, plain, no circle (her pick off the mockup). */
       '.ks-wz-fork-e{flex:0 0 auto;font-size:30px;line-height:1;}',
       '.ks-wz-fork-txt{display:block;flex:1 1 auto;min-width:0;}',
       '.ks-wz-fork-t{display:block;font-size:17px;font-weight:600;color:#FFFFFF;}',
       /* S386: kept whole, so on a phone it drops to the next line in one piece. */
-      '.ks-wz-fork-n{font-size:15px;font-weight:500;white-space:nowrap;}',
+      /* S469 HERS: an ink pill on its own line under the heading. */
+      '.ks-wz-fork-n{display:inline-block;margin-top:6px;background:#1E1A19;color:#EDECE0;',
+        'border-radius:999px;padding:3px 11px;font-size:14px;font-weight:500;white-space:nowrap;}',
       '.ks-wz-fork-s{display:block;font-size:14px;font-weight:500;color:#1E1A19;line-height:1.45;padding:12px 18px 14px;}',
       /* the drawn check, inheriting ink so it matches the fork text */
       /* S393 HER RULING, OPTION A: a white ring with an ARROW always shows,
@@ -2181,9 +2217,8 @@
         'width:5px;height:10px;border:solid #1E1A19;border-width:0 2px 2px 0;',
         'transform:rotate(45deg);}',
       '.ks-wz-fork.is-on .ks-wz-fork-check::after{display:block;}',
-      '.ks-wz-fork-check::before{content:"";position:absolute;left:4px;top:6px;',
-        'width:6px;height:6px;border:solid #FFFFFF;border-width:2px 2px 0 0;transform:rotate(45deg);}',
-      '.ks-wz-fork.is-on .ks-wz-fork-check::before{display:none;}',
+      /* S469: the S393 arrow inside the ring is gone. A tap no longer moves
+         on (Continue does), so the ring is plain, like the plan cards. */
 
       /* ---- plan cards (step 2) ---- */
       '.ks-wz-plans{display:flex;flex-direction:column;gap:12px;}',
@@ -2849,12 +2884,25 @@
       '.ks-wz-invite-t strong{font-weight:700;}',
       '.ks-wz-plan-gift{display:inline-block;align-self:flex-start;background:#EDA920;color:#1E1A19;',
         'border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;margin-bottom:6px;}',
-      '.ks-wz-ibox{margin-top:20px;}',
-      /* S465 HERS: the wizard's cream input border vanished on step 1's white card.
-         Muted grey on THIS box only; steps 3 and 4 sit on colour and keep cream. */
-      '.ks-wz-ibox .ks-wz-input{border-color:#75736E;}',
-      '.ks-wz-ibox-l{display:block;font-size:15px;font-weight:700;color:#1E1A19;margin-bottom:6px;}',
-      '.ks-wz-ibox-h{font-size:13px;line-height:1.45;color:#75736E;margin:8px 0 0;}'
+      /* S469 HERS: cream box, green border and highlights, three text weights
+         (green serif heading, ink lead, small grey timing lines). */
+      '.ks-wz-ibox{margin-top:20px;background:#EDECE0;border:2px solid #256F43;border-radius:14px;}',
+      '.ks-wz-ibox-tog{display:flex;align-items:center;justify-content:space-between;gap:12px;',
+        'width:100%;background:transparent;border:0;padding:14px 16px;cursor:pointer;',
+        'font-family:inherit;text-align:left;border-radius:12px;}',
+      '.ks-wz-ibox-l{font-family:"Instrument Serif",Georgia,serif;font-size:26px;font-weight:400;',
+        'line-height:1.1;color:#256F43;}',
+      '.ks-wz-ibox-chev{flex:0 0 auto;width:10px;height:10px;margin-top:-5px;',
+        'border:solid #256F43;border-width:0 2px 2px 0;transform:rotate(45deg);transition:transform .2s ease;}',
+      '.ks-wz-ibox.is-open .ks-wz-ibox-chev{transform:rotate(-135deg);margin-top:5px;}',
+      '@media (prefers-reduced-motion:reduce){.ks-wz-ibox-chev{transition:none}}',
+      '.ks-wz-ibox-p{padding:0 16px 16px;}',
+      '.ks-wz-ibox-p[hidden]{display:none;}',
+      '.ks-wz-ibox-lead{display:block;font-size:15px;font-weight:600;line-height:1.45;color:#1E1A19;margin:0 0 10px;}',
+      '.ks-wz-ibox .ks-wz-input{border-color:#256F43;background:#FFFFFF;}',
+      '.ks-wz-ibox-h{font-size:13px;line-height:1.45;color:#75736E;margin:10px 0 0;}',
+      '.ks-wz-ibox-h + .ks-wz-ibox-h{margin-top:4px;}',
+      '.ks-wz-ibox-h strong{color:#256F43;font-weight:600;}'
     ].join('');
     document.head.appendChild(s);
   }
