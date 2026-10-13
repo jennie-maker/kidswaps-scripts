@@ -5574,3 +5574,29 @@ html.ks-invited .hero-section .hero-buttons .hero-button-primary {
     transform: none;
   }
 }
+
+/* ============================================================================
+   v73 (S468) — THE INVITE BAND GOES INK. HERS S468: on the live page the navy
+   band blended into the navy hero ("it blends in pretty well, im not so sure
+   thats a good thing"). Off three options (ink, amber, coral) she picked ink:
+   the one colour none of its neighbours use (pink bar, cream header, navy hero).
+   Cream text on ink #1E1A19; the link keeps its gold #EDA920 underline and goes
+   cream on hover. Same selectors as v72, so later source order wins.
+   ============================================================================ */
+.ks-invite-band {
+  background: #1E1A19;
+  color: #EDECE0;
+}
+
+.ks-invite-band .ks-invite-band-text {
+  color: #EDECE0;
+}
+
+.ks-invite-band .ks-invite-band-link {
+  color: #EDECE0;
+}
+
+.ks-invite-band .ks-invite-band-link:hover {
+  color: #EDECE0;
+  border-bottom-color: #EDECE0;
+}
