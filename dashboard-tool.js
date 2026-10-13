@@ -504,8 +504,10 @@ function paintHeadline(member) {
     if (hcw) {
       var rowsEls = hcw.querySelectorAll('.ks-hcw-row');
       var h = hcw.querySelector('.ks-panel-h');
-      [].forEach.call(rowsEls, function (r0) { r0.style.display = _jjOn ? 'none' : ''; });
-      if (h && _jjOn && !h.querySelector('.ks-hcw-fold')) {
+      // S469 HERS: How credits work is open for everyone, new members included.
+      // The S393 fold (and its oversized arrow) is retired; `false &&` keeps it dormant.
+      [].forEach.call(rowsEls, function (r0) { r0.style.display = ''; });
+      if (false && h && _jjOn && !h.querySelector('.ks-hcw-fold')) {
         var label = h.textContent;
         h.innerHTML = '<button type="button" class="ks-hcw-fold" aria-expanded="false">' +
                       esc(label) + ' \u25BE</button>';
@@ -2799,13 +2801,17 @@ function paintCloset(s) {
     st.id = 'ks-refer-css';
     st.textContent =
       // a centred star rule above, as on board 1; no box
-      '.ks-sec-refer .ks-panel{background:' + star + ',' + line + ' left 7.5px / calc(50% - 20px) 1px no-repeat,' +
-        line + ' right 7.5px / calc(50% - 20px) 1px no-repeat;border:0;border-radius:0;box-shadow:none;' +
-        'padding:44px 0 0;text-align:center;}' +
-      '.ks-sec-refer .ks-panel-h{text-align:center;}' +
-      '.ks-refer-p{margin:10px auto 6px;max-width:420px;font-size:16px;line-height:1.5;color:#1E1A19;}' +
-      '.ks-refer-open{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:10px 0;' +
-        'font-weight:700;font-size:16px;color:#1c4a91;}' +
+      // S469 HERS, option 2: its own card. Cream, gold border, a gold +3 coin, a solid
+      // navy button. Palette colours only (cream #EDECE0, gold #EDA920, navy #1C4A91, ink).
+      '.ks-sec-refer .ks-panel{background:#EDECE0;border:2px solid #EDA920;border-radius:22px;box-shadow:none;' +
+        'padding:22px 22px 24px;margin-top:24px;text-align:left;}' +
+      '.ks-refer-head{display:flex;align-items:center;gap:12px;}' +
+      '.ks-refer-coin{flex:0 0 auto;width:44px;height:44px;border-radius:50%;background:#EDA920;color:#FFFFFF;' +
+        'display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;line-height:1;}' +
+      '.ks-sec-refer .ks-panel-h{text-align:left;margin:0;}' +
+      '.ks-refer-p{margin:12px 0 16px;font-size:16px;line-height:1.5;color:#1E1A19;text-align:left;}' +
+      '.ks-refer-open{all:unset;cursor:pointer;display:block;box-sizing:border-box;width:100%;text-align:center;' +
+        'padding:13px 20px;border-radius:999px;background:#1c4a91;color:#FFFFFF;font-weight:700;font-size:16px;}' +
       '.ks-refer-open:focus-visible{outline:2px solid #1E1A19;outline-offset:2px;}' +
       '@media (max-width:939px){.ks-sec-refer{order:4;}}' +
       // the window (board 2) reuses the bag sheet's look
@@ -2835,10 +2841,12 @@ function paintCloset(s) {
       if (!panel) return;
       referCss();
       panel.parentNode.style.display = '';
+      // S469 HERS: her club line replaces the old sentence (approved word for word).
       panel.innerHTML =
-        '<div class="ks-panel-h">Refer a friend</div>' +
-        '<p class="ks-refer-p">Give a parent 3 credits to start shopping, and get 3 credits yourself when they join.</p>' +
-        '<button type="button" class="ks-refer-open">Invite a friend ' + ksArrow() + '</button>';
+        '<div class="ks-refer-head"><span class="ks-refer-coin" aria-hidden="true">+3</span>' +
+        '<div class="ks-panel-h">Refer a friend</div></div>' +
+        '<p class="ks-refer-p">The bigger the club, the more to choose from. Refer a friend and you\u2019ll each get 3 extra credits.</p>' +
+        '<button type="button" class="ks-refer-open">Invite a friend</button>';
       panel.querySelector('.ks-refer-open').addEventListener('click', function () {
         referOpen(code, Number(r.friends_joined) || 0, this);
       });
@@ -4053,15 +4061,15 @@ function paintCloset(s) {
   var KIDS_CSS = [
     '#ks-kids-step{position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147482000;background:rgba(237,236,224,0.55);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:Quicksand,sans-serif;color:#211b1a;}',
     '#ks-kids-step *{box-sizing:border-box;}',
-    '.ks-kids-step-column{max-width:480px;margin:calc(40px + env(safe-area-inset-top,0px)) auto calc(40px + env(safe-area-inset-bottom,0px));padding:30px 24px 28px;background:#edece0;border-radius:28px;box-shadow:0 24px 60px rgba(33,27,26,0.22);display:flex;flex-direction:column;gap:22px;}',
+    '.ks-kids-step-column{max-width:480px;margin:calc(40px + env(safe-area-inset-top,0px)) auto calc(40px + env(safe-area-inset-bottom,0px));padding:30px 24px 28px;background:#1c4a91;color:#edece0;border-radius:28px;box-shadow:0 24px 60px rgba(33,27,26,0.22);display:flex;flex-direction:column;gap:22px;}',
     '@media (max-width:560px){.ks-kids-step-column{margin:calc(12px + env(safe-area-inset-top,0px)) 12px calc(24px + env(safe-area-inset-bottom,0px));padding:26px 18px 24px;}}',
-    '.ks-kids-step-remove-link{color:#b3401c;margin-top:10px;}',
+    '.ks-kids-step-remove-link{color:#f491a9;margin-top:10px;}',
     '.ks-kids-step-size-note{font-size:15px;margin:0;padding:0 4px;}',
-    '.ks-kids-step-size-grows{font-size:14px;color:#4A4340;margin:0;padding:0 4px;}',
+    '.ks-kids-step-size-grows{font-size:14px;color:#edece0;margin:0;padding:0 4px;}',
     '.ks-kids-step-heading-wrap{position:relative;text-align:center;}',
     '.ks-kids-step-heading-star{position:absolute;top:-6px;right:18px;}',
     '.ks-kids-step-heading{margin:0;font-family:"Instrument Serif",serif;font-weight:400;font-size:40px;line-height:1.05;}',
-    '.ks-kids-step-name-tag{position:relative;margin:4px 6px;background:#fff;border:2.5px solid #211b1a;border-radius:22px;box-shadow:5px 5px 0 #211b1a;overflow:hidden;}',
+    '.ks-kids-step-name-tag{position:relative;margin:4px 6px;color:#211b1a;background:#fff;border:2.5px solid #211b1a;border-radius:22px;box-shadow:5px 5px 0 #211b1a;overflow:hidden;}',
     '.ks-kids-step-name-tag.is-tappable{cursor:pointer;}',
     '.ks-kids-step-name-tag-top{background:#e54f25;color:#fff;text-align:center;padding:10px 0 8px;font-family:"Instrument Serif",serif;font-size:30px;line-height:1;}',
     '.ks-kids-step-name-tag-top span{display:block;font-family:Quicksand,sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;margin-top:2px;}',
@@ -4070,7 +4078,7 @@ function paintCloset(s) {
     '.ks-kids-step-name-on-tag{width:100%;border:0;border-bottom:2.5px dashed #b9b5aa;background:transparent;outline:none;padding:0 0 4px;font-family:"Instrument Serif",serif;font-size:48px;line-height:1.1;color:#211b1a;border-radius:0;-webkit-appearance:none;appearance:none;}',
     '.ks-kids-step-name-on-tag::placeholder{color:#b9b5aa;}',
     '.ks-kids-step-name-on-tag:focus{border-bottom-color:#211b1a;}',
-    '.ks-kids-step-tag-hint{text-align:center;font-size:15px;color:#4A4340;margin:0;}',
+    '.ks-kids-step-tag-hint{text-align:center;font-size:15px;color:#edece0;margin:0;}',
     '.ks-kids-step-name-tag-name{padding-right:36px;font-family:"Instrument Serif",serif;font-size:48px;line-height:1;word-break:break-word;}',
     '.ks-kids-step-chips{display:flex;gap:8px;flex-wrap:wrap;}',
     '.ks-kids-step-chip{padding:6px 12px;border-radius:999px;font-size:14px;font-weight:700;}',
@@ -4085,18 +4093,24 @@ function paintCloset(s) {
     '.ks-kids-step-choice-row{display:flex;gap:12px;}',
     '.ks-kids-step-choice{flex:1;height:58px;border:2.5px solid #211b1a;background:#fff;border-radius:18px;font-family:Quicksand,sans-serif;font-size:18px;font-weight:700;color:#211b1a;box-shadow:3px 3px 0 #211b1a;cursor:pointer;}',
     '.ks-kids-step-choice.is-picked{background:#eda920;}',
-    '.ks-kids-step-small-link{align-self:center;font-size:13px;font-weight:700;color:#1c4a91;margin-top:4px;background:none;border:0;padding:4px;text-decoration:none;cursor:pointer;font-family:Quicksand,sans-serif;}',
-    '.ks-kids-step-small-link.is-picked{font-weight:700;color:#211b1a;}',
+    '.ks-kids-step-small-link{align-self:center;font-size:13px;font-weight:700;color:#edece0;margin-top:4px;background:none;border:0;padding:4px;text-decoration:none;cursor:pointer;font-family:Quicksand,sans-serif;}',
+    '.ks-kids-step-small-link.is-picked{font-weight:700;color:#eda920;}',
     '.ks-kids-step-size-line{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:15px;padding:2px 4px;}',
-    '.ks-kids-step-size-change{font-weight:700;color:#1c4a91;background:none;border:0;padding:0;text-decoration:none;cursor:pointer;font-family:Quicksand,sans-serif;font-size:15px;}',
+    '.ks-kids-step-size-change{font-weight:700;color:#eda920;background:none;border:0;padding:0;text-decoration:none;cursor:pointer;font-family:Quicksand,sans-serif;font-size:15px;}',
     '.ks-kids-step-size-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}',
     '.ks-kids-step-size-choice{height:46px;border:2.5px solid #211b1a;background:#fff;border-radius:14px;font-family:Quicksand,sans-serif;font-size:15px;font-weight:700;color:#211b1a;box-shadow:2px 2px 0 #211b1a;cursor:pointer;padding:0;}',
     '.ks-kids-step-size-choice.is-picked{background:#eda920;}',
-    '.ks-kids-step-add-another{height:56px;border:2.5px dashed #211b1a;background:transparent;border-radius:18px;font-family:Quicksand,sans-serif;font-size:17px;font-weight:700;color:#211b1a;cursor:pointer;}',
+    '.ks-kids-step-add-another{height:56px;border:2.5px dashed #edece0;background:transparent;border-radius:18px;font-family:Quicksand,sans-serif;font-size:17px;font-weight:700;color:#edece0;cursor:pointer;}',
     '.ks-kids-step-spacer{flex:0 0 4px;}',
-    '.ks-kids-step-continue{height:58px;border:2.5px solid #211b1a;background:#1c4a91;border-radius:999px;font-family:Quicksand,sans-serif;font-size:18px;font-weight:700;color:#edece0;box-shadow:4px 4px 0 #211b1a;cursor:pointer;}',
-    '.ks-kids-step-continue:disabled{border-color:#b9b5aa;background:transparent;color:#6E6A63;box-shadow:none;cursor:default;}',
-    '.ks-kids-step-error{color:#e54f25;font-size:14px;font-weight:700;text-align:center;margin:0;}',
+    '.ks-kids-step-continue{height:58px;border:2.5px solid #211b1a;background:#e54f25;border-radius:999px;font-family:Quicksand,sans-serif;font-size:18px;font-weight:700;color:#ffffff;box-shadow:4px 4px 0 #211b1a;cursor:pointer;}',
+    '.ks-kids-step-continue:disabled{border-color:#edece0;background:transparent;color:#edece0;box-shadow:none;cursor:default;}',
+    '.ks-kids-step-error{color:#f491a9;font-size:14px;font-weight:700;text-align:center;margin:0;}',
+    // S469: Back (top left of the sheet) and the pencils beside answers on the tag
+    '.ks-kids-step-back{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;margin:-8px 0 -10px;padding:4px 0;background:none;border:0;cursor:pointer;font-family:Quicksand,sans-serif;font-size:15px;font-weight:700;color:#edece0;}',
+    '.ks-kids-step-pencil{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;margin-left:2px;padding:0;background:none;border:0;cursor:pointer;color:#1c4a91;vertical-align:middle;}',
+    '.ks-kids-step-chip .ks-kids-step-pencil{width:18px;height:18px;margin:0 -4px 0 2px;color:inherit;}',
+    '.ks-kids-step-chip{display:inline-flex;align-items:center;}',
+    '#ks-kids-step :focus-visible{outline:2px solid #eda920;outline-offset:2px;}',
     '.ks-kids-step-saved-list{display:flex;flex-direction:column;gap:22px;}'
   ].join('');
 
@@ -4187,21 +4201,29 @@ function paintCloset(s) {
     });
   }
 
-  function kidsChipsHtml(c) {
+  // S469 HERS: a small pencil beside each answer on the in-progress tag; it jumps to that question.
+  function kidsPencil(stage, label) {
+    return '<button type="button" class="ks-kids-step-pencil" data-kids-step="goto" data-kids-value="' + stage + '" aria-label="' + label + '">' +
+      '<svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M11.3 1.7l3 3L5.5 13.5 1.7 14.3l.8-3.8z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path></svg></button>';
+  }
+  function kidsChipsHtml(c, pens) {
     var out = '';
-    if (c.gender === 'girl') out += '<span class="ks-kids-step-chip ks-kids-step-chip--first">Girl</span>';
-    if (c.gender === 'boy')  out += '<span class="ks-kids-step-chip ks-kids-step-chip--first">Boy</span>';
+    var gp = pens ? kidsPencil('gender', 'Change this answer') : '';
+    var ap = pens ? kidsPencil('age', 'Change the age or size') : '';
+    if (c.gender === 'girl') out += '<span class="ks-kids-step-chip ks-kids-step-chip--first">Girl' + gp + '</span>';
+    if (c.gender === 'boy')  out += '<span class="ks-kids-step-chip ks-kids-step-chip--first">Boy' + gp + '</span>';
     // Under 2 the size chip already says the range (6-9M etc.), so that age chip is dropped
     var sameAsSize = c.unit === 'months' && !c.byHand && [7, 10, 15, 21].indexOf(c.age) !== -1;
-    if (c.age !== null && c.unit && !sameAsSize) out += '<span class="ks-kids-step-chip ks-kids-step-chip--age">' + kidsEsc(kidsAgeLabel(c.age, c.unit)) + '</span>';
-    (c.sizes || []).forEach(function (sz) { out += '<span class="ks-kids-step-chip ks-kids-step-chip--size">Size ' + kidsEsc(kidsSizeLabel(sz)) + '</span>'; });
+    if (c.age !== null && c.unit && !sameAsSize) out += '<span class="ks-kids-step-chip ks-kids-step-chip--age">' + kidsEsc(kidsAgeLabel(c.age, c.unit)) + ap + '</span>';
+    (c.sizes || []).forEach(function (sz) { out += '<span class="ks-kids-step-chip ks-kids-step-chip--size">Size ' + kidsEsc(kidsSizeLabel(sz)) + ap + '</span>'; });
     return out ? '<div class="ks-kids-step-chips">' + out + '</div>' : '';
   }
 
   function kidsNameTagHtml(c, opts) {
     opts = opts || {};
     var body = c.name
-      ? '<div class="ks-kids-step-name-tag-name">' + kidsEsc(kidsCap(c.name)) + '</div>' + kidsChipsHtml(c)
+      ? '<div class="ks-kids-step-name-tag-name">' + kidsEsc(kidsCap(c.name)) +
+          (opts.tappable ? kidsPencil('name', 'Change the name') : '') + '</div>' + kidsChipsHtml(c, opts.tappable)
       : '<div class="ks-kids-step-name-tag-blank"></div>';
     return '<div class="ks-kids-step-name-tag' + (opts.tappable ? ' is-tappable' : '') + '"' +
       (opts.tappable ? ' data-kids-step="change-name" role="button" tabindex="0" aria-label="Change the name"' : '') + '>' +
@@ -4257,6 +4279,13 @@ function paintCloset(s) {
     var html = '<div class="ks-kids-step-column">' +
       '<div class="ks-kids-step-heading-wrap">' + star +
       '<h1 class="ks-kids-step-heading" id="ks-kids-step-heading">Tell us about your kids</h1></div>';
+    // S469 HERS: Back, on the questions after the name (name -> gender -> age).
+    if (k.stage === 'gender' || k.stage === 'age') {
+      html = '<div class="ks-kids-step-column">' +
+        '<button type="button" class="ks-kids-step-back" data-kids-step="goto" data-kids-value="' + (k.stage === 'age' ? 'gender' : 'name') + '">' +
+        '<svg width="14" height="14" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M10 6H2M5 3L2 6l3 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>Back</button>' +
+        html.slice('<div class="ks-kids-step-column">'.length);
+    }
 
     if (k.stage === 'done') {
       html += '<div class="ks-kids-step-saved-list">';
@@ -4312,10 +4341,13 @@ function paintCloset(s) {
         if (mo !== null) {
           if (c.byHand && c.sizes.length) {
             html += '<div class="ks-kids-step-size-line"><span>' + nm + ' wears ' + kidsEsc(kidsSizesWords(c.sizes)) + '.</span>' +
-              '<button type="button" class="ks-kids-step-size-change" data-kids-step="size-open">' + (k.sizeOpen ? 'Done' : 'Change') + '</button></div>';
+              '<button type="button" class="ks-kids-step-size-change" data-kids-step="size-open">' + (k.sizeOpen ? 'Done' : 'Change') + '</button></div>' +
+              '<p class="ks-kids-step-size-note">You can select two sizes if you want.</p>';
           } else if (sug) {
             html += '<div class="ks-kids-step-size-line"><span>We think ' + who + ' <b>' + kidsEsc(kidsSizePhrase(sug)) + '</b>.</span>' +
-              '<button type="button" class="ks-kids-step-size-change" data-kids-step="size-open">' + (k.sizeOpen ? 'Done' : 'Change') + '</button></div>';
+              '<button type="button" class="ks-kids-step-size-change" data-kids-step="size-open">' + (k.sizeOpen ? 'Done' : 'Change') + '</button></div>' +
+              // S469 HERS: always shown, so she knows before she taps Change
+              '<p class="ks-kids-step-size-note">You can select two sizes if you want.</p>';
           } else {
             // Past the closet's sizes by age (or under 3 months): the sizes show straight away
             showGrid = true;
@@ -4326,7 +4358,6 @@ function paintCloset(s) {
           }
         }
         if (mo !== null && showGrid) {
-          if (sug || (c.byHand && c.sizes.length)) html += '<p class="ks-kids-step-size-note">You can select two sizes if you want.</p>';
           html += '<div class="ks-kids-step-size-grid" role="group" aria-label="Sizes">';
           KIDS_SIZES.forEach(function (sz) {
             var on = c.sizes.indexOf(sz.value) !== -1;
@@ -4399,6 +4430,8 @@ function paintCloset(s) {
     }
     var tag = k.el.querySelector('[data-kids-step="change-name"]');
     if (tag) tag.addEventListener('keydown', function (ev) {
+      // S469: a pencil inside the tag handles its own keys
+      if (ev.target !== tag) return;
       if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); kidsGo('name'); }
     });
   }
@@ -4519,6 +4552,7 @@ function paintCloset(s) {
     var val = t.getAttribute('data-kids-value');
     if (act === 'continue') { ev.preventDefault(); kidsContinue(); }
     else if (act === 'change-name') { kidsGo('name'); }
+    else if (act === 'goto') { ev.preventDefault(); if (val === 'name' || val === 'gender' || val === 'age') kidsGo(val); }
     else if (act === 'gender') {
       ev.preventDefault();
       k.cur.gender = val; kidsRender();
