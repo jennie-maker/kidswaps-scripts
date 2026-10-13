@@ -5654,3 +5654,53 @@ html.ks-invited .hero-section .hero-buttons .hero-button-primary {
   background-color: #3A3431;
   color: #EDECE0;
 }
+
+/* ============================================================================
+   v75 (S468) — THE INVITE BAND AND BAR GO CORAL. HERS S468, after seeing v74
+   live: "i'd actually prefer them to be the cta coral color instead". Both are
+   coral #E54F25 with white text; the band link's underline goes white. Join
+   now becomes a WHITE pill with coral text (Claude's call); hover lifts 2px
+   and goes cream #EDECE0. Same selectors as v72 to v74, later order wins.
+   ============================================================================ */
+.ks-invite-band {
+  background: #E54F25;
+  color: #FFFFFF;
+}
+
+.ks-invite-band .ks-invite-band-text {
+  color: #FFFFFF;
+}
+
+.ks-invite-band .ks-invite-band-link {
+  color: #FFFFFF;
+  border-bottom-color: #FFFFFF;
+}
+
+.ks-invite-band .ks-invite-band-link:hover {
+  color: #FFFFFF;
+  border-bottom-color: #FFFFFF;
+}
+
+.ks-invite-band .ks-invite-band-link:focus-visible,
+.ks-invite-bar .ks-invite-bar-button:focus-visible {
+  outline-color: #FFFFFF;
+}
+
+.ks-invite-bar {
+  background: #E54F25;
+  color: #FFFFFF;
+}
+
+.ks-invite-bar .ks-invite-bar-text {
+  color: #FFFFFF;
+}
+
+.ks-invite-bar .ks-invite-bar-button {
+  background-color: #FFFFFF;
+  color: #E54F25;
+}
+
+.ks-invite-bar .ks-invite-bar-button:hover {
+  background-color: #EDECE0;
+  color: #E54F25;
+}
