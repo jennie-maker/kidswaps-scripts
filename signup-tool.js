@@ -524,6 +524,8 @@
       /* Board 7: the line on every step, 2 to 6. The first sentence is bold. */
       lineA: function (name) { return 'You\u2019re joining with ' + name + '\u2019s invite.'; },
       lineB: 'Your 3 credits land in your bank the moment you finish.',
+      /* S465 HERS (she picked it): the line under step 2's heading on this path. */
+      s2Sub: 'Your 3 credits match the plan you pick.',
       /* Board 8: the step 5 row. */
       row:   function (name) { return name + '\u2019s invite'; },
       free:  'Free',
@@ -1155,8 +1157,8 @@
        here rather than changing head()'s signature. --lead only closes the gap
        between the two lines; it carries no colour and no size. */
     if (S.path === 'invite') {
-      /* S465: no sub. Board 7 shows none, and the send line would be false. */
-      head(COPY.s2.head);
+      /* S465: her own sub here (the send line would be false on this path). */
+      head(COPY.s2.head, COPY.inv.s2Sub);
     } else if (S.path === 'shop') {
       head(COPY.s2.head);
       body.appendChild(el('p', 'ks-wz-sub ks-wz-sub--lead', COPY.s2.subShop));
@@ -2848,6 +2850,9 @@
       '.ks-wz-plan-gift{display:inline-block;align-self:flex-start;background:#EDA920;color:#1E1A19;',
         'border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;margin-bottom:6px;}',
       '.ks-wz-ibox{margin-top:20px;}',
+      /* S465 HERS: the wizard's cream input border vanished on step 1's white card.
+         Muted grey on THIS box only; steps 3 and 4 sit on colour and keep cream. */
+      '.ks-wz-ibox .ks-wz-input{border-color:#75736E;}',
       '.ks-wz-ibox-l{display:block;font-size:15px;font-weight:700;color:#1E1A19;margin-bottom:6px;}',
       '.ks-wz-ibox-h{font-size:13px;line-height:1.45;color:#75736E;margin:8px 0 0;}'
     ].join('');
