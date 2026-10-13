@@ -376,8 +376,13 @@ function paintHeadline(member) {
     if (h && !_jjOn) h.textContent = timeGreeting(n);   // the welcome headline repaints in paintGreeting
   }
   function welcomeHeadline() {
+    // S467 REFER A FRIEND, board 5 (hers, S462): an invite friend's welcome is "Welcome, Maya!"
+    if (_inviteFrom) return _fnameDisp ? ('Welcome, ' + _fnameDisp + '!') : 'Welcome!';
     return _fnameDisp ? ('Welcome to KidSwaps, ' + _fnameDisp + '.') : 'Welcome to KidSwaps!';
   }
+  // S467: who invited her, set from member-state's referral block (only once her invite
+  // credits have landed). Empty for everyone else, so every other welcome is unchanged.
+  var _inviteFrom = '';
   function justJoined(s, state) {
     if (state === 'cancelled' || state === 'paused') return false;
     var b = s && s.bags, lt = s && s.lifetime;
@@ -438,7 +443,8 @@ function paintHeadline(member) {
         'background:repeating-linear-gradient(180deg,#D9D6CC 0 6px,transparent 6px 12px);}' +
         '.ks-next-st{display:grid;grid-template-columns:56px 1fr;gap:0 14px;text-align:left;padding:0;}' +
         '.ks-next-ic{margin:0;grid-row:span 3;}}' +
-      '.ks-hcw-fold{all:unset;cursor:pointer;}';
+      '.ks-hcw-fold{all:unset;cursor:pointer;}' +
+      '.ks-next-invite{margin:14px 0 0;text-align:center;font-size:15px;line-height:1.5;color:#4A4744;}';
     document.head.appendChild(st);
   }
   function openShippingEdit() {
@@ -466,6 +472,11 @@ function paintHeadline(member) {
         box.className = 'ks-next';
         cta.parentNode.insertBefore(box, cta.nextSibling);
       }
+      // S467 board 5 (hers, S462): an invite friend gets one line under the button instead
+      // of the three steps. Everyone else keeps the steps exactly as they were.
+      if (_inviteFrom) {
+        box.innerHTML = '<p class="ks-next-invite">Your swap bag comes with your first order.</p>';
+      } else {
       var caps = s.caps || {};
       var n = (Number(caps.clothing) || 0) + (Number(caps.toy) || 0);
       var sh = s.shipping || {};
@@ -484,6 +495,7 @@ function paintHeadline(member) {
       box.innerHTML = html + '</div>';
       var ch = box.querySelector('.ks-next-ship button');
       if (ch) ch.addEventListener('click', openShippingEdit);
+      }   // S467: end of the not-an-invite-friend branch
     }
     // Hidden / folded for BOTH paths while she is new; restored the moment she is not.
     var pack = document.querySelector('.credit-pack-menu');
@@ -510,6 +522,8 @@ function paintHeadline(member) {
     var state = pickState(s);
     var jj = justJoined(s, state);
     _jjOn = jj;
+    _inviteFrom = (jj && state === 'active' && s && s.referral && s.referral.invited_by)
+      ? displayName(String(s.referral.invited_by)) : '';
     var oldTag = document.querySelector('.ks-greet-welcome'); if (oldTag) oldTag.remove();
     // S393 HER RULING: while she is new, the welcome IS the headline (no tag, no pill).
     var hh = document.querySelector('.ks-greet-headline');
@@ -519,7 +533,13 @@ function paintHeadline(member) {
     // active's line and button. Send-first lands on `zero` -> PRECREDIT.prebag below.
     if (jj && state === 'active') {
       var jsub = document.querySelector('.ks-greet-sub');
-      if (jsub) { jsub.textContent = JUST_JOINED.shop.sub; jsub.classList.remove('ks-greet-accent'); }
+      if (jsub) {
+        // S467 board 5 (hers, S462), verbatim: the invite friend's line names who invited her.
+        jsub.textContent = _inviteFrom
+          ? 'Your 3 credits from ' + _inviteFrom + ' are in your bank, so you can start shopping now.'
+          : JUST_JOINED.shop.sub;
+        jsub.classList.remove('ks-greet-accent');
+      }
       setCTA(JUST_JOINED.shop.cta, 'closet', closetHref(s));
       return;
     }
@@ -1533,6 +1553,17 @@ function paintCoins(s) {
     'prc_the-basics-clothing-starter-pack-zv5r0e59': 'clothing',
     'prc_the-toy-chest-toy-starter-pack-0k2c0abs': 'toy'
   };
+  // S467 REFER A FRIEND: the four invite forms (plain monthly prices, 1B item 25). An invite
+  // friend's 3 credits land a moment after Stripe, like a pack, so she waits the same way.
+  // ⚠ These four prices are ALSO the /pricing members-only cards a returner rejoins on, so the
+  // wait arms only when her invite-code field is filled AND she has never had a credit.
+  // ⚠ PRICE IDS ARE KEYS: repoint at the live flip with the others.
+  var INVITE_PRICES = {
+    'prc_the-basics-582i0ayp': 'clothing',
+    'prc_the-toy-chest-monthly-572c0eh6': 'toy',
+    'prc_the-full-wardrobe-monthly-xx2a0eib': 'clothing',
+    'prc_the-everything-bag-monthly-nu2b0esy': 'mixed'
+  };
   var JJW_KEY = 'ks_jj_reloaded';
   var JJW_POLL_MS = 1000;   // S394: every second, not every 2 - she sees her credits a second sooner
   function jjWaitMaybe(s) {
@@ -1548,12 +1579,16 @@ function paintCoins(s) {
       try { last = Number(sessionStorage.getItem(JJW_KEY)) || 0; } catch (x) {}
       if (Date.now() - last < 120000) return;
     } catch (e) { return; }
+    var neverCredited = !((Number(((s || {}).lifetime || {}).credits_earned) || 0) > 0);
     function decide(m) {
       var pcs = (m && m.data && m.data.planConnections) || [];
       var key = null;
+      var invited = false;
+      try { invited = !!String((m.data.customFields || {})['invite-code'] || '').trim(); } catch (x) {}
       pcs.forEach(function (pc) {
         var pid = pc && pc.payment && pc.payment.priceId;
         if (!key && pid && STARTER_PRICES[pid]) key = STARTER_PRICES[pid];
+        if (!key && pid && INVITE_PRICES[pid] && invited && neverCredited) key = INVITE_PRICES[pid];   // S467
       });
       if (key) jjWaitRun(key);
     }
@@ -1622,7 +1657,7 @@ function paintCoins(s) {
     var hh = document.querySelector('.ks-greet-headline'); if (hh) hh.textContent = welcomeHeadline();
     var jsub = document.querySelector('.ks-greet-sub');
     if (jsub) { jsub.textContent = JUST_JOINED.shop.sub; jsub.classList.remove('ks-greet-accent'); }
-    setCTA(JUST_JOINED.shop.cta, 'closet', key === 'toy' ? '/toys' : '/clothing');
+    setCTA(JUST_JOINED.shop.cta, 'closet', key === 'toy' ? '/toys' : (key === 'mixed' ? '/browse' : '/clothing'));   // S467: mixed = Everything Bag
     // S406: the late line now sits in the bank, where the credits will show
     var bcap = document.querySelector('.ksb-cap');
     if (bcap) bcap.textContent = PACK_LATE_TEXT;
@@ -1715,6 +1750,7 @@ function paintCoins(s) {
     // activity the rail order became a RACE. Reserving the slot makes it deterministic.
     reserveReviewSlot();
     paintActivity(s);
+    paintRefer(s);    // S467 Refer a Friend: right under Recent activity (board 1)
     paintReviewPrompt();
     paintImpact(s);   // LAST in the rail — S163
     paintPackMenu();  // S355 — must follow paintImpact, which appends to the card
@@ -2289,6 +2325,19 @@ function paintCloset(s) {
       } else if (src === 'gift') {
         title = 'Credits gifted to you';
         detail = cTxt;
+      } else if (src === 'referral') {
+        // S467 REFER A FRIEND. Friend's own row, hers S467: "Invite credits added" /
+        // "3 credits from Ellie's invite". Inviter's row, board 1 (hers S462): "Maya joined.
+        // 3 credits added." / "From your invite". The names come from get_member_history.
+        if (e.friend_name) {
+          title = displayName(String(e.friend_name)) + ' joined. ' + c + ' credit' + (c === 1 ? '' : 's') + ' added.';
+          detail = 'From your invite';
+        } else {
+          title = 'Invite credits added';
+          detail = e.invited_by
+            ? c + ' credit' + (c === 1 ? '' : 's') + ' from ' + displayName(String(e.invited_by)) + '\u2019s invite'
+            : cTxt;
+        }
       } else {
         title = 'Credits added to your bank';
         detail = c + ' credit' + (c === 1 ? '' : 's');
@@ -2730,6 +2779,134 @@ function paintCloset(s) {
     });
   }
 // ---------- REVIEW PROMPT ----------
+
+  // ---------- REFER A FRIEND (S467) ----------
+  // Boards 1 and 2 of https://claude.ai/artifact/8SRLeBEmQt8grUxypP5Lgc, approved S462.
+  // Shows only for an ACTIVE member whose referral.my_code came back (get_member_state makes
+  // it for paying members only, S467). No code = no section, never an empty one.
+  // ⚠ THE SHARE MESSAGE IS HER LOCKED COPY, S462, VERBATIM. Its apostrophes are mixed on
+  // purpose (curly in I've, kids', they've, you'll; straight in here's and I'll). Never retype it.
+  // ⚠ INVITE_BASE: the home page reads ?invite= (the banner, build step 6). Until the launch
+  // flip kidswaps.com is still Coming Soon, so the walk tests on /old-home?invite= by hand.
+  var INVITE_BASE = 'https://kidswaps.com/?invite=';
+  var INVITE_MESSAGE = 'Ok- here\'s my little secret. I\u2019ve been swapping my kids\u2019 clothes and toys here. You send in what they\u2019ve outgrown, earn credits, and shop for what fits now. Shipping is covered both ways, and they send you prepaid shipping bags. If you join with my invite you\u2019ll get 3 credits to start shopping (and I\'ll get a little bonus too).';
+
+  function referCss() {
+    if (document.getElementById('ks-refer-css')) return;
+    var star = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpolygon points='8.00,0.00 10.12,5.09 15.61,5.53 11.42,9.11 12.70,14.47 8.00,11.60 3.30,14.47 4.58,9.11 0.39,5.53 5.88,5.09' fill='%23eda920'/%3E%3C/svg%3E\") center top / 16px 16px no-repeat";
+    var line = 'linear-gradient(rgba(33,27,26,.16), rgba(33,27,26,.16))';
+    var st = document.createElement('style');
+    st.id = 'ks-refer-css';
+    st.textContent =
+      // a centred star rule above, as on board 1; no box
+      '.ks-sec-refer .ks-panel{background:' + star + ',' + line + ' left 7.5px / calc(50% - 20px) 1px no-repeat,' +
+        line + ' right 7.5px / calc(50% - 20px) 1px no-repeat;border:0;border-radius:0;box-shadow:none;' +
+        'padding:44px 0 0;text-align:center;}' +
+      '.ks-sec-refer .ks-panel-h{text-align:center;}' +
+      '.ks-refer-p{margin:10px auto 6px;max-width:420px;font-size:16px;line-height:1.5;color:#1E1A19;}' +
+      '.ks-refer-open{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:10px 0;' +
+        'font-weight:700;font-size:16px;color:#1c4a91;}' +
+      '.ks-refer-open:focus-visible{outline:2px solid #1E1A19;outline-offset:2px;}' +
+      '@media (max-width:939px){.ks-sec-refer{order:4;}}' +
+      // the window (board 2) reuses the bag sheet's look
+      '.ks-refer-steps{margin:14px 0 18px;padding-left:20px;font-size:15px;line-height:1.5;color:#1E1A19;}' +
+      '.ks-refer-steps li{margin:0 0 6px;}' +
+      '.ks-refer-send{display:block;width:100%;box-sizing:border-box;margin:0 0 14px;}' +
+      '.ks-refer-link{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;' +
+        'background:#F2F1EB;border-radius:12px;padding:12px 14px;font-size:14px;}' +
+      '.ks-refer-url{color:#1E1A19;word-break:break-all;}' +
+      '.ks-refer-copy{all:unset;cursor:pointer;font-weight:700;color:#1c4a91;padding:6px 0;}' +
+      '.ks-refer-copy:focus-visible{outline:2px solid #1E1A19;outline-offset:2px;}' +
+      '.ks-refer-see{margin:18px 0 6px;font-size:13px;font-weight:700;color:#75736E;}' +
+      '.ks-refer-msg{margin:0;border:1px solid #E4E1D8;border-radius:12px;padding:12px 14px;font-size:14px;' +
+        'line-height:1.5;color:#1E1A19;white-space:pre-wrap;}' +
+      '.ks-refer-joined{margin:16px 0 0;font-size:14px;color:#4A4744;text-align:center;}';
+    document.head.appendChild(st);
+  }
+
+  function paintRefer(s) {
+    try {
+      var r = (s && s.referral) || {};
+      var code = r.my_code ? String(r.my_code) : '';
+      var active = String((s && s.member_status) || '').toLowerCase() === 'active';
+      var existing = document.querySelector('.ks-sec-refer');
+      if (!code || !active) { if (existing) existing.style.display = 'none'; return; }
+      var panel = sectionIn('rail', 'ks-sec-refer');
+      if (!panel) return;
+      referCss();
+      panel.parentNode.style.display = '';
+      panel.innerHTML =
+        '<div class="ks-panel-h">Refer a friend</div>' +
+        '<p class="ks-refer-p">Give a parent 3 credits to start shopping, and get 3 credits yourself when they join.</p>' +
+        '<button type="button" class="ks-refer-open">Invite a friend ' + ksArrow() + '</button>';
+      panel.querySelector('.ks-refer-open').addEventListener('click', function () {
+        referOpen(code, Number(r.friends_joined) || 0, this);
+      });
+    } catch (e) { console.error('[ks-dash] refer section error', e); }
+  }
+
+  function referCopy(text, done, fail) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, fail);
+    } else { fail(); }
+  }
+
+  function referOpen(code, joined, opener) {
+    if (document.querySelector('.ks-nb-back')) return;
+    var link = INVITE_BASE + encodeURIComponent(code);
+    var shown = link.replace(/^https:\/\//, '');
+    var canShare = !!(navigator.share);
+    var back = document.createElement('div');
+    back.className = 'ks-nb-back';
+    var sheet = document.createElement('div');
+    sheet.className = 'ks-nb-sheet';
+    sheet.setAttribute('role', 'dialog');
+    sheet.setAttribute('aria-modal', 'true');
+    sheet.setAttribute('aria-labelledby', 'ks-refer-h');
+    sheet.innerHTML =
+      '<div class="ks-nb-top"><h2 id="ks-refer-h" class="ks-nb-h">Invite a friend</h2>' +
+        '<button type="button" class="ks-nb-close">Close</button></div>' +
+      '<ol class="ks-refer-steps">' +
+        '<li>Send a parent your personal invite.</li>' +
+        '<li>When they join, they get 3 credits to start shopping.</li>' +
+        '<li>You get 3 credits too, once their first payment goes through.</li>' +
+      '</ol>' +
+      (canShare ? '<button type="button" class="ks-nb-go ks-refer-send">Send an invite</button>' : '') +
+      '<div class="ks-refer-link"><span class="ks-refer-url">' + esc(shown) + '</span>' +
+        '<button type="button" class="ks-refer-copy">Copy invite link</button></div>' +
+      '<div class="ks-refer-see">What your friend will see</div>' +
+      '<p class="ks-refer-msg">' + esc(INVITE_MESSAGE) + '\n' + esc(shown) + '</p>' +
+      (joined > 0 ? '<p class="ks-refer-joined">' + joined + (joined === 1 ? ' friend has' : ' friends have') +
+        ' joined with your invite</p>' : '');
+    back.appendChild(sheet);
+    document.body.appendChild(back);
+    document.documentElement.classList.add('ks-nb-lock');
+    requestAnimationFrame(function () { back.classList.add('is-in'); });
+
+    function close() {
+      document.removeEventListener('keydown', onKey);
+      back.remove();
+      document.documentElement.classList.remove('ks-nb-lock');
+      if (opener && document.body.contains(opener)) opener.focus();
+    }
+    function onKey(e) { if (e.key === 'Escape') close(); }
+    document.addEventListener('keydown', onKey);
+    back.addEventListener('click', function (e) { if (e.target === back) close(); });
+    sheet.querySelector('.ks-nb-close').onclick = close;
+
+    var copyBtn = sheet.querySelector('.ks-refer-copy');
+    copyBtn.addEventListener('click', function () {
+      referCopy(link, function () { copyBtn.textContent = 'Copied'; setTimeout(function () { copyBtn.textContent = 'Copy invite link'; }, 2000); },
+                      function () { copyBtn.textContent = 'Copy didn\u2019t work. Press and hold the link.'; });
+    });
+    var sendBtn = sheet.querySelector('.ks-refer-send');
+    if (sendBtn) sendBtn.addEventListener('click', function () {
+      // the message, then the link (her S462 order); a cancelled share is not an error
+      navigator.share({ text: INVITE_MESSAGE + '\n' + link }).catch(function () {});
+    });
+    (sendBtn || copyBtn).focus();
+  }
+
   var REVIEW_URL = "https://g.page/r/CQ6-0phqnjFCEBM/review";
   var REVIEW_MIN_FINDS = 2;   // one find is a transaction; two is a habit
   var _member = null;
