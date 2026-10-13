@@ -2195,6 +2195,8 @@
         'background:#E54F25;color:#FFFFFF;padding:16px 46px 16px 18px;}',
       /* S469 HERS: the shop-first top is her blue; send-first stays coral. */
       '.ks-wz-fork--shop .ks-wz-fork-top{background:#28498D;}',
+      /* S469: each card's outline matches its own top (the shop card was ringed in coral). */
+      '.ks-wz-fork--shop{border-color:#28498D;}',
       '.ks-wz-forks.has-pick .ks-wz-fork:not(.is-on){opacity:.5;}',
       /* S385: the emoji sits left of the words, plain, no circle (her pick off the mockup). */
       '.ks-wz-fork-e{flex:0 0 auto;font-size:30px;line-height:1;}',
@@ -2902,7 +2904,9 @@
       '.ks-wz-ibox .ks-wz-input{border-color:#256F43;background:#FFFFFF;}',
       '.ks-wz-ibox-h{font-size:13px;line-height:1.45;color:#75736E;margin:10px 0 0;}',
       '.ks-wz-ibox-h + .ks-wz-ibox-h{margin-top:4px;}',
-      '.ks-wz-ibox-h strong{color:#256F43;font-weight:600;}'
+      '.ks-wz-ibox-h strong{color:#256F43;font-weight:600;}',
+      /* S469: inside the green box the focus ring is green, not the site-wide blue. */
+      '#' + MOUNT_ID + ' .ks-wz-ibox :focus-visible{outline-color:#256F43;}'
     ].join('');
     document.head.appendChild(s);
   }
