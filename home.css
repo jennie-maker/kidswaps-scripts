@@ -5600,3 +5600,57 @@ html.ks-invited .hero-section .hero-buttons .hero-button-primary {
   color: #EDECE0;
   border-bottom-color: #EDECE0;
 }
+
+/* ============================================================================
+   v74 (S468) — THE INVITE BAND AND BAR GO YELLOW. HERS S468: the ink band sat
+   too close to the browser's own dark chrome, and she missed the white bottom
+   bar entirely ("its sticky at the bottom of the page, but i completely missed
+   it. lets make both yellow"). Both are her yellow #EDA920 with ink #1E1A19
+   text. The band link's underline goes ink. Join now goes INK with cream text
+   (Claude's call: coral on yellow sinks); hover lifts 2px and darkens to
+   #3A3431. The bar's grey top line is dropped (the yellow edge is enough).
+   Same selectors as v72/v73, so later source order wins.
+   ============================================================================ */
+.ks-invite-band {
+  background: #EDA920;
+  color: #1E1A19;
+}
+
+.ks-invite-band .ks-invite-band-text {
+  color: #1E1A19;
+}
+
+.ks-invite-band .ks-invite-band-link {
+  color: #1E1A19;
+  border-bottom-color: #1E1A19;
+}
+
+.ks-invite-band .ks-invite-band-link:hover {
+  color: #1E1A19;
+  border-bottom-color: #1E1A19;
+}
+
+.ks-invite-band .ks-invite-band-link:focus-visible,
+.ks-invite-bar .ks-invite-bar-button:focus-visible {
+  outline-color: #1E1A19;
+}
+
+.ks-invite-bar {
+  background: #EDA920;
+  border-top: 0;
+  color: #1E1A19;
+}
+
+.ks-invite-bar .ks-invite-bar-text {
+  color: #1E1A19;
+}
+
+.ks-invite-bar .ks-invite-bar-button {
+  background-color: #1E1A19;
+  color: #EDECE0;
+}
+
+.ks-invite-bar .ks-invite-bar-button:hover {
+  background-color: #3A3431;
+  color: #EDECE0;
+}
