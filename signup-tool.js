@@ -42,6 +42,11 @@
      credit lands" -> "when I have my first whole credit". One bump, not two. */
   var TERMS_VERSION = '2026-07-21';
 
+  /* S465: THE INVITE PATH'S OWN TERMS VERSION. Its consent sentence is the pack
+     line minus the pack fee, a different sentence, so it gets its own version
+     and the trial and pack rows stay exactly as they were. termsVersion() picks. */
+  var TERMS_VERSION_INVITE = '2026-10-13';
+
   var CONSENT_TYPE  = 'arl_auto_renew';   /* BYTE-IDENTICAL across both writers
                                              (browser + S1) or the unique index
                                              on (memberstack_id, consent_type,
@@ -77,6 +82,18 @@
      read on the next load of /signup. See the stash in syncHidden() and the
      call site in resumeEnd(). */
   var END_KEY       = 'ks_end_pending';
+
+  /* ---- S465: REFER A FRIEND (core 1B item 25) ------------------------------
+     An invite arrives as ?invite=CODE, or from the browser's memory (localStorage
+     INVITE_KEY, {code, at}) for INVITE_DAYS. The home page banner will write the
+     same key; this page writes it too when it sees ?invite=. check_invite_code is
+     open to the website and answers {valid, first_name} only. A bad code is
+     forgotten; a check that fails or is slow falls back to the normal wizard and
+     KEEPS the memory for next time. */
+  var INVITE_KEY  = 'ks_invite';
+  var INVITE_DAYS = 60;
+  var INVITE_WAIT = 3000;   /* ms the page waits behind its loading cover */
+  var CHECK_INVITE_URL = 'https://ajsobivqxexcniwifxzz.supabase.co/rest/v1/rpc/check_invite_code';
 
   /* ONE PLANS CONSTANT. Step 2's cards, the disclosure interpolation and the
      form selection ALL read from here. A price lives in exactly one place.
@@ -182,12 +199,75 @@
         credits: '5 toy credits',
         klass:   'toy'
       }
+    },
+
+    /* ---- S465 invite path: the four plain monthly prices, charged at signup.
+       Her 3 credits end the free period, like a pack. NO starter packs here.
+       ⚠ PASTED from 6D (read live S463), never typed. */
+    'basics-invite': {
+      slug:    'basics-invite',
+      cls:     'clothing',
+      formId:  'ks-form-basics-invite',
+      price:   'prc_the-basics-582i0ayp',
+      path:    'invite',
+      name:    'The Basics',
+      monthly: 30,
+      swaps:   'Up to 6 clothing swaps per month',
+      pitch:   'Start here if you\u2019re swapping for one kid.',
+      value:   'Up to $210 value/month',
+      pack:    null,
+      invite:  { pill: '+3 clothing credits', credits: '3 clothing credits' }
+    },
+    'toychest-invite': {
+      slug:    'toychest-invite',
+      cls:     'toy',
+      formId:  'ks-form-toychest-invite',
+      price:   'prc_the-toy-chest-monthly-572c0eh6',
+      path:    'invite',
+      name:    'The Toy Chest',
+      monthly: 45,
+      swaps:   'Up to 5 toy swaps per month',
+      pitch:   'Keep toys moving so they never pile up.',
+      value:   'Up to $150 value/month',
+      pack:    null,
+      invite:  { pill: '+3 toy credits', credits: '3 toy credits' }
+    },
+    'wardrobe-invite': {
+      slug:    'wardrobe-invite',
+      cls:     'clothing',
+      formId:  'ks-form-wardrobe-invite',
+      price:   'prc_the-full-wardrobe-monthly-xx2a0eib',
+      path:    'invite',
+      name:    'The Full Wardrobe',
+      monthly: 45,
+      swaps:   'Up to 10 clothing swaps per month',
+      pitch:   'For more than one kid, a fast grower, or a toddler with taste.',
+      value:   'Up to $350 value/month',
+      pack:    null,
+      invite:  { pill: '+3 clothing credits', credits: '3 clothing credits' }
+    },
+    'everything-invite': {
+      slug:    'everything-invite',
+      cls:     'both',
+      formId:  'ks-form-everything-invite',
+      price:   'prc_the-everything-bag-monthly-nu2b0esy',
+      path:    'invite',
+      name:    'The Everything Bag',
+      monthly: 70,
+      swaps:   'Up to 10 clothing and 3 toy swaps per month',
+      pitch:   'For families who want variety.',
+      value:   'Up to $440 value/month',
+      pack:    null,
+      /* S465 CLAUDE'S WORDING for the step 5 row, hers to change. */
+      invite:  { pill: '+2 clothing, +1 toy credit', credits: '2 clothing credits and 1 toy credit' }
     }
   };
 
   var PLAN_ORDER = {
     send: ['basics-trial', 'wardrobe-trial', 'toychest-trial', 'everything-trial'],
-    shop: ['basics-pack', 'toychest-pack']
+    shop: ['basics-pack', 'toychest-pack'],
+    /* S465: board 7's order. */
+    invite: ['basics-invite', 'toychest-invite', 'wardrobe-invite', 'everything-invite']
   };
 
   /* The seven hidden consent fields. Script-built <input type="hidden"
@@ -363,6 +443,14 @@
                'and a one time $' + p.pack.amount + ' credit pack fee now. I can cancel anytime from ' +
                'my dashboard, effective at the end of the period I\u2019ve paid for. ' + COPY.s5.cancelLink;
       },
+      /* S465, board 8: the pack line minus the pack fee. ⚠ TERMS_VERSION_INVITE.
+         Stored verbatim in arl-disclosure-text and consent_log, like the others. */
+      consentInvite: function (p) {
+        return 'I understand my KidSwaps membership renews automatically at $' + p.monthly +
+               ' per month until I cancel. My plan begins today, so I\u2019m charged my first ' +
+               'month now. I can cancel anytime from my dashboard, effective at the end of the ' +
+               'period I\u2019ve paid for. ' + COPY.s5.cancelLink;
+      },
       cancelLink: 'How to cancel',
       /* ⚠⚠ APPROVED VERBATIM S74. DO NOT REDRAFT. Rendered at step 5, its
          own line, outside the ARL sentence. */
@@ -429,6 +517,25 @@
       tapLeave: 'Leave'
     },
 
+    /* ---- S465 REFER A FRIEND ---- APPROVED S462/S464 (boards 7 to 9 of
+       https://claude.ai/artifact/8SRLeBEmQt8grUxypP5Lgc). Wording Claude's,
+       approved by her. The share message is not on this page. */
+    inv: {
+      /* Board 7: the line on every step, 2 to 6. The first sentence is bold. */
+      lineA: function (name) { return 'You\u2019re joining with ' + name + '\u2019s invite.'; },
+      lineB: 'Your 3 credits land in your bank the moment you finish.',
+      /* Board 8: the step 5 row. */
+      row:   function (name) { return name + '\u2019s invite'; },
+      free:  'Free',
+      /* Board 8: replaces the send-first Stripe line on this path. */
+      preframe: 'Stripe handles your card next. Your first month is charged today, '
+              + 'and your 3 credits are waiting when you\u2019re back.',
+      /* Board 9: step 1, only when no invite link was used. Optional. */
+      boxLabel: 'Invited by a friend? Enter their email.',
+      boxHelp:  'We\u2019ll match it after you sign up. Shopping first? Your 3 credits land '
+              + 'right away. Sending first? They arrive with the credits from your first bag.'
+    },
+
     /* ---- generic failure ---- APPROVED Session 63.
        The dashboard's failure line with "save" taken out, because nothing
        saves during signup. */
@@ -455,7 +562,9 @@
     ip:        '',      /* best-effort, non-fatal */
     busy:      false,   /* IN-FLIGHT GUARD. Her rule, from the grading Save buttons. */
     dirty:     false,   /* has she typed anything yet -> drives the tap-out warning */
-    codeSent:  false
+    codeSent:  false,
+    invite:    null,    /* S465: {code, first} once check_invite_code says valid */
+    inviteEmail: ''     /* S465: step 1's box, never checked while she types */
   };
 
   var MAX_STEP = 6;
@@ -477,6 +586,13 @@
   function clear(n) { while (n && n.firstChild) n.removeChild(n.firstChild); }
 
   function plan() { return S.plan ? PLANS[S.plan] : null; }
+
+  /* S465: which consent sentence and which terms version this plan carries. */
+  function disclosureFor(p) {
+    if (p.invite) return COPY.s5.consentInvite(p);
+    return p.pack ? COPY.s5.consentPack(p) : COPY.s5.consentTrial(p);
+  }
+  function termsVersion(p) { return (p && p.invite) ? TERMS_VERSION_INVITE : TERMS_VERSION; }
 
   /* ONE EVENT PER STEP, FROM DAY ONE. Step drop-off cannot be reconstructed
      later — same shape as #ANALYTICS-CLOCK. Fire-and-forget; never throws. */
@@ -611,6 +727,8 @@
     /* Back lives on steps 2 to 5 and is GONE at step 6. Once the account
        exists and the code is sent, Back is meaningless. */
     if (S.step <= 1 || S.step >= 6) return;
+    /* S465: on the invite path step 1 doesn't exist. */
+    if (S.invite && S.step <= 2) return;
     go(S.step - 1);
   }
 
@@ -846,7 +964,7 @@
 
   function paintNav(opts) {
     opts = opts || {};
-    backBtn.style.display = (S.step >= 2 && S.step <= 5) ? '' : 'none';
+    backBtn.style.display = (S.step >= (S.invite ? 3 : 2) && S.step <= 5) ? '' : 'none';
     nextBtn.style.display = opts.hideNext ? 'none' : '';
     nextBtn.textContent   = opts.nextLabel || COPY.nav.next;
     nextBtn.disabled      = !!opts.nextDisabled;
@@ -872,12 +990,27 @@
       else   shell.removeAttribute('data-ground');
     }
     paintDots();
+    /* S465: the invite line sits first on every step from 2 on. */
+    if (S.invite && S.step >= 2) inviteLine();
     if (S.step === 1) return step1();
     if (S.step === 2) return step2();
     if (S.step === 3) return step3();
     if (S.step === 4) return step4();
     if (S.step === 5) return step5();
     if (S.step === 6) return step6();
+  }
+
+  /* S465, board 7: coin, bold first sentence, the rest. */
+  function inviteLine() {
+    var box = el('div', 'ks-wz-invite');
+    var coin = el('span', 'ks-wz-invite-coin', '+');
+    coin.setAttribute('aria-hidden', 'true');
+    box.appendChild(coin);
+    var t = el('div', 'ks-wz-invite-t');
+    t.appendChild(el('strong', null, COPY.inv.lineA(S.invite.first)));
+    t.appendChild(document.createTextNode(' ' + COPY.inv.lineB));
+    box.appendChild(t);
+    body.appendChild(box);
   }
 
   function head(h, sub) {
@@ -935,6 +1068,28 @@
     });
     body.appendChild(wrap);
 
+    /* S465, board 9, HERS S465: UNDER the two cards (asked and kept). Only when
+       no invite link was used. Optional, never checked while she types (that
+       would tell her who's a member); S2 matches it after payment. */
+    if (!S.invite) {
+      var ib = el('div', 'ks-wz-ibox');
+      var ibl = el('label', 'ks-wz-ibox-l', COPY.inv.boxLabel);
+      ibl.setAttribute('for', 'ks-wz-invite-email');
+      var ibi = el('input', 'ks-wz-input');
+      ibi.type = 'email';
+      ibi.id = 'ks-wz-invite-email';
+      ibi.setAttribute('autocomplete', 'off');
+      ibi.setAttribute('inputmode', 'email');
+      ibi.setAttribute('autocapitalize', 'off');
+      ibi.setAttribute('spellcheck', 'false');
+      ibi.value = S.inviteEmail;
+      ibi.addEventListener('input', function () { S.inviteEmail = ibi.value.trim(); if (S.inviteEmail) S.dirty = true; });
+      ib.appendChild(ibl);
+      ib.appendChild(ibi);
+      ib.appendChild(el('p', 'ks-wz-ibox-h', COPY.inv.boxHelp));
+      body.appendChild(ib);
+    }
+
     paintNav({ hideNext: true });
   }
 
@@ -970,6 +1125,7 @@
       creditRow.appendChild(el('span', 'ks-wz-plan-once', 'plus $' + p.pack.amount + ' once'));
       lines.appendChild(creditRow);
     }
+    if (p.invite) lines.appendChild(el('span', 'ks-wz-plan-gift', p.invite.pill));   /* S465 board 7 */
     lines.appendChild(el('div', 'ks-wz-plan-swaps', p.swaps));
     lines.appendChild(el('div', 'ks-wz-plan-pitch', p.pitch));
     lines.appendChild(el('div', 'ks-wz-plan-value', p.value));   /* upright - S196 */
@@ -998,7 +1154,10 @@
        sub and EVERY other step calls it, so the shop branch builds its own pair
        here rather than changing head()'s signature. --lead only closes the gap
        between the two lines; it carries no colour and no size. */
-    if (S.path === 'shop') {
+    if (S.path === 'invite') {
+      /* S465: no sub. Board 7 shows none, and the send line would be false. */
+      head(COPY.s2.head);
+    } else if (S.path === 'shop') {
       head(COPY.s2.head);
       body.appendChild(el('p', 'ks-wz-sub ks-wz-sub--lead', COPY.s2.subShop));
       body.appendChild(el('p', 'ks-wz-sub', COPY.s2.subShopB));
@@ -1135,15 +1294,22 @@
     putHidden(f, SHIP_FIELDS.state, S.addr.state);
     putHidden(f, SHIP_FIELDS.zip,   S.addr.zip);
 
-    var disclosure = p.pack ? COPY.s5.consentPack(p) : COPY.s5.consentTrial(p);
+    var disclosure = disclosureFor(p);
 
     putHidden(f, 'arl-consented',        S.consent ? 'true' : 'false');
     putHidden(f, 'arl-consented-at',     new Date().toISOString());
     putHidden(f, 'arl-disclosure-text',  disclosure);
     putHidden(f, 'arl-plan-price',       p.price);
-    putHidden(f, 'arl-terms-version',    TERMS_VERSION);
+    putHidden(f, 'arl-terms-version',    termsVersion(p));
     putHidden(f, 'arl-user-agent',       navigator.userAgent || '');
     putHidden(f, 'arl-ip',               S.ip);   /* may be empty. NON-FATAL. */
+
+    /* S465 REFER A FRIEND. Memberstack custom fields invite-code and invite-email
+       (made S464, Hide from Pre-built UI ON). S2 reads them off customFields and
+       runs record_referral after payment. Always written, empty when unused, so
+       a stale value from an earlier attempt in this tab can't ride along. */
+    putHidden(f, 'invite-code',  S.invite ? S.invite.code : '');
+    putHidden(f, 'invite-email', S.invite ? '' : S.inviteEmail);
 
     /* consent-return.js runs site-wide and writes the row on whatever page she
        lands on after Stripe. THE WIZARD MUST KEEP DOING THIS until that script
@@ -1151,7 +1317,7 @@
     try {
       sessionStorage.setItem('ks_consent_pending', JSON.stringify({
         consent_type:    CONSENT_TYPE,
-        terms_version:   TERMS_VERSION,
+        terms_version:   termsVersion(p),
         disclosure_text: disclosure,
         plan_id:         p.price,       /* ⚠ ONE-SLOT QUIRK: S1 points BOTH
                                            plan_id and price_id at the single
@@ -1332,7 +1498,7 @@
 
   function step4() {
     formSlot.style.display = 'none';
-    head(S.path === 'shop' ? COPY.s4.headShop : COPY.s4.headSend);
+    head(S.path === 'send' ? COPY.s4.headSend : COPY.s4.headShop);   /* S465: invite shops first */
 
     /* ⚠ GOOGLE PLACES AUTOCOMPLETE MOUNTS ON THIS FIELD when the key exists.
        It sits IN FRONT of the check, never instead of it — autocomplete only
@@ -1528,6 +1694,11 @@
       packRow.firstChild.appendChild(el('span', 'ks-wz-sum-sub', p.pack.credits));
       sum.appendChild(packRow);
     }
+    if (p.invite && S.invite) {   /* S465 board 8 */
+      var invRow = sumRow(COPY.inv.row(S.invite.first), COPY.inv.free);
+      invRow.firstChild.appendChild(el('span', 'ks-wz-sum-sub', p.invite.credits));
+      sum.appendChild(invRow);
+    }
     /* ⚠ RULED S74: one value per row. See .ks-wz-sum-a. */
     /* S394 HERS: SUPERSEDES S74's one-value-per-row. Label left, detail right, so the
        right side is never empty. The value side wraps (a long email or address breaks
@@ -1574,7 +1745,7 @@
     });
 
     var text = el('span', 'ks-wz-consent-text');
-    var full = p.pack ? COPY.s5.consentPack(p) : COPY.s5.consentTrial(p);
+    var full = disclosureFor(p);
     var tail = COPY.s5.cancelLink;
     text.appendChild(document.createTextNode(full.slice(0, full.length - tail.length)));
     var a = el('a', 'ks-wz-consent-link', tail);
@@ -1613,7 +1784,8 @@
     /* S393 HER RULING: SEND-FIRST ONLY. On the shop path she is charged today,
        so "Nothing is charged until your first whole credit" contradicted the
        checkbox right above it. Wording untouched. */
-    if (S.path !== 'shop') body.appendChild(el('p', 'ks-wz-preframe', COPY.s5.preframe));
+    if (S.path === 'send') body.appendChild(el('p', 'ks-wz-preframe', COPY.s5.preframe));
+    else if (S.path === 'invite') body.appendChild(el('p', 'ks-wz-preframe', COPY.inv.preframe));   /* S465 */
 
     var sub = inForm(SEL.submit);
 
@@ -2663,7 +2835,21 @@
         '#' + MOUNT_ID + ' select:-webkit-autofill{',
         '-webkit-box-shadow:0 0 0 1000px #FFFFFF inset;',
         '-webkit-text-fill-color:#1E1A19;caret-color:#1E1A19;}',
-      '#' + MOUNT_ID + ' [data-ground] :focus-visible{outline-color:#FFFFFF;}'
+      '#' + MOUNT_ID + ' [data-ground] :focus-visible{outline-color:#FFFFFF;}',
+      /* ==== S465 REFER A FRIEND (boards 7 to 9) ====
+         Cream #EEEFE3 not the board's #F2F1EB (retired here S64). The gold
+         #EDA920 is her amber for marks. Ink text on cream reads on every ground. */
+      '.ks-wz-invite{display:flex;gap:10px;align-items:center;background:#EEEFE3;color:#1E1A19;',
+        'border-radius:12px;padding:12px 14px;margin:0 0 16px;font-size:14px;line-height:1.4;}',
+      '.ks-wz-invite-coin{flex:0 0 30px;width:30px;height:30px;border-radius:50%;background:#EDA920;',
+        'color:#FFFFFF;font-size:22px;font-weight:700;line-height:30px;text-align:center;}',
+      '.ks-wz-invite-t{flex:1;min-width:0;}',
+      '.ks-wz-invite-t strong{font-weight:700;}',
+      '.ks-wz-plan-gift{display:inline-block;align-self:flex-start;background:#EDA920;color:#1E1A19;',
+        'border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;margin-bottom:6px;}',
+      '.ks-wz-ibox{margin-top:20px;}',
+      '.ks-wz-ibox-l{display:block;font-size:15px;font-weight:700;color:#1E1A19;margin-bottom:6px;}',
+      '.ks-wz-ibox-h{font-size:13px;line-height:1.45;color:#75736E;margin:8px 0 0;}'
     ].join('');
     document.head.appendChild(s);
   }
@@ -2694,15 +2880,73 @@
 
     /* THE HANDOFF IS CHECKED BEFORE THE WIZARD PAINTS. Coming back from
        Stripe there is no step to render. */
-    if (!resumeEnd()) {
-      if (signedInAway()) return;
-      render();
-      track('open');
-    }
+    if (resumeEnd()) { ready(); return; }
+    if (signedInAway()) return;
 
-    /* LAST LINE. Only now does the gate lift. Everything above must be ready
-       before a member can see any of it. */
+    /* S465: an invite is checked BEFORE the first paint, behind the existing
+       loading cover (the head box keeps #ks-signup hidden until READY_ATTR), so
+       step 1 never flashes and vanishes. At most INVITE_WAIT, then the normal
+       wizard. */
+    var code = readInvite();
+    if (!code) { start(); return; }
+    var done = false;
+    var t = setTimeout(function () { if (!done) { done = true; start(); } }, INVITE_WAIT);
+    checkInvite(code, function (res) {
+      if (done) return;
+      done = true;
+      clearTimeout(t);
+      if (res && res.valid === true) {
+        S.invite = { code: code, first: res.first_name || 'Your friend' };
+        S.path = 'invite';
+        S.step = 2;
+        track('invite_valid');
+      } else if (res && res.valid === false) {
+        forgetInvite();
+        track('invite_invalid');
+      }
+      start();
+    });
+  }
+
+  function start() {
+    render();
+    track('open');
+    ready();
+  }
+
+  /* LAST LINE of every route. Only now does the gate lift. */
+  function ready() {
     document.documentElement.setAttribute(READY_ATTR, '1');
+  }
+
+  /* S465: the code, from the link first (and remembered), else from memory if
+     it's under INVITE_DAYS old. Upper case, letters and digits only. */
+  function cleanCode(v) { return String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20); }
+  function readInvite() {
+    var code = '';
+    try { code = cleanCode(new URLSearchParams(window.location.search).get('invite')); } catch (e) {}
+    if (code) {
+      try { localStorage.setItem(INVITE_KEY, JSON.stringify({ code: code, at: Date.now() })); } catch (e) {}
+      return code;
+    }
+    try {
+      var m = JSON.parse(localStorage.getItem(INVITE_KEY) || 'null');
+      if (m && m.code && m.at && (Date.now() - m.at) < INVITE_DAYS * 864e5) return cleanCode(m.code);
+    } catch (e) {}
+    return '';
+  }
+  function forgetInvite() { try { localStorage.removeItem(INVITE_KEY); } catch (e) {} }
+  /* Answers the parsed reply, or null on any failure (null keeps the memory). */
+  function checkInvite(code, cb) {
+    try {
+      fetch(CHECK_INVITE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON },
+        body: JSON.stringify({ p_code: code })
+      }).then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { cb(j && typeof j === 'object' ? j : null); })
+        .catch(function () { cb(null); });
+    } catch (e) { cb(null); }
   }
 
   if (document.readyState === 'loading') {
