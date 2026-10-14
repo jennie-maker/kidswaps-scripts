@@ -2801,18 +2801,23 @@ function paintCloset(s) {
     st.id = 'ks-refer-css';
     st.textContent =
       // a centred star rule above, as on board 1; no box
-      // S469 HERS, option 2: its own card. Cream, gold border, a gold +3 coin, a solid
-      // navy button. Palette colours only (cream #EDECE0, gold #EDA920, navy #1C4A91, ink).
-      // S469 HERS, later: no border, square corners, to keep the page's editorial look.
-      '.ks-sec-refer .ks-panel{background:#EDECE0;border:0;border-radius:0;box-shadow:none;' +
-        'padding:22px 22px 24px;margin-top:0;text-align:left;}' +
+      // S469 HERS, final: no box. It sits on the white like its neighbours (editorial, S445),
+      // with a little pile of her bank's coin art beside the heading, the club line, and a
+      // navy text link. At 940 up it opens the rail under the centred rule (no star of its
+      // own), and Recent activity below it gets its left star rule back. Phones: it takes
+      // the same left star rule as Recent activity, which follows it.
+      '.ks-sec-refer .ks-panel{background:none;border:0;border-radius:0;box-shadow:none;padding:0;margin:0;text-align:left;}' +
+      '@media (max-width:939px){.ks-sec-refer .ks-panel{padding-top:44px;background:' + star.replace('center top / 16px 16px', 'left top / 16px 16px') + ',' +
+        line + ' right 7.5px / calc(100% - 28px) 1px no-repeat;}}' +
+      '@media (min-width:940px){body .ks-grid .ks-rail .ks-sec-refer + .ks-sec-activity .ks-panel{padding-top:44px;background:' +
+        star.replace('center top / 16px 16px', 'left top / 16px 16px') + ',' + line + ' right 7.5px / calc(100% - 28px) 1px no-repeat;}}' +
       '.ks-refer-head{display:flex;align-items:center;gap:12px;}' +
-      '.ks-refer-coin{flex:0 0 auto;width:44px;height:44px;border-radius:50%;background:#EDA920;color:#FFFFFF;' +
-        'display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;line-height:1;}' +
+      '.ks-refer-pile{position:relative;flex:0 0 auto;width:72px;height:44px;}' +
+      '.ks-refer-pile img{position:absolute;height:auto;}' +
       '.ks-sec-refer .ks-panel-h{text-align:left;margin:0;}' +
-      '.ks-refer-p{margin:12px 0 16px;font-size:16px;line-height:1.5;color:#1E1A19;text-align:left;}' +
-      '.ks-refer-open{all:unset;cursor:pointer;display:block;box-sizing:border-box;width:100%;text-align:center;' +
-        'padding:13px 20px;border-radius:999px;background:#1c4a91;color:#FFFFFF;font-weight:700;font-size:16px;}' +
+      '.ks-refer-p{margin:12px 0 4px;font-size:16px;line-height:1.5;color:#1E1A19;text-align:left;}' +
+      '.ks-refer-open{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:10px 0;' +
+        'font-weight:700;font-size:16px;color:#1c4a91;}' +
       '.ks-refer-open:focus-visible{outline:2px solid #1E1A19;outline-offset:2px;}' +
       '@media (max-width:939px){.ks-sec-refer{order:4;}}' +
       // the window (board 2) reuses the bag sheet's look
@@ -2851,10 +2856,15 @@ function paintCloset(s) {
       }
       // S469 HERS: her club line replaces the old sentence (approved word for word).
       panel.innerHTML =
-        '<div class="ks-refer-head"><span class="ks-refer-coin" aria-hidden="true">+3</span>' +
+        // S469 HERS: a little pile from her coin art (the bowl's pour coins), not a +3 badge.
+        '<div class="ks-refer-head"><span class="ks-refer-pile" aria-hidden="true">' +
+          '<img alt="" src="' + PILE_ART + 'clothing-flatA.webp" style="left:0;bottom:0;width:50px">' +
+          '<img alt="" src="' + PILE_ART + 'clothing-flatB.webp" style="left:20px;bottom:6px;width:50px">' +
+          '<img alt="" src="' + PILE_ART + 'clothing-leanA.webp" style="left:10px;bottom:11px;width:44px">' +
+        '</span>' +
         '<div class="ks-panel-h">Refer a friend</div></div>' +
         '<p class="ks-refer-p">The bigger the club, the more to choose from. Refer a friend and you\u2019ll each get 3 extra credits.</p>' +
-        '<button type="button" class="ks-refer-open">Invite a friend</button>';
+        '<button type="button" class="ks-refer-open">Invite a friend ' + ksArrow() + '</button>';
       panel.querySelector('.ks-refer-open').addEventListener('click', function () {
         referOpen(code, Number(r.friends_joined) || 0, this);
       });
