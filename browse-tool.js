@@ -308,6 +308,13 @@
         'font-size:.82rem;line-height:1.5;color:#5b4a36;}' +
       '.ks-detail-luxnote svg{flex:0 0 auto;margin-top:2px;color:#c8922f;}' +
       '.ks-detail-luxnote p{margin:0;}' +
+      /* S474, HERS: the Duo note wears the luxury note's box, without the icon. */
+      '.ks-detail-duonote{margin:14px 0 16px;padding:11px 13px 11px 14px;' +
+        'background:#faf7f0;border:1px solid #ecd9ad;border-left:3px solid #e0a93f;border-radius:9px;' +
+        'font-size:.82rem;line-height:1.5;color:#5b4a36;}' +
+      '.ks-detail-duonote p{margin:0 0 4px;font-weight:700;color:#1E1A19;}' +
+      '.ks-detail-duonote ol{margin:0;padding:0 0 0 1.3em;}' +
+      '.ks-detail-duonote li{margin:0;padding:0;}' +
       '#ks-browse-app .ks-browse-media img{object-fit:cover;}' +
       '#ks-browse-app .ks-browse-media:has(img){background:#fff;}' +
       '#ks-detail-root .ks-detail-main-img{object-fit:contain;}' +
@@ -1201,6 +1208,18 @@
     var skuLine = item.sku
       ? '<p class="ks-detail-sku">SKU ' + escapeHtml(item.sku) + '</p>' : '';
 
+    /* S474, HERS: a Duo is two everyday-brand pieces in good condition, same size,
+       one listing for one credit. No Duo page and never highlighted; this note on the
+       item itself is the only explanation. ⚠ APPROVED COPY, VERBATIM. */
+    var duoNote = (String(item.category || '').toLowerCase() === 'duo')
+      ? '<div class="ks-detail-duonote"><p>What to expect from a Duo</p><ol>' +
+          '<li>Two pieces in the same size, for one credit</li>' +
+          '<li>Everyday brands, checked by hand</li>' +
+          '<li>Good condition, so a little wear from the wash is normal</li>' +
+          '<li>Paired to go together, but not always a matching set</li>' +
+          '<li>Meant for daycare, the park, or casual days</li>' +
+        '</ol></div>' : '';
+
     var blocks = '';
     if (item.description) {
       blocks += '<p class="ks-detail-desc">' + escapeHtml(item.description) + '</p>';
@@ -1235,6 +1254,7 @@
             retailLine +
             skuLine +
             (item.is_luxury ? LUX_NOTE : '') +
+            duoNote +
             blocks +
             // NO ICON ON THIS BUTTON -- HER RULING S266. BAG_SVG was live here and is
             // removed; the icon she actually wanted is the header cart's, which is a
