@@ -376,10 +376,16 @@
         inner = '<select data-key="' + f.key + '">' + opts + '</select>';
       }
     } else if (f.type === "textarea") {
-      inner = '<textarea data-key="' + f.key + '"' + (f.rows ? ' rows="' + f.rows + '"' : '') + ' placeholder="' + (f.placeholder || "") + '"></textarea>';
+      // S473 hers: the item name capitalises each word as she types (the
+      // keyboard does it; a paste is left exactly as pasted).
+      var taCap = (f.key === "item_name") ? ' autocapitalize="words"' : '';
+      inner = '<textarea data-key="' + f.key + '"' + taCap + (f.rows ? ' rows="' + f.rows + '"' : '') + ' placeholder="' + (f.placeholder || "") + '"></textarea>';
     } else if (f.type === "number") {
       inner = '<input type="number" inputmode="decimal" data-key="' + f.key + '" placeholder="' + (f.placeholder || "") +
               '"' + (f.step ? ' step="' + f.step + '"' : "") + (f.min ? ' min="' + f.min + '"' : "") + '>';
+      // S473 hers ("i keep missing the retail field"): retail gets a big box
+      // with a $ in front, gold ring until it's filled (green once filled).
+      if (f.key === "retail_value") inner = '<div class="ksl-money"><span class="ksl-money-sign">$</span>' + inner + '</div>';
     } else if (f.type === "pills") {
       var pbtns = f.options.map(function (o) {
         var pv = (o && typeof o === "object") ? o.value : o;
@@ -524,7 +530,7 @@
       '<div class="ksl-field">' +
         '<div class="ksl-labelrow"><label class="ksl-label">Item name</label>' +
           '<button type="button" class="ksl-paste" data-paste-id="ksl-edit-name">Paste</button></div>' +
-        '<textarea id="ksl-edit-name" rows="3" placeholder="item name"></textarea>' +
+        '<textarea id="ksl-edit-name" rows="3" autocapitalize="words" placeholder="item name"></textarea>' +
       '</div>' +
       '<div class="ksl-field">' +
         '<div class="ksl-labelrow"><label class="ksl-label">Description</label>' +
@@ -4487,7 +4493,11 @@ function titleCase(s) {
       "#ks-list-app .ksl-titlerow{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}" +
       "#ks-list-app .ksl-titlerow .ksl-find-returns{margin:0;white-space:nowrap}" +
       "#ks-list-app .ksl-find-actions{display:grid!important;grid-template-columns:1fr auto;gap:10px;align-items:center}" +
-      "#ks-list-app .ksl-find-actions .ksl-find-clear{padding:8px 4px}";
+      "#ks-list-app .ksl-find-actions .ksl-find-clear{padding:8px 4px}" +
+      /* S473: the retail box, big and hard to miss */
+      "#ks-list-app .ksl-money{position:relative;width:100%}" +
+      "#ks-list-app .ksl-money-sign{position:absolute;left:16px;top:50%;transform:translateY(-50%);font-size:24px;font-weight:700;opacity:.75;pointer-events:none;z-index:1}" +
+      "#ks-list-app input[data-key=\"retail_value\"]{width:100%;box-sizing:border-box;height:60px;font-size:24px;font-weight:700;padding:0 14px 0 40px;border-radius:12px;border:2px solid #e0a93f}";
     document.head.appendChild(st);
   })();
 
