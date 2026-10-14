@@ -1752,7 +1752,7 @@ function paintCoins(s) {
     // activity the rail order became a RACE. Reserving the slot makes it deterministic.
     reserveReviewSlot();
     paintActivity(s);
-    paintRefer(s);    // S467 Refer a Friend: right under Recent activity (board 1)
+    paintRefer(s);    // S467 Refer a Friend; S469 hers: paintRefer moves it ABOVE Recent activity
     paintReviewPrompt();
     paintImpact(s);   // LAST in the rail — S163
     paintPackMenu();  // S355 — must follow paintImpact, which appends to the card
@@ -2803,8 +2803,9 @@ function paintCloset(s) {
       // a centred star rule above, as on board 1; no box
       // S469 HERS, option 2: its own card. Cream, gold border, a gold +3 coin, a solid
       // navy button. Palette colours only (cream #EDECE0, gold #EDA920, navy #1C4A91, ink).
-      '.ks-sec-refer .ks-panel{background:#EDECE0;border:2px solid #EDA920;border-radius:22px;box-shadow:none;' +
-        'padding:22px 22px 24px;margin-top:24px;text-align:left;}' +
+      // S469 HERS, later: no border, square corners, to keep the page's editorial look.
+      '.ks-sec-refer .ks-panel{background:#EDECE0;border:0;border-radius:0;box-shadow:none;' +
+        'padding:22px 22px 24px;margin-top:0;text-align:left;}' +
       '.ks-refer-head{display:flex;align-items:center;gap:12px;}' +
       '.ks-refer-coin{flex:0 0 auto;width:44px;height:44px;border-radius:50%;background:#EDA920;color:#FFFFFF;' +
         'display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;line-height:1;}' +
@@ -2841,6 +2842,13 @@ function paintCloset(s) {
       if (!panel) return;
       referCss();
       panel.parentNode.style.display = '';
+      // S469 HERS: above Recent activity (the computer rail scrolls on its own, and the
+      // card sat below the fold of it). Phones share order 4 with activity, so DOM order
+      // puts it first there too.
+      var referSec = panel.parentNode, actSec = referSec.parentNode.querySelector('.ks-sec-activity');
+      if (actSec && actSec.parentNode === referSec.parentNode && referSec.nextElementSibling !== actSec) {
+        referSec.parentNode.insertBefore(referSec, actSec);
+      }
       // S469 HERS: her club line replaces the old sentence (approved word for word).
       panel.innerHTML =
         '<div class="ks-refer-head"><span class="ks-refer-coin" aria-hidden="true">+3</span>' +
