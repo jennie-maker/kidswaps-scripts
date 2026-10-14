@@ -290,13 +290,18 @@
     /* S433: brand first (the brand decides clothing or toy, the way /admin/sort
      * does), then the same order /admin/sort asks in. Tap fields fold away once
      * picked and the page moves on to the next question. Review order follows
-     * this array too. */
+     * this array too.
+     * S474 hers ("put the retail value and size fields RIGHT after the brand"):
+     * clothing is brand, size, retail, then category. Toys were already brand,
+     * age, retail. Shoes are rare (hers): the size list shows clothing sizes
+     * until Shoes is picked, then the size clears and the page steps back up
+     * to it (sizeBackIfEmpty, below). */
     { key:"sku",            label:"SKU",            type:"text",   group:"both", required:true,  placeholder:"KS-00000", hint:"the KS label number on the item" },
     { key:"brand",          label:"Brand",          type:"text",   group:"both", required:true,  placeholder:"Type a brand" },
-    { key:"category",       label:"Category",       type:"select", remote:true, combo:true, group:"clothing", required:true, placeholder:"Type to filter\u2026" },
     { key:"clothing_size",  label:"Size",           type:"select", remote:true, combo:true, group:"clothing", required:true, placeholder:"Type to filter\u2026" },
     { key:"toy_age_range",  label:"Age range",      type:"multipills", remote:true, group:"toy", required:true },
     { key:"retail_value",   label:"Retail value",   type:"number", group:"both", required:true,  placeholder:"e.g. 48", step:"0.01", min:"0" },
+    { key:"category",       label:"Category",       type:"select", remote:true, combo:true, group:"clothing", required:true, placeholder:"Type to filter\u2026" },
     { key:"color",          label:"Color",          type:"select", remote:true, combo:true, group:"clothing", required:true, placeholder:"Type to filter\u2026" },
     { key:"gender_style",   label:"Gender",         type:"select", group:"clothing", required:false, options:[{value:"boy",label:"Male"},{value:"girl",label:"Female"}] },
     { key:"toy_washability",label:"Washability",    type:"pills",  group:"toy", required:true,  options:["wipeable","washable"] },
@@ -4267,6 +4272,16 @@ function titleCase(s) {
   // Move on to the next question that still needs an answer. A required box
   // that's empty gets the cursor (so the keyboard comes up); anything else just
   // scrolls into view. Answered taps and the optional extras are skipped.
+  // S474: size sits ABOVE category now. If a category pick leaves size empty
+  // (switching to Shoes clears a clothing size, or it was skipped because the
+  // shoe size wasn't in the clothing list), step back up to it.
+  function sizeBackIfEmpty() {
+    if (EDIT_MODE || LOOKUP_MODE) return;
+    var sf = fieldEl("clothing_size");
+    if (!sf || !fieldVisible(sf) || tapAnswered("clothing_size")) return;
+    dropKeyboard();
+    scrollToEl(sf);
+  }
   function tapMoveOn(fromKey) {
     var det = root.querySelector(".ksl-details");
     if (!det || EDIT_MODE || LOOKUP_MODE) return;
@@ -4326,6 +4341,7 @@ function titleCase(s) {
       tapEditing[key] = false; tapQuery[key] = "";
       paintTaps(); saveDraft();
       tapMoveOn(key);
+      if (key === "category") sizeBackIfEmpty();
       return;
     }
     var ch = e.target.closest("[data-tap-change]");
