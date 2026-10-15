@@ -1655,7 +1655,7 @@
       if (!el) return;
       var v = el.value.trim();
       if (v === "") return;
-      if (f.key === "item_name") v = capName(v);   // S477 hers
+      if (f.key === "item_name") v = capName(v, brandFor(el));   // S477 hers
       p[f.key] = (f.type === "number") ? Number(v) : v;
     });
     // L3: completeness pills -> boolean (key only exists on toys via group:"toy";
@@ -2066,20 +2066,35 @@
 
   /* S477 HERS: item names capitalise each word's first letter. It only ever
      raises a first letter, never lowers anything (so PJ, NWT stay). Short
-     joining words stay as typed unless they're the first word. */
-  var CAP_SMALL = { "and":1, "with":1, "of":1, "in":1, "the":1, "a":1, "for":1, "to":1, "or":1 };
-  function capName(raw) {
-    var words = String(raw || "").split(" ");
-    var first = true;
+     joining words stay as typed unless they're the first word. When the name
+     starts with the item's brand, that part is left exactly as written
+     (Genuine Kids from OshKosh, 1+ in the family). */
+  var CAP_SMALL = { "and":1, "with":1, "of":1, "in":1, "the":1, "a":1, "for":1, "to":1, "or":1,
+                    "from":1, "by":1, "x":1, "von":1, "n":1, "'n'":1, "\u2019n\u2019":1 };
+  function capName(raw, brand) {
+    raw = String(raw || "");
+    var lead = "", rest = raw, first = true;
+    var b = String(brand || "").trim();
+    if (b && raw.toLowerCase().indexOf(b.toLowerCase()) === 0 &&
+        (raw.length === b.length || raw.charAt(b.length) === " ")) {
+      lead = raw.slice(0, b.length); rest = raw.slice(b.length); first = false;
+    }
+    var words = rest.split(" ");
     for (var i = 0; i < words.length; i++) {
       var w = words[i];
       if (!w) continue;
-      if (!(!first && CAP_SMALL[w.toLowerCase()])) {
+      if (!(!first && CAP_SMALL[w.toLowerCase().replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, "")])) {
         words[i] = w.replace(/^([^A-Za-z0-9]*)([a-z])/, function (m, lead, ch) { return lead + ch.toUpperCase(); });
       }
       first = false;
     }
-    return words.join(" ");
+    return lead + words.join(" ");
+  }
+  // the brand that goes with a name box: the form's Brand, or the loaded item's in edit mode
+  function brandFor(t) {
+    if (t && t.id === "ksl-edit-name") return (loadedRecord && loadedRecord.brand) || "";
+    var b = root.querySelector('[data-key="brand"]');
+    return b ? b.value : "";
   }
   function isNameBox(t) {
     return !!(t && t.getAttribute && (t.getAttribute("data-key") === "item_name" || t.id === "ksl-edit-name"));
@@ -3196,7 +3211,7 @@ function titleCase(s) {
       .map(function (r) { return r.url; });
     var patch = {
       status: ($("ksl-edit-status") || {}).value || "available",
-      item_name: capName((($("ksl-edit-name") || {}).value || "").trim()),   // S477 hers
+      item_name: capName((($("ksl-edit-name") || {}).value || "").trim(), brandFor($("ksl-edit-name"))),   // S477 hers
       description: (($("ksl-edit-desc") || {}).value || "").trim(),
       bin_location: (($("ksl-edit-bin") || {}).value || "").trim(),
       featured: !!($("ksl-edit-featured") && $("ksl-edit-featured").checked),
@@ -3340,7 +3355,7 @@ function titleCase(s) {
         editPrimaryDirty = false; editThumbUrl = null;
         // name + description aren't in the update .select() response — the save
         // succeeded, so the field values we sent are now DB truth.
-        loadedRecord.item_name = capName((($("ksl-edit-name") || {}).value || "").trim());
+        loadedRecord.item_name = capName((($("ksl-edit-name") || {}).value || "").trim(), brandFor($("ksl-edit-name")));
         loadedRecord.description = (($("ksl-edit-desc") || {}).value || "").trim() || null;
         buildRefBlock(loadedRecord);
         var st = $("ksl-edit-status");
@@ -4427,7 +4442,7 @@ function titleCase(s) {
   root.addEventListener("focusout", function (e) {
     var t = e.target;
     if (!isNameBox(t)) return;
-    var c = capName(t.value);
+    var c = capName(t.value, brandFor(t));
     if (c !== t.value) { t.value = c; t.dispatchEvent(new Event("input", { bubbles: true })); }
   });
   root.addEventListener("input", function (e) {
@@ -4478,7 +4493,7 @@ function titleCase(s) {
       txt = String(txt || "");
       if (oneLine) txt = txt.replace(/\s*\n+\s*/g, " ");
       txt = txt.trim();
-      if (isNameBox(el)) txt = capName(txt);   // S477 hers
+      if (isNameBox(el)) txt = capName(txt, brandFor(el));   // S477 hers
       if (!txt) { showToast("Nothing to paste.", true); return; }
       el.value = txt;
       el.dispatchEvent(new Event("input", { bubbles: true }));
