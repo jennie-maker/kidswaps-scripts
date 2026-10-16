@@ -2398,3 +2398,53 @@
   @media (min-width: 940px) {
     .ks-main > .ks-sec-hcw { order: 9; }
   }
+
+/* ---------- S480, hers S479 ----------
+   (1) BILLING AND CANCEL HIGHLIGHT, played once by dashboard-tool.js armCardUpdate() when
+       she arrives from checkout's "Update?" (/dashboard?card=update). Approved live by
+       console probe: coral #E54F25 fill, white text, 3px amber #EDA920 ring, radius 8px,
+       12px left and right padding with matching negative margins (no shift), three small
+       wiggles, holds about 4 seconds, then fades. Reduce motion: the glow only.
+       Selector beats .ks-util .ks-membership-manage:link (0,3,0). Delete this block to undo. */
+  @keyframes ksBillGlow {
+    0%       { background-color: transparent; box-shadow: 0 0 0 0 rgba(237,169,32,0); }
+    10%, 75% { background-color: #E54F25; color: #ffffff; box-shadow: 0 0 0 3px #EDA920; }
+    100%     { background-color: transparent; box-shadow: 0 0 0 0 rgba(237,169,32,0); }
+  }
+  @keyframes ksBillWiggle {
+    0%, 12%   { transform: rotate(0); }
+    16%       { transform: rotate(-3deg); }
+    20%       { transform: rotate(3deg); }
+    24%       { transform: rotate(-2deg); }
+    28%       { transform: rotate(2deg); }
+    32%, 100% { transform: rotate(0); }
+  }
+  .ks-util a.ks-membership-manage.ks-bill-hl,
+  .ks-util a.ks-membership-manage.ks-bill-hl:link,
+  .ks-util a.ks-membership-manage.ks-bill-hl:visited {
+    display: inline-block;
+    border-radius: 8px;
+    padding-left: 12px;
+    padding-right: 12px;
+    margin-left: -12px;
+    margin-right: -12px;
+    animation: ksBillGlow 5.5s ease-in-out 1, ksBillWiggle 5.5s ease-in-out 1;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ks-util a.ks-membership-manage.ks-bill-hl,
+    .ks-util a.ks-membership-manage.ks-bill-hl:link,
+    .ks-util a.ks-membership-manage.ks-bill-hl:visited { animation: ksBillGlow 5.5s ease-in-out 1; }
+  }
+/* (2) THE TOP ROW ON NARROW PHONES. Measured S480 at 335px: the row is 304px; the two
+       labels on one line need 294px at 14px plus the 18px gap, so they wrapped (the ▾ fell
+       under "Manage Membership", "Account & Settings" broke in two). At 360px and under
+       both stay on one line at 13px (275px) as a centred pair with a 12px gap. Above 360px
+       nothing changes. Delete this block to undo. */
+  @media (max-width: 360px) {
+    .ks-util { grid-template-columns: auto auto; justify-content: center; column-gap: 12px; }
+    .ks-util-mem { font-size: 13px; white-space: nowrap; }
+    .ks-util .ks-membership-status { font-size: 13px; }
+    .ks-util .ks-account-toggle,
+    .ks-util .ks-account-toggle:link,
+    .ks-util .ks-account-toggle:visited { font-size: 13px; white-space: nowrap; }
+  }

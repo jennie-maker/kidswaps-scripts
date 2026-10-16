@@ -2039,7 +2039,47 @@ function paintCoins(s) {
     }
 
     buildUtilityRow(wrap, grid);
+    armCardUpdate();
     return grid;
+  }
+
+  /* S480, hers S479 (approved live by console probe): arriving from checkout's
+     "Update?" link (/dashboard?card=update) opens the Manage Membership menu and
+     highlights Billing and cancel ONCE: coral fill, white text, amber ring, three small
+     wiggles, about 4 seconds, then it fades. The look lives in dashboard.css
+     (.ks-bill-hl). The ?card=update is taken off the address so a reload doesn't replay
+     it. Reduce motion gets the glow without the wiggle (the CSS handles that).
+     It waits for the page to be ready (data-ks-ready) and gives up quietly after 10s. */
+  var _cardUpdArmed = false;
+  function armCardUpdate() {
+    if (_cardUpdArmed) return;
+    var q;
+    try { q = new URLSearchParams(window.location.search); } catch (e) { return; }
+    if (q.get('card') !== 'update') return;
+    _cardUpdArmed = true;
+    try {
+      q.delete('card');
+      var qs = q.toString();
+      history.replaceState(history.state, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
+    } catch (e) {}
+    var tries = 0;
+    (function wait() {
+      var btn = document.querySelector('button.ks-mem-trigger');
+      var link = document.querySelector('.ks-mem-menu a.ks-membership-manage');
+      var ready = document.documentElement.getAttribute('data-ks-ready') === '1';
+      if (!btn || !link || !ready) {
+        if (++tries < 50) setTimeout(wait, 200);
+        return;
+      }
+      try { btn.scrollIntoView({ block: 'center' }); } catch (e) {}
+      var wrapEl = btn.closest('.ks-mem-wrap');
+      if (!wrapEl || !wrapEl.classList.contains('is-open')) btn.click();
+      setTimeout(function () {
+        link.classList.remove('ks-bill-hl'); void link.offsetWidth;
+        link.classList.add('ks-bill-hl');
+        setTimeout(function () { link.classList.remove('ks-bill-hl'); }, 5700);
+      }, 400);
+    })();
   }
 
   /* ============================================================
