@@ -2876,38 +2876,105 @@ function paintCloset(s) {
     document.head.appendChild(st);
   }
 
+  /* S481, hers: the footer's "Refer a Friend" link (members only) goes to
+     /dashboard?refer=1. Arriving with it scrolls to the Refer a friend section and plays
+     the S480 highlight (coral fill, amber ring, three wiggles, about 4 seconds) ONCE on
+     "Invite a friend". A member who can't invite yet (no invite code, not paused or
+     cancelled, i.e. still on her trial) sees the section with her S481 line instead, and
+     no highlight. Paused or cancelled: nothing shows, as before. ?refer=1 is taken off the
+     address so a reload doesn't replay it. The look lives in dashboard.css (.ks-refer-hl). */
+  var REFER_ARRIVE = (function () {
+    try { return new URLSearchParams(window.location.search).get('refer') === '1'; } catch (e) { return false; }
+  })();
+  var _referArrived = false;
+  function referArriveClean() {
+    try {
+      var q = new URLSearchParams(window.location.search);
+      if (!q.has('refer')) return;
+      q.delete('refer');
+      var qs = q.toString();
+      history.replaceState(history.state, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
+    } catch (e) {}
+  }
+  function referArrive(withHighlight) {
+    if (!REFER_ARRIVE || _referArrived) return;
+    _referArrived = true;
+    referArriveClean();
+    var tries = 0;
+    (function wait() {
+      var sec = document.querySelector('.ks-sec-refer');
+      var ready = document.documentElement.getAttribute('data-ks-ready') === '1';
+      if (!sec || !ready) {
+        if (++tries < 50) setTimeout(wait, 200);
+        return;
+      }
+      try { sec.scrollIntoView({ block: 'center' }); } catch (e) {}
+      if (!withHighlight) return;
+      setTimeout(function () {
+        var btn = document.querySelector('.ks-sec-refer .ks-refer-open');
+        if (!btn) return;
+        btn.classList.remove('ks-refer-hl'); void btn.offsetWidth;
+        btn.classList.add('ks-refer-hl');
+        setTimeout(function () { btn.classList.remove('ks-refer-hl'); }, 5700);
+      }, 400);
+    })();
+  }
+  function referHeadHTML() {
+    // S469 HERS: a little pile from her coin art (the bowl's pour coins), not a +3 badge.
+    return '<div class="ks-refer-head"><span class="ks-refer-pile" aria-hidden="true">' +
+        '<img alt="" src="' + PILE_ART + 'clothing-flatA.webp" style="left:0;bottom:0;width:50px">' +
+        '<img alt="" src="' + PILE_ART + 'clothing-flatB.webp" style="left:20px;bottom:6px;width:50px">' +
+        '<img alt="" src="' + PILE_ART + 'clothing-leanA.webp" style="left:10px;bottom:11px;width:44px">' +
+      '</span>' +
+      '<div class="ks-panel-h">Refer a friend</div></div>';
+  }
+  function referPlace(panel) {
+    referCss();
+    panel.parentNode.style.display = '';
+    // S469 HERS: above Recent activity (the computer rail scrolls on its own, and the
+    // card sat below the fold of it). Phones share order 4 with activity, so DOM order
+    // puts it first there too.
+    var referSec = panel.parentNode, actSec = referSec.parentNode.querySelector('.ks-sec-activity');
+    if (actSec && actSec.parentNode === referSec.parentNode && referSec.nextElementSibling !== actSec) {
+      referSec.parentNode.insertBefore(referSec, actSec);
+    }
+  }
+
   function paintRefer(s) {
     try {
       var r = (s && s.referral) || {};
       var code = r.my_code ? String(r.my_code) : '';
-      var active = String((s && s.member_status) || '').toLowerCase() === 'active';
+      var ms = String((s && s.member_status) || '').toLowerCase();
+      var active = ms === 'active';
       var existing = document.querySelector('.ks-sec-refer');
-      if (!code || !active) { if (existing) existing.style.display = 'none'; return; }
+      if (!code || !active) {
+        // S481 hers: arriving from the footer link before she can invite (her trial).
+        if (REFER_ARRIVE && !code && ms !== 'paused' && ms !== 'cancelled') {
+          var tp = sectionIn('rail', 'ks-sec-refer');
+          if (tp) {
+            referPlace(tp);
+            // S481 HERS, approved word for word.
+            tp.innerHTML = referHeadHTML() +
+              '<p class="ks-refer-p">Your invite link is ready once your first bag is processed and your membership starts.</p>';
+            referArrive(false);
+            return;
+          }
+        }
+        if (existing) existing.style.display = 'none';
+        if (REFER_ARRIVE) referArriveClean();
+        return;
+      }
       var panel = sectionIn('rail', 'ks-sec-refer');
       if (!panel) return;
-      referCss();
-      panel.parentNode.style.display = '';
-      // S469 HERS: above Recent activity (the computer rail scrolls on its own, and the
-      // card sat below the fold of it). Phones share order 4 with activity, so DOM order
-      // puts it first there too.
-      var referSec = panel.parentNode, actSec = referSec.parentNode.querySelector('.ks-sec-activity');
-      if (actSec && actSec.parentNode === referSec.parentNode && referSec.nextElementSibling !== actSec) {
-        referSec.parentNode.insertBefore(referSec, actSec);
-      }
+      referPlace(panel);
       // S469 HERS: her club line replaces the old sentence (approved word for word).
-      panel.innerHTML =
-        // S469 HERS: a little pile from her coin art (the bowl's pour coins), not a +3 badge.
-        '<div class="ks-refer-head"><span class="ks-refer-pile" aria-hidden="true">' +
-          '<img alt="" src="' + PILE_ART + 'clothing-flatA.webp" style="left:0;bottom:0;width:50px">' +
-          '<img alt="" src="' + PILE_ART + 'clothing-flatB.webp" style="left:20px;bottom:6px;width:50px">' +
-          '<img alt="" src="' + PILE_ART + 'clothing-leanA.webp" style="left:10px;bottom:11px;width:44px">' +
-        '</span>' +
-        '<div class="ks-panel-h">Refer a friend</div></div>' +
+      panel.innerHTML = referHeadHTML() +
         '<p class="ks-refer-p">The bigger the club, the more to choose from. Refer a friend and you\u2019ll each get 3 extra credits.</p>' +
         '<button type="button" class="ks-refer-open">Invite a friend ' + ksArrow() + '</button>';
       panel.querySelector('.ks-refer-open').addEventListener('click', function () {
         referOpen(code, Number(r.friends_joined) || 0, this);
       });
+      referArrive(true);
     } catch (e) { console.error('[ks-dash] refer section error', e); }
   }
 

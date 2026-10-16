@@ -2448,3 +2448,22 @@
     .ks-util .ks-account-toggle:link,
     .ks-util .ks-account-toggle:visited { font-size: 13px; white-space: nowrap; }
   }
+
+/* ---------- S481, hers ----------
+   INVITE A FRIEND HIGHLIGHT, played once by dashboard-tool.js referArrive() when a member
+   arrives from the footer's "Refer a Friend" link (/dashboard?refer=1). The same look as
+   the S480 Billing and cancel highlight (its keyframes ksBillGlow and ksBillWiggle, above):
+   coral fill, white text, 3px amber ring, radius 8px, 12px sides with matching negative
+   margins, three small wiggles, about 4 seconds. Reduce motion: the glow only.
+   Beats the injected .ks-refer-open (0,1,0). Delete this block to undo. */
+  .ks-sec-refer .ks-refer-open.ks-refer-hl {
+    border-radius: 8px;
+    padding-left: 12px;
+    padding-right: 12px;
+    margin-left: -12px;
+    margin-right: -12px;
+    animation: ksBillGlow 5.5s ease-in-out 1, ksBillWiggle 5.5s ease-in-out 1;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ks-sec-refer .ks-refer-open.ks-refer-hl { animation: ksBillGlow 5.5s ease-in-out 1; }
+  }
