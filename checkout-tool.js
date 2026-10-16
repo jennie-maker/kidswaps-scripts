@@ -166,6 +166,16 @@
  * grey), amounts bold, the shipping note .9rem, Total today 1.4rem bold with a thin
  * rule above it.
  *
+ * rev S480 (2026-10-15), THE B2 RECEIPT, hers S479 (canvas
+ *   https://claude.ai/artifact/4Y8HCDTpXocZUw82cV4ifj, board B2 approved exactly):
+ *   - Top: a strip "ORDER PREVIEW", a dotted line, the date; "Checkout" 44px under it.
+ *     No coin bank on the receipt (the bank shows on the thank-you screen and /dashboard).
+ *   - Your order is white like the rest. Under the items: the credits-used line, then a
+ *     soft green pill "Worth about $X new" (hidden at $0). The old Worth box is gone.
+ *   - The Closet Standard line moves under the button, below the hold line.
+ *   - Under Total today, right aligned: "Using Visa ending in 4242. Update?" (hers,
+ *     verbatim; an unknown brand reads "card ending in"). Only when the total is more
+ *     than $0 AND the fn sent card.last4. Update? goes to /dashboard?card=update.
  * rev S408 (2026-09-27), THE MATCHING CHECKOUT COMMIT (hers S400: every bank the same),
  * copied from dashboard-tool.js @0fa3b57:
  *   - Tier panel line is her S406 wording (BANK_PANEL_LINE), word for word.
@@ -794,6 +804,24 @@
     ID + " .ksc-ty-btns{flex-direction:column;}",
     "}",
 
+    // ---- S480: THE B2 RECEIPT (hers S479) ----------------------------------------
+    ID + " .ksc-rcpt-top{display:flex; flex-direction:column; gap:16px; padding:18px 20px 24px;}",
+    ID + " .ksc-rcpt-top .ksc-strip{padding:0; border:0; align-items:center;}",
+    ID + " .ksc-strip-dots{flex:1 1 auto; min-width:12px; border-bottom:2px dotted #C9C7BC;}",
+    ID + " .ksc-rcpt-top .ksc-head{font-size:44px; text-align:left; margin:0;}",
+    ID + " .ksc-usedrow{display:flex; align-items:center; flex-wrap:wrap; gap:10px 12px; margin:16px 0 0; font-size:1rem; line-height:1.4; color:var(--ks-ink);}",
+    ID + " .ksc-usedrow .u{font-weight:600;}",
+    ID + " .ksc-worthpill{display:inline-flex; align-items:center; padding:5px 14px; border-radius:999px; background:#E7F1EA; color:#1F5C38; font-size:14px; font-weight:700; line-height:1.3;}",
+    ID + " .ksc-total.ksc-total--card{flex-direction:column; align-items:stretch; gap:6px;}",
+    ID + " .ksc-total-row{display:flex; justify-content:space-between; align-items:baseline; gap:12px;}",
+    ID + " .ksc-cardline{text-align:right; font-family:Quicksand,sans-serif; font-size:15px; font-weight:300; line-height:1.4; color:#4A4744;}",
+    ID + " a.ksc-cardupd{color:#4A4744; font-weight:300; text-decoration:none;}",
+    ID + " a.ksc-cardupd:hover, " + ID + " a.ksc-cardupd:focus-visible{color:#1C4A91; font-weight:700; text-decoration:underline; text-underline-offset:2px;}",
+    ID + " .ksc-seal.ksc-seal--low{justify-content:center; margin:12px 0 0; padding:0;}",
+    ID + " .ksc-seal.ksc-seal--low span{font-size:14px; font-weight:600; color:#1F5C38;}",
+    "@media (min-width:768px){",
+    ID + " .ksc-rcpt-top{padding:20px 32px 28px; gap:18px;}",
+    "}",
     "@media (max-width:600px){",
     ID + " .ksc-g{margin-bottom:30px;}",
     ID + " .ksc-bank{padding:20px 16px 18px;}",
@@ -817,10 +845,21 @@
   }
 
   // ---- inline SVGs ----------------------------------------------------------
-  function shieldCheck() {
-    return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none">' +
-      '<path d="M12 2l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V5l7-3z" stroke="#309359" stroke-width="1.5"/>' +
-      '<path d="M8.6 12.2l2.2 2.2 4.6-4.8" stroke="#309359" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  function shieldCheck(col) {
+    col = col || "#309359";
+    return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
+      '<path d="M12 2l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V5l7-3z" stroke="' + col + '" stroke-width="1.5"/>' +
+      '<path d="M8.6 12.2l2.2 2.2 4.6-4.8" stroke="' + col + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  }
+  // S480: "Visa ending in 4242" from the fn's card {last4, brand}; "" when it can't say.
+  var CARD_BRANDS = { visa: "Visa", mastercard: "Mastercard", amex: "American Express", american_express: "American Express",
+    discover: "Discover", diners: "Diners Club", jcb: "JCB", unionpay: "UnionPay" };
+  function cardWords(card) {
+    if (!card) return "";
+    var l4 = String(card.last4 == null ? "" : card.last4);
+    if (!/^\d{4}$/.test(l4)) return "";
+    var b = CARD_BRANDS[String(card.brand || "").toLowerCase()] || "card";
+    return b + " ending in " + l4;
   }
   function lockIcon() {
     return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none">' +
@@ -1386,7 +1425,12 @@
         shipNote +
       "</div>";
     // S419, hers (option B): Total today is its own gold band after Payment.
-    var totalBand = '<div class="ksc-total"><span>Total today</span><span>' + esc(moneyc(totalCents)) + "</span></div>";
+    // S480, hers S479: the card line under the total, only when something is charged.
+    var cw = totalCents > 0 ? cardWords(p.card) : "";
+    var totalBand = cw
+      ? '<div class="ksc-total ksc-total--card"><div class="ksc-total-row"><span>Total today</span><span>' + esc(moneyc(totalCents)) + "</span></div>" +
+          '<div class="ksc-cardline">Using ' + esc(cw) + '. <a class="ksc-cardupd" href="/dashboard?card=update">Update?</a></div></div>'
+      : '<div class="ksc-total"><span>Total today</span><span>' + esc(moneyc(totalCents)) + "</span></div>";
 
     // value-loss confirm gate: acknowledge before Confirm enables
     var vlGate = vlCount > 0
@@ -1415,26 +1459,17 @@
     // S408, hers: the headline first at every width, then four sections: Credit Bank (the
     // CURRENT bank, sitting still; S215 holds), Your order (extras line, items, the Closet
     // Standard line under them, the Worth group closing it), Payment, Shipping to.
-    var worthCtx = "That\u2019s about what " + (lines.length === 1 ? "it" : "they") + " would cost new in stores. " + subText + ".";
     setHtml(
       // S419: one sheet of paper, then its zigzag edge. The modal sits outside the sheet.
       '<div class="ksc-paper">' +
-      '<div class="ksc-strip"><span></span><span>' + esc(todayStr()) + "</span></div>" +
-      // S418: the headline row. Computer: headline + the Worth lines left 70%, the bank
-      // right 30%. Phone: headline centred, then the bank; the Worth lines stay low.
-      '<div class="ksc-band"><div class="ksc-top ksc-top--rcpt">' +
-        '<div class="ksc-top-l"><h1 class="ksc-head">' + esc(head) + "</h1>" +
-          '<div class="ksc-worth-top"><p class="ksc-value">Worth about ' + moneyRound(value) + " new</p>" +
-            '<p class="ksc-sub">' + esc(worthCtx) + "</p></div>" +
-        "</div>" +
-        '<div class="ksc-top-b">' + bankHtml(p.bank, p.cap, null, { when: "now" }) + "</div>" +
-      "</div></div>" +
-      '<section class="ksc-sec ksc-band--tint"><div class="ksc-sec-hrow"><h2 class="ksc-sec-h">Your order</h2>' +
+      // S480, hers S479 (B2): the strip, then "Checkout". No bank on the receipt.
+      '<div class="ksc-rcpt-top"><div class="ksc-strip"><span>Order preview</span><span class="ksc-strip-dots" aria-hidden="true"></span><span>' + esc(todayStr()) + "</span></div>" +
+        '<h1 class="ksc-head">' + esc(head) + "</h1></div>" +
+      '<section class="ksc-sec"><div class="ksc-sec-hrow"><h2 class="ksc-sec-h">Your order</h2>' +
         '<a class="ksc-editbag" href="/browse?bag=1">Edit bag</a></div>' +
         '<div class="ksc-items" style="margin-bottom:0;">' + itemsHtml + "</div>" +
-        '<div class="ksc-seal">' + shieldCheck() + "<span>Every piece meets The Closet Standard</span></div>" +
-        '<div class="ksc-worth ksc-worth--low"><p class="ksc-value">Worth about ' + moneyRound(value) + " new</p>" +
-          '<p class="ksc-sub">' + esc(worthCtx) + "</p></div>" +
+        '<div class="ksc-usedrow"><span class="u">' + esc(subText) + "</span>" +
+          (value > 0 ? '<span class="ksc-worthpill">Worth about ' + moneyRound(value) + " new</span>" : "") + "</div>" +
       "</section>" +
       '<section class="ksc-sec"><h2 class="ksc-sec-h">Payment</h2>' + summary + "</section>" +
       totalBand +
@@ -1445,6 +1480,8 @@
         '<div class="ksc-secure">' + lockIcon() + "<span>Secured by Stripe</span></div>" +
         // S419, hers: the hold line
         '<div class="ksc-hold">' + clockIcon() + "<span>We\u2019re holding these for you for 30 minutes.</span></div>" +
+        // S480, hers S479: the Closet Standard line moves under the button
+        '<div class="ksc-seal ksc-seal--low">' + shieldCheck("#1F5C38") + "<span>Every piece meets The Closet Standard</span></div>" +
       "</div>" +
       "</div>" +
       '<div class="ksc-zig" aria-hidden="true"></div>' +
