@@ -3829,8 +3829,11 @@ function titleCase(s) {
       setField(k, v);
       if (fieldHasValue(k)) cueField(k);            // only cue what actually took
     };
-    // name + description FIRST (the autoName ordering rule in applyRecord)
-    if (!fieldHasValue("item_name") && p.item_name) {
+    // name + description FIRST (the autoName ordering rule in applyRecord).
+    // S484 fix: by now autoName may already have composed "Brand Category" from
+    // sort's fields (nameTouched false). The old listing's real name replaces a
+    // COMPOSED name; a name sort or she supplied (nameTouched true) is kept.
+    if (p.item_name && (!fieldHasValue("item_name") || !nameTouched)) {
       setField("item_name", p.item_name);
       nameTouched = true;                           // after setField, never before
       cueField("item_name");
