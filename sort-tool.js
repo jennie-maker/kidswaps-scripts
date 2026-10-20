@@ -23,11 +23,17 @@
    screen keeps only what changes from bag to bag.
    v12 (S440): the finish screen's subject, preview line, opening, decline lines and credits come from
    get_bag_email_parts (through grading-db), the same words S27 sends, so it matches the real email.
-   The unused S429 email preview is gone. */
+   The unused S429 email preview is gone.
+   v13 (S483, hers S482, canvas https://claude.ai/artifact/41rAjKg1qpM8nbbiQXArgT): RELIST A RETURNING
+   ITEM. After the brand pick, cream "Hers before?" rows list this member's past items of that brand
+   (No brand or Miscellaneous: her Miscellaneous items of the same kind), read through the doorman's
+   get_member_past_items. "Yes, this one" fills the fields and saves the link as
+   intake_records.returned_from_inventory_id; Undo, a brand change or a clothing/toy switch removes it.
+   Short name has autocomplete off (iPhone offered AutoFill Contact). */
 (function () {
   "use strict";
 
-  var BUILD = "sort-tool S440 v12";
+  var BUILD = "sort-tool S483 v13";
   var ROOT_ID = "ks-sort-app";
   var BASE = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1";
   var DOOR = BASE + "/grading-db";   // S440: also lets through POST /rpc/get_bag_email_parts, and no other function
@@ -74,7 +80,8 @@
     editing: null,       // the saved record being edited, or null        // the SKU just freed by "Remove it and sort it again", offered back for the re-sort
     errors: [],
     busy: false,
-    toast: ""
+    toast: "",
+    past: { key: "", rows: [], loading: false, all: false }   // S483: her past items for the picked brand
   };
 
   /* ---------- small helpers ---------- */
@@ -169,14 +176,14 @@
   function loadRecords() {
     if (!S.batch) { S.records = []; return Promise.resolve(); }
     var sel = "id,status,tier,label_number,reject_reason,reject_reason_other_text,item_type,brand,category,size,credit_amount_at_grading,graded_item_name";
-    var more = ",would_be_tier,is_complete,set_piece_count,credit_amount_reason,operator_item_notes,photo_urls";
+    var more = ",would_be_tier,is_complete,set_piece_count,credit_amount_reason,operator_item_notes,photo_urls,returned_from_inventory_id";
     var withVideo = more + ",video_url";
     var tail = "&batch_id=eq." + S.batch.id + "&order=created_at.asc";
     // The longer list lets an item be edited; if it's ever refused, the short list still loads the bag.
     return door("GET", "/intake_records?select=" + sel + withVideo + tail)
       .catch(function () { return door("GET", "/intake_records?select=" + sel + more + tail); })
       .catch(function () { return door("GET", "/intake_records?select=" + sel + tail); })
-      .then(function (rows) { S.records = rows || []; });
+      .then(function (rows) { S.records = rows || []; S.past.key = ""; });   // S483: re-read her past items after any save
   }
   function loadOpenBatch() {
     return door("GET", "/intake_batches?status=eq.stage_1_in_progress&order=created_at.desc&limit=1")
@@ -200,7 +207,8 @@
       tier: "", half: false, halfReason: "",
       sku: S.freedSku || S.nextSku,
       photos: { front: null, back: null, detail: null }, video: null, skuOpen: false,
-      choice: "", typeSet: false, noBrand: false, more: false, reasons: [], otherText: "", note: "", toyName: ""
+      choice: "", typeSet: false, noBrand: false, more: false, reasons: [], otherText: "", note: "", toyName: "",
+      linked: null   // S483: { inventory_id, name } when she taps "Yes, this one"
     };
     S.addBrand = null; S.errors = []; S.viewRec = null;
   }
@@ -279,6 +287,7 @@
     if (it.type !== type) {
       it.catQ = ""; it.category = ""; it.size = ""; it.sizeOther = false; it.sizeOtherText = ""; it.pieces = "";
       it.ages = []; it.complete = true; it.toyName = ""; it.reasons = []; it.otherText = "";
+      it.linked = null;   // S483
     }
     it.type = type; it.typeSet = true;
   }
@@ -418,7 +427,8 @@
       condition_restriction_at_grading: !!(b && b.condition_restriction === "new_or_like_new_only"),
       is_complete: it.type === "toy" ? it.complete : true,
       graded_item_name: it.type === "toy" ? (it.toyName.trim() || null) : null,
-      graded_item_description: null
+      graded_item_description: null,
+      returned_from_inventory_id: it.linked ? it.linked.inventory_id : null   // S483
     };
     if (decline) return body;   // a declined item never carries photos (D2: tier, photos and SKU never show)
     if (urls.length) body.photo_urls = urls; // only sent when there are rough photos
@@ -480,6 +490,7 @@
       it.note = rec.operator_item_notes || "";
       it.toyName = rec.graded_item_name || "";
     }
+    if (rec.returned_from_inventory_id) it.linked = { inventory_id: rec.returned_from_inventory_id, name: "" };   // S483
     S.editing = rec; S.viewRec = null; S.errors = []; S.errMode = "";
   }
   function afterSave() {
@@ -594,6 +605,7 @@
     if (b.misc) it.typeSet = false;   // Miscellaneous asks clothing or toy
     else if (b.item_type && b.item_type !== it.type) setType(b.item_type); else it.typeSet = true;
     it.brand = b; it.brandQ = b.brand_name; it.noBrand = false;
+    it.linked = null;   // S483: a brand change removes the link
   }
 
   /* ---------- start, cancel and close a bag ---------- */
@@ -841,7 +853,7 @@
   }
   function nameField() {
     var it = S.item;
-    return '<div data-q="tn"><label class="ss-lab" for="ss-tn">Short name <span class="ss-req">*</span></label><input id="ss-tn" class="ss-inp' + (it.toyName.trim() ? "" : " ss-need") + '" type="text" data-k="toyName" autocapitalize="sentences" placeholder="Like wooden train set" value="' + esc(it.toyName) + '"><p class="ss-hint">If it\'s declined, the email uses this to say what came back.</p></div>';
+    return '<div data-q="tn"><label class="ss-lab" for="ss-tn">Short name <span class="ss-req">*</span></label><input id="ss-tn" class="ss-inp' + (it.toyName.trim() ? "" : " ss-need") + '" type="text" data-k="toyName" autocomplete="off" autocapitalize="sentences" placeholder="Like wooden train set" value="' + esc(it.toyName) + '"><p class="ss-hint">If it\'s declined, the email uses this to say what came back.</p></div>';
   }
   function sizeField(optional) {
     var it = S.item;
@@ -854,6 +866,65 @@
     var it = S.item;
     return '<div data-q="age"><p class="ss-lab">Age range ' + (optional ? '<span class="ss-opt">optional</span>' : '<span class="ss-req">*</span>') + ' <span class="ss-opt">pick all that fit</span></p>' +
       pills(ageOptions(), function (v) { return it.ages.indexOf(v) > -1; }, "age", "two") + "</div>";
+  }
+  /* ---------- S483: a returning item (Hers before?) ---------- */
+  function pastKey() {
+    var it = S.item;
+    if (!it || !S.member || !it.typeSet || S.addBrand || S.viewRec) return "";
+    if (!it.brand && !it.noBrand) return "";
+    var misc = it.noBrand || (it.brand && it.brand.misc);
+    return S.member.id + "|" + it.type + "|" + (misc ? "*" : it.brand.brand_name);
+  }
+  function ensurePast() {
+    var key = pastKey();
+    if (!key || key === S.past.key) return;
+    var it = S.item, misc = it.noBrand || (it.brand && it.brand.misc);
+    S.past = { key: key, rows: [], loading: true, all: false };
+    door("POST", "/rpc/get_member_past_items", {
+      p_member_id: S.member.id, p_item_type: it.type, p_brand: misc ? null : it.brand.brand_name
+    }).then(function (rows) {
+      if (S.past.key !== key) return;
+      S.past.rows = Array.isArray(rows) ? rows : []; S.past.loading = false;
+      if (S.screen === "sort") renderPart("past");
+    }).catch(function (err) {
+      if (S.past.key !== key) return;
+      S.past.loading = false;
+      console.warn("[sort-tool] Hers before? read failed:", err && err.message);
+    });
+  }
+  function viewPast() {
+    var it = S.item;
+    if (it.linked) {
+      return '<div class="ss-past-done"><span>✓ From before' + (it.linked.name ? ": " + esc(it.linked.name) : "") + "</span>" +
+        '<button type="button" class="ss-link" data-act="past-undo">Undo</button></div>';
+    }
+    if (S.past.key !== pastKey() || !S.past.rows.length) return "";
+    var rows = S.past.all ? S.past.rows : S.past.rows.slice(0, 3);
+    var h = '<div class="ss-past">' + rows.map(function (r, i) {
+      var pic = r.thumbnail_url || r.photo_url;
+      return '<button type="button" class="ss-past-row" data-act="past-pick" data-val="' + i + '">' +
+        (pic ? '<img src="' + esc(pic) + '" alt="" loading="lazy">' : '<span class="ss-past-nopic"></span>') +
+        '<span class="ss-past-txt"><span class="ss-past-ey">Hers before?</span><span class="ss-past-nm">' + esc(r.item_name || r.sku) + "</span>" +
+        '<span class="ss-past-sz">' + esc([r.size, r.sku].filter(Boolean).join(" · ")) + "</span></span>" +
+        '<span class="ss-past-yes">Yes, this one</span></button>';
+    }).join("");
+    if (!S.past.all && S.past.rows.length > 3) h += '<button type="button" class="ss-link" data-act="past-all">Show all ' + S.past.rows.length + "</button>";
+    return h + "</div>";
+  }
+  function pickPast(r) {
+    var it = S.item;
+    it.linked = { inventory_id: r.inventory_id, name: r.item_name || r.sku };
+    if (it.type === "toy") {
+      it.toyName = r.item_name || it.toyName;
+      it.ages = String(r.size || "").split(",").map(function (a) { return a.trim(); }).filter(Boolean);
+      it.more = true;
+    } else {
+      if (r.category) { it.category = r.category; it.catQ = r.category; }
+      var sz = r.size || "";
+      if (sz && sizeOptions().indexOf(sz) < 0) { it.sizeOther = true; it.sizeOtherText = sz; it.size = ""; }
+      else if (sz) { it.size = sz; it.sizeOther = false; }
+      it.more = !!sz;
+    }
   }
   function viewSort() {
     if (S.viewRec) return viewSavedRecord();
@@ -870,6 +941,7 @@
         pills([{ value: "clothing", label: "Clothing" }, { value: "toy", label: "Toy" }], function (v) { return it.typeSet && it.type === v; }, "dtype", "two") + "</div>";
     }
     if (!it.typeSet || S.addBrand) return out + first + "</div>" + errorBox() + footerLinks();
+    first += '<div data-part="past">' + viewPast() + "</div>";   // S483: Hers before?
 
     // 2. What it is: a clothing category, or a toy's short name
     first += (toy ? nameField() : catField()) + "</div>";
@@ -1085,6 +1157,7 @@
     try { pos = key ? a.selectionStart : null; } catch (e) { pos = null; }
     root.innerHTML = '<div class="ss-wrap" data-build="' + BUILD + '">' + view() + (S.toast ? '<div class="ss-toast" role="status">' + esc(S.toast) + "</div>" : "") + "</div>";
     if (S.item && S.item.fresh && S.screen === "sort") S.item.fresh = false;   // the new-item flash plays once
+    if (S.screen === "sort" && S.item) ensurePast();   // S483
     if (key) {
       var el = root.querySelector('[data-k="' + key + '"]');
       if (el) { el.focus(); try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) {} }
@@ -1094,7 +1167,7 @@
   function renderPart(name) {
     var box = root && root.querySelector('[data-part="' + name + '"]');
     if (!box) return render();
-    box.innerHTML = name === "members" ? viewMembers() : name === "brands" ? viewBrandBlock() : viewCatBlock();
+    box.innerHTML = name === "members" ? viewMembers() : name === "brands" ? viewBrandBlock() : name === "past" ? viewPast() : viewCatBlock();
   }
 
   /* ---------- taps and typing ---------- */
@@ -1188,8 +1261,11 @@
         advance = "brand";
         break;
       case "dtype": setType(val); advance = "dtype"; break;
+      case "past-pick": var pr = S.past.rows[Number(val)]; if (pr) { pickPast(pr); advance = it.type === "toy" ? "tn" : "cat"; } break;
+      case "past-undo": it.linked = null; break;
+      case "past-all": S.past.all = true; break;
       case "more": it.more = true; break;
-      case "nobrand": it.noBrand = true; it.brand = null; it.brandQ = ""; it.typeSet = false; advance = "brand"; break;
+      case "nobrand": it.noBrand = true; it.brand = null; it.brandQ = ""; it.typeSet = false; it.linked = null; advance = "brand"; break;
       case "newbrand": S.addBrand = { name: it.brandQ.trim(), tier: "", type: (it.choice === "decline" && it.typeSet) ? it.type : "" }; break;
       case "newbrand-newonly": S.addBrand.newOnly = !S.addBrand.newOnly; break;
       case "newbrand-type": S.addBrand.type = val; break;
@@ -1221,7 +1297,7 @@
         S.viewRec = rec || null;
         break;
       case "rec-back": S.viewRec = null; break;
-      case "brand-change": it.brand = null; it.brandQ = ""; it.noBrand = false; render(); focusOn("ss-brand"); return;
+      case "brand-change": it.brand = null; it.brandQ = ""; it.noBrand = false; it.linked = null; render(); focusOn("ss-brand"); return;
       case "cat-change": it.category = ""; it.catQ = ""; render(); focusOn("ss-cat"); return;
       case "sku-open": it.skuOpen = true; render(); focusOn("ss-sku"); return;
       case "video-remove": it.video = null; break;
@@ -1306,6 +1382,17 @@
       ".ss-picked{border:0;border-radius:12px;margin-top:0}",
       ".ss-picked small{line-height:1.5}",
       ".ss-picked u{color:#9fe0b6;text-decoration:underline}",
+      /* S483: Hers before? (the light row approved S482) */
+      ".ss-past{display:flex;flex-direction:column;gap:8px;margin-top:10px}",
+      ".ss-past-row{display:flex;align-items:center;gap:12px;width:100%;padding:10px;border:0;border-radius:12px;background:#EDECE0;color:#1E1A19;font-family:'Quicksand',sans-serif;text-align:left;cursor:pointer}",
+      ".ss-past-row img,.ss-past-nopic{flex:none;width:56px;height:56px;border-radius:8px;object-fit:cover;background:#C9C7BC;display:block}",
+      ".ss-past-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}",
+      ".ss-past-ey{font-size:12px;font-weight:700;color:#75736E}",
+      ".ss-past-nm{font-size:15px;font-weight:700;line-height:1.25}",
+      ".ss-past-sz{font-size:13px;font-weight:600;color:#75736E}",
+      ".ss-past-yes{flex:none;font-size:13px;font-weight:700;color:#fff;background:#1C4A91;border-radius:99px;padding:8px 12px}",
+      ".ss-past-done{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding:8px 14px;border-radius:12px;background:#1f3a28;color:#fff;box-shadow:inset 0 0 0 2px #4caf73;font-weight:700;font-size:15px}",
+      ".ss-past-done .ss-link{color:#9fe0b6;padding:6px 0}",
       ".ss-sumlist{display:flex;flex-direction:column;border:1px solid #3a3634;border-radius:12px;overflow:hidden;margin-top:6px}",
       ".ss-sumrow{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 12px;border:0;border-top:1px solid #3a3634;background:#1c1a19;color:#e9e3dc;font:600 13.5px 'Quicksand',sans-serif;text-align:left;cursor:pointer;width:100%}",
       ".ss-sumrow:first-child{border-top:0}",
