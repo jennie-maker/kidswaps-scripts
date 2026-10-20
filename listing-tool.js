@@ -848,6 +848,7 @@
     root.querySelectorAll(".ksl-combo-input").forEach(function (ci) { ci.value = ""; });
     closeAllCombos();
     defaultCondition();        // next item starts on the "great" default
+    RELIST = null;             // S484: forget any relist link state
     resetSorted();             // S432: unfold the "from sorting" fields, empty the summary
     resetTaps();               // S433: every tap question open again
   }
@@ -1669,6 +1670,7 @@
     if (thumbUrl) p.thumbnail_url = thumbUrl;   // Option B grid thumb; omitted -> server leaves null -> browse full-res fallback
     if (video && video.status === "done") p.video_url = video.url;
     if (itemType === "clothing" && setChk.checked) { p.is_matching_set = true; p.set_piece_count = parseInt(setCount.value, 10); }
+    if (RELIST && RELIST.notSame) p.not_same_item = true;   // S484: server unlinks after the save
     return p;
   }
 
@@ -3768,6 +3770,89 @@ function titleCase(s) {
   var SORTED_FOLDED = false;     // sorted item: summary showing, fields folded
   var FIND_BUSY = false;
   var FOLD_KEYS = ["brand", "category", "clothing_size", "toy_age_range", "tier", "retail_value", "item_name"];
+  /* S484 RELIST, hers S482/S483: a sorted item that sort linked back to one of
+     her old listings. get_intake_by_label sends that old listing as
+     record.previous. The page fills the gaps from it (sort's own answers win),
+     puts the old photos back, folds the carried details into the summary, and
+     shows one grey line. The COUNT is never sent: inventory-list works out
+     old + 1 from the link. "Not the same item" only sends not_same_item:true;
+     the server unlinks after the save lands. Condition stays unanswered (S455). */
+  var RELIST = null;             // { oldSku, seen, notSame } or null
+  var RELIST_FOLD_KEYS = ["color", "gender_style", "season", "occasion"];
+  function allFoldKeys() { return FOLD_KEYS.concat(RELIST_FOLD_KEYS); }
+
+  function paintRelistLine() {
+    if (!RELIST) return;
+    var grey = 'style="color:#75736E"';
+    if (RELIST.notSame) {
+      setFindNote('<span ' + grey + '>Saving as a new item. Not counted as a return.</span> ' +
+        '<button type="button" class="ksl-find-inline" data-relist-undo>Undo</button>');
+    } else {
+      setFindNote('<span ' + grey + '>Seen ' + RELIST.seen + ' times \u00b7 last as ' + esc(RELIST.oldSku) +
+        '. Photos are from last time; tap one to retake.</span> ' +
+        '<button type="button" class="ksl-find-inline" data-relist-notsame>Not the same item</button>');
+    }
+  }
+
+  function applyPrevious(p, rec) {
+    RELIST = null;
+    if (!p || typeof p !== "object" || !p.sku) return;
+    RELIST = { oldSku: String(p.sku), seen: (Number(p.times_seen) || 1) + 1, notSame: false };
+    var toy = itemType === "toy";
+    var fill = function (k, v) {
+      if (v === null || v === undefined || v === "") return;
+      if (fieldHasValue(k)) return;                 // sort's answer wins
+      setField(k, v);
+      if (fieldHasValue(k)) cueField(k);            // only cue what actually took
+    };
+    // name + description FIRST (the autoName ordering rule in applyRecord)
+    if (!fieldHasValue("item_name") && p.item_name) {
+      setField("item_name", p.item_name);
+      nameTouched = true;                           // after setField, never before
+      cueField("item_name");
+    }
+    if (!fieldHasValue("description") && p.description) {
+      setField("description", p.description);
+      cueField("description");
+    }
+    if (!toy) {
+      fill("category", p.category);
+      fill("color", p.color);
+      fill("gender_style", p.gender_style);
+      fill("season", p.season);
+      if (p.is_matching_set === true) {
+        setChk.checked = true;
+        setCountWrap.classList.remove("ksl-hidden");
+        setCount.value = p.set_piece_count ? String(p.set_piece_count) : "";
+      }
+    } else {
+      fill("toy_washability", p.toy_washability);
+      reflectPills();
+    }
+    fill("occasion", p.occasion);
+    // the old photos, in place; tapping one replaces it (existing retake path)
+    var urls = Array.isArray(p.photo_urls)
+      ? p.photo_urls.filter(function (u) { return typeof u === "string" && u; }) : [];
+    ["front", "back", "detail"].forEach(function (k, i) {
+      slots[k] = urls[i]
+        ? { id: uid(), url: urls[i], status: "done", name: "from " + RELIST.oldSku, objUrl: urls[i] }
+        : null;
+    });
+    thumbUrl = urls.length ? (p.thumbnail_url || null) : null;
+    video = p.video_url
+      ? { id: uid(), url: p.video_url, status: "done", name: "from " + RELIST.oldSku, objUrl: p.video_url }
+      : null;
+    renderAllSlots();
+    buildSortedSummary(rec);   // re-fold, now with the carried details
+    paintRelistLine();
+    saveDraft();
+  }
+
+  root.addEventListener("click", function (e) {
+    if (!e.target.closest || !RELIST) return;
+    if (e.target.closest("[data-relist-notsame]")) { RELIST.notSame = true; paintRelistLine(); return; }
+    if (e.target.closest("[data-relist-undo]")) { RELIST.notSame = false; paintRelistLine(); return; }
+  });
 
   function setFindNote(html) {
     var el = $("ksl-find-note");
@@ -3827,7 +3912,7 @@ function titleCase(s) {
   }
 
   function resetSorted() {
-    FOLD_KEYS.forEach(function (k) { var f = fieldEl(k); if (f) f.classList.remove("ksl-folded"); });
+    allFoldKeys().forEach(function (k) { var f = fieldEl(k); if (f) f.classList.remove("ksl-folded"); });
     var c = fieldEl("is_complete"); if (c) c.classList.add("ksl-folded");
     SORTED_FOLDED = false;
     var body = $("ksl-sorted-body"); if (body) body.innerHTML = "";
@@ -3835,7 +3920,7 @@ function titleCase(s) {
   }
 
   function unfoldSorted() {
-    FOLD_KEYS.forEach(function (k) { var f = fieldEl(k); if (f) f.classList.remove("ksl-folded"); });
+    allFoldKeys().forEach(function (k) { var f = fieldEl(k); if (f) f.classList.remove("ksl-folded"); });
     SORTED_FOLDED = false;
     paintForm();
   }
@@ -3852,7 +3937,7 @@ function titleCase(s) {
     resetSorted();
     var toy = itemType === "toy";
     var folded = [];
-    FOLD_KEYS.forEach(function (k) {
+    (RELIST ? allFoldKeys() : FOLD_KEYS).forEach(function (k) {
       if (k === "item_name" && !toy) return;          // clothing keeps its composed name in Still needed
       var f = fieldEl(k);
       if (!f || !f.classList.contains("ksl-cued") || !fieldHasValue(k)) return;
@@ -3875,8 +3960,15 @@ function titleCase(s) {
     if (tr) low.push(esc(tr.charAt(0).toUpperCase() + tr.slice(1)));
     var rv = val("retail_value");
     if (rv) low.push("$" + esc(rv) + (toy ? " average price" : " retail"));
+    var more = [];                                   // S484: carried from the old listing
+    if (val("color")) more.push(esc(val("color")));
+    var gs = val("gender_style");
+    if (gs) more.push(gs === "boy" ? "Male" : gs === "girl" ? "Female" : esc(gs));
+    if (val("season")) more.push(esc(val("season")));
+    if (val("occasion")) more.push(esc(val("occasion")));
     var body = $("ksl-sorted-body");
-    if (body) body.innerHTML = top.join(" \u00b7 ") + (low.length ? "<br>" + low.join(" \u00b7 ") : "");
+    if (body) body.innerHTML = top.join(" \u00b7 ") + (low.length ? "<br>" + low.join(" \u00b7 ") : "") +
+                               (more.length ? "<br>" + more.join(" \u00b7 ") : "");
     var when = $("ksl-sorted-when"); if (when) when.textContent = sortedWhen(rec);
     SORTED_FOLDED = true;
     paintForm();
@@ -3918,6 +4010,7 @@ function titleCase(s) {
       if (res.ok && res.j && res.j.ok && res.j.found && res.j.record) {
         FORM_STATE = "sorted"; newTypePicked = true;
         applyRecord(res.j.record);       // builds the summary at its end
+        applyPrevious(res.j.record.previous, res.j.record);   // S484 relist (no-op when unlinked)
         lastLookup = norm;
         paintForm();
         armPhotoFirst();
