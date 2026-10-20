@@ -3788,10 +3788,34 @@ function titleCase(s) {
       setFindNote('<span ' + grey + '>Saving as a new item. Not counted as a return.</span> ' +
         '<button type="button" class="ksl-find-inline" data-relist-undo>Undo</button>');
     } else {
+      var ph = RELIST.photos === "old" ? " Photos are from last time; tap one to retake."
+             : RELIST.photos === "sort" ? " Photos are from sorting." : "";
       setFindNote('<span ' + grey + '>Seen ' + RELIST.seen + ' times \u00b7 last as ' + esc(RELIST.oldSku) +
-        '. Photos are from last time; tap one to retake.</span> ' +
+        '.' + ph + '</span> ' +
         '<button type="button" class="ksl-find-inline" data-relist-notsame>Not the same item</button>');
     }
+  }
+
+  /* S484: photos (and a video) taken in /admin/sort ride get_intake_by_label as
+     photo_urls / video_url and go into the same slots, as sort's hint promises.
+     The grid thumb is made from the Front photo the way edit mode does it
+     (makeThumbFromUrl); any failure leaves thumbUrl null = browse full-res. */
+  function applySortPhotos(rec) {
+    var urls = Array.isArray(rec && rec.photo_urls)
+      ? rec.photo_urls.filter(function (u) { return typeof u === "string" && u; }) : [];
+    var vid = (rec && typeof rec.video_url === "string" && rec.video_url) ? rec.video_url : null;
+    if (!urls.length && !vid) return false;
+    rehydratePhotos({ photo_urls: urls, video_url: vid });
+    thumbUrl = null;
+    var front = slots.front;
+    if (front && front.url) {
+      makeThumbFromUrl(front.url)
+        .then(function (tf) { return uploadFile(tf, "thumb"); })
+        .then(function (turl) { if (slots.front === front) { thumbUrl = turl; saveDraft(); } })
+        .catch(function (e) { console.warn("[thumb] sort photo skipped, full-res fallback", e); });
+    }
+    saveDraft();
+    return true;
   }
 
   function applyPrevious(p, rec) {
@@ -3830,19 +3854,26 @@ function titleCase(s) {
       reflectPills();
     }
     fill("occasion", p.occasion);
-    // the old photos, in place; tapping one replaces it (existing retake path)
+    // Photos: anything taken in sort today wins (newer). Only when sort sent
+    // none do the old photos go in their slots; tapping one retakes it.
+    var fromSort = !!(slots.front || slots.back || slots.detail || video);
     var urls = Array.isArray(p.photo_urls)
       ? p.photo_urls.filter(function (u) { return typeof u === "string" && u; }) : [];
-    ["front", "back", "detail"].forEach(function (k, i) {
-      slots[k] = urls[i]
-        ? { id: uid(), url: urls[i], status: "done", name: "from " + RELIST.oldSku, objUrl: urls[i] }
+    if (fromSort) {
+      RELIST.photos = "sort";
+    } else {
+      ["front", "back", "detail"].forEach(function (k, i) {
+        slots[k] = urls[i]
+          ? { id: uid(), url: urls[i], status: "done", name: "from " + RELIST.oldSku, objUrl: urls[i] }
+          : null;
+      });
+      thumbUrl = urls.length ? (p.thumbnail_url || null) : null;
+      video = p.video_url
+        ? { id: uid(), url: p.video_url, status: "done", name: "from " + RELIST.oldSku, objUrl: p.video_url }
         : null;
-    });
-    thumbUrl = urls.length ? (p.thumbnail_url || null) : null;
-    video = p.video_url
-      ? { id: uid(), url: p.video_url, status: "done", name: "from " + RELIST.oldSku, objUrl: p.video_url }
-      : null;
-    renderAllSlots();
+      RELIST.photos = (urls.length || p.video_url) ? "old" : "";
+      renderAllSlots();
+    }
     buildSortedSummary(rec);   // re-fold, now with the carried details
     paintRelistLine();
     saveDraft();
@@ -4010,6 +4041,7 @@ function titleCase(s) {
       if (res.ok && res.j && res.j.ok && res.j.found && res.j.record) {
         FORM_STATE = "sorted"; newTypePicked = true;
         applyRecord(res.j.record);       // builds the summary at its end
+        applySortPhotos(res.j.record);   // S484: photos taken in sort land in the same slots
         applyPrevious(res.j.record.previous, res.j.record);   // S484 relist (no-op when unlinked)
         lastLookup = norm;
         paintForm();
