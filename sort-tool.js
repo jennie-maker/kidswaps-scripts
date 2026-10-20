@@ -33,7 +33,7 @@
 (function () {
   "use strict";
 
-  var BUILD = "sort-tool S483 v13";
+  var BUILD = "sort-tool S484 v14";
   var ROOT_ID = "ks-sort-app";
   var BASE = "https://ajsobivqxexcniwifxzz.supabase.co/functions/v1";
   var DOOR = BASE + "/grading-db";   // S440: also lets through POST /rpc/get_bag_email_parts, and no other function
@@ -1000,7 +1000,11 @@
           '<label class="ss-slot-tap"><span>' + sl.label + "<small>" + state + "</small></span>" + input + "</label>" +
           '<button type="button" class="ss-x" data-act="photo-remove" data-val="' + sl.key + '" aria-label="Remove the ' + sl.label + ' photo">×</button></div>';
       }).join("") + videoTile() +
-      '</div><p class="ss-hint">Tap a slot to take a photo or pick from your library. Pick several and they fill the empty slots in order. Each one carries into the same slot on listing.</p></div>';
+      '</div><p class="ss-hint">' + (it.linked
+        // S484, hers: say where a returning item's photos come from
+        ? "Her old photos load on the listing page, so you can skip these. Photos you add here replace them there."
+        : "Tap a slot to take a photo or pick from your library. Pick several and they fill the empty slots in order. Each one carries into the same slot on listing.") +
+      '</p></div>';
 
     var pieces = toy ? '<div class="ss-card" data-q="complete"><p class="ss-lab">All the pieces?</p>' +
       pills([{ value: "yes", label: "Complete" }, { value: "no", label: "Missing pieces" }], function (v) { return (v === "yes") === it.complete; }, "complete", "two") + "</div>" : "";
