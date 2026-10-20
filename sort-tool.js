@@ -900,15 +900,13 @@
     }
     if (S.past.key !== pastKey() || !S.past.rows.length) return "";
     var rows = S.past.all ? S.past.rows : S.past.rows.slice(0, 3);
-    var h = '<div class="ss-past">' + rows.map(function (r, i) {
-      var pic = r.thumbnail_url || r.photo_url;
-      return '<button type="button" class="ss-past-row" data-act="past-pick" data-val="' + i + '">' +
-        (pic ? '<img src="' + esc(pic) + '" alt="" loading="lazy">' : '<span class="ss-past-nopic"></span>') +
-        '<span class="ss-past-txt"><span class="ss-past-ey">Hers before?</span><span class="ss-past-nm">' + esc(r.item_name || r.sku) + "</span>" +
-        '<span class="ss-past-sz">' + esc([r.size, r.sku].filter(Boolean).join(" · ")) + "</span></span>" +
-        '<span class="ss-past-yes">Yes, this one</span></button>';
+    // S483, hers: just the thumbnails, side by side; a tap on one is the "Yes, this one".
+    var h = '<div class="ss-past"><p class="ss-past-ey">Hers before?</p>' + rows.map(function (r, i) {
+      var pic = r.thumbnail_url || r.photo_url, label = [r.item_name || r.sku, r.size, r.sku].filter(Boolean).join(" · ");
+      return '<button type="button" class="ss-past-thumb" data-act="past-pick" data-val="' + i + '" aria-label="' + esc(label) + '" title="' + esc(label) + '">' +
+        (pic ? '<img src="' + esc(pic) + '" alt="" loading="lazy">' : '<span>' + esc(r.sku || "") + "</span>") + "</button>";
     }).join("");
-    if (!S.past.all && S.past.rows.length > 3) h += '<button type="button" class="ss-link" data-act="past-all">Show all ' + S.past.rows.length + "</button>";
+    if (!S.past.all && S.past.rows.length > 3) h += '<button type="button" class="ss-link ss-past-all" data-act="past-all">Show all ' + S.past.rows.length + "</button>";
     return h + "</div>";
   }
   function pickPast(r) {
@@ -1383,14 +1381,12 @@
       ".ss-picked small{line-height:1.5}",
       ".ss-picked u{color:#9fe0b6;text-decoration:underline}",
       /* S483: Hers before? (the light row approved S482) */
-      ".ss-past{display:flex;flex-direction:column;gap:8px;margin-top:10px}",
-      ".ss-past-row{display:flex;align-items:center;gap:12px;width:100%;padding:10px;border:0;border-radius:12px;background:#EDECE0;color:#1E1A19;font-family:'Quicksand',sans-serif;text-align:left;cursor:pointer}",
-      ".ss-past-row img,.ss-past-nopic{flex:none;width:56px;height:56px;border-radius:8px;object-fit:cover;background:#C9C7BC;display:block}",
-      ".ss-past-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}",
-      ".ss-past-ey{font-size:12px;font-weight:700;color:#75736E}",
-      ".ss-past-nm{font-size:15px;font-weight:700;line-height:1.25}",
-      ".ss-past-sz{font-size:13px;font-weight:600;color:#75736E}",
-      ".ss-past-yes{flex:none;font-size:13px;font-weight:700;color:#fff;background:#1C4A91;border-radius:99px;padding:8px 12px}",
+      ".ss-past{margin-top:10px}",
+      ".ss-past-ey{font-size:12.5px;font-weight:700;color:#bdb5ab;margin:0 0 6px}",
+      ".ss-past-thumb{display:inline-block;vertical-align:top;width:60px;height:60px;margin:0 8px 8px 0;padding:0;border:0;border-radius:10px;background:#EDECE0;overflow:hidden;cursor:pointer}",
+      ".ss-past-thumb img{display:block;width:100%;height:100%;object-fit:cover}",
+      ".ss-past-thumb span{display:block;font:700 10px 'Quicksand',sans-serif;color:#1E1A19;padding:4px;word-break:break-all}",
+      ".ss-past-all{display:inline-block;vertical-align:top;line-height:44px;padding:0}",
       ".ss-past-done{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding:8px 14px;border-radius:12px;background:#1f3a28;color:#fff;box-shadow:inset 0 0 0 2px #4caf73;font-weight:700;font-size:15px}",
       ".ss-past-done .ss-link{color:#9fe0b6;padding:6px 0}",
       ".ss-sumlist{display:flex;flex-direction:column;border:1px solid #3a3634;border-radius:12px;overflow:hidden;margin-top:6px}",
