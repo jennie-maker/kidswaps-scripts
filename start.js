@@ -1,5 +1,8 @@
 /* ============================================================================
- * start.js — /start, THE ENVELOPE CODE (core 1B item 28, stage 5). v1, S487.
+ * start.js — /start, THE ENVELOPE CODE (core 1B item 28, stage 5). v2, S487.
+ * v2: her S487 edits to board 2's words, a reason-for-the-code line on boards 2
+ *     and 3, and both tops drawn as home's blue frame with a card (coral or white)
+ *     and the hero photo on the right on a computer.
  * Mockup https://claude.ai/artifact/UPc56RDwYK4evL7RbiGqpC (boards 1, 2, 3).
  * Loads ONLY on /start (Page Settings, Before </body>, after home.js). CSS: start.css.
  * ----------------------------------------------------------------------------
@@ -26,7 +29,7 @@
  *   S487: she edits once she sees them live).
  * ========================================================================== */
 (function () {
-  var BUILD = 'start v1 (S487)';
+  var BUILD = 'start v2 (S487)';
   var LOG = '[ks-start]';
 
   var TEXT = {
@@ -37,9 +40,10 @@
     noAnswer:     'We couldn\u2019t check your code just now. Try again in a moment.',
 
     goodEyebrow:  'Less clutter. Less waste.',
-    goodHeading:  'Your swap bag is already in your hands.',
-    goodBody:     'Fill it with what they\u2019ve outgrown, send it back on the prepaid label, and pick a plan. Your code is saved, so there\u2019s nothing to type.',
+    goodHeading:  'Fill the bag, send it back, start swapping.',
+    goodBody:     'KidSwaps is a membership for parents of young children. You send in the good stuff your child has outgrown, earn credits, and swap for what fits next. The bag inside your envelope is already prelabeled, so you can start today.',
     goodCode:     'Your code: ',
+    codeWhy:      'With your code you skip the line for your first bag, and everything we accept from your shipment is automatically credited to your account.',
     goodButton:   'Pick my plan',
     goodSent:     'Already sent your bag? Sign up with your code and your credits will be waiting for you.',
 
@@ -195,6 +199,29 @@
     return true;
   }
 
+  /* home's frame: the blue band, a rounded card, the words on the left and the
+     hero photo (copied from home's hero, so it changes when hers does) on the
+     right. Returns the words column. */
+  function card(sec) {
+    var c = node('div', 'ks-start-card');
+    var copy = node('div', 'ks-start-copy');
+    c.appendChild(copy);
+    var img = document.querySelector('.hero-section .home-hero-media img');
+    if (img) {
+      var media = node('div', 'ks-start-media');
+      var pic = img.cloneNode(false);
+      pic.removeAttribute('id');
+      pic.setAttribute('alt', '');
+      pic.setAttribute('loading', 'eager');
+      media.appendChild(pic);
+      c.appendChild(media);
+    } else {
+      c.classList.add('ks-start-card--no-photo');
+    }
+    sec.appendChild(c);
+    return copy;
+  }
+
   function focusHeading(h) {
     h.setAttribute('tabindex', '-1');
     try { h.focus({ preventScroll: true }); } catch (e) { h.focus(); }
@@ -202,7 +229,7 @@
 
   function paintGood(c, moved) {
     var sec = node('section', 'ks-start-top ks-start-good');
-    var inner = node('div', 'ks-start-top-inner');
+    var inner = card(sec);
     inner.appendChild(node('p', 'ks-start-eyebrow', TEXT.goodEyebrow));
     var h = node('h1', 'ks-start-heading', TEXT.goodHeading);
     inner.appendChild(h);
@@ -211,9 +238,9 @@
     chip.innerHTML = CHECK_SVG;
     chip.appendChild(document.createTextNode(TEXT.goodCode + showCode(c)));
     inner.appendChild(chip);
+    inner.appendChild(node('p', 'ks-start-small ks-start-why', TEXT.codeWhy));
     inner.appendChild(link('ks-start-good-button', TEXT.goodButton, SIGNUP_URL));
     inner.appendChild(node('p', 'ks-start-small', TEXT.goodSent));
-    sec.appendChild(inner);
     if (placePanel(sec) && moved) { window.scrollTo(0, 0); focusHeading(h); }
   }
 
@@ -224,10 +251,11 @@
         ? [TEXT.expiredHeading, TEXT.expiredBody]
         : [TEXT.unknownHeading, TEXT.unknownBody];
     var sec = node('section', 'ks-start-top ks-start-bad ks-start-bad--' + kind);
-    var inner = node('div', 'ks-start-top-inner');
+    var inner = card(sec);
     var h = node('h1', 'ks-start-heading', words[0]);
     inner.appendChild(h);
     inner.appendChild(node('p', 'ks-start-body', words[1]));
+    inner.appendChild(node('p', 'ks-start-small ks-start-why', TEXT.codeWhy));
     var label = node('label', 'ks-start-retry-label', TEXT.badLabel);
     label.setAttribute('for', 'ks-start-retry');
     var f = codeForm('ks-start-retry', 'ks-start-retry', label, '', TEXT.badButton,
@@ -239,7 +267,6 @@
     var n = node('p', 'ks-start-small', TEXT.badNoCode);
     n.appendChild(link('ks-start-link', TEXT.badNoCodeLink, SIGNUP_URL));
     inner.appendChild(n);
-    sec.appendChild(inner);
     if (placePanel(sec) && moved) { window.scrollTo(0, 0); focusHeading(h); }
   }
 

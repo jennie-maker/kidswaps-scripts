@@ -1,5 +1,7 @@
 /* ============================================================================
- * start.css — /start, THE ENVELOPE CODE (core 1B item 28, stage 5). v1, S487.
+ * start.css — /start, THE ENVELOPE CODE (core 1B item 28, stage 5). v2, S487.
+ * v2: boards 2 and 3 sit in home's frame (blue band, rounded card, photo right);
+ *     the heading is pinned left against Webflow's All H1 centring.
  * Mockup https://claude.ai/artifact/UPc56RDwYK4evL7RbiGqpC (boards 1, 2, 3).
  * Loads ONLY on /start (Page Settings, Inside <head>, after home.css). Script:
  * start.js. Everything here is scoped to /start's own pieces or to body.start-page
@@ -94,45 +96,83 @@ html.ks-code-panel .hero-section { display: none; }
 }
 .ks-start-box-note:empty { display: none; }
 
-/* ---- BOARDS 2 AND 3: A TOP THAT REPLACES THE HERO ------------------------ */
-.ks-start-top { width: 100%; }
-.ks-start-top-inner {
-  max-width: 1240px;
-  margin: 0 auto;
-  padding: 80px 44px 88px;
+/* ---- BOARDS 2 AND 3: A TOP THAT REPLACES THE HERO ------------------------
+   Home's frame, restated from home.css's .hero-section rules so the two tops
+   match: the blue band, a rounded card up to 1240, words left, photo right. */
+.ks-start-top {
+  width: 100%;
   box-sizing: border-box;
+  background-color: #1C4A91;
+  padding: 44px;
+}
+.ks-start-card {
+  max-width: 1240px;
+  min-height: 520px;
+  margin: 0 auto;
+  border-radius: 24px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+}
+.ks-start-copy {
+  flex: 0 0 54%;
+  max-width: 54%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 60px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  justify-content: center;
   gap: 20px;
   text-align: left;
 }
-.ks-start-top-inner > * { max-width: 640px; }
+.ks-start-card--no-photo .ks-start-copy { flex-basis: 100%; max-width: 100%; }
+.ks-start-media {
+  flex: 1 1 auto;
+  min-width: 0;
+  position: relative;
+  background-color: #C9C7BC;
+}
+.ks-start-media img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
 .ks-start-top p { margin: 0; }
 .ks-start-heading {
   margin: 0;
   font-family: "Instrument Serif", serif;
   font-weight: 400;
-  font-size: 72px;
+  font-size: 64px;
   line-height: 1.02;
   letter-spacing: 0;
+  text-align: left;
   text-transform: none;
   color: inherit;
 }
 .ks-start-heading:focus { outline: none; }
 .ks-start-body {
   font-family: Quicksand, sans-serif;
-  font-size: 19px;
-  line-height: 1.45;
+  font-size: 18px;
+  line-height: 1.5;
+  max-width: 34em;
 }
 .ks-start-small {
   font-family: Quicksand, sans-serif;
   font-size: 15px;
   line-height: 1.45;
+  max-width: 38em;
 }
+.ks-start-why { margin-top: -8px !important; }
 
 /* BOARD 2, GOOD CODE: the coral top */
-.ks-start-good { background: #E54F25; color: #fff; }
+.ks-start-good .ks-start-card { background: #E54F25; color: #fff; }
 .ks-start-eyebrow {
   font-family: Quicksand, sans-serif;
   font-size: 15px;
@@ -168,7 +208,7 @@ html.ks-code-panel .hero-section { display: none; }
 .ks-start-good .ks-start-good-button:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 
 /* BOARD 3, BAD CODE: the plain top */
-.ks-start-bad { color: #1E1A19; }
+.ks-start-bad .ks-start-card { background: #fff; color: #1E1A19; }
 .ks-start-retry {
   width: 100%;
   display: flex;
@@ -230,6 +270,13 @@ html.ks-code-panel .hero-section { display: none; }
 }
 .ks-start-bad .ks-start-link:hover { color: #1E1A19; }
 
+/* ---- TABLET (768 to 991): the words column is narrow beside the photo ---- */
+@media screen and (min-width: 768px) and (max-width: 991px) {
+  .ks-start-top { padding: 32px; }
+  .ks-start-copy { padding: 44px 36px; }
+  .ks-start-heading { font-size: 50px; }
+}
+
 /* ---- PHONE ---------------------------------------------------------------- */
 @media screen and (max-width: 767px) {
   /* Hero top padding 28px (mockup board 1); it was 32 from home.css. */
@@ -237,8 +284,12 @@ html.ks-code-panel .hero-section { display: none; }
 
   .ks-start-box { max-width: 100%; margin-top: 20px; }
 
-  .ks-start-top-inner { padding: 36px 22px 40px; gap: 16px; }
-  .ks-start-top-inner > * { max-width: 100%; }
+  /* home.css's phone hero: 16px band, 18px corners; the photo is dropped here so
+     the code and the button stay near the top of the screen. */
+  .ks-start-top { padding: 16px 16px 20px; }
+  .ks-start-card { border-radius: 18px; min-height: 0; flex-direction: column; }
+  .ks-start-copy { flex: 0 0 auto; max-width: 100%; padding: 32px 22px 36px; gap: 16px; }
+  .ks-start-media { display: none; }
   .ks-start-heading { font-size: 44px; line-height: 1.04; }
   .ks-start-body { font-size: 17px; }
   .ks-start-eyebrow { font-size: 14px; }
