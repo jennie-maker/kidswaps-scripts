@@ -2,6 +2,7 @@
  * start.css — /start, THE ENVELOPE CODE (core 1B item 28, stage 5). v2, S487.
  * v2: boards 2 and 3 sit in home's frame (blue band, rounded card, photo right);
  *     the heading is pinned left against Webflow's All H1 centring.
+ * v3: the photo arrives as a background image (home's is one), so it is sized here.
  * Mockup https://claude.ai/artifact/UPc56RDwYK4evL7RbiGqpC (boards 1, 2, 3).
  * Loads ONLY on /start (Page Settings, Inside <head>, after home.css). Script:
  * start.js. Everything here is scoped to /start's own pieces or to body.start-page
@@ -134,6 +135,9 @@ html.ks-code-panel .hero-section { display: none; }
   min-width: 0;
   position: relative;
   background-color: #C9C7BC;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 .ks-start-media img {
   position: absolute;

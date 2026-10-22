@@ -3,6 +3,8 @@
  * v2: her S487 edits to board 2's words, a reason-for-the-code line on boards 2
  *     and 3, and both tops drawn as home's blue frame with a card (coral or white)
  *     and the hero photo on the right on a computer.
+ * v3: home's hero photo is a BACKGROUND IMAGE on .home-hero-media, not an <img>
+ *     (read live S487), so the card copies that background.
  * Mockup https://claude.ai/artifact/UPc56RDwYK4evL7RbiGqpC (boards 1, 2, 3).
  * Loads ONLY on /start (Page Settings, Before </body>, after home.js). CSS: start.css.
  * ----------------------------------------------------------------------------
@@ -29,7 +31,7 @@
  *   S487: she edits once she sees them live).
  * ========================================================================== */
 (function () {
-  var BUILD = 'start v2 (S487)';
+  var BUILD = 'start v3 (S487)';
   var LOG = '[ks-start]';
 
   var TEXT = {
@@ -206,17 +208,28 @@
     var c = node('div', 'ks-start-card');
     var copy = node('div', 'ks-start-copy');
     c.appendChild(copy);
-    var img = document.querySelector('.hero-section .home-hero-media img');
-    if (img) {
+    var src = document.querySelector('.hero-section .home-hero-media');
+    var img = src && src.querySelector('img');
+    var bg = '';
+    if (!img && src) {
+      try { bg = getComputedStyle(src).backgroundImage || ''; } catch (e) {}
+      if (bg === 'none') bg = '';
+    }
+    if (img || bg) {
       var media = node('div', 'ks-start-media');
-      var pic = img.cloneNode(false);
-      pic.removeAttribute('id');
-      pic.setAttribute('alt', '');
-      pic.setAttribute('loading', 'eager');
-      media.appendChild(pic);
+      if (img) {
+        var pic = img.cloneNode(false);
+        pic.removeAttribute('id');
+        pic.setAttribute('alt', '');
+        pic.setAttribute('loading', 'eager');
+        media.appendChild(pic);
+      } else {
+        media.style.backgroundImage = bg;
+      }
       c.appendChild(media);
     } else {
       c.classList.add('ks-start-card--no-photo');
+      console.log(LOG, 'no hero photo found, card drawn without one');
     }
     sec.appendChild(c);
     return copy;
