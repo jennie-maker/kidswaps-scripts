@@ -5,6 +5,8 @@
  *     and the hero photo on the right on a computer.
  * v3: home's hero photo is a BACKGROUND IMAGE on .home-hero-media, not an <img>
  *     (read live S487), so the card copies that background.
+ * v4: board 2 trimmed for phones (hers S487): shorter body (her meta line), the
+ *     button straight after the code, the reason line and a shorter sent line under it.
  * Mockup https://claude.ai/artifact/UPc56RDwYK4evL7RbiGqpC (boards 1, 2, 3).
  * Loads ONLY on /start (Page Settings, Before </body>, after home.js). CSS: start.css.
  * ----------------------------------------------------------------------------
@@ -31,7 +33,7 @@
  *   S487: she edits once she sees them live).
  * ========================================================================== */
 (function () {
-  var BUILD = 'start v3 (S487)';
+  var BUILD = 'start v4 (S487)';
   var LOG = '[ks-start]';
 
   var TEXT = {
@@ -43,11 +45,11 @@
 
     goodEyebrow:  'Less clutter. Less waste.',
     goodHeading:  'Fill the bag, send it back, start swapping.',
-    goodBody:     'KidSwaps is a membership for parents of young children. You send in the good stuff your child has outgrown, earn credits, and swap for what fits next. The bag inside your envelope is already prelabeled, so you can start today.',
+    goodBody:     'KidSwaps is a membership for parents of young children. Send in what your child has outgrown, earn credits, and swap for what they need next.',
     goodCode:     'Your code: ',
     codeWhy:      'With your code you skip the line for your first bag, and everything we accept from your shipment is automatically credited to your account.',
     goodButton:   'Pick my plan',
-    goodSent:     'Already sent your bag? Sign up with your code and your credits will be waiting for you.',
+    goodSent:     'Already sent it? Your credits will be waiting when you sign up.',
 
     unknownHeading: 'Let\u2019s find your code.',
     unknownBody:    'We couldn\u2019t find that one. Check it against the label on the front of your envelope.',
@@ -251,8 +253,8 @@
     chip.innerHTML = CHECK_SVG;
     chip.appendChild(document.createTextNode(TEXT.goodCode + showCode(c)));
     inner.appendChild(chip);
-    inner.appendChild(node('p', 'ks-start-small ks-start-why', TEXT.codeWhy));
     inner.appendChild(link('ks-start-good-button', TEXT.goodButton, SIGNUP_URL));
+    inner.appendChild(node('p', 'ks-start-small ks-start-why', TEXT.codeWhy));
     inner.appendChild(node('p', 'ks-start-small', TEXT.goodSent));
     if (placePanel(sec) && moved) { window.scrollTo(0, 0); focusHeading(h); }
   }
