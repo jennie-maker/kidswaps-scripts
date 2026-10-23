@@ -33,7 +33,7 @@
  *   S487: she edits once she sees them live).
  * ========================================================================== */
 (function () {
-  var BUILD = 'start v4 (S487)';
+  var BUILD = 'start v5 (S488)';
   var LOG = '[ks-start]';
 
   var TEXT = {
@@ -270,7 +270,10 @@
     var h = node('h1', 'ks-start-heading', words[0]);
     inner.appendChild(h);
     inner.appendChild(node('p', 'ks-start-body', words[1]));
-    inner.appendChild(node('p', 'ks-start-small ks-start-why', TEXT.codeWhy));
+    /* v5 (hers S487): the skip-the-line line shows on the unknown card only */
+    if (kind !== 'used' && kind !== 'expired') {
+      inner.appendChild(node('p', 'ks-start-small ks-start-why', TEXT.codeWhy));
+    }
     var label = node('label', 'ks-start-retry-label', TEXT.badLabel);
     label.setAttribute('for', 'ks-start-retry');
     var f = codeForm('ks-start-retry', 'ks-start-retry', label, '', TEXT.badButton,
