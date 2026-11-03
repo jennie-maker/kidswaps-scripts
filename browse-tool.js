@@ -315,6 +315,8 @@
       '.ks-detail-duonote p{margin:0 0 4px;font-weight:700;color:#1E1A19;}' +
       '.ks-detail-duonote ol{margin:0;padding:0 0 0 1.3em;}' +
       '.ks-detail-duonote li{margin:0;padding:0;}' +
+      '.ks-detail-duonote p.ks-duo-body{margin:0 0 6px;font-weight:400;}' +
+      '.ks-detail-duonote p.ks-duo-body:last-child{margin-bottom:0;}' +
       '#ks-browse-app .ks-browse-media img{object-fit:cover;}' +
       '#ks-browse-app .ks-browse-media:has(img){background:#fff;}' +
       '#ks-detail-root .ks-detail-main-img{object-fit:contain;}' +
@@ -1210,15 +1212,14 @@
 
     /* S474, HERS: a Duo is two everyday-brand pieces in good condition, same size,
        one listing for one credit. No Duo page and never highlighted; this note on the
-       item itself is the only explanation. ⚠ APPROVED COPY, VERBATIM. */
+       item itself is the only explanation. ⚠ APPROVED COPY, VERBATIM.
+       S490, hers: two short paragraphs instead of the list. The landfill line is her
+       deliberate exception to the no-landfill rule, for Duos only. */
     var duoNote = (String(item.category || '').toLowerCase() === 'duo')
-      ? '<div class="ks-detail-duonote"><p>What to expect from a Duo</p><ol>' +
-          '<li>Two pieces in the same size, for one credit</li>' +
-          '<li>Everyday brands, checked by hand</li>' +
-          '<li>Good condition, so a little wear from the wash is normal</li>' +
-          '<li>Paired to go together, but not always a matching set</li>' +
-          '<li>Meant for daycare, the park, or casual days</li>' +
-        '</ol></div>' : '';
+      ? '<div class="ks-detail-duonote"><p>What to expect from a Duo</p>' +
+          '<p class="ks-duo-body">Two pieces in the same size, for one credit. They\u2019re everyday brands, checked by hand, and usually in good or fair condition.</p>' +
+          '<p class="ks-duo-body">They\u2019re paired to go together, but they aren\u2019t always a matching set. Be proud that you\u2019re keeping good stuff out of the landfills.</p>' +
+        '</div>' : '';
 
     var blocks = '';
     if (item.description) {
