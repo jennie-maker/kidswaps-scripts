@@ -408,7 +408,9 @@
     } else {
       var extra = (f.key === "sku")
         ? ' inputmode="numeric" pattern="[0-9]*" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"'
-        : (f.key === "brand" ? ' autocomplete="off"' : '');
+        : f.key === "bin_location"
+          ? ' inputmode="none" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"'
+          : (f.key === "brand" ? ' autocomplete="off"' : '');
       var inputHtml = '<input type="text" data-key="' + f.key + '"' + extra + ' placeholder="' + (f.placeholder || "") + '">';
       inner = (f.key === "brand")
         ? '<div class="ksl-brand-wrap">' + inputHtml + '<div class="ksl-brand-results" data-brand-results></div></div>'
@@ -556,7 +558,7 @@
       '</div>' +
       '<div class="ksl-field">' +
         '<label class="ksl-label">Bin location</label>' +
-        '<input type="text" id="ksl-edit-bin" placeholder="where it\u2019s stored">' +
+        '<input type="text" id="ksl-edit-bin" inputmode="none" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" placeholder="where it\u2019s stored">' +
       '</div>' +
       '<div class="ksl-field">' +
         '<label class="ksl-check"><input type="checkbox" id="ksl-edit-featured"> ' +
@@ -921,6 +923,105 @@
     }, { passive: true });
   })();
 
+  /* ---- S490 hers: the box keypad -------------------------------------------
+     The Bin location box (new listing and Manage Item) opens a keypad on the
+     page instead of the phone keyboard: S M L T Shoes, the digits, Delete,
+     Done, and Other (the normal keyboard, for a one-off box name). A letter
+     starts a new name; digits add to it; Shoes fills "Shoes" and closes. Every
+     tap fires input + change so the hint, the green fill and the draft follow. */
+  (function initBoxPad() {
+    var pad = null, field = null, otherMode = false;
+    function isBox(t) {
+      return t && t.matches && (t.matches('[data-key="bin_location"]') || t.matches("#ksl-edit-bin"));
+    }
+    function css() {
+      if (document.getElementById("ksl-boxpad-css")) return;
+      var st = document.createElement("style"); st.id = "ksl-boxpad-css";
+      st.textContent =
+        "#ksl-boxpad{margin-top:10px;display:grid;gap:8px;user-select:none;-webkit-user-select:none;touch-action:manipulation}" +
+        "#ksl-boxpad .kbp-row{display:grid;gap:8px}" +
+        "#ksl-boxpad .kbp-letters{grid-template-columns:repeat(4,1fr) 1.6fr}" +
+        "#ksl-boxpad .kbp-digits{grid-template-columns:repeat(3,1fr)}" +
+        "#ksl-boxpad button{height:56px;border:0;border-radius:12px;background:rgba(255,255,255,.14);color:#fff;" +
+          "font-family:inherit;font-size:22px;font-weight:700;line-height:1;cursor:pointer;-webkit-tap-highlight-color:transparent}" +
+        "#ksl-boxpad button:active{background:rgba(255,255,255,.3)}" +
+        "#ksl-boxpad .kbp-letters button{background:#1c4a91}" +
+        "#ksl-boxpad .kbp-letters button:active{background:#28498d}" +
+        "#ksl-boxpad .kbp-done{background:#e54f25}" +
+        "#ksl-boxpad .kbp-done:active{background:#b23d22}" +
+        "#ksl-boxpad .kbp-small{font-size:16px}" +
+        "#ksl-boxpad .kbp-other{height:44px;background:transparent;border:1px solid rgba(255,255,255,.3);font-size:15px;font-weight:600}";
+      document.head.appendChild(st);
+    }
+    function build() {
+      css();
+      pad = document.createElement("div"); pad.id = "ksl-boxpad";
+      var L = ["S","M","L","T","Shoes"].map(function (k) {
+        return '<button type="button" data-kbp="' + k + '"' + (k === "Shoes" ? ' class="kbp-small"' : '') + '>' + k + '</button>';
+      }).join("");
+      var D = ["1","2","3","4","5","6","7","8","9"].map(function (k) {
+        return '<button type="button" data-kbp="' + k + '">' + k + '</button>';
+      }).join("") +
+        '<button type="button" data-kbp="del" class="kbp-small">Delete</button>' +
+        '<button type="button" data-kbp="0">0</button>' +
+        '<button type="button" data-kbp="done" class="kbp-done kbp-small">Done</button>';
+      pad.innerHTML = '<div class="kbp-row kbp-letters">' + L + '</div>' +
+        '<div class="kbp-row kbp-digits">' + D + '</div>' +
+        '<button type="button" data-kbp="other" class="kbp-other">Other box name (opens the keyboard)</button>';
+      // keep the focus in the box: a tap on the pad must not blur the field
+      pad.addEventListener("touchstart", function (e) { if (e.target.closest("[data-kbp]")) e.preventDefault(); }, { passive: false });
+      pad.addEventListener("mousedown", function (e) { e.preventDefault(); });
+      pad.addEventListener("pointerdown", function (e) {
+        var b = e.target.closest && e.target.closest("[data-kbp]"); if (!b) return;
+        e.preventDefault(); press(b.getAttribute("data-kbp"));
+      });
+    }
+    function fire() {
+      if (!field) return;
+      field.dispatchEvent(new Event("input", { bubbles: true }));
+      field.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    function place(el) {
+      if (!pad) build();
+      field = el;
+      var after = el.nextSibling && el.nextSibling.classList && el.nextSibling.classList.contains("ksl-bin-hint") ? el.nextSibling : el;
+      after.parentNode.insertBefore(pad, after.nextSibling);
+      pad.style.display = "grid";
+    }
+    function hide() { if (pad) pad.style.display = "none"; }
+    function press(k) {
+      if (!field) return;
+      var v = field.value || "";
+      if (k === "done") { hide(); try { field.blur(); } catch (e) {} fire(); return; }
+      if (k === "other") {
+        hide();
+        var f = field;
+        try { f.blur(); } catch (e) {}
+        f.setAttribute("inputmode", "text");
+        otherMode = true;   // set after the blur, so its focusout doesn't clear it
+        try { f.focus(); } catch (e) {}
+        return;
+      }
+      if (k === "del") v = (v === "Shoes") ? "" : v.slice(0, -1);
+      else if (k === "Shoes") v = "Shoes";
+      else if (/^[SMLT]$/.test(k)) v = k;
+      else v = (v === "Shoes" ? "" : v) + k;
+      field.value = v; fire();
+      if (k === "Shoes") { hide(); try { field.blur(); } catch (e) {} }
+    }
+    root.addEventListener("focusin", function (e) {
+      if (!isBox(e.target)) return;
+      if (otherMode) return;
+      e.target.setAttribute("inputmode", "none");
+      place(e.target);
+    });
+    root.addEventListener("focusout", function (e) {
+      if (!isBox(e.target)) return;
+      if (otherMode) { otherMode = false; e.target.setAttribute("inputmode", "none"); return; }
+      setTimeout(function () { if (document.activeElement !== field) hide(); }, 0);
+    });
+  })();
+
   /* ---- §11 STORAGE 2026-07-09: guided bin entry + Boxes panel ----------- */
   /* Guided entry: on the bin field, type ONE band letter -> it resolves to the
      current non-full box of that band (lowest pick_seq) and previews "room for N";
@@ -1012,7 +1113,7 @@
       var v = (el.value || "").trim();
       pending = null;
       if (!v) { setHint("", null, el); return; }
-      if (v.length === 1 && bandFor(v, itemType)) {
+      if (false && v.length === 1 && bandFor(v, itemType)) {   // S490: single-letter shortcut retired (it wrote old names like SMALL-3)
         var r = resolveBox(itemType, v);
         if (r && r.box) {
           pending = { code: r.box.code };
@@ -1032,7 +1133,7 @@
                      (match.is_full ? " (full \u2014 using anyway)" : " \u00B7 room " + match.remaining),
                      match.is_full ? "warn" : "ok", el);
       } else {
-        setHint("Custom location", null, el);
+        setHint("", null, el);   // S490: no hint for her own box names
       }
     }
     function commitPending(el) {
@@ -1051,7 +1152,7 @@
     });
     root.addEventListener("keydown", function (e) {
       if (e.key === "Enter" && isBinField(e.target)) {
-        if (pending) { e.preventDefault(); commitPending(e.target); }
+        if (pending) { e.preventDefault(); commitPending(e.target); }   // pending is never set since S490
       }
     });
     root.addEventListener("focusin", function (e) {
@@ -1060,7 +1161,7 @@
     root.addEventListener("focusout", function (e) {
       if (isBinField(e.target)) {
         var v = (e.target.value || "").trim();
-        if (v.length === 1 && pending) commitPending(e.target);   // lone letter -> auto-commit on leave
+        // S490: no auto-commit on leave; a lone letter stays as tapped
       }
     });
 
