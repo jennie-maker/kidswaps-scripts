@@ -923,7 +923,7 @@
     }, { passive: true });
   })();
 
-  /* ---- S490 hers: the box keypad -------------------------------------------
+  /* ---- S490 hers: the box keypad (S491: compact, Done top right, taps only on a clean lift) ---
      The Bin location box (new listing and Manage Item) opens a keypad on the
      page instead of the phone keyboard: S M L T Shoes, the digits, Delete,
      Done, and Other (the normal keyboard, for a one-off box name). A letter
@@ -938,41 +938,57 @@
       if (document.getElementById("ksl-boxpad-css")) return;
       var st = document.createElement("style"); st.id = "ksl-boxpad-css";
       st.textContent =
-        "#ksl-boxpad{margin-top:10px;display:grid;gap:8px;user-select:none;-webkit-user-select:none;touch-action:manipulation}" +
-        "#ksl-boxpad .kbp-row{display:grid;gap:8px}" +
+        "#ksl-boxpad{margin-top:8px;display:grid;gap:6px;user-select:none;-webkit-user-select:none;touch-action:manipulation}" +
+        "#ksl-boxpad .kbp-row{display:grid;gap:6px}" +
         "#ksl-boxpad .kbp-letters{grid-template-columns:repeat(4,1fr) 1.6fr}" +
-        "#ksl-boxpad .kbp-digits{grid-template-columns:repeat(3,1fr)}" +
-        "#ksl-boxpad button{height:56px;border:0;border-radius:12px;background:rgba(255,255,255,.14);color:#fff;" +
-          "font-family:inherit;font-size:22px;font-weight:700;line-height:1;cursor:pointer;-webkit-tap-highlight-color:transparent}" +
+        "#ksl-boxpad .kbp-digits{grid-template-columns:repeat(10,1fr);gap:4px}" +
+        "#ksl-boxpad .kbp-extras{grid-template-columns:1fr 1fr 1.6fr}" +
+        "#ksl-boxpad button{height:42px;padding:0;border:0;border-radius:10px;background:rgba(255,255,255,.14);color:#fff;" +
+          "font-family:inherit;font-size:18px;font-weight:700;line-height:1;cursor:pointer;-webkit-tap-highlight-color:transparent}" +
+        "#ksl-boxpad .kbp-digits button{height:38px;border-radius:8px;font-size:15px}" +
+        "#ksl-boxpad .kbp-extras button{height:36px;font-size:14px;font-weight:600}" +
         "#ksl-boxpad button:active{background:rgba(255,255,255,.3)}" +
         "#ksl-boxpad .kbp-letters button{background:#1c4a91}" +
         "#ksl-boxpad .kbp-letters button:active{background:#28498d}" +
+        "#ksl-boxpad .kbp-letters .kbp-done{background:#e54f25}" +
+        "#ksl-boxpad .kbp-letters .kbp-done:active{background:#b23d22}" +
         "#ksl-boxpad .kbp-done{background:#e54f25}" +
         "#ksl-boxpad .kbp-done:active{background:#b23d22}" +
         "#ksl-boxpad .kbp-small{font-size:16px}" +
-        "#ksl-boxpad .kbp-other{height:44px;background:transparent;border:1px solid rgba(255,255,255,.3);font-size:15px;font-weight:600}";
+        "#ksl-boxpad .kbp-extras .kbp-other{background:transparent;border:1px solid rgba(255,255,255,.3)}";
       document.head.appendChild(st);
     }
     function build() {
       css();
       pad = document.createElement("div"); pad.id = "ksl-boxpad";
-      var L = ["S","M","L","T","Shoes"].map(function (k) {
-        return '<button type="button" data-kbp="' + k + '"' + (k === "Shoes" ? ' class="kbp-small"' : '') + '>' + k + '</button>';
-      }).join("");
-      var D = ["1","2","3","4","5","6","7","8","9"].map(function (k) {
+      var L = ["S","M","L","T"].map(function (k) {
         return '<button type="button" data-kbp="' + k + '">' + k + '</button>';
-      }).join("") +
-        '<button type="button" data-kbp="del" class="kbp-small">Delete</button>' +
-        '<button type="button" data-kbp="0">0</button>' +
-        '<button type="button" data-kbp="done" class="kbp-done kbp-small">Done</button>';
+      }).join("") + '<button type="button" data-kbp="done" class="kbp-done">Done</button>';
+      var D = ["1","2","3","4","5","6","7","8","9","0"].map(function (k) {
+        return '<button type="button" data-kbp="' + k + '">' + k + '</button>';
+      }).join("");
+      var X = '<button type="button" data-kbp="Shoes">Shoes</button>' +
+        '<button type="button" data-kbp="del">Delete</button>' +
+        '<button type="button" data-kbp="other" class="kbp-other">Other (keyboard)</button>';
       pad.innerHTML = '<div class="kbp-row kbp-letters">' + L + '</div>' +
         '<div class="kbp-row kbp-digits">' + D + '</div>' +
-        '<button type="button" data-kbp="other" class="kbp-other">Other box name (opens the keyboard)</button>';
+        '<div class="kbp-row kbp-extras">' + X + '</div>';
       // keep the focus in the box: a tap on the pad must not blur the field
       pad.addEventListener("touchstart", function (e) { if (e.target.closest("[data-kbp]")) e.preventDefault(); }, { passive: false });
       pad.addEventListener("mousedown", function (e) { e.preventDefault(); });
+      var down = null;
       pad.addEventListener("pointerdown", function (e) {
-        var b = e.target.closest && e.target.closest("[data-kbp]"); if (!b) return;
+        var b = e.target.closest && e.target.closest("[data-kbp]"); if (!b) { down = null; return; }
+        e.preventDefault(); down = { b: b, x: e.clientX, y: e.clientY };
+      });
+      pad.addEventListener("pointermove", function (e) {
+        if (down && (Math.abs(e.clientX - down.x) > 10 || Math.abs(e.clientY - down.y) > 10)) down = null;
+      });
+      pad.addEventListener("pointercancel", function () { down = null; });
+      pad.addEventListener("pointerup", function (e) {
+        var b = e.target.closest && e.target.closest("[data-kbp]");
+        var d = down; down = null;
+        if (!d || b !== d.b) return;
         e.preventDefault(); press(b.getAttribute("data-kbp"));
       });
     }
@@ -987,6 +1003,10 @@
       var after = el.nextSibling && el.nextSibling.classList && el.nextSibling.classList.contains("ksl-bin-hint") ? el.nextSibling : el;
       after.parentNode.insertBefore(pad, after.nextSibling);
       pad.style.display = "grid";
+      try {
+        var lab = el.closest(".ksl-field") || el;
+        setTimeout(function () { lab.scrollIntoView({ block: "start", behavior: "smooth" }); }, 50);
+      } catch (e) {}
     }
     function hide() { if (pad) pad.style.display = "none"; }
     function press(k) {
