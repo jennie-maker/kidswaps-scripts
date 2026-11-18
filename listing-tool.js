@@ -923,7 +923,7 @@
     }, { passive: true });
   })();
 
-  /* ---- S490 hers: the box keypad -------------------------------------------
+  /* ---- S490 hers: the box keypad (S491: compact, Done top right, taps only on a clean lift) ---
      The Bin location box (new listing and Manage Item) opens a keypad on the
      page instead of the phone keyboard: S M L T Shoes, the digits, Delete,
      Done, and Other (the normal keyboard, for a one-off box name). A letter
@@ -938,49 +938,59 @@
       if (document.getElementById("ksl-boxpad-css")) return;
       var st = document.createElement("style"); st.id = "ksl-boxpad-css";
       st.textContent =
-        "#ksl-boxpad{margin-top:10px;display:grid;gap:8px;user-select:none;-webkit-user-select:none;touch-action:manipulation}" +
-        "#ksl-boxpad .kbp-row{display:grid;gap:8px}" +
-        "#ksl-boxpad .kbp-letters{grid-template-columns:repeat(4,1fr) 1.3fr}" +
+        "#ksl-boxpad{margin-top:8px;display:grid;gap:6px;user-select:none;-webkit-user-select:none;touch-action:manipulation}" +
+        "#ksl-boxpad .kbp-row{display:grid;gap:6px}" +
+        "#ksl-boxpad .kbp-letters{grid-template-columns:repeat(4,1fr) 1.6fr}" +
         "#ksl-boxpad .kbp-digits{grid-template-columns:repeat(5,1fr)}" +
-        "#ksl-boxpad .kbp-digits button{height:66px;font-size:32px}" +
-        "#ksl-boxpad .kbp-bottom{grid-template-columns:1fr 1.6fr 1fr}" +
-        "#ksl-boxpad button{height:56px;border:0;border-radius:12px;background:rgba(255,255,255,.14);color:#fff;" +
-          "font-family:inherit;font-size:22px;font-weight:700;line-height:1;cursor:pointer;-webkit-tap-highlight-color:transparent}" +
+        "#ksl-boxpad .kbp-extras{grid-template-columns:1fr 1.6fr 1fr}" +
+        "#ksl-boxpad button{height:42px;padding:0;border:0;border-radius:10px;background:rgba(255,255,255,.14);color:#fff;" +
+          "font-family:inherit;font-size:18px;font-weight:700;line-height:1;cursor:pointer;-webkit-tap-highlight-color:transparent}" +
+        "#ksl-boxpad .kbp-digits button{height:60px;font-size:28px}" +
+        "#ksl-boxpad .kbp-extras button{height:36px;font-size:14px;font-weight:600}" +
         "#ksl-boxpad button:active{background:rgba(255,255,255,.3)}" +
-        "#ksl-boxpad .kbp-letter{background:#1c4a91}" +
-        "#ksl-boxpad .kbp-letter:active{background:#28498d}" +
-        "#ksl-boxpad .kbp-del{background:rgba(255,255,255,.22);font-size:26px}" +
+        "#ksl-boxpad .kbp-letters button{background:#1c4a91}" +
+        "#ksl-boxpad .kbp-letters button:active{background:#28498d}" +
+        "#ksl-boxpad .kbp-letters .kbp-del{background:rgba(255,255,255,.22);font-size:24px}" +
+        "#ksl-boxpad .kbp-letters .kbp-del:active{background:rgba(255,255,255,.34)}" +
         "#ksl-boxpad .kbp-done{background:#e54f25}" +
         "#ksl-boxpad .kbp-done:active{background:#b23d22}" +
         "#ksl-boxpad .kbp-small{font-size:16px}" +
-        "#ksl-boxpad .kbp-bottom button{height:48px}" +
-        "#ksl-boxpad .kbp-other{background:transparent;border:1px solid rgba(255,255,255,.3);font-size:15px;font-weight:600}";
+        "#ksl-boxpad .kbp-extras .kbp-other{background:transparent;border:1px solid rgba(255,255,255,.3)}";
       document.head.appendChild(st);
     }
     function build() {
       css();
       pad = document.createElement("div"); pad.id = "ksl-boxpad";
-      // Nov 17 hers: layout A. S M L T, then Delete top right; digits in two rows
-      // of five, bigger; Shoes, Other box name and Done share the bottom row.
       var L = ["S","M","L","T"].map(function (k) {
-        return '<button type="button" data-kbp="' + k + '" class="kbp-letter">' + k + '</button>';
-      }).join("") +
-        '<button type="button" data-kbp="del" class="kbp-del" aria-label="Delete">&#9003;</button>';
+        return '<button type="button" data-kbp="' + k + '">' + k + '</button>';
+      }).join("") + '<button type="button" data-kbp="del" class="kbp-del" aria-label="Delete">&#9003;</button>';
       var D = ["1","2","3","4","5","6","7","8","9","0"].map(function (k) {
         return '<button type="button" data-kbp="' + k + '">' + k + '</button>';
       }).join("");
+      // Nov 17 hers (layout A): Delete takes Done's top-right spot; the digits are
+      // two bigger rows of five; Shoes, Other and Done share the bottom row.
+      var X = '<button type="button" data-kbp="Shoes">Shoes</button>' +
+        '<button type="button" data-kbp="other" class="kbp-other">Other (keyboard)</button>' +
+        '<button type="button" data-kbp="done" class="kbp-done">Done</button>';
       pad.innerHTML = '<div class="kbp-row kbp-letters">' + L + '</div>' +
         '<div class="kbp-row kbp-digits">' + D + '</div>' +
-        '<div class="kbp-row kbp-bottom">' +
-          '<button type="button" data-kbp="Shoes" class="kbp-letter kbp-small">Shoes</button>' +
-          '<button type="button" data-kbp="other" class="kbp-other">Other box name</button>' +
-          '<button type="button" data-kbp="done" class="kbp-done kbp-small">Done</button>' +
-        '</div>';
+        '<div class="kbp-row kbp-extras">' + X + '</div>';
       // keep the focus in the box: a tap on the pad must not blur the field
       pad.addEventListener("touchstart", function (e) { if (e.target.closest("[data-kbp]")) e.preventDefault(); }, { passive: false });
       pad.addEventListener("mousedown", function (e) { e.preventDefault(); });
+      var down = null;
       pad.addEventListener("pointerdown", function (e) {
-        var b = e.target.closest && e.target.closest("[data-kbp]"); if (!b) return;
+        var b = e.target.closest && e.target.closest("[data-kbp]"); if (!b) { down = null; return; }
+        e.preventDefault(); down = { b: b, x: e.clientX, y: e.clientY };
+      });
+      pad.addEventListener("pointermove", function (e) {
+        if (down && (Math.abs(e.clientX - down.x) > 10 || Math.abs(e.clientY - down.y) > 10)) down = null;
+      });
+      pad.addEventListener("pointercancel", function () { down = null; });
+      pad.addEventListener("pointerup", function (e) {
+        var b = e.target.closest && e.target.closest("[data-kbp]");
+        var d = down; down = null;
+        if (!d || b !== d.b) return;
         e.preventDefault(); press(b.getAttribute("data-kbp"));
       });
     }
@@ -995,6 +1005,10 @@
       var after = el.nextSibling && el.nextSibling.classList && el.nextSibling.classList.contains("ksl-bin-hint") ? el.nextSibling : el;
       after.parentNode.insertBefore(pad, after.nextSibling);
       pad.style.display = "grid";
+      try {
+        var lab = el.closest(".ksl-field") || el;
+        setTimeout(function () { lab.scrollIntoView({ block: "start", behavior: "smooth" }); }, 50);
+      } catch (e) {}
     }
     function hide() { if (pad) pad.style.display = "none"; }
     function press(k) {
